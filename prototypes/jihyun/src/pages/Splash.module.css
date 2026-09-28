@@ -1,0 +1,76 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 100dvh;
+  padding: calc(40px + var(--safe-top)) 0 calc(95px + var(--safe-bottom));
+  background: var(--color-bg);
+}
+
+.headline {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding-left: 24px;
+  font-family: var(--font-latin);
+  font-weight: 800;
+  font-size: 72px;
+  line-height: 0.87;
+  letter-spacing: -1.44px;
+  color: var(--color-white);
+  white-space: nowrap;
+}
+
+.join {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+  width: 100%;
+  margin-top: 40px;
+}
+
+.question {
+  width: 100%;
+  font-family: var(--font-latin);
+  font-weight: 800;
+  font-size: 20px;
+  line-height: 1.15;
+  letter-spacing: -0.4px;
+  color: var(--color-white);
+  text-align: center;
+}
+
+.buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  padding: 0 8px;
+}
+
+.button {
+  width: 100%;
+  padding: 46px 0;
+  border-radius: 999px;
+  font-family: var(--font-latin);
+  font-weight: 800;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: -0.4px;
+  color: var(--color-white);
+  text-align: center;
+  transition: transform 0.1s;
+}
+
+.button:active {
+  transform: scale(0.98);
+}
+
+.korean {
+  background: var(--color-pink);
+}
+
+.foreigner {
+  background: var(--color-lavender);
+}
