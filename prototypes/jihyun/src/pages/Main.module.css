@@ -1,0 +1,59 @@
+.page {
+  position: relative;
+  min-height: 100dvh;
+  padding-bottom: calc(160px + var(--safe-bottom));
+  background: var(--color-bg);
+}
+
+.cta {
+  position: fixed;
+  bottom: calc(60px + var(--safe-bottom));
+  left: 50%;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 259px;
+  height: 90px;
+  padding: 30px 40px;
+  border-radius: 999px;
+  background: var(--color-pink);
+  transform: translateX(-50%);
+  font-family: var(--font-latin);
+  font-weight: 800;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: -0.4px;
+  color: var(--color-white);
+  white-space: nowrap;
+  transition: transform 0.1s;
+}
+
+.cta:active {
+  transform: translateX(-50%) scale(0.97);
+}
+
+.dots {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.25);
+  transition: width 0.3s ease, background 0.3s ease;
+}
+
+.dotActive {
+  width: 20px;
+  background: var(--color-white);
+}
+
+.ctaDone {
+  background: var(--color-white);
+  color: var(--color-bg);
+}
