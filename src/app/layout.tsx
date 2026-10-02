@@ -1,14 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Figtree } from "next/font/google";
-import { FlowProvider } from "@/lib/flow-store";
 import "./globals.css";
-
-// Gilroy 대체용 라틴 디스플레이 폰트
-const figtree = Figtree({
-  subsets: ["latin"],
-  weight: ["800"],
-  variable: "--font-figtree",
-});
 
 export const metadata: Metadata = {
   title: "오늘의 참견",
@@ -20,12 +11,11 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   viewportFit: "cover",
-  themeColor: "#ececec",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ko" className={`${figtree.variable} h-full antialiased`}>
+    <html lang="ko" className="h-full antialiased">
       <head>
         {/* Pretendard (OFL) — 한글/본문 폰트 */}
         <link
@@ -33,9 +23,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
         />
       </head>
-      <body className="min-h-full flex flex-col">
-        <FlowProvider>{children}</FlowProvider>
-      </body>
+      <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
 }

@@ -1,21 +1,20 @@
 import { notFound } from "next/navigation";
-import { FEED, getFeedPost } from "@/lib/data";
-import { PostDetailScreen } from "./PostDetailScreen";
+import { Placeholder } from "@/components/Placeholder";
+import { getPost } from "@/lib/posts";
 
-export function generateStaticParams() {
-  return FEED.map((p) => ({ id: p.id }));
-}
-
-export async function generateMetadata(props: PageProps<"/posts/[id]">) {
-  const { id } = await props.params;
-  const post = getFeedPost(id);
-  return { title: post ? `${post.title} · 오늘의 참견` : "오늘의 참견" };
-}
-
-// E1-GL 글 상세 · V2a 투표 시트
 export default async function Page(props: PageProps<"/posts/[id]">) {
   const { id } = await props.params;
-  const post = getFeedPost(id);
+  const post = getPost(id);
   if (!post) notFound();
-  return <PostDetailScreen post={post} />;
+  return (
+    <Placeholder
+      part="2·3. 상세 + 투표"
+      title={`상세 — ${post.title}`}
+      owner="지현"
+      links={[
+        { href: `/posts/${id}/comments`, label: "댓글" },
+        { href: `/posts/${id}/edit`, label: "수정 (내 글일 때)" },
+      ]}
+    />
+  );
 }

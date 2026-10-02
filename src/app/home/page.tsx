@@ -1,9 +1,16 @@
-import type { Metadata } from "next";
-import { HomeScreen } from "./HomeScreen";
+import { Placeholder } from "@/components/Placeholder";
 
-export const metadata: Metadata = { title: "홈 · 오늘의 참견" };
-
-// 01-A Home · 14 Home draft banner
 export default function Page() {
-  return <HomeScreen />;
+  return (
+    <Placeholder
+      part="1. 메인 카드"
+      title="메인 (카드)"
+      owner="지현"
+      links={[
+        { href: "/posts/1", label: "카드 → 상세" },
+        { href: "/write", label: "콘텐츠 작성" },
+        { href: "/my", label: "마이" },
+      ]}
+    />
+  );
 }
