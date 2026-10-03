@@ -4,7 +4,7 @@ import Image from "next/image";
 import { BottomSheet } from "./Layout";
 
 const PROVIDERS = [
-  { id: "google", label: "Continue with Google", className: "bg-canvas-soft text-on-light" },
+  { id: "google", label: "Continue with Google", className: "bg-surface-2 text-on-dark" },
   { id: "kakao", label: "Continue with Kakao", className: "bg-kakao text-on-light" },
   { id: "apple", label: "Continue with Apple", className: "bg-black text-white border border-white/25" },
 ] as const;

@@ -24,7 +24,7 @@ export function IconButton({
   return (
     <Clickable
       aria-label={label}
-      className={`flex size-12 shrink-0 items-center justify-center rounded-full bg-white text-on-light transition active:scale-95 ${className}`}
+      className={`flex size-12 shrink-0 items-center justify-center rounded-full bg-surface text-on-dark transition active:scale-95 ${className}`}
       {...props}
     >
       <Icon name={icon} />
@@ -52,7 +52,7 @@ export function ArrowCta({
 }) {
   return (
     <Clickable
-      className={`flex w-full items-center gap-3 overflow-hidden rounded-full bg-background py-1 pl-7 pr-1 text-left text-white transition active:scale-[0.99] disabled:opacity-40 ${className}`}
+      className={`flex w-full items-center gap-3 overflow-hidden rounded-full bg-primary py-1 pl-7 pr-1 text-left text-on-light transition active:scale-[0.99] disabled:opacity-40 ${className}`}
       {...props}
     >
       <span className="flex min-w-0 flex-1 flex-col gap-0.5 leading-[1.3]">
@@ -60,7 +60,7 @@ export function ArrowCta({
         <span className="text-[18px] font-bold">{title}</span>
       </span>
       <span
-        className={`flex shrink-0 items-center justify-center rounded-full bg-white text-on-light ${compact ? "size-14" : "size-16"}`}
+        className={`flex shrink-0 items-center justify-center rounded-full bg-background text-on-dark ${compact ? "size-14" : "size-16"}`}
       >
         <Icon name={icon} />
       </span>
@@ -69,11 +69,11 @@ export function ArrowCta({
 }
 
 const PILL_TONES = {
-  black: "bg-background text-white",
-  white: "bg-white text-on-light",
-  soft: "bg-canvas-soft text-on-light",
+  black: "bg-on-dark text-on-light",
+  white: "bg-surface text-on-dark",
+  soft: "bg-surface-2 text-on-dark",
   error: "bg-error text-on-light",
-  disabled: "bg-[#e3e3e3] text-neutral-400",
+  disabled: "bg-surface-2 text-disabled",
 } as const;
 
 /** 일반 CTA — h64, SemiBold 16 */
@@ -101,7 +101,7 @@ export function BrandButton({
 }: Clickable & { tone: "primary" | "secondary"; children: ReactNode }) {
   return (
     <Clickable
-      className={`flex h-[72px] w-full items-center justify-center rounded-full px-6 font-display text-[20px] leading-none text-on-light transition active:scale-[0.99] ${
+      className={`flex h-[72px] w-full items-center justify-center rounded-full px-6 font-display text-[20px] leading-none text-on-dark transition active:scale-[0.99] ${
         tone === "primary" ? "bg-primary" : "bg-secondary"
       }`}
       {...props}

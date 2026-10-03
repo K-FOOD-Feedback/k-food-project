@@ -47,6 +47,7 @@ export function PhotoGrid({
   addLocked = false,
   canRemove = true,
   coverChip = false,
+  onLockedTap,
 }: {
   photos: Photo[];
   coverId: string | null;
@@ -58,7 +59,10 @@ export function PhotoGrid({
   canRemove?: boolean;
   /** 대표 사진 썸네일 위에 "Cover" 칩 표시 (07 Review) */
   coverChip?: boolean;
+  /** 잠긴 Add 타일을 눌렀을 때 */
+  onLockedTap?: () => void;
 }) {
+  const [shakeKey, setShakeKey] = useState(0);
   const [drag, setDrag] = useState<Drag | null>(null);
   const press = useRef<{ index: number; x: number; y: number; timer: number; active: boolean } | null>(
     null,
@@ -132,7 +136,7 @@ export function PhotoGrid({
           <li
             key={photo.id}
             data-thumb-index={i}
-            className={`relative aspect-square ${isTarget ? "rounded-[20px] ring-2 ring-secondary ring-offset-2" : ""}`}
+            className={`relative aspect-square animate-pop ${isTarget ? "rounded-[20px] ring-2 ring-secondary ring-offset-2 ring-offset-surface" : ""}`}
           >
             <button
               type="button"
@@ -156,14 +160,14 @@ export function PhotoGrid({
                   ? { transform: `translate(${drag.dx}px, ${drag.dy}px) scale(1.06)`, zIndex: 10 }
                   : undefined
               }
-              className={`absolute inset-0 touch-pan-y select-none overflow-hidden rounded-[20px] bg-canvas-soft [-webkit-touch-callout:none] ${
+              className={`absolute inset-0 touch-pan-y select-none overflow-hidden rounded-[20px] bg-surface-2 [-webkit-touch-callout:none] ${
                 dragging ? "shadow-[0_12px_24px_rgba(0,0,0,0.2)]" : "transition-transform"
-              } ${isCover ? "border-[3px] border-on-light" : ""}`}
+              } ${isCover ? "border-[3px] border-on-dark" : ""}`}
             >
               <PhotoImage src={photo.src} sizes="72px" className="pointer-events-none object-cover" />
             </button>
             {coverChip && isCover && !dragging && (
-              <span className="pointer-events-none absolute -left-px top-[21px] z-[5] flex items-center gap-1.5 rounded-full bg-white px-3 py-[7px] text-[13px] font-semibold leading-[1.3]">
+              <span className="pointer-events-none absolute -left-px top-[21px] z-[5] flex items-center gap-1.5 rounded-full bg-surface px-3 py-[7px] text-[13px] font-semibold leading-[1.3]">
                 <Icon name="check" size={14} strokeWidth={2.5} />
                 Cover
               </span>
@@ -187,7 +191,7 @@ export function PhotoGrid({
           <button
             type="button"
             onClick={onAdd}
-            className="flex size-full flex-col items-center justify-center gap-0.5 rounded-[20px] border-[1.5px] border-dashed border-on-light bg-canvas-soft"
+            className="flex size-full flex-col items-center justify-center gap-0.5 rounded-[20px] border-[1.5px] border-dashed border-on-dark bg-surface-2"
           >
             <Icon name="plus" size={20} />
             <span className="text-[12px] font-medium leading-[1.2] text-muted">Add</span>
@@ -196,13 +200,21 @@ export function PhotoGrid({
       )}
       {addLocked && (
         <li className="aspect-square">
-          <div
+          <button
+            key={shakeKey}
+            type="button"
             aria-label="Adding photos is locked"
-            className="flex size-full flex-col items-center justify-center gap-0.5 rounded-[20px] border-[1.5px] border-dashed border-disabled bg-canvas-soft opacity-50"
+            onClick={() => {
+              setShakeKey((k) => k + 1);
+              onLockedTap?.();
+            }}
+            className={`flex size-full flex-col items-center justify-center gap-0.5 rounded-[20px] border-[1.5px] border-dashed border-disabled bg-surface-2 opacity-50 ${
+              shakeKey ? "animate-shake" : ""
+            }`}
           >
             <Icon name="lock" size={20} />
             <span className="text-[12px] font-medium leading-[1.2] text-muted">Locked</span>
-          </div>
+          </button>
         </li>
       )}
     </ul>

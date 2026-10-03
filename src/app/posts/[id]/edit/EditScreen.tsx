@@ -21,6 +21,10 @@ export function EditScreen() {
   const [form, setForm] = useState<MyPost>(initial);
   const [limitToast, setLimitToast] = useState(false);
   const closeToast = useCallback(() => setLimitToast(false), []);
+  // 투표 후 잠긴 항목을 눌렀을 때: 흔들림 + 안내 토스트
+  const [lockShake, setLockShake] = useState(0);
+  const [lockToast, setLockToast] = useState(false);
+  const closeLockToast = useCallback(() => setLockToast(false), []);
   const set = (patch: Partial<MyPost>) => setForm((f) => ({ ...f, ...patch }));
 
   const picker = usePhotoPicker((files) => {
@@ -52,11 +56,11 @@ export function EditScreen() {
         title="Edit post"
       />
 
-      <div className="flex flex-col gap-1 px-2">
+      <div className="stagger flex flex-col gap-1 px-2">
         {locked && (
           <Tile>
             <div className="flex items-start gap-3 px-5 py-4">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-content">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-content text-on-light">
                 <Icon name="lock" size={18} />
               </span>
               <div className="flex flex-col gap-0.5">
@@ -88,6 +92,7 @@ export function EditScreen() {
               onMove={movePhoto}
               onAdd={form.photos.length < MAX_PHOTOS ? picker.open : undefined}
               addLocked={locked}
+              onLockedTap={() => setLockToast(true)}
               canRemove={form.photos.length > 1}
             />
           </div>
@@ -102,13 +107,23 @@ export function EditScreen() {
           <h2 className="px-5 pt-5 pb-2 text-[18px] font-bold leading-[1.3]">What Koreans will tell you</h2>
           {locked ? (
             <div className="px-5 pt-3 pb-5">
-              <div className="flex h-14 items-center gap-3 rounded-full bg-canvas-soft px-4 text-muted">
-                <Icon name={getQuestion(form.questionId).icon} size={20} className="text-on-light" />
+              <button
+                key={lockShake}
+                type="button"
+                onClick={() => {
+                  setLockShake((k) => k + 1);
+                  setLockToast(true);
+                }}
+                className={`flex h-14 w-full items-center gap-3 rounded-full bg-surface-2 px-4 text-left text-muted ${
+                  lockShake ? "animate-shake" : ""
+                }`}
+              >
+                <Icon name={getQuestion(form.questionId).icon} size={20} className="text-on-dark" />
                 <span className="flex-1 text-[15px] font-semibold leading-[1.3]">
                   {getQuestion(form.questionId).label}
                 </span>
-                <Icon name="lock" size={18} className="text-on-light" />
-              </div>
+                <Icon name="lock" size={18} className="text-on-dark" />
+              </button>
             </div>
           ) : (
             <>
@@ -122,14 +137,14 @@ export function EditScreen() {
                       role="radio"
                       aria-checked={on}
                       onClick={() => set({ questionId: q.id, voteQuestion: q.voteQuestion })}
-                      className={`flex h-14 items-center gap-3 rounded-full bg-canvas-soft pl-4 pr-3 text-left ${
-                        on ? "border-2 border-on-light" : "border-2 border-transparent"
+                      className={`flex h-14 items-center gap-3 rounded-full bg-surface-2 pl-4 pr-3 text-left ${
+                        on ? "border-2 border-on-dark" : "border-2 border-transparent"
                       }`}
                     >
                       <Icon name={q.icon} size={20} />
                       <span className="flex-1 text-[15px] font-semibold leading-[1.3]">{q.label}</span>
                       {on ? (
-                        <span className="flex size-6 items-center justify-center rounded-full bg-background text-white">
+                        <span className="flex size-6 animate-pop items-center justify-center rounded-full bg-on-dark text-on-light">
                           <Icon name="check" size={12} strokeWidth={3} />
                         </span>
                       ) : (
@@ -192,6 +207,12 @@ export function EditScreen() {
         onClose={closeToast}
         title={`You can add up to ${MAX_PHOTOS} photos`}
         body="Remove a photo first, then add a new one."
+      />
+      <Toast
+        open={lockToast}
+        onClose={closeLockToast}
+        title="Locked after votes"
+        body="To keep votes fair, you can't add photos or change the question."
       />
       {picker.input}
     </Screen>

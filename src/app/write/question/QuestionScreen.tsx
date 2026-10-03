@@ -158,15 +158,16 @@ export function QuestionScreen() {
               }}
               className={`absolute flex cursor-pointer items-center overflow-hidden ${
                 center
-                  ? "gap-4 rounded-[32px] border-2 border-on-light bg-white px-5 shadow-[0_12px_32px_rgba(0,0,0,0.12)]"
+                  ? "gap-4 rounded-[32px] border-2 border-on-dark bg-surface px-5 shadow-[0_12px_32px_rgba(0,0,0,0.12)]"
                   : level === 1
-                    ? "gap-3 rounded-[24px] bg-white/80 px-3.5"
-                    : "gap-2.5 rounded-[18px] bg-white/60 px-2.5"
+                    ? "gap-3 rounded-[24px] bg-surface/80 px-3.5"
+                    : "gap-2.5 rounded-[18px] bg-surface/60 px-2.5"
               }`}
             >
               <span
-                className={`flex shrink-0 items-center justify-center rounded-full transition-all ${
-                  center ? "size-14 bg-content" : level === 1 ? "size-9 bg-canvas-soft" : "size-7 bg-canvas-soft"
+                key={center ? `${q.id}-center` : q.id}
+                className={`flex shrink-0 items-center justify-center rounded-full transition-all ${center ? "animate-pop" : ""} ${
+                  center ? "size-14 bg-content text-on-light" : level === 1 ? "size-9 bg-surface-2" : "size-7 bg-surface-2"
                 }`}
               >
                 <Icon name={q.icon} size={center ? 24 : level === 1 ? 16 : 13} />
@@ -186,7 +187,7 @@ export function QuestionScreen() {
         })}
       </div>
 
-      <StickyBottom fade="from-canvas via-canvas to-canvas">
+      <StickyBottom>
         <ArrowCta
           caption="AI drafts your post from the photos"
           title="Write with AI"

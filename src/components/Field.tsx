@@ -41,7 +41,7 @@ export function TextField({
           </span>
         )}
       </div>
-      <div className="flex items-start gap-2 rounded-[20px] border-2 border-transparent bg-canvas-soft px-4 py-[14px] focus-within:border-on-light">
+      <div className="flex items-start gap-2 rounded-[20px] border-2 border-transparent bg-surface-2 px-4 py-[14px] focus-within:border-on-dark">
         <textarea
           ref={ref}
           id={id}
@@ -52,7 +52,7 @@ export function TextField({
           aria-readonly={locked}
           onChange={(e) => onChange?.(e.target.value.replace(rows === 1 ? /\n/g : /$^/, ""))}
           className={`min-w-0 flex-1 resize-none overflow-hidden bg-transparent text-[15px] leading-[1.5] outline-none ${
-            locked ? "text-muted" : "text-on-light"
+            locked ? "text-muted" : "text-on-dark"
           }`}
         />
         {locked && <Icon name="lock" size={18} className="mt-0.5 shrink-0" />}

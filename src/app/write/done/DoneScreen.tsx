@@ -16,7 +16,8 @@ export function DoneScreen() {
       <TopBar right={<IconButton icon="x" label="Close" href="/home" />} />
 
       <div className="relative mx-auto h-[364px] w-full max-w-[375px]">
-        <div className="absolute left-[46px] top-[20px] w-[235px] rotate-6">
+        {/* 카드 툭 떨어짐 → 도장 쾅 → 체크 뿅 */}
+        <div className="absolute left-[46px] top-[20px] w-[235px] rotate-6 animate-drop">
           <FeedCard
             title={post.title}
             author="Sam · Canada"
@@ -28,22 +29,22 @@ export function DoneScreen() {
             priority
           />
         </div>
-        <span className="absolute left-[190px] top-[16px] -rotate-10 rounded-full bg-background px-7 py-4 font-display text-[30px] leading-[1.1] text-white">
+        <span className="absolute left-[190px] top-[16px] -rotate-10 animate-stamp rounded-full bg-primary px-7 py-4 font-display text-[30px] leading-[1.1] text-on-light shadow-[0_8px_24px_rgba(0,0,0,0.35)] [animation-delay:450ms]">
           Posted!
         </span>
-        <span className="absolute left-[282px] top-[282px] flex size-16 items-center justify-center rounded-full bg-primary">
+        <span className="absolute left-[282px] top-[282px] flex size-16 animate-pop items-center justify-center rounded-full bg-secondary text-on-light [animation-delay:750ms]">
           <Icon name="check" size={30} />
         </span>
       </div>
 
-      <div className="mx-8 mt-4 flex flex-col items-center gap-2 text-center">
+      <div className="mx-8 mt-4 flex animate-rise flex-col items-center gap-2 text-center [animation-delay:850ms]">
         <h1 className="font-display text-[28px] leading-[1.1]">You&apos;re live!</h1>
         <p className="text-[15px] leading-[1.5] text-muted">
           Koreans are on their way. We&apos;ll let you know when the first votes come in.
         </p>
       </div>
 
-      <StickyBottom>
+      <StickyBottom className="animate-rise [animation-delay:950ms]">
         <div className="flex gap-1">
           <PillButton tone="white" href="/home">
             Back to home

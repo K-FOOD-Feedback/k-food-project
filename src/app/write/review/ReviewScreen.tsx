@@ -51,7 +51,7 @@ export function ReviewScreen() {
       />
       <StepProgress step={3} />
 
-      <div className="flex flex-col gap-1 px-2">
+      <div className="stagger flex flex-col gap-1 px-2">
         {/* 사진 — 맨 왼쪽이 대표(Cover) */}
         <Tile>
           <div className="px-5 pt-4 pb-3">
@@ -129,7 +129,7 @@ export function ReviewScreen() {
             {question.options.map((opt) => (
               <p
                 key={opt}
-                className="flex h-12 items-center rounded-full border border-black px-5 text-[15px] leading-[1.5]"
+                className="flex h-12 items-center rounded-full border border-on-dark/70 px-5 text-[15px] leading-[1.5]"
               >
                 {opt}
               </p>

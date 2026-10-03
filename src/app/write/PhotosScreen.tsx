@@ -53,10 +53,13 @@ export function PhotosScreen() {
       />
       <StepProgress step={1} />
 
-      <div className="flex flex-col gap-1 px-2">
+      <div className="stagger flex flex-col gap-1 px-2">
         {cover ? (
-          <div className="relative aspect-square w-full overflow-hidden rounded-[32px] bg-white">
-            <PhotoImage src={cover.src} sizes="(max-width: 430px) 100vw, 430px" priority />
+          <div className="relative aspect-square w-full overflow-hidden rounded-[32px] bg-surface">
+            {/* 대표 사진이 바뀌면 부드럽게 교체 */}
+            <div key={cover.id} className="absolute inset-0 animate-fade-in">
+              <PhotoImage src={cover.src} sizes="(max-width: 430px) 100vw, 430px" priority />
+            </div>
             <Chip className="absolute left-4 top-4">
               <Icon name="check" size={14} strokeWidth={2.5} />
               Cover
@@ -66,9 +69,9 @@ export function PhotosScreen() {
           <button
             type="button"
             onClick={onAdd}
-            className="flex aspect-square w-full flex-col items-center justify-center gap-3 rounded-[32px] border-[1.5px] border-dashed border-on-light/40 bg-white text-muted"
+            className="flex aspect-square w-full flex-col items-center justify-center gap-3 rounded-[32px] border-[1.5px] border-dashed border-on-dark/40 bg-surface text-muted transition active:scale-[0.99]"
           >
-            <span className="flex size-16 items-center justify-center rounded-full bg-canvas-soft text-on-light">
+            <span className="flex size-16 animate-float items-center justify-center rounded-full bg-primary text-on-light">
               <Icon name="plus" size={28} />
             </span>
             <span className="text-[15px] font-semibold">Add photos of your dish</span>

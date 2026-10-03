@@ -6,7 +6,7 @@ import { Icon } from "./Icon";
 /** 모바일 한 화면. 375 기준으로 그렸고 430까지 늘어납니다. */
 export function Screen({
   children,
-  bg = "bg-canvas",
+  bg = "bg-background",
   className = "",
 }: {
   children: ReactNode;
@@ -14,7 +14,7 @@ export function Screen({
   className?: string;
 }) {
   return (
-    <main className={`relative mx-auto flex min-h-dvh w-full max-w-[430px] flex-col ${bg} ${className}`}>
+    <main className={`relative mx-auto flex min-h-dvh w-full max-w-[430px] flex-col text-on-dark ${bg} ${className}`}>
       {children}
     </main>
   );
@@ -29,7 +29,7 @@ export function TopBar({
   right,
   title,
   sticky = true,
-  bg = "bg-canvas",
+  bg = "bg-background",
 }: {
   left?: ReactNode;
   right?: ReactNode;
@@ -46,7 +46,7 @@ export function TopBar({
         <div className="flex-1" />
         {right}
         {title && (
-          <h1 className="pointer-events-none absolute left-1/2 top-1/2 w-[219px] -translate-x-1/2 -translate-y-1/2 text-center font-display text-[20px] leading-[1.15] text-on-light">
+          <h1 className="pointer-events-none absolute left-1/2 top-1/2 w-[219px] -translate-x-1/2 -translate-y-1/2 text-center font-display text-[20px] leading-[1.15] text-on-dark">
             {title}
           </h1>
         )}
@@ -58,7 +58,7 @@ export function TopBar({
 /** 하단 고정 CTA 영역 (위로 갈수록 투명해지는 그라데이션) */
 export function StickyBottom({
   children,
-  fade = "from-canvas/0 via-canvas to-canvas",
+  fade = "from-background/0 via-background to-background",
   className = "",
 }: {
   children: ReactNode;
@@ -112,7 +112,7 @@ export function BottomSheet({
         aria-label="닫기"
         tabIndex={-1}
         onClick={onClose}
-        className="absolute inset-0 animate-fade-in bg-black/40"
+        className="absolute inset-0 animate-fade-in bg-black/60"
       />
       <div
         ref={sheetRef}
@@ -120,9 +120,9 @@ export function BottomSheet({
         aria-modal="true"
         aria-label={label}
         tabIndex={-1}
-        className="absolute inset-x-0 bottom-0 mx-auto flex w-full max-w-[430px] animate-sheet-up flex-col items-center gap-4 rounded-t-[32px] bg-white px-2 pt-3 pb-[calc(24px+env(safe-area-inset-bottom))] outline-none"
+        className="absolute inset-x-0 bottom-0 mx-auto flex w-full max-w-[430px] animate-sheet-up flex-col items-center gap-4 rounded-t-[32px] bg-surface px-2 pt-3 pb-[calc(24px+env(safe-area-inset-bottom))] outline-none"
       >
-        <div className="h-1 w-10 shrink-0 rounded-full bg-line" aria-hidden="true" />
+        <div className="h-1 w-10 shrink-0 rounded-full bg-white/20" aria-hidden="true" />
         {children}
       </div>
     </div>
@@ -156,7 +156,7 @@ export function Toast({
       <div
         role="status"
         aria-labelledby={id}
-        className="flex animate-toast-in items-start gap-2 rounded-[36px] bg-[#1c1c1c] py-5 pl-6 pr-5 text-[14px] leading-[1.4] text-white shadow-[0_12px_32px_rgba(0,0,0,0.18)]"
+        className="flex animate-toast-in items-start gap-2 rounded-[36px] bg-on-dark py-5 pl-6 pr-5 text-[14px] leading-[1.4] text-on-light shadow-[0_12px_32px_rgba(0,0,0,0.5)]"
       >
         <Icon name="alert" size={20} className="shrink-0 text-error" />
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
@@ -183,7 +183,7 @@ export function Tile({
   className?: string;
   as?: "section" | "div";
 }) {
-  return <Tag className={`flex w-full flex-col gap-1 overflow-hidden rounded-[32px] bg-white p-1 ${className}`}>{children}</Tag>;
+  return <Tag className={`flex w-full flex-col gap-1 overflow-hidden rounded-[32px] bg-surface p-1 ${className}`}>{children}</Tag>;
 }
 
 /** 업로드 3단계 진행 바 */
@@ -200,7 +200,7 @@ export function StepProgress({ step }: { step: 1 | 2 | 3 }) {
       {[1, 2, 3].map((n) => (
         <div
           key={n}
-          className={`h-1 flex-1 rounded-full transition-colors ${n <= step ? "bg-on-light" : "bg-white"}`}
+          className={`h-1 flex-1 rounded-full transition-colors ${n <= step ? "bg-on-dark" : "bg-white/15"}`}
         />
       ))}
     </div>
@@ -217,10 +217,10 @@ export function Chip({
   className?: string;
 }) {
   const tones = {
-    white: "bg-white text-on-light",
+    white: "bg-surface text-on-dark",
     yellow: "bg-content text-on-light",
-    soft: "bg-canvas-soft text-on-light",
-    black: "bg-background text-white",
+    soft: "bg-surface-2 text-on-dark",
+    black: "bg-on-dark text-on-light",
   };
   return (
     <span

@@ -21,7 +21,7 @@ export function PhotoCarousel({
 
   return (
     <div
-      className={`relative w-full overflow-hidden rounded-[32px] bg-white ${bordered ? "border border-black/5" : ""} ${
+      className={`relative w-full overflow-hidden rounded-[32px] bg-surface ${bordered ? "border border-white/5" : ""} ${
         height ? "" : "aspect-square"
       }`}
       style={height ? { height } : undefined}
@@ -58,7 +58,7 @@ export function PhotoCarousel({
         </div>
       )}
       {indicator === "count" && (
-        <span className="absolute left-4 top-4 rounded-full bg-white px-3 py-[7px] text-[13px] font-semibold leading-[1.3] tabular-nums">
+        <span className="absolute left-4 top-4 rounded-full bg-surface px-3 py-[7px] text-[13px] font-semibold leading-[1.3] tabular-nums">
           {index + 1} / {photos.length}
         </span>
       )}
