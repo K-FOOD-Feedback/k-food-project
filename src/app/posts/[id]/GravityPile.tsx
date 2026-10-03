@@ -26,6 +26,11 @@ const STEP_MS = 1000 / 60;
 // 이모지는 제한 없이 굴러갑니다.
 const MAX_TILT = 0.52;
 const PRESETTLE_STEPS = 60;
+// 댓글 전체 화면을 열 때 "와르르" 쏟아지는 연출: 최신 댓글 최대 이만큼을 1초 안에 떨어뜨립니다.
+// 그보다 오래된 댓글은 이미 쌓인 상태(그라데이션 아래쪽)로 시작합니다.
+const RAIN_MAX = 14;
+const RAIN_TOTAL_MS = 1000;
+const RAIN_GAP_MAX_MS = 90;
 // 댓글 사이 간격 (약 1mm). 물리 몸체를 보이는 말풍선보다 이만큼 크게 만듭니다.
 const GAP = 4;
 // 가운데 선호 정도: 높이가 비슷하면 가운데 쪽을 고르는 정도로만 (가운데에서 100px = 5px 차이).
@@ -67,8 +72,16 @@ class PileWorld {
   private frame = 0;
   private started = false;
   private nextDrop: DropHint | null = null;
+  /** 열 때 쏟아지기로 예약된 댓글 (아직 떨어지기 전) */
+  private pendingRain = new Set<string>();
+  private timers: number[] = [];
 
-  constructor(width: number, height: number, scroller: { box: HTMLElement; content: HTMLElement } | null) {
+  constructor(
+    width: number,
+    height: number,
+    scroller: { box: HTMLElement; content: HTMLElement } | null,
+    private rainOnOpen = false,
+  ) {
     this.width = width;
     this.height = height;
     this.scroller = scroller;
@@ -105,6 +118,7 @@ class PileWorld {
 
   destroy() {
     cancelAnimationFrame(this.frame);
+    this.timers.forEach(clearTimeout);
     Events.off(this.engine, "collisionStart");
     Engine.clear(this.engine);
     this.tracked.clear();
@@ -140,13 +154,16 @@ class PileWorld {
       Composite.remove(this.engine.world, body);
       this.tracked.delete(id);
     }
-    const fresh = comments.filter((c) => !this.tracked.has(c.id) && nodes.has(c.id));
+    const fresh = comments.filter((c) => !this.tracked.has(c.id) && !this.pendingRain.has(c.id) && nodes.has(c.id));
     if (fresh.length === 0) return;
 
     if (!this.started) {
       this.started = true;
-      // 처음 열 때는 기존 댓글을 오래된 순서대로 같은 규칙으로 떨어뜨려 미리 쌓아 둡니다.
-      for (const c of fresh) {
+      // 쏟아지는 연출이면 최신 댓글 몇 개는 남겨 두었다가 눈앞에서 떨어뜨립니다.
+      const rain = this.rainOnOpen ? fresh.slice(-RAIN_MAX) : [];
+      const settled = fresh.slice(0, fresh.length - rain.length);
+      // 나머지(처음 열 때 기본)는 오래된 순서대로 같은 규칙으로 떨어뜨려 미리 쌓아 둡니다.
+      for (const c of settled) {
         this.add(c, nodes.get(c.id)!);
         for (let i = 0; i < PRESETTLE_STEPS; i++) this.step();
       }
@@ -154,6 +171,18 @@ class PileWorld {
       for (const t of this.tracked.values()) t.landed = true;
       this.viewTop = this.targetTop();
       this.render(false);
+      // 오래된 것부터 차례로, 전체가 1초 안에 끝나도록 간격을 둡니다.
+      const gap = Math.min(RAIN_GAP_MAX_MS, RAIN_TOTAL_MS / Math.max(rain.length, 1));
+      rain.forEach((c, i) => {
+        this.pendingRain.add(c.id);
+        this.timers.push(
+          window.setTimeout(() => {
+            this.pendingRain.delete(c.id);
+            const el = nodes.get(c.id);
+            if (el && !this.tracked.has(c.id)) this.add(c, el, null, true);
+          }, i * gap),
+        );
+      });
       return;
     }
     for (const c of fresh) {
@@ -171,20 +200,27 @@ class PileWorld {
     this.nextDrop = hint;
   }
 
-  private add(comment: Comment, el: HTMLElement, hint: DropHint | null = null) {
+  private add(comment: Comment, el: HTMLElement, hint: DropHint | null = null, rain = false) {
     const w = el.offsetWidth;
     const h = el.offsetHeight;
     // 날아온 원이 있으면 그 자리에서, 없으면 더미가 가장 낮은 곳의 칸 맨 위 바로 위에서 떨어집니다.
     const x = hint ? Math.min(Math.max(hint.x, w / 2), this.width - w / 2) : this.pickDropX(w + GAP);
     // 스크롤된 칸이면 지금 보이는 맨 위 기준으로 떨어뜨립니다.
     const scrolled = this.scroller?.box.scrollTop ?? 0;
-    const y = hint ? this.viewTop + scrolled + hint.y : Math.min(this.viewTop, this.highest()) - h / 2 - 8;
+    // 쏟아지는 연출은 칸 맨 위 바로 위에서 (위로 줄줄이 쌓이지 않도록 다른 댓글 높이는 보지 않음)
+    const y = hint
+      ? this.viewTop + scrolled + hint.y
+      : rain
+        ? this.viewTop + scrolled - h / 2 - 8
+        : Math.min(this.viewTop, this.highest()) - h / 2 - 8;
     const body = comment.kind === "emoji" ? this.circleBody(x, y, w) : this.bubbleBody(el, x, y, w, h);
     // 기울이거나 옆으로 밀지 않고 곧게 떨어집니다 (부딪힌 뒤 기울고 구르는 건 물리에 맡김).
     // 회전 관성은 약간만 키워 빙글빙글 돌지는 않게.
     if (comment.kind === "text") Body.setInertia(body, body.inertia * 1.5);
     // 날아온 원이 내려오던 속도를 이어받아 멈칫 없이 계속 떨어집니다.
     if (hint) Body.setVelocity(body, { x: 0, y: hint.vy });
+    // 쏟아질 때는 처음부터 조금 빠르게 (1초 안에 시원하게 떨어지도록)
+    if (rain) Body.setVelocity(body, { x: 0, y: 6 });
     Composite.add(this.engine.world, body);
     this.tracked.set(comment.id, { body, el, w, h, ox: x - body.position.x, oy: y - body.position.y, landed: false });
     el.style.visibility = "visible";
@@ -243,21 +279,36 @@ class PileWorld {
     return top;
   }
 
+  /** x0~x1 폭 아래에서 쌓인(이미 닿은) 댓글의 가장 높은 윗면 (없으면 바닥) */
+  private landedSurface(x0: number, x1: number) {
+    let surface = 0;
+    for (const { body, landed } of this.tracked.values()) {
+      const b = body.bounds;
+      if (landed && b.max.x > x0 && b.min.x < x1) surface = Math.min(surface, b.min.y);
+    }
+    return surface;
+  }
+
   /** 더미가 가장 낮은 곳 (= 위쪽 여백이 가장 많은 곳)의 x좌표. 비슷하면 가운데에 가까운 쪽 */
   private pickDropX(w: number) {
     const min = w / 2;
     const max = Math.max(min, this.width - w / 2);
     const center = this.width / 2;
+    // 아직 떨어지는 중인 댓글은 지금 위치가 아니라 '떨어질 자리 위에 얹힌 모습'으로 계산합니다.
+    // (와르르 쏟아질 때 공중에 있는 댓글 때문에 한쪽으로만 몰리지 않도록)
+    const falling = [...this.tracked.values()]
+      .filter((t) => !t.landed)
+      .map(({ body }) => {
+        const b = body.bounds;
+        return { x0: b.min.x, x1: b.max.x, top: this.landedSurface(b.min.x, b.max.x) - (b.max.y - b.min.y) - GAP };
+      });
     let bestX = center;
     let bestScore = -Infinity;
     for (let x = min; x <= max; x += 4) {
       // 말풍선 가운데 부분 아래에서 가장 높이 솟은 댓글의 윗면 (없으면 바닥)
       const half = (w * PROBE) / 2;
-      let surface = 0;
-      for (const { body } of this.tracked.values()) {
-        const b = body.bounds;
-        if (b.max.x > x - half && b.min.x < x + half) surface = Math.min(surface, b.min.y);
-      }
+      let surface = this.landedSurface(x - half, x + half);
+      for (const f of falling) if (f.x1 > x - half && f.x0 < x + half) surface = Math.min(surface, f.top);
       const score = surface - CENTER_PULL * Math.abs(x - center);
       if (score > bestScore) {
         bestScore = score;
@@ -314,11 +365,14 @@ export function GravityPile({
   ref,
   className = "h-[286px]",
   scrollable = false,
+  rainOnOpen = false,
 }: {
   comments: Comment[];
   ref?: Ref<PileHandle>;
   className?: string;
   scrollable?: boolean;
+  /** 열 때 최신 댓글들이 위에서 와르르 쏟아지는 연출 (1초 이내) */
+  rainOnOpen?: boolean;
 }) {
   const zone = useRef<HTMLDivElement>(null);
   const content = useRef<HTMLDivElement>(null);
@@ -337,7 +391,12 @@ export function GravityPile({
 
   useLayoutEffect(() => {
     const box = zone.current!;
-    const pile = new PileWorld(box.clientWidth, box.clientHeight, scrollable ? { box, content: content.current! } : null);
+    const pile = new PileWorld(
+      box.clientWidth,
+      box.clientHeight,
+      scrollable ? { box, content: content.current! } : null,
+      rainOnOpen,
+    );
     world.current = pile;
     pile.start();
     const observer = new ResizeObserver(() => pile.resize(box.clientWidth, box.clientHeight));
@@ -347,7 +406,7 @@ export function GravityPile({
       pile.destroy();
       world.current = null;
     };
-  }, [scrollable]);
+  }, [scrollable, rainOnOpen]);
 
   useLayoutEffect(() => {
     world.current?.sync(comments, nodes.current);
