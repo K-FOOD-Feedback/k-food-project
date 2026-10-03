@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
-import { ASK_LABELS, participantsOf, type HomePost as Post } from "./mockPosts";
+import { QUESTION_LABELS, participantsOf, type HomePost as Post } from "./mockPosts";
 
 // 카드 크기·위치는 Figma(node 259:7795) 기준이고 가로 가운데 정렬입니다.
 // 뒤에 깔린 카드들은 앞 카드를 회전·축소한 것이라, 모든 자리를 앞 카드의 transform으로 표현합니다.
@@ -269,7 +269,7 @@ function CardContent({ post, voted }: { post: Post; voted: boolean }) {
             </span>
           )}
           <span className="max-w-full min-w-0 truncate rounded-full bg-black/8 px-2.5 py-[5px] text-[12px] leading-[1.2] font-semibold">
-            {ASK_LABELS[post.ask]}
+            {QUESTION_LABELS[post.question.id]}
           </span>
         </span>
         <span className="line-clamp-2 w-full text-[23px] leading-[1.18] font-extrabold tracking-[-0.69px] break-keep text-balance">
