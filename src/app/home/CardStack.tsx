@@ -230,7 +230,7 @@ export function CardStack({
 
 /** 카드 한 장 (Figma: KF/Feed Card) */
 function CardContent({ post, voted }: { post: Post; voted: boolean }) {
-  const photo = post.photos[0];
+  const photo = post.cardPhoto;
   const mask = 'url("/images/card-mask.svg")';
   return (
     <>

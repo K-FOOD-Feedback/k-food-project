@@ -46,3 +46,26 @@ export function useVotedIds(): Set<string> {
   const key = useSyncExternalStore(subscribe, readVotedKey, () => "");
   return new Set(key ? key.split(",") : []);
 }
+
+export function clearVote(postId: string) {
+  try {
+    localStorage.removeItem(PREFIX + postId);
+  } catch {
+    // 저장소를 못 쓰는 환경에서는 할 일이 없습니다.
+  }
+  window.dispatchEvent(new Event(CHANGE));
+}
+
+function readVote(postId: string) {
+  try {
+    return localStorage.getItem(PREFIX + postId);
+  } catch {
+    return null;
+  }
+}
+
+/** 이 게시글에서 내가 고른 선택지 번호 (투표 전이면 null) */
+export function useMyVote(postId: string): number | null {
+  const raw = useSyncExternalStore(subscribe, () => readVote(postId), () => null);
+  return raw === null ? null : Number(raw);
+}

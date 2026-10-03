@@ -23,6 +23,7 @@ export const QUESTION_LABELS: Record<QuestionId, string> = {
 
 export type HomePost = Omit<Post, "author" | "question"> & {
   color: string; // 메인 카드 배경색
+  cardPhoto: string; // 메인 카드에 쓰는 사진 (상세는 photos 전체)
   question: Post["question"] & { id: QuestionId };
   author: Post["author"] & { flag: string };
 };
@@ -30,19 +31,24 @@ export type HomePost = Omit<Post, "author" | "question"> & {
 /** 투표 참여 인원 */
 export const participantsOf = (post: HomePost) => post.votes.reduce((sum, n) => sum + n, 0);
 
+export function getHomePost(id: string) {
+  return HOME_POSTS.find((p) => p.id === id);
+}
+
 export const HOME_POSTS: HomePost[] = [
   {
     id: "1",
     title: "제가 만든 불닭 레시피 어떤가요?",
-    body: "안녕하세요, 저는 캐나다에서 온 샘이에요 :) 불닭을 처음 만들어봤어요. 위에 치즈랑 소시지를 올려봤어요. 한국에서 먹는 불닭이랑 비슷한가요?",
-    photos: ["/images/card-buldak.png"],
+    body: "안녕하세요, 저는 캐나다에서 온 샘이에요 :)\n불닭을 처음 만들어봤어요.\n위에 치즈랑 소시지를 올려봤어요.\n한국에서 먹는 불닭이랑 비슷한가요?",
+    photos: ["/images/detail-buldak.png", "/images/card-buldak.png", "/images/detail-buldak.png"],
+    cardPhoto: "/images/card-buldak.png",
     color: "#fae276",
     author: { name: "Sam", country: "캐나다", flag: "🇨🇦" },
     createdAt: "2026-09-28T09:00:00Z",
     question: {
       id: "korean",
       text: "한국에서 먹는 불닭이랑 비슷한가요?",
-      options: ["완전 한국식이에요!", "한국식에 살짝 변형", "한국식은 아니에요"],
+      options: ["완전\n한국식", "비슷해요", "한국식\n아님"],
     },
     votes: [120, 98, 44],
     commentCount: 18,
@@ -50,15 +56,16 @@ export const HOME_POSTS: HomePost[] = [
   {
     id: "2",
     title: "치즈 듬뿍 소시지 불닭, 먹고 싶나요?",
-    body: "안녕하세요, 프랑스에서 온 엠마예요! 치즈를 듬뿍 넣고 소시지에 칼집을 내서 넣었어요. 한국 분들도 이렇게 먹나요?",
-    photos: ["/images/detail-buldak.png"],
+    body: "안녕하세요, 프랑스에서 온 엠마예요!\n치즈를 듬뿍 넣고 소시지에 칼집을 내서 넣었어요.\n한국 분들도 이렇게 먹나요?",
+    photos: ["/images/detail-buldak.png", "/images/card-buldak.png"],
+    cardPhoto: "/images/detail-buldak.png",
     color: "#ffc6ff",
     author: { name: "Emma", country: "프랑스", flag: "🇫🇷" },
     createdAt: "2026-09-27T12:00:00Z",
     question: {
       id: "eat",
       text: "이 불닭, 먹고 싶나요?",
-      options: ["네, 주문할래요!", "조금 바꾸면 먹을래요", "아니요, 안 먹을래요"],
+      options: ["주문할래요", "바꾸면\n먹을래요", "안\n먹을래요"],
     },
     votes: [80, 45, 23],
     commentCount: 9,
@@ -66,15 +73,16 @@ export const HOME_POSTS: HomePost[] = [
   {
     id: "3",
     title: "까르보 불닭, 뭘 고치면 될까요?",
-    body: "브라질에서 온 루카스예요. 우유랑 달걀 노른자를 넣어서 까르보 스타일로 만들었어요.",
+    body: "브라질에서 온 루카스예요.\n우유랑 달걀 노른자를 넣어서 까르보 스타일로 만들었어요.",
     photos: ["/images/card-buldak.png"],
+    cardPhoto: "/images/card-buldak.png",
     color: "#c8b5ff",
     author: { name: "Lucas", country: "브라질", flag: "🇧🇷" },
     createdAt: "2026-09-26T08:00:00Z",
     question: {
       id: "fix",
       text: "뭘 고치면 될까요?",
-      options: ["치즈를 줄여요", "더 맵게 해요", "이대로 완벽해요"],
+      options: ["치즈\n줄이기", "더\n맵게", "이대로\n완벽"],
     },
     votes: [20, 55, 22],
     commentCount: 6,
@@ -82,15 +90,16 @@ export const HOME_POSTS: HomePost[] = [
   {
     id: "4",
     title: "아침으로 불닭, 한국에서도 먹나요?",
-    body: "독일에서 온 미아예요. 저는 아침마다 불닭을 먹어요. 한국에서도 그런가요?",
+    body: "독일에서 온 미아예요.\n저는 아침마다 불닭을 먹어요.\n한국에서도 그런가요?",
     photos: ["/images/detail-buldak.png"],
+    cardPhoto: "/images/detail-buldak.png",
     color: "#ccf54b",
     author: { name: "Mia", country: "독일", flag: "🇩🇪" },
     createdAt: "2026-09-25T07:00:00Z",
     question: {
       id: "korean",
       text: "한국에서도 아침으로 불닭을 먹나요?",
-      options: ["완전 한국식이에요!", "한국식에 살짝 변형", "한국식은 아니에요"],
+      options: ["완전\n한국식", "비슷해요", "한국식\n아님"],
     },
     votes: [5, 11, 38],
     commentCount: 4,
@@ -98,15 +107,16 @@ export const HOME_POSTS: HomePost[] = [
   {
     id: "5",
     title: "떡 넣은 불닭 어때요?",
-    body: "일본에서 온 켄지예요. 떡볶이 떡을 넣어서 쫄깃하게 만들었어요.",
-    photos: ["/images/card-buldak.png"],
+    body: "일본에서 온 켄지예요.\n떡볶이 떡을 넣어서 쫄깃하게 만들었어요.",
+    photos: ["/images/card-buldak.png", "/images/detail-buldak.png"],
+    cardPhoto: "/images/card-buldak.png",
     color: "#9fe7ff",
     author: { name: "Kenji", country: "일본", flag: "🇯🇵" },
     createdAt: "2026-09-24T10:00:00Z",
     question: {
       id: "eat",
       text: "떡 넣은 불닭, 먹고 싶나요?",
-      options: ["네, 주문할래요!", "조금 바꾸면 먹을래요", "아니요, 안 먹을래요"],
+      options: ["주문할래요", "바꾸면\n먹을래요", "안\n먹을래요"],
     },
     votes: [17, 10, 4],
     commentCount: 2,
