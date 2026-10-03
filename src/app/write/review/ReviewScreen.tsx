@@ -18,6 +18,7 @@ export function ReviewScreen() {
     useFlow();
   const question = getQuestion(draft.questionId);
   const [limitToast, setLimitToast] = useState(false);
+  const [posting, setPosting] = useState(false);
   const closeToast = useCallback(() => setLimitToast(false), []);
   const picker = usePhotoPicker((files) => {
     if (addPhotos(files).overflow) setLimitToast(true);
@@ -145,12 +146,17 @@ export function ReviewScreen() {
 
       <StickyBottom>
         <ArrowCta
-          caption="Koreans will see it in Korean"
-          title="Post"
-          disabled={!canPost}
+          caption={posting ? "Translating into Korean…" : "Koreans will see it in Korean"}
+          title={posting ? "Posting…" : "Post"}
+          disabled={!canPost || posting}
+          className={posting ? "animate-pulse" : ""}
           onClick={() => {
-            publish();
-            router.push("/write/done");
+            // 바로 넘어가지 않고 "올리는 중" 상태를 잠깐 보여 줍니다
+            setPosting(true);
+            window.setTimeout(() => {
+              publish();
+              router.push("/write/done");
+            }, 900);
           }}
         />
       </StickyBottom>

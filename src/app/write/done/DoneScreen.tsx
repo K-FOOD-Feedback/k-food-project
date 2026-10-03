@@ -16,6 +16,7 @@ export function DoneScreen() {
       <TopBar right={<IconButton icon="x" label="Close" href="/home" />} />
 
       <div className="relative mx-auto h-[364px] w-full max-w-[375px]">
+        <Confetti />
         {/* 카드 툭 떨어짐 → 도장 쾅 → 체크 뿅 */}
         <div className="absolute left-[46px] top-[20px] w-[235px] rotate-6 animate-drop">
           <FeedCard
@@ -55,5 +56,41 @@ export function DoneScreen() {
         </div>
       </StickyBottom>
     </Screen>
+  );
+}
+
+// 게시 축하 색종이 — 도장이 찍히는 순간 사방으로 터짐
+const CONFETTI_COLORS = ["bg-primary", "bg-content", "bg-secondary", "bg-lilac", "bg-on-dark"];
+const PIECES = Array.from({ length: 22 }, (_, i) => {
+  const angle = (i / 22) * Math.PI * 2 + (i % 3) * 0.3;
+  const dist = 120 + ((i * 37) % 90);
+  return {
+    x: Math.round(Math.cos(angle) * dist),
+    y: Math.round(Math.sin(angle) * dist * 0.8 + 60),
+    r: ((i * 83) % 360) - 180 + 360,
+    color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+    shape: i % 3 === 0 ? "size-2.5 rounded-full" : i % 3 === 1 ? "h-3 w-1.5 rounded-sm" : "size-2 rotate-45",
+    delay: 520 + (i % 4) * 30,
+  };
+});
+
+function Confetti() {
+  return (
+    <div aria-hidden="true" className="pointer-events-none absolute left-[250px] top-[60px] z-20">
+      {PIECES.map((p, i) => (
+        <span
+          key={i}
+          className={`absolute animate-confetti ${p.color} ${p.shape}`}
+          style={
+            {
+              "--x": `${p.x}px`,
+              "--y": `${p.y}px`,
+              "--r": `${p.r}deg`,
+              animationDelay: `${p.delay}ms`,
+            } as React.CSSProperties
+          }
+        />
+      ))}
+    </div>
   );
 }

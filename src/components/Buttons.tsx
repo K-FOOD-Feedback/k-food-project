@@ -52,7 +52,7 @@ export function ArrowCta({
 }) {
   return (
     <Clickable
-      className={`flex w-full items-center gap-3 overflow-hidden rounded-full bg-primary py-1 pl-7 pr-1 text-left text-on-light transition active:scale-[0.99] disabled:opacity-40 ${className}`}
+      className={`flex w-full items-center gap-3 overflow-hidden rounded-full bg-primary py-1 pl-7 pr-1 text-left text-on-light transition active:scale-[0.98] disabled:cursor-not-allowed [&:disabled:not(.animate-pulse)]:opacity-40 ${className}`}
       {...props}
     >
       <span className="flex min-w-0 flex-1 flex-col gap-0.5 leading-[1.3]">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowCta, IconButton } from "@/components/Buttons";
 import { Icon } from "@/components/Icon";
 import { Chip, Screen, StepProgress, StickyBottom, TopBar } from "@/components/Layout";
@@ -9,89 +9,116 @@ import { QUESTIONS } from "@/lib/write-data";
 import { useFlow } from "@/lib/write-store";
 
 const N = QUESTIONS.length;
+const STEP_PX = 90; // 손가락을 이만큼 움직이면 한 칸 이동
 
-// Figma 05-W 슬롯 위치 (휠 높이 380 기준). offset = 가운데로부터의 거리
-const SLOTS: Record<number, CSSProperties & { level: 0 | 1 | 2 }> = {
-  [-2]: { level: 2, top: 12, height: 44, left: 36, right: 36, opacity: 0.6 },
-  [-1]: { level: 1, top: 60, height: 60, left: 22, right: 22, opacity: 1 },
-  0: { level: 0, top: 124, height: 112, left: 8, right: 8, opacity: 1 },
-  1: { level: 1, top: 240, height: 60, left: 22, right: 22, opacity: 1 },
-  2: { level: 2, top: 304, height: 44, left: 36, right: 36, opacity: 0.6 },
+/*
+  Figma 05-W 슬롯 (휠 높이 380 기준). index = 가운데로부터의 거리 + 3
+  -3, +3은 화면 밖으로 사라지는 자리 (드래그 중 부드럽게 들어오고 나가도록)
+*/
+const KEYS = {
+  top: [-36, 12, 60, 124, 240, 304, 352],
+  height: [44, 44, 60, 112, 60, 44, 44],
+  inset: [50, 36, 22, 8, 22, 36, 50],
+  opacity: [0, 0.6, 1, 1, 1, 0.6, 0],
 };
 
-/** 가운데 기준 순환 거리 (-2 ~ 2) */
-function offsetOf(i: number, selected: number) {
-  let d = (i - selected) % N;
-  if (d > N / 2) d -= N;
-  if (d < -N / 2) d += N;
+function lerpKey(arr: number[], off: number) {
+  const x = Math.min(3, Math.max(-3, off)) + 3;
+  const i = Math.min(5, Math.floor(x));
+  const t = x - i;
+  return arr[i] + (arr[i + 1] - arr[i]) * t;
+}
+
+/** 가운데 기준 순환 거리 (-2.5 ~ 2.5, 소수 가능) */
+function offsetOf(i: number, pos: number) {
+  let d = (((i - pos) % N) + N) % N;
+  if (d >= N / 2) d -= N;
   return d;
 }
+
+const mod = (n: number) => ((Math.round(n) % N) + N) % N;
+
+type Wheel = { pos: number; prev: number; dragging: boolean };
 
 export function QuestionScreen() {
   const router = useRouter();
   const { draft, updateDraft, saveDraftForLater } = useFlow();
-  const selected = Math.max(0, QUESTIONS.findIndex((q) => q.id === draft.questionId));
+  const initial = Math.max(0, QUESTIONS.findIndex((q) => q.id === draft.questionId));
 
-  // 마지막 이동 칸 수. 한 바퀴 넘어가는 항목은 반대편으로 날아가지 않도록 애니메이션 없이 옮깁니다.
-  const [lastDelta, setLastDelta] = useState(0);
-  const offsets = QUESTIONS.map((_, i) => offsetOf(i, selected));
-  const jumps = offsets.map((o, i) => Math.abs(o - offsetOf(i, selected - lastDelta)) > 2);
+  // pos는 연속값(드래그 중 2.37 같은 값). 놓으면 가장 가까운 정수로 착 붙음
+  const [wheel, setWheel] = useState<Wheel>({ pos: initial, prev: initial, dragging: false });
+  const selected = mod(wheel.pos);
 
-  const move = useCallback(
-    (from: number, delta: number) => {
-      if (!delta) return;
-      setLastDelta(delta);
-      updateDraft({ questionId: QUESTIONS[(((from + delta) % N) + N) % N].id });
+  const snapTo = useCallback(
+    (target: number) => {
+      setWheel((w) => ({ pos: target, prev: w.pos, dragging: false }));
+      updateDraft({ questionId: QUESTIONS[mod(target)].id });
     },
     [updateDraft],
   );
 
-  // 휠 스크롤 · 스와이프 (preventDefault를 위해 passive: false로 직접 등록)
-  const wheelRef = useRef<HTMLDivElement>(null);
-  const selectedRef = useRef(selected);
+  // 드래그 (마우스·터치 공통)
+  const drag = useRef<{ y: number; pos: number; lastY: number; lastT: number; v: number; moved: boolean } | null>(
+    null,
+  );
+  const posRef = useRef(wheel.pos);
   useEffect(() => {
-    selectedRef.current = selected;
-  }, [selected]);
+    posRef.current = wheel.pos;
+  }, [wheel.pos]);
 
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    drag.current = { y: e.clientY, pos: wheel.pos, lastY: e.clientY, lastT: e.timeStamp, v: 0, moved: false };
+  };
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const d = drag.current;
+    if (!d) return;
+    const dy = e.clientY - d.y;
+    if (Math.abs(dy) > 6) d.moved = true;
+    const dt = Math.max(1, e.timeStamp - d.lastT);
+    d.v = (e.clientY - d.lastY) / dt; // px/ms
+    d.lastY = e.clientY;
+    d.lastT = e.timeStamp;
+    if (d.moved) setWheel((w) => ({ pos: d.pos - dy / STEP_PX, prev: w.pos, dragging: true }));
+  };
+  const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    const d = drag.current;
+    drag.current = null;
+    if (!d) return;
+    if (!d.moved) {
+      // 탭: 누른 항목을 가운데로
+      const hit = (e.target as HTMLElement).closest<HTMLElement>("[data-qi]");
+      if (hit) {
+        const off = offsetOf(Number(hit.dataset.qi), wheel.pos);
+        snapTo(Math.round(wheel.pos + off));
+      }
+      return;
+    }
+    // 던진 속도만큼 조금 더 굴러간 뒤 가장 가까운 칸에 멈춤
+    const fling = Math.max(-2, Math.min(2, (-d.v * 160) / STEP_PX));
+    snapTo(Math.round(wheel.pos + fling));
+  };
+
+  // 마우스 휠 / 트랙패드
+  const wheelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = wheelRef.current;
     if (!el) return;
-    let acc = 0;
-    let lock = 0;
+    let timer = 0;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      const now = Date.now();
-      if (now < lock) return;
-      acc += e.deltaY;
-      if (Math.abs(acc) > 30) {
-        move(selectedRef.current, Math.sign(acc));
-        acc = 0;
-        lock = now + 180;
-      }
+      const next = posRef.current + e.deltaY / (STEP_PX * 1.6);
+      posRef.current = next;
+      setWheel((w) => ({ pos: next, prev: w.pos, dragging: true }));
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => snapTo(Math.round(posRef.current)), 140);
     };
-    let startY: number | null = null;
-    const onTouchStart = (e: TouchEvent) => (startY = e.touches[0].clientY);
-    const onTouchMove = (e: TouchEvent) => {
-      if (startY === null) return;
-      e.preventDefault();
-      const dy = e.touches[0].clientY - startY;
-      if (Math.abs(dy) > 40) {
-        move(selectedRef.current, -Math.sign(dy));
-        startY = e.touches[0].clientY;
-      }
-    };
-    const onTouchEnd = () => (startY = null);
     el.addEventListener("wheel", onWheel, { passive: false });
-    el.addEventListener("touchstart", onTouchStart, { passive: true });
-    el.addEventListener("touchmove", onTouchMove, { passive: false });
-    el.addEventListener("touchend", onTouchEnd);
     return () => {
       el.removeEventListener("wheel", onWheel);
-      el.removeEventListener("touchstart", onTouchStart);
-      el.removeEventListener("touchmove", onTouchMove);
-      el.removeEventListener("touchend", onTouchEnd);
+      window.clearTimeout(timer);
     };
-  }, [move]);
+  }, [snapTo]);
 
   return (
     <Screen className="pb-[140px]">
@@ -118,7 +145,7 @@ export function QuestionScreen() {
         <h2 className="font-display text-[28px] leading-[1.1] [text-wrap:balance]">
           What should Koreans tell you?
         </h2>
-        <p className="text-[15px] leading-[1.4] text-muted">Scroll or tap to pick one.</p>
+        <p className="text-[15px] leading-[1.4] text-muted">Drag, scroll or tap to pick one.</p>
       </div>
 
       <div
@@ -128,46 +155,57 @@ export function QuestionScreen() {
         aria-activedescendant={`q-${QUESTIONS[selected].id}`}
         tabIndex={0}
         onKeyDown={(e) => {
-          if (e.key === "ArrowDown") {
+          if (e.key === "ArrowDown" || e.key === "ArrowUp") {
             e.preventDefault();
-            move(selected, 1);
-          }
-          if (e.key === "ArrowUp") {
-            e.preventDefault();
-            move(selected, -1);
+            snapTo(Math.round(wheel.pos) + (e.key === "ArrowDown" ? 1 : -1));
           }
         }}
-        className="relative mt-4 h-[380px] w-full touch-none select-none outline-none [perspective:800px]"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        className="relative mt-4 h-[380px] w-full cursor-grab touch-none select-none overflow-hidden outline-none active:cursor-grabbing [perspective:800px]"
       >
         {QUESTIONS.map((q, i) => {
-          const off = offsets[i];
-          const { level, ...slot } = SLOTS[off];
+          const off = offsetOf(i, wheel.pos);
+          const prevOff = offsetOf(i, wheel.prev);
+          const wrapped = Math.abs(off - prevOff) > N / 2; // 위↔아래로 넘어가는 순간은 순간이동
+          const dist = Math.abs(off);
+          const level = dist < 0.5 ? 0 : dist < 1.5 ? 1 : 2;
           const center = level === 0;
+          const inset = lerpKey(KEYS.inset, off);
           return (
             <div
               key={q.id}
               id={`q-${q.id}`}
+              data-qi={i}
               role="option"
-              aria-selected={center}
-              onClick={() => move(selected, off)}
+              aria-selected={i === selected}
               style={{
-                ...slot,
+                top: lerpKey(KEYS.top, off),
+                height: lerpKey(KEYS.height, off),
+                left: inset,
+                right: inset,
+                opacity: lerpKey(KEYS.opacity, off),
                 transform: `rotateX(${off * -8}deg)`,
-                transition: jumps[i] ? "none" : "all 320ms cubic-bezier(0.2, 0.8, 0.2, 1)",
-                zIndex: 10 - Math.abs(off),
+                zIndex: 10 - Math.round(dist),
+                transition:
+                  wrapped || wheel.dragging
+                    ? "background-color 150ms, border-color 150ms"
+                    : "all 360ms cubic-bezier(0.2, 0.9, 0.25, 1.15)",
               }}
-              className={`absolute flex cursor-pointer items-center overflow-hidden ${
+              className={`absolute flex items-center overflow-hidden border-2 ${
                 center
-                  ? "gap-4 rounded-[32px] border-2 border-on-dark bg-surface px-5 shadow-[0_12px_32px_rgba(0,0,0,0.12)]"
+                  ? "gap-4 rounded-[32px] border-on-dark bg-surface px-5 shadow-[0_12px_32px_rgba(0,0,0,0.4)]"
                   : level === 1
-                    ? "gap-3 rounded-[24px] bg-surface/80 px-3.5"
-                    : "gap-2.5 rounded-[18px] bg-surface/60 px-2.5"
+                    ? "gap-3 rounded-[24px] border-transparent bg-surface/80 px-3.5"
+                    : "gap-2.5 rounded-[18px] border-transparent bg-surface/60 px-2.5"
               }`}
             >
               <span
                 key={center ? `${q.id}-center` : q.id}
-                className={`flex shrink-0 items-center justify-center rounded-full transition-all ${center ? "animate-pop" : ""} ${
-                  center ? "size-14 bg-content text-on-light" : level === 1 ? "size-9 bg-surface-2" : "size-7 bg-surface-2"
+                className={`flex shrink-0 items-center justify-center rounded-full ${
+                  center ? "size-14 animate-pop bg-content text-on-light" : level === 1 ? "size-9 bg-surface-2" : "size-7 bg-surface-2"
                 }`}
               >
                 <Icon name={q.icon} size={center ? 24 : level === 1 ? 16 : 13} />
@@ -180,7 +218,7 @@ export function QuestionScreen() {
                 >
                   {q.label}
                 </span>
-                {center && <span className="text-[13px] leading-[1.4] text-muted">{q.hint}</span>}
+                {center && <span className="truncate text-[13px] leading-[1.4] text-muted">{q.hint}</span>}
               </span>
             </div>
           );
