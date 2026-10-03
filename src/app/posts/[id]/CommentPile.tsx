@@ -130,7 +130,7 @@ export function CommentPile({
         </div>
 
         <div ref={zone} className={full ? "flex min-h-0 flex-1 flex-col" : ""}>
-          <GravityPile ref={pile} comments={comments} {...(full && { className: "min-h-0 flex-1", scrollable: true })} />
+          <GravityPile ref={pile} comments={comments} {...(full && { className: "min-h-0 flex-1", scrollable: true, rainOnOpen: true })} />
         </div>
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[92px] bg-linear-to-b from-[#292929]/0 to-[#292929]" />
       </section>
