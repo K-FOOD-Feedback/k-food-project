@@ -256,7 +256,7 @@ function CardContent({ post, voted }: { post: Post; voted: boolean }) {
       )}
 
       {/* 참여 인원 스티커 */}
-      <span className="absolute top-[14px] right-[14px] flex size-[68px] rotate-12 flex-col items-center justify-center gap-0.5 rounded-full bg-bg text-white shadow-[0_4px_12px_rgba(0,0,0,0.18)]">
+      <span className="absolute top-[14px] right-[14px] flex size-[68px] rotate-12 flex-col items-center justify-center gap-0.5 rounded-full bg-background text-white shadow-[0_4px_12px_rgba(0,0,0,0.18)]">
         <span className="text-[20px] leading-none font-extrabold tracking-[-0.4px]">{participantsOf(post)}</span>
         <span className="text-[11px] leading-none font-semibold">명 참여</span>
       </span>
@@ -264,7 +264,7 @@ function CardContent({ post, voted }: { post: Post; voted: boolean }) {
       <span className="absolute right-5 bottom-5 left-5 flex flex-col items-start gap-2 text-black">
         <span className="flex max-w-full gap-1">
           {voted && (
-            <span className="shrink-0 rounded-full bg-bg px-2.5 py-[5px] text-[12px] leading-[1.2] font-semibold whitespace-nowrap text-white">
+            <span className="shrink-0 rounded-full bg-background px-2.5 py-[5px] text-[12px] leading-[1.2] font-semibold whitespace-nowrap text-white">
               ✓ 투표 완료
             </span>
           )}

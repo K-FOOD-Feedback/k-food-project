@@ -19,7 +19,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 ## 파트와 담당 (URL = 폴더)
 | 파트 | 주소 | 담당 |
 | --- | --- | --- |
-| 1. 랜딩 + 메인 카드 | `/`, `/home` | 지현 |
+| 1. 랜딩 | `/` | 송희 |
+| 1. 메인 카드 | `/home` | 지현 |
 | 2·3. 상세 + 투표 | `/posts/[id]` | 지현 |
 | 4. 댓글 | `/posts/[id]/comments` | 지현 |
 | 5. 수정 (+ 삭제) | `/posts/[id]/edit` | 송희 |
@@ -38,7 +39,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - 한 화면에서만 쓰는 부품은 그 화면 폴더 안에 둬도 됩니다.
 
 ## 작업 방식
-- main에서 직접 작업하지 않습니다. `feat/파트-이름` 브랜치 → PR → 상대 리뷰 → 합치기.
-- 화면 하나가 끝날 때마다 작게 PR을 올립니다.
+- 작업은 `feat/파트-이름` 브랜치에서 합니다.
+- **내 담당 화면만 바꾼 경우**: 검사 통과 후 PR 없이 main에 바로 합쳐서 올려도 됩니다. 올린 뒤 상대에게 알립니다.
+- **같이 쓰는 것을 바꾼 경우** (`src/components/`, `src/lib/`, `globals.css`, `layout.tsx`, `AGENTS.md`, `package.json`): 반드시 PR → 상대 확인 → 합치기.
+- 작업 시작 전에 항상 `git pull`로 main 최신 내용을 받아 옵니다.
 - 커밋 전 `npm run lint`, `npm run typecheck`, `npm run build`를 모두 통과시킵니다.
 - 비밀번호·API 키는 코드에 쓰지 않고 `.env.local`에 둡니다.

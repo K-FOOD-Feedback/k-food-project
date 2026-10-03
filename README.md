@@ -157,9 +157,17 @@ k-food-project/
    git commit -m "메인 화면 문구 수정"
    git push -u origin feat/main-screen
    ```
-4. GitHub에서 **Pull Request** 를 만들고, 상대방이 확인한 뒤 합칩니다.
+4. main에 합칩니다. 무엇을 바꿨는지에 따라 방법이 다릅니다.
+   - **내 담당 화면만 바꿨다면** → PR 없이 바로 합쳐도 됩니다. 올린 뒤 상대에게 알려 주세요.
+     ```bash
+     git switch main
+     git pull
+     git merge feat/main-screen
+     git push
+     ```
+   - **같이 쓰는 것**(공통 부품 `src/components/`, 데이터 `src/lib/`, 색·글꼴 `globals.css`, `layout.tsx`, `AGENTS.md`, `package.json`)**을 바꿨다면** → GitHub에서 **Pull Request** 를 만들고, 상대방이 확인한 뒤 합칩니다.
 
-> `main` 브랜치에서 직접 작업하지 마세요. 두 사람이 같은 파일을 동시에 고치면 충돌이 납니다.
+> main은 Vercel에 자동 배포됩니다. 합치기 전에 검사 3단계를 꼭 통과시키세요.
 
 ---
 

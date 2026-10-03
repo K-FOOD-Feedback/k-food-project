@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { CardStack } from "@/components/CardStack";
-import { MainHeader } from "@/components/HeaderBar";
+import { CardStack } from "./CardStack";
+import { MainHeader } from "./MainHeader";
 import { MOCK_POSTS } from "@/lib/posts";
 import { useVotedIds } from "@/lib/votes";
 
@@ -25,7 +25,7 @@ export function HomeScreen() {
   };
 
   return (
-    <main className="min-h-dvh w-full bg-bg text-white">
+    <main className="min-h-dvh w-full bg-background text-white">
       <div className="relative mx-auto w-full max-w-[430px] overflow-x-clip pb-[calc(160px+env(safe-area-inset-bottom))]">
         <MainHeader />
         <CardStack
@@ -49,7 +49,7 @@ export function HomeScreen() {
       <Link
         href={`/posts/${current.id}${voted ? "" : "#vote"}`}
         className={`fixed bottom-[calc(60px+env(safe-area-inset-bottom))] left-1/2 z-10 flex h-[90px] w-[259px] -translate-x-1/2 items-center justify-center rounded-full text-[20px] font-extrabold tracking-[-0.4px] whitespace-nowrap transition-transform active:scale-[0.97] ${
-          voted ? "bg-white text-bg" : "bg-pink text-white drop-shadow-[0_10px_12px_rgba(255,135,196,0.45)]"
+          voted ? "bg-white text-background" : "bg-primary text-white drop-shadow-[0_10px_12px_rgba(255,135,196,0.45)]"
         }`}
       >
         {voted ? "투표 결과 보기" : "투표하러 가기"}

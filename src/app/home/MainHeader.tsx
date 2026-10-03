@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 const circle =
-  "pointer-events-auto flex size-16 shrink-0 items-center justify-center rounded-full bg-glass";
+  "pointer-events-auto flex size-16 shrink-0 items-center justify-center rounded-full bg-white/8";
 
 /** 메인 상단의 유리 원형 버튼 (Figma: KF/Header Button) */
 export function MainHeader() {
