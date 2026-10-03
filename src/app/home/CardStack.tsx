@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
-import { QUESTION_LABELS, participantsOf, type HomePost as Post } from "./mockPosts";
+import { QUESTION_LABELS, QUESTION_LABELS_EN, participantsOf, type HomePost as Post } from "./mockPosts";
+
+/** ko = 한국인 메인(/home), en = 외국인 메인(/home/en) */
+export type Lang = "ko" | "en";
 
 // 카드 크기·위치는 Figma(node 259:7795) 기준이고 가로 가운데 정렬입니다.
 // 뒤에 깔린 카드들은 앞 카드를 회전·축소한 것이라, 모든 자리를 앞 카드의 transform으로 표현합니다.
@@ -51,12 +54,14 @@ function placeOf(rel: number, n: number): Place {
 const toTransform = (p: Pose) => `translate(${p.x}px, ${p.y}px) rotate(${p.rotate}deg) scale(${p.scale})`;
 
 export function CardStack({
+  lang = "ko",
   posts,
   index,
   votedIds,
   onIndexChange,
   onOpen,
 }: {
+  lang?: Lang;
   posts: Post[];
   index: number;
   /** 내가 이미 투표한 게시글 */
@@ -188,7 +193,7 @@ export function CardStack({
       onKeyDown={onKeyDown}
       role="region"
       aria-roledescription="carousel"
-      aria-label="K-food 콘텐츠"
+      aria-label={lang === "en" ? "K-food posts" : "K-food 콘텐츠"}
     >
       {posts.map((post, i) => {
         const rel = relOf(i);
@@ -211,12 +216,12 @@ export function CardStack({
             }}
             tabIndex={isFront ? 0 : -1}
             aria-hidden={!isFront}
-            aria-label={`${post.title} (${i + 1}/${n})`}
+            aria-label={`${lang === "en" ? post.en.title : post.title} (${i + 1}/${n})`}
             onClick={() => {
               if (isFront && !moved.current) onOpen(post);
             }}
           >
-            <CardContent post={post} voted={votedIds.has(post.id)} />
+            <CardContent lang={lang} post={post} voted={votedIds.has(post.id)} />
             <span
               className="pointer-events-none absolute inset-0 bg-black/32 transition-opacity duration-[420ms]"
               style={{ opacity: dim / 0.32 }}
@@ -229,7 +234,8 @@ export function CardStack({
 }
 
 /** 카드 한 장 (Figma: KF/Feed Card) */
-function CardContent({ post, voted }: { post: Post; voted: boolean }) {
+function CardContent({ lang, post, voted }: { lang: Lang; post: Post; voted: boolean }) {
+  const en = lang === "en";
   const photo = post.cardPhoto;
   const mask = 'url("/images/card-mask.svg")';
   return (
@@ -258,27 +264,27 @@ function CardContent({ post, voted }: { post: Post; voted: boolean }) {
       {/* 참여 인원 스티커 */}
       <span className="absolute top-[14px] right-[14px] flex size-[68px] rotate-12 flex-col items-center justify-center gap-0.5 rounded-full bg-background text-white shadow-[0_4px_12px_rgba(0,0,0,0.18)]">
         <span className="text-[20px] leading-none font-extrabold tracking-[-0.4px]">{participantsOf(post)}</span>
-        <span className="text-[11px] leading-none font-semibold">명 참여</span>
+        <span className="text-[11px] leading-none font-semibold">{en ? "joined" : "명 참여"}</span>
       </span>
 
       <span className="absolute right-5 bottom-5 left-5 flex flex-col items-start gap-2 text-black">
         <span className="flex max-w-full gap-1">
           {voted && (
             <span className="shrink-0 rounded-full bg-background px-2.5 py-[5px] text-[12px] leading-[1.2] font-semibold whitespace-nowrap text-white">
-              ✓ 투표 완료
+              {en ? "✓ Voted" : "✓ 투표 완료"}
             </span>
           )}
           <span className="max-w-full min-w-0 truncate rounded-full bg-black/8 px-2.5 py-[5px] text-[12px] leading-[1.2] font-semibold">
-            {QUESTION_LABELS[post.question.id]}
+            {(en ? QUESTION_LABELS_EN : QUESTION_LABELS)[post.question.id]}
           </span>
         </span>
         <span className="line-clamp-2 w-full text-[23px] leading-[1.18] font-extrabold tracking-[-0.69px] break-keep text-balance">
-          {post.title}
+          {en ? post.en.title : post.title}
         </span>
         <span className="flex w-full items-center justify-between text-[13px] font-semibold text-black/60">
           <span className="flex min-w-0 items-center gap-[5px] truncate">
             <span className="text-[15px]">{post.author.flag}</span>
-            {post.author.country}의 {post.author.name}
+            {en ? `${post.author.name} from ${post.en.country}` : `${post.author.country}의 ${post.author.name}`}
           </span>
           <span className="shrink-0">💬 {post.commentCount}</span>
         </span>
