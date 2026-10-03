@@ -8,8 +8,11 @@ const { Engine, Bodies, Body, Composite, Events, Sleeping } = Matter;
 
 /*
   댓글 더미 (Figma "Gravity zone")
-  - 새 댓글은 더미가 가장 낮은 곳(빈 곳이 가장 많은 곳) 위에서 떨어지고, 부딪히며 기울어집니다.
+  - 새 댓글은 더미가 가장 낮은 곳(빈 곳이 가장 많은 곳) 위에서 떨어집니다.
+    처음엔 가운데부터 쌓이고, 가운데가 높아지면 양옆으로 퍼집니다.
+  - 글 댓글은 돌지 않고 떨어져, 부딪힐 때만 살짝(최대 20°) 기울어진 채 차분히 쌓입니다.
   - 이모지는 동그라미라 떨어진 뒤 굴러갑니다.
+  - 댓글끼리는 약 1mm(4px) 띄워서 쌓입니다.
   - 더미가 칸 높이의 2/3를 넘으면 맨 위를 2/3 높이에 두고, 넘친 아래쪽은 그라데이션 뒤로 내립니다.
 */
 
@@ -18,23 +21,16 @@ const FILL_LIMIT = 2 / 3;
 // 바닥은 칸 아래 경계보다 살짝 아래 (Figma처럼 맨 아래 줄이 그라데이션에 반쯤 걸치게)
 const FLOOR_BELOW = 12;
 const STEP_MS = 1000 / 60;
-// 글 댓글은 읽을 수 있도록 이 각도(약 43°)까지만 기울어집니다. 이모지는 제한 없이 굴러갑니다.
-const MAX_TILT = 0.75;
+// 글 댓글은 이 각도(약 20°)까지만 기울어집니다. 이모지는 제한 없이 굴러갑니다.
+const MAX_TILT = 0.35;
 const PRESETTLE_STEPS = 60;
-
-// 처음 달려 있는 댓글의 시작 자리 (Figma 351px 폭 기준 중심 좌표·각도, comments.ts의 seed 번호 순)
-const DESIGN_WIDTH = 351;
-const SEED_POSES: Record<string, { x: number; y: number; r: number }> = {
-  1: { x: 51, y: 270, r: 0 },
-  2: { x: 175, y: 270, r: 0 },
-  3: { x: 288, y: 270, r: 0 },
-  4: { x: 79, y: 221, r: -15 },
-  5: { x: 178, y: 195, r: 10.38 },
-  6: { x: 323, y: 227, r: 0 },
-  7: { x: 270, y: 152, r: 23.01 },
-  8: { x: 74, y: 147, r: -39.19 },
-  9: { x: 212, y: 69, r: 8.3 },
-};
+// 댓글 사이 간격 (약 1mm). 물리 몸체를 보이는 말풍선보다 이만큼 크게 만듭니다.
+const GAP = 4;
+// 가운데 선호 정도: 높이가 비슷하면 가운데 쪽을 고르는 정도로만 (가운데에서 100px = 5px 차이).
+// 더 세게 하면 가운데만 뾰족하게 솟아, 2/3 유지 때문에 양옆이 그라데이션 아래로 묻힙니다.
+const CENTER_PULL = 0.05;
+// 자리 높이는 말풍선 가운데 이 비율의 폭 아래만 봅니다 (가장자리는 옆 댓글에 기대어 걸쳐도 되도록).
+const PROBE = 0.4;
 
 type Tracked = { body: Matter.Body; el: HTMLElement; w: number; h: number; landed: boolean };
 
@@ -108,10 +104,10 @@ class PileWorld {
 
     if (!this.started) {
       this.started = true;
+      // 처음 열 때는 기존 댓글을 오래된 순서대로 같은 규칙으로 떨어뜨려 미리 쌓아 둡니다.
       for (const c of fresh) {
-        const seed = SEED_POSES[c.id.split("-seed-")[1] ?? ""];
-        this.add(c, nodes.get(c.id)!, seed);
-        if (!seed) for (let i = 0; i < PRESETTLE_STEPS; i++) this.step();
+        this.add(c, nodes.get(c.id)!);
+        for (let i = 0; i < PRESETTLE_STEPS; i++) this.step();
       }
       for (let i = 0; i < 120; i++) this.step();
       for (const t of this.tracked.values()) t.landed = true;
@@ -122,57 +118,76 @@ class PileWorld {
     for (const c of fresh) this.add(c, nodes.get(c.id)!);
   }
 
-  private add(comment: Comment, el: HTMLElement, seed?: { x: number; y: number; r: number }) {
+  private add(comment: Comment, el: HTMLElement) {
     const w = el.offsetWidth;
     const h = el.offsetHeight;
-    const scale = this.width / DESIGN_WIDTH;
-    const x = seed ? seed.x * scale : this.pickDropX(w);
-    // 새 댓글은 칸 맨 위 바로 위에서 떨어집니다.
-    const y = seed ? seed.y + this.defaultTop : this.viewTop - h / 2 - 8;
-    const common = { restitution: 0.15, friction: 0.5, frictionAir: 0.01, density: 0.002 };
+    const x = this.pickDropX(w + GAP);
+    // 칸 맨 위(또는 더미 꼭대기 중 더 높은 곳) 바로 위에서 떨어집니다.
+    const y = Math.min(this.viewTop, this.highest()) - h / 2 - 8;
     const body =
       comment.kind === "emoji"
         ? // 마찰이 있어야 미끄러지지 않고 굴러갑니다.
-          Bodies.circle(x, y, w / 2, { ...common, friction: 0.4, frictionStatic: 0.6, frictionAir: 0.004, restitution: 0.35 })
-        : Bodies.rectangle(x, y, w, h, { ...common, chamfer: { radius: Math.min(h / 2 - 1, 30) } });
-    const dir = Math.random() < 0.5 ? -1 : 1;
-    if (seed) {
-      Body.setAngle(body, (seed.r * Math.PI) / 180);
-    } else if (comment.kind === "emoji") {
-      // 동그라미는 옆으로 밀면서 떨어뜨려, 닿은 뒤 그 방향으로 굴러가게 합니다.
-      Body.setVelocity(body, { x: dir * (2 + Math.random() * 1.5), y: 0 });
-      Body.setAngularVelocity(body, dir * 0.15);
+          Bodies.circle(x, y, (w + GAP) / 2, {
+            restitution: 0.15,
+            friction: 0.5,
+            frictionStatic: 0.8,
+            frictionAir: 0.006,
+            density: 0.002,
+          })
+        : // 튕기지 않고 착 붙도록 탄성은 거의 없게, 마찰은 크게
+          Bodies.rectangle(x, y, w + GAP, h + GAP, {
+            restitution: 0.02,
+            friction: 0.9,
+            frictionStatic: 1.2,
+            frictionAir: 0.02,
+            density: 0.002,
+            chamfer: { radius: Math.min((h + GAP) / 2 - 1, 32) },
+          });
+    if (comment.kind === "emoji") {
+      // 동그라미는 옆으로 살짝 밀면서 떨어뜨려, 닿은 뒤 그 방향으로 굴러가게 합니다.
+      const dir = Math.random() < 0.5 ? -1 : 1;
+      Body.setVelocity(body, { x: dir * (1 + Math.random()), y: 0 });
+      Body.setAngularVelocity(body, dir * 0.1);
     } else {
-      // 한쪽으로 기울어진 채 돌면서 떨어지고, 부딪히면 중력에 따라 그 방향으로 더 기웁니다.
-      Body.setAngle(body, dir * (0.15 + Math.random() * 0.2));
-      Body.setAngularVelocity(body, dir * (0.02 + Math.random() * 0.02));
+      // 잘 안 돌도록 회전 관성을 키웁니다 (부딪힐 때만 살짝 기울어짐).
+      Body.setInertia(body, body.inertia * 4);
     }
     Composite.add(this.engine.world, body);
-    this.tracked.set(comment.id, { body, el, w, h, landed: !!seed });
+    this.tracked.set(comment.id, { body, el, w, h, landed: false });
     el.style.visibility = "visible";
   }
 
-  /** 더미가 가장 낮은 곳 (= 위쪽 여백이 가장 많은 곳)의 x좌표 */
+  /** 지금 더미에서 가장 높은 곳의 y좌표 (없으면 바닥) */
+  private highest() {
+    let top = 0;
+    for (const { body } of this.tracked.values()) top = Math.min(top, body.bounds.min.y);
+    return top;
+  }
+
+  /** 더미가 가장 낮은 곳 (= 위쪽 여백이 가장 많은 곳)의 x좌표. 비슷하면 가운데에 가까운 쪽 */
   private pickDropX(w: number) {
-    const min = w / 2 + 4;
-    const max = Math.max(min, this.width - w / 2 - 4);
-    let best: number[] = [];
-    let bestSurface = -Infinity;
-    for (let x = min; x <= max; x += 6) {
-      // 이 폭 안에서 가장 높이 솟은 댓글의 윗면 (없으면 바닥)
+    const min = w / 2;
+    const max = Math.max(min, this.width - w / 2);
+    const center = this.width / 2;
+    let bestX = center;
+    let bestScore = -Infinity;
+    for (let x = min; x <= max; x += 4) {
+      // 말풍선 가운데 부분 아래에서 가장 높이 솟은 댓글의 윗면 (없으면 바닥)
+      const half = (w * PROBE) / 2;
       let surface = 0;
       for (const { body } of this.tracked.values()) {
         const b = body.bounds;
-        if (b.max.x > x - w / 2 && b.min.x < x + w / 2) surface = Math.min(surface, b.min.y);
+        if (b.max.x > x - half && b.min.x < x + half) surface = Math.min(surface, b.min.y);
       }
-      if (surface > bestSurface + 4) {
-        bestSurface = surface;
-        best = [x];
-      } else if (surface >= bestSurface - 4) {
-        best.push(x);
+      const score = surface - CENTER_PULL * Math.abs(x - center);
+      if (score > bestScore) {
+        bestScore = score;
+        bestX = x;
       }
     }
-    return best[Math.floor(Math.random() * best.length)] ?? this.width / 2;
+    // 매번 똑같은 자리에 겹치지 않도록 살짝 흔들어 줍니다.
+    const jitter = (Math.random() - 0.5) * 16;
+    return Math.min(Math.max(bestX + jitter, min), max);
   }
 
   private step() {
