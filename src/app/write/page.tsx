@@ -3,9 +3,9 @@ import { Placeholder } from "@/components/Placeholder";
 export default function Page() {
   return (
     <Placeholder
-      part="1. 랜딩"
-      title="랜딩페이지"
-      owner="지현"
+      part="6. 콘텐츠 작성"
+      title="콘텐츠 작성"
+      owner="송희"
       links={[{ href: "/home", label: "메인으로" }]}
     />
   );

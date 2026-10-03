@@ -1,90 +1,17 @@
 @import "tailwindcss";
 
 /*
-  Figma(MVP) 변수를 그대로 옮긴 색/폰트 토큰입니다.
-  디자인 시스템이 확정되면 이 블록만 고치면 됩니다.
+  디자인 토큰(색·글꼴·간격)은 디자인 확정 후 이 블록에만 추가합니다.
+  화면 코드에 색상 코드(#FF87C5 등)를 직접 쓰지 말고, 여기서 이름을 정해 쓰세요.
 */
 @theme inline {
-  /* 배경 */
-  --color-canvas: #ececec;
-  --color-canvas-soft: #f5f5f5;
-  --color-cream: #f7f3ec;
-
-  /* 텍스트 · 기본 */
-  --color-ink: #1e1e1e; /* text/on-light */
-  --color-night: #111111; /* background/default */
-  --color-muted: #828282; /* Neutral/500 */
-  --color-subtle: #ababab; /* Neutral/400 */
-  --color-line: #d9d9d9; /* Neutral/200 */
-  --color-disabled: #808080; /* action/disabled */
-
-  /* 브랜드 */
-  --color-yellow: #fae276; /* surface/content */
-  --color-pink: #ff87c5; /* action/primary */
-  --color-periwinkle: #8e9afe; /* action/secondary */
-  --color-lilac: #ffc6ff; /* Brand/Lilac */
-  --color-error: #ff5b5b; /* feedback/error */
-  --color-kakao: #fee500; /* 카카오 브랜드 가이드 색 (토큰 외) */
-
-  /*
-    Gilroy는 라이선스 문제로 저장소에 넣지 않았습니다.
-    기기에 Gilroy가 설치돼 있으면 그걸 쓰고, 없으면 비슷한 Figtree로 보여 줍니다.
-  */
   --font-sans: "Pretendard Variable", Pretendard, -apple-system,
     BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", system-ui,
     sans-serif;
-  --font-gilroy: "Gilroy", var(--font-figtree), "Pretendard Variable",
-    Pretendard, system-ui, sans-serif;
-
-  --animate-sheet-up: sheet-up 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
-  --animate-fade-in: fade-in 200ms ease-out;
-  --animate-toast-in: toast-in 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-/* Gilroy ExtraBold — 굵기까지 한 번에 지정 (Light가 잡히지 않도록) */
-@utility font-display {
-  font-family: var(--font-gilroy);
-  font-weight: 800;
-}
-
-@keyframes sheet-up {
-  from {
-    transform: translateY(100%);
-  }
-}
-
-@keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-}
-
-@keyframes toast-in {
-  from {
-    opacity: 0;
-    transform: translateY(-12px);
-  }
-}
-
-html {
-  background: var(--color-canvas);
-  -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  color: var(--color-ink);
   font-family: var(--font-sans);
-  /* Figma 전 텍스트 자간 -2% */
-  letter-spacing: -0.02em;
   /* 모바일에서 가로 스크롤이 생기지 않도록 합니다. */
   overflow-x: hidden;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 1ms !important;
-    transition-duration: 1ms !important;
-  }
 }

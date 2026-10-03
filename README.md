@@ -3,10 +3,8 @@
 > 전 세계의 한식 도전에 한마디를 보태는 곳
 
 모바일 웹에서 보기 좋게 만든 프로젝트입니다.
-Figma **Section 3** 화면(랜딩 → 홈 → 글 상세·투표 → 업로드 → 게시 → 내 글 수정/삭제)이 클릭해서 이어지도록 구현되어 있습니다.
-로그인, 데이터베이스, AI 기능, 배포는 아직 연결하지 않았습니다. (지금은 목업 데이터로 동작하고, 새로고침하면 초기화됩니다.)
-
-전체 화면 목록은 **http://localhost:3000/screens** 에서 한 번에 볼 수 있습니다.
+지금은 **파트별 빈 페이지**만 있고, 송희·지현이 파트를 나눠 채워 갑니다. 파트와 담당, 공통 규칙은 [AGENTS.md](AGENTS.md)를 보세요.
+로그인, 데이터베이스, AI 기능, 배포는 아직 연결하지 않았습니다.
 
 ---
 
@@ -118,32 +116,27 @@ npx eslint --fix .
 ```
 k-food-project/
 ├─ src/
-│  ├─ app/                    # 주소(URL) = 폴더 이름
-│  │  ├─ layout.tsx           # 모든 화면의 공통 틀 (제목, 언어, 글꼴 설정)
-│  │  ├─ globals.css          # 색·글꼴 토큰 (Figma 변수와 같은 이름)
-│  │  ├─ page.tsx             # /            랜딩
-│  │  ├─ home/                # /home        메인 (+ 로그인 시트, 임시저장 배너)
-│  │  ├─ posts/[id]/          # /posts/...   글 상세 + 투표 시트 (한국인 화면)
-│  │  ├─ upload/              # /upload      사진 → question 휠 → writing(AI) → review → done
-│  │  ├─ my-post/             # /my-post     내 글 · 더보기 메뉴 · 삭제 / edit 수정
-│  │  └─ screens/             # /screens     리뷰용 화면 목록
-│  ├─ components/             # 버튼, 바텀시트, 토스트, 카드 등 공통 컴포넌트
-│  └─ lib/
-│     ├─ data.ts              # 샘플 글, 질문 5종, AI 초안 목업
-│     └─ flow-store.tsx       # 업로드 → 게시 → 수정 흐름 상태
-├─ public/                    # 이미지 (images/), 소셜 로고 (logos/)
-├─ package.json         # 라이브러리 목록과 명령어 모음
-├─ package-lock.json    # 정확한 버전 기록 (직접 수정하지 마세요)
-└─ .nvmrc               # 사용할 Node.js 버전
+│  ├─ app/                         # 주소(URL) = 폴더 이름
+│  │  ├─ layout.tsx                # 모든 화면의 공통 틀 (제목, 언어, 글꼴 설정)
+│  │  ├─ globals.css               # 디자인 토큰 (색·글꼴) — 여기에만 정의
+│  │  ├─ page.tsx                  # /                      1. 랜딩
+│  │  ├─ home/                     # /home                  1. 메인 카드
+│  │  ├─ posts/[id]/               # /posts/1               2·3. 상세 + 투표
+│  │  │  ├─ comments/              # /posts/1/comments      4. 댓글
+│  │  │  └─ edit/                  # /posts/1/edit          5. 수정
+│  │  ├─ write/                    # /write                 6. 콘텐츠 작성
+│  │  └─ my/                       # /my                    7. 마이 (나중)
+│  ├─ components/                  # 두 사람이 같이 쓰는 부품 (버튼, 시트 등)
+│  └─ lib/posts.ts                 # 게시글 데이터 모양 + 목업 데이터
+├─ public/                         # 이미지 등 그대로 올릴 파일
+├─ AGENTS.md                       # 팀 규칙 (Claude Code가 자동으로 읽음)
+├─ package.json                    # 라이브러리 목록과 명령어 모음
+├─ package-lock.json               # 정확한 버전 기록 (직접 수정하지 마세요)
+└─ .nvmrc                          # 사용할 Node.js 버전
 ```
 
-**화면을 고치고 싶다면** 해당 주소의 폴더 안 `…Screen.tsx` 파일을 여세요. (예: 홈 → [src/app/home/HomeScreen.tsx](src/app/home/HomeScreen.tsx))
+**내 파트를 만들려면** 해당 주소 폴더의 `page.tsx`를 여세요. 지금은 "준비 중" 자리(`Placeholder`)가 들어 있으니, 그걸 실제 화면으로 바꾸면 됩니다.
 저장하면 브라우저가 알아서 새로고침됩니다.
-
-### 글꼴
-
-- 한글/본문: **Pretendard** (CDN으로 불러옴)
-- 영문 제목: **Gilroy ExtraBold** — 유료 글꼴이라 저장소에 넣지 않았습니다. 컴퓨터에 설치돼 있으면 Gilroy로, 없으면 비슷한 **Figtree**로 보입니다.
 
 ---
 
