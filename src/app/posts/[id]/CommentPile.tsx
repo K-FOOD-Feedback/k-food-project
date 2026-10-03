@@ -43,9 +43,13 @@ export function CommentPile({ postId, commentCount, authorFlag }: { postId: stri
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
-    const text = draft.trim();
+    const text = draft
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .join("\n");
     if (!text) return;
-    send("text", text.slice(0, COMMENT_MAX));
+    send("text", text);
     setDraft("");
   };
 
@@ -80,20 +84,17 @@ export function CommentPile({ postId, commentCount, authorFlag }: { postId: stri
           <span className="relative flex h-[130px] w-[260px] -rotate-[4.91deg] items-center justify-center rounded-[26px] bg-[#292929] p-4">
             <textarea
               value={draft}
-              onChange={(e) => setDraft(e.target.value.replace(/\n/g, "").slice(0, COMMENT_MAX))}
+              onChange={(e) => setDraft(limitDraft(e.target.value))}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.nativeEvent.isComposing) {
-                  e.preventDefault();
-                  e.currentTarget.form?.requestSubmit();
-                }
+                // Enter는 줄바꿈만 합니다 (최대 2줄). 보내기는 버튼으로만.
+                if (e.key === "Enter" && draft.includes("\n")) e.preventDefault();
               }}
-              maxLength={COMMENT_MAX}
               rows={2}
               placeholder={"떠오른 한마디를\n남겨보세요"}
               className="w-full resize-none bg-transparent text-center text-[20px] leading-[1.45] font-bold tracking-[-0.4px] text-on-dark outline-none placeholder:text-white/70"
             />
             <span className="absolute right-4 bottom-[26px] text-[10px] font-bold text-white/70">
-              {draft.length}/{COMMENT_MAX}
+              {charCount(draft)}/{COMMENT_MAX}
             </span>
           </span>
         </label>
@@ -125,6 +126,25 @@ export function CommentPile({ postId, commentCount, authorFlag }: { postId: stri
       </div>
     </div>
   );
+}
+
+const MAX_LINES = 2;
+
+/** 줄바꿈은 글자 수에 세지 않습니다. */
+const charCount = (text: string) => text.replace(/\n/g, "").length;
+
+/** 입력값을 최대 2줄, 20자로 자릅니다 (붙여넣기 포함). */
+function limitDraft(value: string) {
+  let left = COMMENT_MAX;
+  return value
+    .split("\n")
+    .slice(0, MAX_LINES)
+    .map((line) => {
+      const kept = line.slice(0, Math.max(left, 0));
+      left -= kept.length;
+      return kept;
+    })
+    .join("\n");
 }
 
 function Bubble({ comment, slot, drop }: { comment: Comment; slot: { x: number; y: number; r: number }; drop: boolean }) {

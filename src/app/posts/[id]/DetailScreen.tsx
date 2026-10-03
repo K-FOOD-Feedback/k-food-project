@@ -22,7 +22,8 @@ export function DetailScreen({ post }: { post: HomePost }) {
     if (!el) return;
     const io = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
+        // 화면에 들어왔거나, 이미 지나쳐서 위쪽에 있으면 본 것으로 칩니다.
+        if (entry.isIntersecting || entry.boundingClientRect.top < 0) {
           setSeenVote(true);
           io.disconnect();
         }
