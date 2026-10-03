@@ -254,9 +254,9 @@ function Bubble({ comment }: { comment: Comment }) {
       </span>
     );
   }
-  return (
+  const bubble = (
     <span
-      className={`relative flex items-center justify-center gap-2 rounded-[32px] text-center text-[16px] leading-[1.4] font-bold tracking-[-0.32px] whitespace-pre text-black ${
+      className={`flex items-center justify-center gap-2 rounded-[32px] text-center text-[16px] leading-[1.4] font-bold tracking-[-0.32px] whitespace-pre text-black ${
         author.kind === "korean" ? "px-5 py-4" : "py-2.5 pr-5 pl-2.5"
       }`}
       style={{ background: comment.color }}
@@ -267,11 +267,17 @@ function Bubble({ comment }: { comment: Comment }) {
         </span>
       )}
       {comment.text}
-      {author.kind === "author" && (
-        <span className="absolute -top-2.5 left-[30px] rounded-full bg-black px-1.5 py-1 text-[10px] leading-none font-bold text-white">
-          작성자
-        </span>
-      )}
+    </span>
+  );
+  if (author.kind !== "author") return bubble;
+  // "작성자" 태그가 말풍선 위로 튀어나온 만큼 위쪽 여백을 둬서, 태그까지 댓글 크기(물리 몸체)에 들어가게 합니다.
+  // 그래야 다른 댓글이 태그 위로 떨어져 가리지 않습니다.
+  return (
+    <span className="relative block pt-2.5">
+      {bubble}
+      <span className="absolute top-0 left-[30px] rounded-full bg-black px-1.5 py-1 text-[10px] leading-none font-bold text-white">
+        작성자
+      </span>
     </span>
   );
 }
