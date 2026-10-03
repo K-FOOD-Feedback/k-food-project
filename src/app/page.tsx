@@ -61,7 +61,7 @@ export default function Page() {
             I&apos;m Korean
           </Link>
           <Link
-            href="/home"
+            href="/home/en"
             className="flex h-[72px] w-full items-center justify-center rounded-full bg-secondary font-display text-[20px] leading-none text-on-light transition active:scale-[0.99]"
           >
             I&apos;m not Korean

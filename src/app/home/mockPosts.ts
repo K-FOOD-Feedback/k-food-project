@@ -21,8 +21,18 @@ export const QUESTION_LABELS: Record<QuestionId, string> = {
   look: "진짜처럼 보이는지 궁금해요",
 };
 
+/** 외국인(영어) 메인 카드 칩 문구 (Figma 259:7803) */
+export const QUESTION_LABELS_EN: Record<QuestionId, string> = {
+  korean: "Is it Korean-style?",
+  eat: "Would Koreans want it?",
+  fix: "What should I fix?",
+  spice: "Is the spice right?",
+  look: "Does it look real?",
+};
+
 export type HomePost = Omit<Post, "author" | "question"> & {
   color: string; // 메인 카드 배경색
+  en: { title: string; country: string }; // 외국인 메인 화면에 보이는 영어 문구
   cardPhoto: string; // 메인 카드에 쓰는 사진 (상세는 photos 전체)
   question: Post["question"] & { id: QuestionId };
   author: Post["author"] & { flag: string };
@@ -43,6 +53,7 @@ export const HOME_POSTS: HomePost[] = [
     photos: ["/images/detail-buldak.png", "/images/card-buldak.png", "/images/detail-buldak.png"],
     cardPhoto: "/images/card-buldak.png",
     color: "#fae276",
+    en: { title: "What do you think of my Buldak recipe?", country: "Canada" },
     author: { name: "Sam", country: "캐나다", flag: "🇨🇦" },
     createdAt: "2026-09-28T09:00:00Z",
     question: {
@@ -60,6 +71,7 @@ export const HOME_POSTS: HomePost[] = [
     photos: ["/images/detail-buldak.png", "/images/card-buldak.png"],
     cardPhoto: "/images/detail-buldak.png",
     color: "#ffc6ff",
+    en: { title: "Would you eat my cheesy sausage Buldak?", country: "France" },
     author: { name: "Emma", country: "프랑스", flag: "🇫🇷" },
     createdAt: "2026-09-27T12:00:00Z",
     question: {
@@ -77,6 +89,7 @@ export const HOME_POSTS: HomePost[] = [
     photos: ["/images/card-buldak.png"],
     cardPhoto: "/images/card-buldak.png",
     color: "#c8b5ff",
+    en: { title: "How can I improve my Carbo Buldak?", country: "Brazil" },
     author: { name: "Lucas", country: "브라질", flag: "🇧🇷" },
     createdAt: "2026-09-26T08:00:00Z",
     question: {
@@ -94,6 +107,7 @@ export const HOME_POSTS: HomePost[] = [
     photos: ["/images/detail-buldak.png"],
     cardPhoto: "/images/detail-buldak.png",
     color: "#ccf54b",
+    en: { title: "Is Buldak a breakfast thing in Korea?", country: "Germany" },
     author: { name: "Mia", country: "독일", flag: "🇩🇪" },
     createdAt: "2026-09-25T07:00:00Z",
     question: {
@@ -111,6 +125,7 @@ export const HOME_POSTS: HomePost[] = [
     photos: ["/images/card-buldak.png", "/images/detail-buldak.png"],
     cardPhoto: "/images/card-buldak.png",
     color: "#9fe7ff",
+    en: { title: "What about Buldak with rice cakes?", country: "Japan" },
     author: { name: "Kenji", country: "일본", flag: "🇯🇵" },
     createdAt: "2026-09-24T10:00:00Z",
     question: {
