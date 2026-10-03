@@ -32,7 +32,8 @@ const CENTER_PULL = 0.05;
 // 자리 높이는 말풍선 가운데 이 비율의 폭 아래만 봅니다 (가장자리는 옆 댓글에 기대어 걸쳐도 되도록).
 const PROBE = 0.4;
 
-type Tracked = { body: Matter.Body; el: HTMLElement; w: number; h: number; landed: boolean };
+/** ox·oy: 몸체 무게중심에서 말풍선 요소 중심까지의 거리 (작성자 태그가 붙은 말풍선은 무게중심이 요소 중심과 다름) */
+type Tracked = { body: Matter.Body; el: HTMLElement; w: number; h: number; ox: number; oy: number; landed: boolean };
 
 /** matter-js 세계. 바닥 윗면이 y = 0이고 더미는 위쪽(음수 y)으로 쌓입니다. */
 class PileWorld {
@@ -61,7 +62,8 @@ class PileWorld {
     Events.on(this.engine, "collisionStart", (e) => {
       for (const { bodyA, bodyB } of e.pairs) {
         for (const t of this.tracked.values()) {
-          if (t.body === bodyA || t.body === bodyB) t.landed = true;
+          // 작성자 말풍선처럼 여러 조각으로 된 몸체는 조각끼리 부딪히므로 parent로 비교합니다.
+          if (t.body === bodyA.parent || t.body === bodyB.parent) t.landed = true;
         }
       }
     });
@@ -132,25 +134,7 @@ class PileWorld {
     const x = this.pickDropX(w + GAP);
     // 칸 맨 위(또는 더미 꼭대기 중 더 높은 곳) 바로 위에서 떨어집니다.
     const y = Math.min(this.viewTop, this.highest()) - h / 2 - 8;
-    const body =
-      comment.kind === "emoji"
-        ? // 마찰이 있어야 미끄러지지 않고 굴러갑니다.
-          Bodies.circle(x, y, (w + GAP) / 2, {
-            restitution: 0.15,
-            friction: 0.5,
-            frictionStatic: 0.8,
-            frictionAir: 0.006,
-            density: 0.002,
-          })
-        : // 튕기지 않고 착 붙도록 탄성은 거의 없게, 마찰은 크게
-          Bodies.rectangle(x, y, w + GAP, h + GAP, {
-            restitution: 0.02,
-            friction: 0.9,
-            frictionStatic: 1.2,
-            frictionAir: 0.02,
-            density: 0.002,
-            chamfer: { radius: Math.min((h + GAP) / 2 - 1, 32) },
-          });
+    const body = comment.kind === "emoji" ? this.circleBody(x, y, w) : this.bubbleBody(el, x, y, w, h);
     if (comment.kind === "emoji") {
       // 동그라미는 옆으로 살짝 밀면서 떨어뜨려, 닿은 뒤 그 방향으로 굴러가게 합니다.
       const dir = Math.random() < 0.5 ? -1 : 1;
@@ -161,8 +145,45 @@ class PileWorld {
       Body.setInertia(body, body.inertia * 4);
     }
     Composite.add(this.engine.world, body);
-    this.tracked.set(comment.id, { body, el, w, h, landed: false });
+    this.tracked.set(comment.id, { body, el, w, h, ox: x - body.position.x, oy: y - body.position.y, landed: false });
     el.style.visibility = "visible";
+  }
+
+  private circleBody(x: number, y: number, w: number) {
+    // 마찰이 있어야 미끄러지지 않고 굴러갑니다.
+    return Bodies.circle(x, y, (w + GAP) / 2, {
+      restitution: 0.15,
+      friction: 0.5,
+      frictionStatic: 0.8,
+      frictionAir: 0.006,
+      density: 0.002,
+    });
+  }
+
+  /**
+    말풍선 몸체. 요소 중심이 (x, y)에 오도록 만듭니다.
+    작성자 말풍선은 '말풍선 + 위로 튀어나온 태그' 두 조각을 합쳐서,
+    태그 자리만 막고 나머지 윗부분은 다른 댓글처럼 GAP만큼만 띄웁니다.
+  */
+  private bubbleBody(el: HTMLElement, x: number, y: number, w: number, h: number) {
+    // 튕기지 않고 착 붙도록 탄성은 거의 없게, 마찰은 크게
+    const options = { restitution: 0.02, friction: 0.9, frictionStatic: 1.2, frictionAir: 0.02, density: 0.002 };
+    const left = x - w / 2;
+    const top = y - h / 2;
+    // offset* 값은 회전·이동(transform)의 영향을 받지 않아서, 화면에 어떻게 그려져 있든 원래 크기를 잽니다.
+    const part = (p: HTMLElement, extra: object = {}) => {
+      const pw = p.offsetWidth + GAP;
+      const ph = p.offsetHeight + GAP;
+      return Bodies.rectangle(left + p.offsetLeft + p.offsetWidth / 2, top + p.offsetTop + p.offsetHeight / 2, pw, ph, {
+        ...extra,
+        chamfer: { radius: Math.min(ph / 2 - 1, 32) },
+      });
+    };
+    const bubble = el.querySelector<HTMLElement>("[data-part=bubble]");
+    const tag = el.querySelector<HTMLElement>("[data-part=tag]");
+    if (!bubble) return Bodies.rectangle(x, y, w + GAP, h + GAP, { ...options, chamfer: { radius: Math.min((h + GAP) / 2 - 1, 32) } });
+    if (!tag) return part(bubble, options);
+    return Body.create({ ...options, parts: [part(bubble), part(tag)] });
   }
 
   /** 지금 더미에서 가장 높은 곳의 y좌표 (없으면 바닥) */
@@ -219,11 +240,15 @@ class PileWorld {
   private render(smooth: boolean) {
     const target = this.targetTop();
     this.viewTop = smooth ? this.viewTop + (target - this.viewTop) * 0.08 : target;
-    for (const { body, el, w, h } of this.tracked.values()) {
-      const y = body.position.y - this.viewTop;
+    for (const { body, el, w, h, ox, oy } of this.tracked.values()) {
+      // 무게중심 + (회전한) 요소 중심까지의 거리 = 요소 중심
+      const cos = Math.cos(body.angle);
+      const sin = Math.sin(body.angle);
+      const cx = body.position.x + ox * cos - oy * sin;
+      const cy = body.position.y + ox * sin + oy * cos - this.viewTop;
       // 그라데이션 아래로 한참 내려간 댓글은 더 움직일 일이 없으니 고정해서 계산을 아낍니다.
-      if (!body.isStatic && y - h > HEIGHT + 200) Body.setStatic(body, true);
-      el.style.transform = `translate(${body.position.x - w / 2}px, ${y - h / 2}px) rotate(${body.angle}rad)`;
+      if (!body.isStatic && cy - h > HEIGHT + 200) Body.setStatic(body, true);
+      el.style.transform = `translate(${cx - w / 2}px, ${cy - h / 2}px) rotate(${body.angle}rad)`;
     }
   }
 }
@@ -279,6 +304,7 @@ function Bubble({ comment }: { comment: Comment }) {
   }
   const bubble = (
     <span
+      data-part="bubble"
       className={`flex items-center justify-center gap-2 rounded-[32px] text-center text-[16px] leading-[1.4] font-bold tracking-[-0.32px] whitespace-pre text-black ${
         author.kind === "korean" ? "px-5 py-4" : "py-2.5 pr-5 pl-2.5"
       }`}
@@ -293,12 +319,12 @@ function Bubble({ comment }: { comment: Comment }) {
     </span>
   );
   if (author.kind !== "author") return bubble;
-  // "작성자" 태그가 말풍선 위로 튀어나온 만큼 위쪽 여백을 둬서, 태그까지 댓글 크기(물리 몸체)에 들어가게 합니다.
-  // 그래야 다른 댓글이 태그 위로 떨어져 가리지 않습니다.
+  // "작성자" 태그가 말풍선 위로 튀어나온 만큼 위쪽 여백을 둡니다.
+  // 물리 몸체는 말풍선 + 태그 두 조각이라, 태그 자리만 막히고 나머지 윗부분은 다른 댓글과 같은 간격입니다.
   return (
     <span className="relative block pt-2.5">
       {bubble}
-      <span className="absolute top-0 left-[30px] rounded-full bg-black px-1.5 py-1 text-[10px] leading-none font-bold text-white">
+      <span data-part="tag" className="absolute top-0 left-[30px] rounded-full bg-black px-1.5 py-1 text-[10px] leading-none font-bold text-white">
         작성자
       </span>
     </span>
