@@ -1,17 +1,75 @@
 @import "tailwindcss";
 
 /*
-  디자인 토큰(색·글꼴·간격)은 디자인 확정 후 이 블록에만 추가합니다.
+  디자인 토큰 — Figma(MVP) 변수 이름을 그대로 씁니다.
   화면 코드에 색상 코드(#FF87C5 등)를 직접 쓰지 말고, 여기서 이름을 정해 쓰세요.
+  (디자인 시스템 확정 전 임시 값. 값이 바뀌면 이 블록만 고치면 됩니다.)
 */
 @theme inline {
+  /* 배경 · 글자 */
+  --color-background: #111111; /* background/default */
+  --color-on-dark: #ffffff; /* text/on-dark */
+  --color-on-light: #1e1e1e; /* text/on-light */
+  --color-neutral-400: #ababab; /* Color/Neutral/400 */
+
+  /* 브랜드 */
+  --color-primary: #ff87c5; /* action/primary (핑크) */
+  --color-secondary: #8e9afe; /* action/secondary (페리윙클) */
+  --color-content: #fae276; /* surface/content (노랑) */
+
+  /*
+    글꼴. Gilroy는 유료라 저장소에 넣지 않았습니다.
+    기기에 Gilroy가 설치돼 있으면 Gilroy로, 없으면 비슷한 Figtree로 보입니다.
+  */
   --font-sans: "Pretendard Variable", Pretendard, -apple-system,
     BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", system-ui,
     sans-serif;
+  --font-gilroy: "Gilroy", var(--font-figtree), "Pretendard Variable",
+    Pretendard, system-ui, sans-serif;
+
+  /* 진입 애니메이션 (지연은 [animation-delay:…]로 지정) */
+  --animate-rise: rise 560ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-pop: pop 520ms cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+
+/* 아래에서 올라오며 나타남 */
+@keyframes rise {
+  from {
+    opacity: 0;
+    translate: 0 28px;
+  }
+}
+
+/* 뿅! 하고 튀어나옴 — scale만 바꿔서 rotate-*와 겹치지 않음 */
+@keyframes pop {
+  from {
+    opacity: 0;
+    scale: 0.2;
+  }
+  60% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+  }
+}
+
+/* 영문 제목용 Gilroy ExtraBold (굵기까지 같이 지정해야 Light가 잡히지 않음) */
+@utility font-display {
+  font-family: var(--font-gilroy);
+  font-weight: 800;
 }
 
 body {
   font-family: var(--font-sans);
+  /* Figma 전 텍스트 자간 -2% */
+  letter-spacing: -0.02em;
   /* 모바일에서 가로 스크롤이 생기지 않도록 합니다. */
   overflow-x: hidden;
 }

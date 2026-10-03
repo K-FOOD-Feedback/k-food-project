@@ -1,5 +1,13 @@
 import type { Metadata, Viewport } from "next";
+import { Figtree } from "next/font/google";
 import "./globals.css";
+
+// Gilroy 대체용 영문 제목 폰트
+const figtree = Figtree({
+  subsets: ["latin"],
+  weight: ["800"],
+  variable: "--font-figtree",
+});
 
 export const metadata: Metadata = {
   title: "오늘의 참견",
@@ -15,7 +23,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ko" className="h-full antialiased">
+    <html lang="ko" className={`${figtree.variable} h-full antialiased`}>
       <head>
         {/* Pretendard (OFL) — 한글/본문 폰트 */}
         <link
