@@ -5,10 +5,10 @@ import { useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { COMMENT_MAX, QUICK_EMOJIS, useComments, type Comment } from "./comments";
 import { estimateWidth, GravityPile, type PileHandle } from "./GravityPile";
 
-/** 날아온 원의 지름 (= 이모지 말풍선 크기) */
-const CIRCLE = 54;
-/** 원이 도착하는 높이 (댓글 칸 위에서부터) */
-const ARRIVE_Y = 40;
+/** 날아가는 원의 지름. 실제 말풍선보다 작게 날아가서, 떨어질 때 본래 크기로 커집니다. */
+const CIRCLE = 32;
+/** 원이 도착하는 높이: 댓글 칸 맨 위 경계. 여기서부터 본래 크기로 커지며 더미까지 떨어집니다. */
+const ARRIVE_Y = 0;
 
 type Flight = {
   id: number;
@@ -182,8 +182,8 @@ function FlyingCircle({ flight, onArrive }: { flight: Flight; onArrive: () => vo
         // 제자리에서 원으로 바뀐 뒤
         { ...circle, translate: at(0, -6), offset: isText ? 0.3 : 0.2 },
         // 위로 솟구쳤다가
-        { ...circle, translate: at(dx * 0.7, dy * 1.12), offset: 0.75 },
-        // 도착 자리에 내려앉음
+        { ...circle, translate: at(dx * 0.7, dy * 1.1), offset: 0.75 },
+        // 댓글창 맨 위(떨어질 자리 바로 위)에 도착
         { ...circle, translate: at(dx, dy) },
       ],
       { duration: isText ? 720 : 560, easing: "cubic-bezier(0.45, 0, 0.25, 1)", fill: "forwards" },
