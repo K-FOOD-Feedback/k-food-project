@@ -38,7 +38,7 @@ export function WritingScreen() {
             label="Stop and save draft"
             onClick={() => {
               saveDraftForLater("question");
-              router.push("/home");
+              router.push("/home/en");
             }}
           />
         }

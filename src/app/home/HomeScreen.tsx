@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { ShareKfoodButton } from "@/components/ShareKfoodButton";
 import { CardStack, type Lang } from "./CardStack";
 import { MainHeader } from "./MainHeader";
 import { HOME_POSTS } from "./mockPosts";
@@ -50,13 +51,12 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
       </div>
 
       {lang === "en" ? (
-        // 외국인 메인 하단 CTA (Figma 259:7823): 작성 화면으로 이동만 합니다. 이후 흐름은 /write 담당.
-        <Link
-          href="/write"
+        // 외국인 메인 하단 CTA (Figma 259:7823): 로그인 시트 → 사진 선택 → /write (동작은 송희 담당 ShareKfoodButton)
+        <ShareKfoodButton
           className="fixed bottom-[calc(60px+env(safe-area-inset-bottom))] left-1/2 z-10 flex h-[80px] w-[259px] -translate-x-1/2 items-center justify-center rounded-full bg-primary text-[20px] font-extrabold tracking-[-0.4px] whitespace-nowrap text-white drop-shadow-[0_10px_12px_rgba(255,135,196,0.45)] transition-transform active:scale-[0.97]"
         >
           Share your K-food
-        </Link>
+        </ShareKfoodButton>
       ) : (
         // 하단 CTA (Figma: KF/CTA Pill — 투표 전 Primary, 투표 후 Done)
         <Link

@@ -6,17 +6,14 @@ import { ArrowCta, IconButton } from "@/components/Buttons";
 import { Icon } from "@/components/Icon";
 import { Chip, Screen, StepProgress, StickyBottom, Tile, Toast, TopBar } from "@/components/Layout";
 import { PhotoGrid, PhotoImage } from "@/components/PhotoGrid";
-import { LoginSheet } from "@/components/LoginSheet";
 import { usePhotoPicker } from "@/components/PhotoPicker";
 import { MAX_PHOTOS } from "@/lib/write-data";
 import { coverOf, useFlow } from "@/lib/write-store";
 
 export function PhotosScreen() {
   const router = useRouter();
-  const { loggedIn, logIn, draft, addPhotos, removePhoto, setCover, movePhoto, saveDraftForLater } =
-    useFlow();
-  // OAuth 리다이렉트 때문에 사진 선택 "전에" 로그인합니다.
-  const [loginOpen, setLoginOpen] = useState(!loggedIn);
+  // 로그인은 외국인 메인의 Share 버튼(ShareKfoodButton)에서 사진 선택 전에 끝냅니다.
+  const { draft, addPhotos, removePhoto, setCover, movePhoto, saveDraftForLater } = useFlow();
   const [limitToast, setLimitToast] = useState(false);
   const closeToast = useCallback(() => setLimitToast(false), []);
 
@@ -35,7 +32,7 @@ export function PhotosScreen() {
 
   const leave = () => {
     saveDraftForLater("photos");
-    router.push("/home");
+    router.push("/home/en");
   };
 
   const cover = draft.photos.length ? coverOf(draft) : null;
@@ -113,16 +110,6 @@ export function PhotosScreen() {
         body="Remove a photo first, then add a new one."
       />
       {picker.input}
-      <LoginSheet
-        open={loginOpen}
-        onClose={() => router.push("/home")}
-        onLoggedIn={() => {
-          logIn();
-          setLoginOpen(false);
-          // 로그인 버튼 클릭 안에서 바로 사진 선택을 엽니다 (브라우저가 막지 않도록)
-          picker.open();
-        }}
-      />
     </Screen>
   );
 }

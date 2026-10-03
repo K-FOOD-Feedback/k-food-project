@@ -32,7 +32,7 @@ export function MyPostScreen({ demoVotes }: { demoVotes?: number }) {
   return (
     <Screen className="pb-10">
       <TopBar
-        left={<IconButton icon="chevron-left" label="Back" href="/home" />}
+        left={<IconButton icon="chevron-left" label="Back" href="/home/en" />}
         right={
           <IconButton
             icon="more"
@@ -148,7 +148,7 @@ export function MyPostScreen({ demoVotes }: { demoVotes?: number }) {
             tone="error"
             onClick={() => {
               deleteMyPost();
-              router.push("/home");
+              router.push("/home/en");
             }}
           >
             Delete

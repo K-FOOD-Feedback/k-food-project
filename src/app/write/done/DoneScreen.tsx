@@ -37,7 +37,7 @@ export function DoneScreen() {
 
   return (
     <Screen className="pb-[140px]">
-      <TopBar right={<IconButton icon="x" label="Close" href="/home" />} />
+      <TopBar right={<IconButton icon="x" label="Close" href="/home/en" />} />
 
       {/* 도장 찍힐 때 화면 흔들림 (처음 한 번) */}
       <div className="animate-jolt" style={{ animationDelay: `${T.stamp + 60}ms` }}>
@@ -105,7 +105,7 @@ export function DoneScreen() {
 
       <StickyBottom className="animate-rise [animation-delay:1750ms]">
         <div className="flex gap-1">
-          <PillButton tone="white" href="/home">
+          <PillButton tone="white" href="/home/en">
             Back to home
           </PillButton>
           <PillButton tone="black" href={`/my/posts/${MY_POST_ID}`}>
