@@ -5,15 +5,15 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { CardStack } from "./CardStack";
 import { MainHeader } from "./MainHeader";
-import { MOCK_POSTS } from "@/lib/posts";
-import { useVotedIds } from "@/lib/votes";
+import { HOME_POSTS } from "./mockPosts";
+import { useVotedIds } from "./votes";
 
 // 상세에 다녀와도 보던 카드에서 다시 시작하도록 기억해 둡니다 (새로고침하면 처음부터).
 let lastIndex = 0;
 
 export function HomeScreen() {
   const router = useRouter();
-  const posts = MOCK_POSTS;
+  const posts = HOME_POSTS;
   const [index, setIndex] = useState(() => Math.min(lastIndex, posts.length - 1));
   const votedIds = useVotedIds();
   const current = posts[index];
