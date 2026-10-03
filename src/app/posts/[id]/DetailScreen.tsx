@@ -20,19 +20,22 @@ export function DetailScreen({ post }: { post: HomePost }) {
   useEffect(() => {
     const el = voteRef.current;
     if (!el) return;
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        // 화면에 들어왔거나, 이미 지나쳐서 위쪽에 있으면 본 것으로 칩니다.
-        if (entry.isIntersecting || entry.boundingClientRect.top < 0) {
-          setSeenVote(true);
-          io.disconnect();
-        }
-      },
-      // 화면 아래쪽 플로팅 버튼에 가려지는 부분은 '본 것'으로 치지 않습니다.
-      { rootMargin: "0px 0px -140px 0px" },
-    );
-    io.observe(el);
-    return () => io.disconnect();
+    // 투표 영역 윗부분이 화면 안으로 올라왔으면(이미 지나친 경우 포함) 본 것으로 칩니다.
+    // 화면 아래쪽 140px은 플로팅 버튼에 가려지므로 제외합니다.
+    // 스크롤 위치로 판단해서, 투표 영역을 한 번에 건너뛰어 내려가도 놓치지 않습니다.
+    const check = () => {
+      if (el.getBoundingClientRect().top < window.innerHeight - 140) {
+        setSeenVote(true);
+        window.removeEventListener("scroll", check);
+      }
+    };
+    window.addEventListener("scroll", check, { passive: true });
+    // 화면이 길어서 처음부터 투표 영역이 보이는 경우
+    const frame = requestAnimationFrame(check);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", check);
+    };
   }, []);
 
   const goToVote = () => {
