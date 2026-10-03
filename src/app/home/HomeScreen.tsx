@@ -25,8 +25,9 @@ export function HomeScreen() {
   };
 
   return (
-    <main className="min-h-dvh w-full bg-background text-white">
-      <div className="relative mx-auto w-full max-w-[430px] overflow-x-clip pb-[calc(160px+env(safe-area-inset-bottom))]">
+    // 랜딩(src/app/page.tsx)과 같은 틀: 가운데 430px 폭의 어두운 화면
+    <main className="relative mx-auto min-h-dvh w-full max-w-[430px] overflow-x-clip bg-background text-on-dark">
+      <div className="pb-[calc(160px+env(safe-area-inset-bottom))]">
         <MainHeader />
         <CardStack
           posts={posts}
