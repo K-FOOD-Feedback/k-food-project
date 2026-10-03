@@ -5,6 +5,10 @@
   화면 코드에 색상 코드(#FF87C5 등)를 직접 쓰지 말고, 여기서 이름을 정해 쓰세요.
 */
 @theme inline {
+  --color-bg: #111111;
+  --color-pink: #ff87c5;
+  --color-glass: rgb(255 255 255 / 0.08);
+
   --font-sans: "Pretendard Variable", Pretendard, -apple-system,
     BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", system-ui,
     sans-serif;

@@ -1,0 +1,59 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { CardStack } from "@/components/CardStack";
+import { MainHeader } from "@/components/HeaderBar";
+import { MOCK_POSTS } from "@/lib/posts";
+import { useVotedIds } from "@/lib/votes";
+
+// 상세에 다녀와도 보던 카드에서 다시 시작하도록 기억해 둡니다 (새로고침하면 처음부터).
+let lastIndex = 0;
+
+export function HomeScreen() {
+  const router = useRouter();
+  const posts = MOCK_POSTS;
+  const [index, setIndex] = useState(() => Math.min(lastIndex, posts.length - 1));
+  const votedIds = useVotedIds();
+  const current = posts[index];
+  const voted = votedIds.has(current.id);
+
+  const changeIndex = (next: number) => {
+    lastIndex = next;
+    setIndex(next);
+  };
+
+  return (
+    <main className="min-h-dvh w-full bg-bg text-white">
+      <div className="relative mx-auto w-full max-w-[430px] overflow-x-clip pb-[calc(160px+env(safe-area-inset-bottom))]">
+        <MainHeader />
+        <CardStack
+          posts={posts}
+          index={index}
+          votedIds={votedIds}
+          onIndexChange={changeIndex}
+          onOpen={(post) => router.push(`/posts/${post.id}`)}
+        />
+        <div className="mt-3 flex justify-center gap-1.5" aria-hidden>
+          {posts.map((p, i) => (
+            <span
+              key={p.id}
+              className={`h-1.5 rounded-full bg-white transition-[width] duration-300 ${i === index ? "w-5" : "w-1.5"}`}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* 하단 CTA (Figma: KF/CTA Pill — 투표 전 Primary, 투표 후 Done) */}
+      <Link
+        href={`/posts/${current.id}${voted ? "" : "#vote"}`}
+        className={`fixed bottom-[calc(60px+env(safe-area-inset-bottom))] left-1/2 z-10 flex h-[90px] w-[259px] -translate-x-1/2 items-center justify-center rounded-full text-[20px] font-extrabold tracking-[-0.4px] whitespace-nowrap transition-transform active:scale-[0.97] ${
+          voted ? "bg-white text-bg" : "bg-pink text-white drop-shadow-[0_10px_12px_rgba(255,135,196,0.45)]"
+        }`}
+      >
+        {voted ? "투표 결과 보기" : "투표하러 가기"}
+      </Link>
+    </main>
+  );
+}
