@@ -4,7 +4,7 @@ import Matter from "matter-js";
 import { useLayoutEffect, useRef } from "react";
 import type { Comment } from "./comments";
 
-const { Engine, Bodies, Body, Composite, Events } = Matter;
+const { Engine, Bodies, Body, Composite, Events, Sleeping } = Matter;
 
 /*
   댓글 더미 (Figma "Gravity zone")
@@ -43,6 +43,7 @@ class PileWorld {
   private engine = Engine.create({ enableSleeping: true });
   private tracked = new Map<string, Tracked>();
   private width: number;
+  private rightWall: Matter.Body;
   private defaultTop = -(HEIGHT + FLOOR_BELOW);
   /** 칸 맨 위에 보이는 세계 y좌표 (더미가 높아지면 위로 따라 올라갑니다) */
   private viewTop = this.defaultTop;
@@ -53,10 +54,12 @@ class PileWorld {
     this.width = width;
     this.engine.gravity.y = 1.1;
     const wall = { isStatic: true, friction: 0.5 };
+    this.rightWall = Bodies.rectangle(width + 50, -50000, 100, 100000, wall);
     Composite.add(this.engine.world, [
-      Bodies.rectangle(width / 2, 50, width * 3, 100, wall),
+      // 바닥은 칸보다 넉넉히 넓게 (화면 폭이 넓어져도 그대로 쓰도록)
+      Bodies.rectangle(width / 2, 50, 4000, 100, wall),
       Bodies.rectangle(-50, -50000, 100, 100000, wall),
-      Bodies.rectangle(width + 50, -50000, 100, 100000, wall),
+      this.rightWall,
     ]);
     // 무언가에 처음 닿은 순간부터 '쌓인 댓글'로 칩니다 (떨어지는 중인 댓글은 높이 계산에서 제외).
     Events.on(this.engine, "collisionStart", (e) => {
@@ -82,6 +85,20 @@ class PileWorld {
     Events.off(this.engine, "collisionStart");
     Engine.clear(this.engine);
     this.tracked.clear();
+  }
+
+  /** 칸 폭이 바뀌면(화면 회전·창 크기 변경) 오른쪽 벽을 옮기고, 댓글을 비율대로 펼쳐 다시 쌓습니다. */
+  resize(width: number) {
+    if (Math.abs(width - this.width) < 1) return;
+    const ratio = width / this.width;
+    this.width = width;
+    Body.setPosition(this.rightWall, { x: width + 50, y: -50000 });
+    for (const { body, w } of this.tracked.values()) {
+      const x = Math.min(Math.max(body.position.x * ratio, w / 2), width - w / 2);
+      Body.setStatic(body, false);
+      Body.setPosition(body, { x, y: body.position.y });
+      Sleeping.set(body, false);
+    }
   }
 
   /** 아직 세계에 없는 댓글을 추가합니다. 첫 호출은 미리 쌓아 둔 상태로, 이후는 눈앞에서 떨어집니다. */
@@ -197,7 +214,10 @@ export function GravityPile({ comments }: { comments: Comment[] }) {
     const pile = new PileWorld(zone.current!.clientWidth);
     world.current = pile;
     pile.start();
+    const observer = new ResizeObserver(() => pile.resize(zone.current?.clientWidth ?? 0));
+    observer.observe(zone.current!);
     return () => {
+      observer.disconnect();
       pile.destroy();
       world.current = null;
     };
@@ -208,7 +228,7 @@ export function GravityPile({ comments }: { comments: Comment[] }) {
   }, [comments]);
 
   return (
-    <div ref={zone} className="relative h-[286px] w-full" aria-label="최근 댓글">
+    <div ref={zone} className="relative h-[286px] w-full select-none" aria-label="최근 댓글">
       {comments.map((c) => (
         <div
           key={c.id}
