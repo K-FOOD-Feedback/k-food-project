@@ -111,14 +111,14 @@ export function CommentPile({ postId, commentCount, authorFlag }: { postId: stri
         </span>
       </form>
 
-      <div className="flex w-full justify-between">
+      <div className="flex w-full gap-0.5">
         {QUICK_EMOJIS.map((emoji) => (
           <button
             key={emoji}
             type="button"
             onClick={() => send("emoji", emoji)}
             aria-label={`${emoji} 남기기`}
-            className="flex size-[58px] items-center justify-center rounded-full bg-white/10 text-[20px] transition-transform active:scale-90"
+            className="flex aspect-square min-w-0 flex-1 items-center justify-center rounded-full bg-white/10 text-[20px] transition-transform active:scale-90"
           >
             {emoji}
           </button>
