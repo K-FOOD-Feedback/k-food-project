@@ -34,8 +34,11 @@ const CENTER_PULL = 0.05;
 const PROBE = 0.4;
 
 /** ox·oy: 몸체 무게중심에서 말풍선 요소 중심까지의 거리 (작성자 태그가 붙은 말풍선은 무게중심이 요소 중심과 다름) */
-/** 날아온 원이 도착한 자리 (칸 기준 좌표)와 원 지름. 다음 새 댓글이 여기서 원 → 말풍선으로 펼쳐지며 떨어집니다. */
-export type DropHint = { x: number; y: number; d: number };
+/**
+  날아온 원이 도착한 자리 (칸 기준 좌표), 원 지름, 도착할 때의 낙하 속도(px/걸음).
+  다음 새 댓글이 여기서 원 → 말풍선으로 펼쳐지며 그 속도 그대로 이어서 떨어집니다.
+*/
+export type DropHint = { x: number; y: number; d: number; vy: number };
 
 /** 댓글 영역이 더미에 미리 물어보고 지시하는 통로 */
 export type PileHandle = {
@@ -161,18 +164,11 @@ class PileWorld {
     const x = hint ? Math.min(Math.max(hint.x, w / 2), this.width - w / 2) : this.pickDropX(w + GAP);
     const y = hint ? this.viewTop + hint.y : Math.min(this.viewTop, this.highest()) - h / 2 - 8;
     const body = comment.kind === "emoji" ? this.circleBody(x, y, w) : this.bubbleBody(el, x, y, w, h);
-    if (comment.kind === "emoji") {
-      // 동그라미는 옆으로 살짝 밀면서 떨어뜨려, 닿은 뒤 그 방향으로 굴러가게 합니다.
-      const dir = Math.random() < 0.5 ? -1 : 1;
-      Body.setVelocity(body, { x: dir * (1 + Math.random()), y: 0 });
-      Body.setAngularVelocity(body, dir * 0.1);
-    } else {
-      // 살짝 비스듬히, 조금 돌면서 떨어집니다. 회전 관성은 약간만 키워 빙글빙글 돌지는 않게.
-      const dir = Math.random() < 0.5 ? -1 : 1;
-      Body.setInertia(body, body.inertia * 1.5);
-      Body.setAngle(body, dir * Math.random() * 0.15);
-      Body.setAngularVelocity(body, dir * (0.005 + Math.random() * 0.01));
-    }
+    // 기울이거나 옆으로 밀지 않고 곧게 떨어집니다 (부딪힌 뒤 기울고 구르는 건 물리에 맡김).
+    // 회전 관성은 약간만 키워 빙글빙글 돌지는 않게.
+    if (comment.kind === "text") Body.setInertia(body, body.inertia * 1.5);
+    // 날아온 원이 내려오던 속도를 이어받아 멈칫 없이 계속 떨어집니다.
+    if (hint) Body.setVelocity(body, { x: 0, y: hint.vy });
     Composite.add(this.engine.world, body);
     this.tracked.set(comment.id, { body, el, w, h, ox: x - body.position.x, oy: y - body.position.y, landed: false });
     el.style.visibility = "visible";

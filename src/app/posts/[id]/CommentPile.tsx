@@ -6,9 +6,10 @@ import { COMMENT_MAX, QUICK_EMOJIS, useComments, type Comment } from "./comments
 import { estimateWidth, GravityPile, type PileHandle } from "./GravityPile";
 
 /** 날아가는 원의 지름. 실제 말풍선보다 작게 날아가서, 떨어질 때 본래 크기로 커집니다. */
-const CIRCLE = 32;
-/** 원이 도착하는 높이: 댓글 칸 맨 위 경계. 여기서부터 본래 크기로 커지며 더미까지 떨어집니다. */
-const ARRIVE_Y = 0;
+const CIRCLE = 20;
+/** 원은 도착 지점보다 이만큼 위까지 솟았다가 내려오며 도착합니다 (그 낙하 속도 그대로 말풍선이 이어서 떨어짐). */
+const RISE = 40;
+const flightMs = (kind: Comment["kind"]) => (kind === "text" ? 700 : 560);
 
 type Flight = {
   id: number;
@@ -19,8 +20,9 @@ type Flight = {
   from: DOMRect;
   /** 도착: 화면 좌표 */
   to: { x: number; y: number };
-  /** 도착 자리 x (댓글 칸 기준) */
+  /** 도착 자리 (댓글 칸 기준) */
   dropX: number;
+  dropY: number;
 };
 
 /** 댓글 영역 (Figma: Tile/한마디 참견 + 한마디 입력 + 이모지 키) */
@@ -29,6 +31,7 @@ export function CommentPile({ postId, commentCount, authorFlag }: { postId: stri
   const [draft, setDraft] = useState("");
   const card = useRef<HTMLSpanElement>(null);
   const zone = useRef<HTMLDivElement>(null);
+  const titleRow = useRef<HTMLDivElement>(null);
   const pile = useRef<PileHandle>(null);
   // 보내기·이모지를 누른 뒤 댓글 칸으로 날아가는 중인 원들 (도착하면 댓글로 추가)
   const [flights, setFlights] = useState<Flight[]>([]);
@@ -47,6 +50,9 @@ export function CommentPile({ postId, commentCount, authorFlag }: { postId: stri
       await new Promise((r) => setTimeout(r, 380));
     }
     const z = zoneEl.getBoundingClientRect();
+    // "댓글 N" 제목 줄 높이로 날아가서, 거기서부터 떨어집니다.
+    const title = titleRow.current?.getBoundingClientRect();
+    const arriveY = title ? title.top + title.height / 2 : z.top;
     // 더미가 가장 낮은 곳을 미리 정해, 원이 바로 그 위로 날아가게 합니다.
     const dropX = pile.current.planDrop(estimateWidth(kind, text));
     const flight: Flight = {
@@ -55,14 +61,16 @@ export function CommentPile({ postId, commentCount, authorFlag }: { postId: stri
       text,
       color: nextColor(flights.length),
       from: fromEl.getBoundingClientRect(),
-      to: { x: z.left + dropX, y: z.top + ARRIVE_Y },
+      to: { x: z.left + dropX, y: arriveY },
       dropX,
+      dropY: arriveY - z.top,
     };
     setFlights((list) => [...list, flight]);
   };
 
-  const arrive = (flight: Flight) => {
-    pile.current?.setNextDrop({ x: flight.dropX, y: ARRIVE_Y, d: CIRCLE });
+  /** vy: 원이 도착할 때의 낙하 속도 (물리 한 걸음 = 1/60초당 px) */
+  const arrive = (flight: Flight, vy: number) => {
+    pile.current?.setNextDrop({ x: flight.dropX, y: flight.dropY, d: CIRCLE, vy });
     add(flight.kind, flight.text);
     setFlights((list) => list.filter((f) => f.id !== flight.id));
   };
@@ -82,7 +90,7 @@ export function CommentPile({ postId, commentCount, authorFlag }: { postId: stri
   return (
     <div className="flex flex-col items-center gap-8">
       <section className="relative flex w-full flex-col gap-1 overflow-hidden rounded-[32px] bg-white/10 p-1" aria-label="댓글">
-        <div className="flex h-16 items-center gap-10 pl-5">
+        <div ref={titleRow} className="flex h-16 items-center gap-10 pl-5">
           <h2 className="flex flex-1 items-center gap-1.5 text-[18px] leading-[1.3] font-bold tracking-[-0.54px]">
             댓글 <span className="text-neutral-400">{commentCount + addedCount}</span>
           </h2>
@@ -136,7 +144,7 @@ export function CommentPile({ postId, commentCount, authorFlag }: { postId: stri
       </form>
 
       {flights.map((f) => (
-        <FlyingCircle key={f.id} flight={f} onArrive={() => arrive(f)} />
+        <FlyingCircle key={f.id} flight={f} onArrive={(vy) => arrive(f, vy)} />
       ))}
 
       <div className="flex w-full gap-0.5">
@@ -157,40 +165,61 @@ export function CommentPile({ postId, commentCount, authorFlag }: { postId: stri
 }
 
 /**
-  날아가는 원. 출발 요소(한마디 카드·이모지 버튼) 모양에서 시작해 새 댓글 색의 원으로 바뀌고,
-  살짝 포물선을 그리며 도착 자리로 날아갑니다.
+  날아가는 원. 출발 요소(한마디 카드·이모지 버튼) 모양에서 시작해, 안이 빈 작은 색 원으로 바뀌고,
+  도착 지점 위로 솟구쳤다가 내려오는 속도 그대로 도착합니다 (도착해서 멈칫하지 않도록).
 */
-function FlyingCircle({ flight, onArrive }: { flight: Flight; onArrive: () => void }) {
+function FlyingCircle({ flight, onArrive }: { flight: Flight; onArrive: (vy: number) => void }) {
+  const outer = useRef<HTMLDivElement>(null);
   const el = useRef<HTMLDivElement>(null);
   const label = useRef<HTMLSpanElement>(null);
 
   useLayoutEffect(() => {
     const node = el.current;
-    if (!node) return;
+    if (!node || !outer.current) return;
     const { from, to, kind, color } = flight;
     const dx = to.x - (from.left + from.width / 2);
     const dy = to.y - (from.top + from.height / 2);
     const isText = kind === "text";
+    const duration = flightMs(kind);
+    const morphAt = isText ? 0.22 : 0.16;
+    // 던진 공처럼 같은 중력으로 오르고 내립니다: 오르는 거리 : 내리는 거리 = 시간² 비율.
+    // 그래서 꼭대기 근처에 머무는 시간이 짧고 자연스럽습니다.
+    const riseDist = Math.max(RISE, -(dy - RISE) - 6);
+    const flyMs = duration * (1 - morphAt);
+    const fallMs = (flyMs * Math.sqrt(RISE)) / (Math.sqrt(riseDist) + Math.sqrt(RISE));
+    const apexAt = 1 - fallMs / duration;
     const start = isText
       ? { width: "260px", height: "130px", borderRadius: "26px", backgroundColor: "#292929", rotate: "-4.91deg" }
       : { width: `${from.width}px`, height: `${from.height}px`, borderRadius: "999px", backgroundColor: "rgb(255 255 255 / 0.1)", rotate: "0deg" };
     const circle = { width: `${CIRCLE}px`, height: `${CIRCLE}px`, borderRadius: "999px", backgroundColor: color, rotate: "0deg" };
-    const at = (fx: number, fy: number) => `calc(-50% + ${fx}px) calc(-50% + ${fy}px)`;
+    // 가로와 세로를 따로 움직입니다. 세로는 꼭대기에서 잠깐 멈추지만(던진 공처럼) 가로는 계속 움직여서
+    // 멈칫하는 대신 매끄러운 포물선으로 보입니다.
+    outer.current.animate(
+      [
+        { translate: "0px 0px", offset: 0 },
+        { translate: "0px 0px", offset: morphAt, easing: "cubic-bezier(0.4, 0, 0.6, 1)" },
+        { translate: `${dx}px 0px` },
+      ],
+      { duration, fill: "forwards" },
+    );
+    const y = (v: number) => `-50% calc(-50% + ${v}px)`;
     const animation = node.animate(
       [
-        { ...start, translate: at(0, 0) },
-        // 제자리에서 원으로 바뀐 뒤
-        { ...circle, translate: at(0, -6), offset: isText ? 0.3 : 0.2 },
-        // 위로 솟구쳤다가
-        { ...circle, translate: at(dx * 0.7, dy * 1.1), offset: 0.75 },
-        // 댓글창 맨 위(떨어질 자리 바로 위)에 도착
-        { ...circle, translate: at(dx, dy) },
+        // 제자리에서 작은 원으로 바뀌고
+        { ...start, translate: y(0), easing: "ease-out" },
+        // 도착 지점 위쪽으로 솟구쳤다가 (점점 느려지며 = ease-out quad)
+        { ...circle, translate: y(-6), offset: morphAt, easing: "cubic-bezier(0.333, 0.667, 0.667, 1)" },
+        // 아래로 떨어지며 (점점 빨라지며 = ease-in quad)
+        { ...circle, translate: y(dy - RISE), offset: apexAt, easing: "cubic-bezier(0.333, 0, 0.667, 0.333)" },
+        // 도착 — 이 속도를 말풍선이 이어받아 계속 떨어집니다.
+        { ...circle, translate: y(dy) },
       ],
-      { duration: isText ? 720 : 560, easing: "cubic-bezier(0.45, 0, 0.25, 1)", fill: "forwards" },
+      { duration, fill: "forwards" },
     );
-    // 한마디 글자는 원으로 바뀌면서 사라집니다.
-    if (isText) label.current?.animate([{ opacity: 1 }, { opacity: 0, offset: 0.18 }, { opacity: 0 }], { duration: 720, fill: "forwards" });
-    animation.onfinish = onArrive;
+    // 한마디 글자는 원으로 바뀌기 전에 바로 사라집니다 (날아가는 원은 빈 원).
+    if (isText) label.current?.animate([{ opacity: 1 }, { opacity: 0, offset: 0.1 }, { opacity: 0 }], { duration, fill: "forwards" });
+    // ease-in quad의 끝 속도 = 2 × 거리 ÷ 시간 → 물리 한 걸음(1/60초)당 px
+    animation.onfinish = () => onArrive(((2 * RISE) / fallMs) * (1000 / 60));
     return () => animation.cancel();
     // 원 하나당 한 번만 날아갑니다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -199,18 +228,18 @@ function FlyingCircle({ flight, onArrive }: { flight: Flight; onArrive: () => vo
   const { from, kind, text } = flight;
   return (
     <div
-      ref={el}
+      ref={outer}
       aria-hidden
-      className="pointer-events-none fixed z-30 flex items-center justify-center overflow-hidden text-center shadow-[0_10px_24px_rgba(0,0,0,0.35)]"
-      style={{ left: from.left + from.width / 2, top: from.top + from.height / 2, translate: "-50% -50%" }}
+      className="pointer-events-none fixed z-30 size-0"
+      style={{ left: from.left + from.width / 2, top: from.top + from.height / 2 }}
     >
-      {kind === "text" ? (
-        <span ref={label} className="px-4 text-[20px] leading-[1.45] font-bold tracking-[-0.4px] whitespace-pre text-on-dark">
-          {text}
-        </span>
-      ) : (
-        <span className="text-[16px]">{text}</span>
-      )}
+      <div ref={el} className="absolute top-0 left-0 flex items-center justify-center overflow-hidden text-center">
+        {kind === "text" && (
+          <span ref={label} className="px-4 text-[20px] leading-[1.45] font-bold tracking-[-0.4px] whitespace-pre text-on-dark">
+            {text}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
