@@ -21,8 +21,9 @@ const FILL_LIMIT = 2 / 3;
 // 바닥은 칸 아래 경계보다 살짝 아래 (Figma처럼 맨 아래 줄이 그라데이션에 반쯤 걸치게)
 const FLOOR_BELOW = 12;
 const STEP_MS = 1000 / 60;
-// 글 댓글은 이 각도(약 20°)까지만 기울어집니다. 이모지는 제한 없이 굴러갑니다.
-const MAX_TILT = 0.35;
+// 글 댓글은 이 각도(약 30°)까지만 기울어집니다. 틈에 비스듬히 끼어 들어갈 만큼은 기울되, 눕지는 않게.
+// 이모지는 제한 없이 굴러갑니다.
+const MAX_TILT = 0.52;
 const PRESETTLE_STEPS = 60;
 // 댓글 사이 간격 (약 1mm). 물리 몸체를 보이는 말풍선보다 이만큼 크게 만듭니다.
 const GAP = 4;
@@ -50,11 +51,12 @@ class PileWorld {
   constructor(width: number) {
     this.width = width;
     this.engine.gravity.y = 1.1;
-    const wall = { isStatic: true, friction: 0.5 };
+    // 벽은 마찰이 없어야 댓글이 벽에 붙어 걸리지 않고 벽을 타고 미끄러져 내려갑니다.
+    const wall = { isStatic: true, friction: 0, frictionStatic: 0 };
     this.rightWall = Bodies.rectangle(width + 50, -50000, 100, 100000, wall);
     Composite.add(this.engine.world, [
       // 바닥은 칸보다 넉넉히 넓게 (화면 폭이 넓어져도 그대로 쓰도록)
-      Bodies.rectangle(width / 2, 50, 4000, 100, wall),
+      Bodies.rectangle(width / 2, 50, 4000, 100, { isStatic: true, friction: 0.6 }),
       Bodies.rectangle(-50, -50000, 100, 100000, wall),
       this.rightWall,
     ]);
@@ -141,8 +143,11 @@ class PileWorld {
       Body.setVelocity(body, { x: dir * (1 + Math.random()), y: 0 });
       Body.setAngularVelocity(body, dir * 0.1);
     } else {
-      // 잘 안 돌도록 회전 관성을 키웁니다 (부딪힐 때만 살짝 기울어짐).
-      Body.setInertia(body, body.inertia * 4);
+      // 살짝 비스듬히, 조금 돌면서 떨어집니다. 회전 관성은 약간만 키워 빙글빙글 돌지는 않게.
+      const dir = Math.random() < 0.5 ? -1 : 1;
+      Body.setInertia(body, body.inertia * 1.5);
+      Body.setAngle(body, dir * Math.random() * 0.15);
+      Body.setAngularVelocity(body, dir * (0.005 + Math.random() * 0.01));
     }
     Composite.add(this.engine.world, body);
     this.tracked.set(comment.id, { body, el, w, h, ox: x - body.position.x, oy: y - body.position.y, landed: false });
@@ -166,8 +171,8 @@ class PileWorld {
     태그 자리만 막고 나머지 윗부분은 다른 댓글처럼 GAP만큼만 띄웁니다.
   */
   private bubbleBody(el: HTMLElement, x: number, y: number, w: number, h: number) {
-    // 튕기지 않고 착 붙도록 탄성은 거의 없게, 마찰은 크게
-    const options = { restitution: 0.02, friction: 0.9, frictionStatic: 1.2, frictionAir: 0.02, density: 0.002 };
+    // 튕김은 거의 없게. 마찰은 낮게 해서 틈 위에 걸치지 않고 미끄러져 빈 곳으로 들어가게 합니다.
+    const options = { restitution: 0.05, friction: 0.12, frictionStatic: 0.3, frictionAir: 0.01, density: 0.002 };
     const left = x - w / 2;
     const top = y - h / 2;
     // offset* 값은 회전·이동(transform)의 영향을 받지 않아서, 화면에 어떻게 그려져 있든 원래 크기를 잽니다.
