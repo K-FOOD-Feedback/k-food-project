@@ -13,11 +13,10 @@ import { coverOf, SAMPLE_MY_POST, useFlow, MY_POST_ID } from "@/lib/write-store"
      0  카드가 아래(Post 버튼 자리)에서 기울어진 채 솟아오름
    ~600 스프링처럼 흔들리며 정방향으로 섬
   1050  "Posted!" 도장 쾅 → 카드 찌그러짐 + 화면 흔들림 + 색종이
-  1450  뒤에 핑크·보라 카드가 펼쳐짐 (피드에 합류)
-  1750~ 체크 · 문구 · 버튼 순서로 등장, 이후 카드는 둥실둥실
+  1500~ 체크 · 문구 · 버튼 순서로 등장, 이후 카드는 둥실둥실
   카드를 손가락으로 문지르면 3D로 기울고, 탭하면 색종이가 다시 터짐
 */
-const T = { stamp: 1050, fan: 1450, check: 1750, text: 1850, cta: 2000, float: 2300 };
+const T = { stamp: 1050, check: 1500, text: 1600, cta: 1750, float: 2000 };
 
 export function DoneScreen() {
   const { myPost } = useFlow();
@@ -42,10 +41,10 @@ export function DoneScreen() {
 
       {/* 도장 찍힐 때 화면 흔들림 (처음 한 번) */}
       <div className="animate-jolt" style={{ animationDelay: `${T.stamp + 60}ms` }}>
-        <div className="relative mx-auto h-[400px] w-full max-w-[375px] [perspective:900px]">
+        <div className="relative mx-auto h-[420px] w-full max-w-[375px] [perspective:900px]">
           {/* 3D 기울기 (손가락을 따라감) */}
           <div
-            className="absolute left-1/2 top-6 w-[235px] -ml-[117.5px] cursor-pointer touch-none"
+            className="absolute left-1/2 top-12 w-[235px] -ml-[117.5px] cursor-pointer touch-none"
             onPointerMove={onMove}
             onPointerLeave={() => setTilt({ x: 0, y: 0, active: false })}
             onPointerUp={() => setTilt({ x: 0, y: 0, active: false })}
@@ -60,17 +59,6 @@ export function DoneScreen() {
             <div className="animate-float" style={{ animationDelay: `${T.float}ms` }}>
               {/* 솟아올라 정방향으로 */}
               <div className="relative animate-card-enter">
-                {/* 뒤 카드 — 피드 카드 묶음에 합류한 느낌 */}
-                <span
-                  aria-hidden="true"
-                  className="absolute inset-0 animate-fan-left rounded-[23px] bg-secondary"
-                  style={{ animationDelay: `${T.fan}ms` }}
-                />
-                <span
-                  aria-hidden="true"
-                  className="absolute inset-0 animate-fan-right rounded-[23px] bg-primary"
-                  style={{ animationDelay: `${T.fan + 80}ms` }}
-                />
                 <div key={`squash-${burst}`} className="relative animate-squash" style={{ animationDelay: `${stampDelay + 40}ms` }}>
                   <FeedCard
                     title={post.title}
@@ -85,7 +73,7 @@ export function DoneScreen() {
                 </div>
                 <span
                   key={`stamp-${burst}`}
-                  className="absolute -right-12 -top-5 -rotate-[10deg] animate-stamp rounded-full bg-primary px-7 py-4 font-display text-[30px] leading-[1.1] text-on-light shadow-[0_10px_28px_rgba(0,0,0,0.45)]"
+                  className="absolute -right-10 top-1 -rotate-[10deg] animate-stamp rounded-full bg-primary px-7 py-4 font-display text-[30px] leading-[1.1] text-on-light shadow-[0_10px_28px_rgba(0,0,0,0.45)]"
                   style={{ animationDelay: `${stampDelay}ms`, transform: "translateZ(40px)" }}
                 >
                   Posted!
@@ -97,7 +85,7 @@ export function DoneScreen() {
           <Confetti key={`confetti-${burst}`} delay={stampDelay + 40} />
 
           <span
-            className="absolute left-[calc(50%+92px)] top-[300px] flex size-16 animate-pop items-center justify-center rounded-full bg-secondary text-on-light shadow-[0_8px_20px_rgba(0,0,0,0.35)]"
+            className="absolute left-[calc(50%+92px)] top-[330px] flex size-16 animate-pop items-center justify-center rounded-full bg-secondary text-on-light shadow-[0_8px_20px_rgba(0,0,0,0.35)]"
             style={{ animationDelay: `${T.check}ms` }}
           >
             <Icon name="check" size={30} strokeWidth={2.5} />
@@ -115,7 +103,7 @@ export function DoneScreen() {
         </p>
       </div>
 
-      <StickyBottom className="animate-rise [animation-delay:2000ms]">
+      <StickyBottom className="animate-rise [animation-delay:1750ms]">
         <div className="flex gap-1">
           <PillButton tone="white" href="/home">
             Back to home
@@ -146,7 +134,7 @@ const PIECES = Array.from({ length: 28 }, (_, i) => {
 
 function Confetti({ delay }: { delay: number }) {
   return (
-    <div aria-hidden="true" className="pointer-events-none absolute left-[calc(50%+80px)] top-[60px] z-20">
+    <div aria-hidden="true" className="pointer-events-none absolute left-[calc(50%+80px)] top-[90px] z-20">
       {PIECES.map((p, i) => (
         <span
           key={i}
