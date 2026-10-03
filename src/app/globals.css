@@ -26,6 +26,38 @@
     sans-serif;
   --font-gilroy: "Gilroy", var(--font-figtree), "Pretendard Variable",
     Pretendard, system-ui, sans-serif;
+
+  /* 진입 애니메이션 (지연은 [animation-delay:…]로 지정) */
+  --animate-rise: rise 560ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-pop: pop 520ms cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+
+/* 아래에서 올라오며 나타남 */
+@keyframes rise {
+  from {
+    opacity: 0;
+    translate: 0 28px;
+  }
+}
+
+/* 뿅! 하고 튀어나옴 — scale만 바꿔서 rotate-*와 겹치지 않음 */
+@keyframes pop {
+  from {
+    opacity: 0;
+    scale: 0.2;
+  }
+  60% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+  }
 }
 
 /* 영문 제목용 Gilroy ExtraBold (굵기까지 같이 지정해야 Light가 잡히지 않음) */

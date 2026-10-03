@@ -9,19 +9,18 @@ export default function Page() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-background pt-[env(safe-area-inset-top)] text-on-dark">
       <section className="relative h-[460px] shrink-0">
+        {/* 진입 순서: 헤드라인 한 줄씩 → 사진 → 스티커 뿅뿅 → 하단 버튼 */}
         <h1 className="absolute left-5 top-[72px] font-display text-[72px] leading-[0.87]">
-          See
-          <br />
-          what
-          <br />
-          Koreans
-          <br />
-          think.
+          {["See", "what", "Koreans", "think."].map((word, i) => (
+            <span key={word} className="block animate-rise" style={{ animationDelay: `${i * 90}ms` }}>
+              {word}
+            </span>
+          ))}
         </h1>
 
         {/* 물결 모양으로 잘린 음식 사진 */}
         <div
-          className="absolute right-[17px] top-[284px] size-[145px] overflow-hidden"
+          className="absolute right-[17px] top-[284px] size-[145px] animate-pop overflow-hidden [animation-delay:420ms]"
           style={{
             maskImage: "url(/images/blob-mask.svg)",
             WebkitMaskImage: "url(/images/blob-mask.svg)",
@@ -40,18 +39,18 @@ export default function Page() {
         </div>
 
         {/* 스티커 */}
-        <span className="absolute left-7 top-[338px] -rotate-[8deg] rounded-full bg-primary px-5 py-3 text-[20px] font-extrabold leading-[1.2] text-on-light">
+        <span className="absolute left-7 top-[338px] -rotate-[8deg] animate-pop rounded-full bg-primary px-5 py-3 text-[20px] font-extrabold leading-[1.2] text-on-light [animation-delay:620ms]">
           맛있겠다!
         </span>
-        <span className="absolute left-[84px] top-[414px] rotate-6 rounded-full bg-content px-5 py-3 font-display text-[20px] leading-none text-on-light">
+        <span className="absolute left-[84px] top-[414px] rotate-6 animate-pop rounded-full bg-content px-5 py-3 font-display text-[20px] leading-none text-on-light [animation-delay:760ms]">
           Is it Korean?
         </span>
-        <span className="absolute left-[292px] top-[400px] flex size-14 items-center justify-center rounded-full bg-secondary text-on-light">
+        <span className="absolute left-[292px] top-[400px] flex size-14 animate-pop items-center justify-center rounded-full bg-secondary text-on-light [animation-delay:900ms]">
           <HeartIcon />
         </span>
       </section>
 
-      <section className="mt-auto flex flex-col items-center px-6 pb-[calc(24px+env(safe-area-inset-bottom))]">
+      <section className="mt-auto flex animate-rise flex-col items-center px-6 pb-[calc(24px+env(safe-area-inset-bottom))] [animation-delay:850ms]">
         <p className="text-[14px] font-bold leading-[1.3] text-neutral-400">How will you join?</p>
         <div className="mt-[22px] flex w-full flex-col items-center gap-2">
           {/* TODO: 한국인/외국인 구분을 저장해서 메인 화면에 넘기기 */}
