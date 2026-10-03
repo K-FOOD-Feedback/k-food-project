@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { COMMENT_MAX, QUICK_EMOJIS, useComments } from "./comments";
 import { GravityPile } from "./GravityPile";
 
@@ -9,17 +9,59 @@ import { GravityPile } from "./GravityPile";
 export function CommentPile({ postId, commentCount, authorFlag }: { postId: string; commentCount: number; authorFlag: string }) {
   const { comments, addedCount, add } = useComments(postId, authorFlag);
   const [draft, setDraft] = useState("");
-  const onSubmit = (e: FormEvent) => {
+  const card = useRef<HTMLSpanElement>(null);
+  const zone = useRef<HTMLDivElement>(null);
+  const ghost = useRef<HTMLDivElement>(null);
+  // 보내기 후 날아가는 중인 한마디 카드 (도착하면 댓글로 추가)
+  const [flying, setFlying] = useState<{ text: string; from: DOMRect; to: { x: number; y: number } } | null>(null);
+
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (flying) return;
     const text = draft
       .split("\n")
       .map((line) => line.trim())
       .filter(Boolean)
       .join("\n");
     if (!text) return;
-    add("text", text);
     setDraft("");
+    const zoneEl = zone.current;
+    if (!card.current || !zoneEl || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      add("text", text);
+      return;
+    }
+    // 댓글창 윗부분이 화면 밖이면 먼저 보이게 올려 줍니다 (떨어지는 모습이 보이도록).
+    if (zoneEl.getBoundingClientRect().top < 16) {
+      zoneEl.scrollIntoView({ behavior: "smooth", block: "center" });
+      await new Promise((r) => setTimeout(r, 380));
+    }
+    const z = zoneEl.getBoundingClientRect();
+    setFlying({ text, from: card.current.getBoundingClientRect(), to: { x: z.left + z.width / 2, y: z.top + 24 } });
   };
+
+  // 카드가 댓글창 위쪽으로 슝 날아가며 작아지고, 도착하면 댓글로 추가되어 더미 위로 떨어집니다.
+  useLayoutEffect(() => {
+    const el = ghost.current;
+    if (!flying || !el) return;
+    const { from, to, text } = flying;
+    const dx = to.x - (from.left + from.width / 2);
+    const dy = to.y - (from.top + from.height / 2);
+    const animation = el.animate(
+      [
+        { transform: "translate(0, 0) rotate(-4.91deg) scale(1)", opacity: 1 },
+        { transform: `translate(${dx * 0.85}px, ${dy * 1.08}px) rotate(4deg) scale(0.62)`, opacity: 1, offset: 0.7 },
+        { transform: `translate(${dx}px, ${dy}px) rotate(0deg) scale(0.4)`, opacity: 0 },
+      ],
+      { duration: 620, easing: "cubic-bezier(0.55, 0, 0.3, 1)", fill: "forwards" },
+    );
+    animation.onfinish = () => {
+      add("text", text);
+      setFlying(null);
+    };
+    return () => animation.cancel();
+    // add는 매 렌더 새로 만들어지지만 이 애니메이션은 카드 하나당 한 번만 돌아야 합니다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flying]);
 
   return (
     <div className="flex flex-col items-center gap-8">
@@ -37,7 +79,9 @@ export function CommentPile({ postId, commentCount, authorFlag }: { postId: stri
           </Link>
         </div>
 
-        <GravityPile comments={comments} />
+        <div ref={zone}>
+          <GravityPile comments={comments} />
+        </div>
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[92px] bg-linear-to-b from-[#292929]/0 to-[#292929]" />
       </section>
 
@@ -45,7 +89,7 @@ export function CommentPile({ postId, commentCount, authorFlag }: { postId: stri
       <form onSubmit={onSubmit} className="relative h-[181px] w-[270px]">
         <label className="absolute inset-x-0 top-0 flex h-[152px] items-center justify-center">
           <span className="sr-only">한마디 남기기</span>
-          <span className="relative flex h-[130px] w-[260px] -rotate-[4.91deg] items-center justify-center rounded-[26px] bg-[#292929] p-4">
+          <span ref={card} className="relative flex h-[130px] w-[260px] -rotate-[4.91deg] items-center justify-center rounded-[26px] bg-[#292929] p-4">
             <textarea
               value={draft}
               onChange={(e) => setDraft(limitDraft(e.target.value))}
@@ -65,7 +109,7 @@ export function CommentPile({ postId, commentCount, authorFlag }: { postId: stri
         <span className="absolute top-[123px] left-[84px] flex h-[58px] w-[112px] items-center justify-center">
           <button
             type="submit"
-            disabled={!draft.trim()}
+            disabled={!draft.trim() || !!flying}
             className="flex rotate-[4.89deg] items-center gap-1.5 rounded-full bg-white px-3.5 py-2.5 text-[20px] leading-[1.45] font-bold tracking-[-0.4px] text-black"
           >
             {/* eslint-disable-next-line @next/next/no-img-element -- 작은 SVG 아이콘 */}
@@ -74,6 +118,21 @@ export function CommentPile({ postId, commentCount, authorFlag }: { postId: stri
           </button>
         </span>
       </form>
+
+      {flying && (
+        <div
+          ref={ghost}
+          aria-hidden
+          className="pointer-events-none fixed z-30 flex h-[130px] w-[260px] items-center justify-center rounded-[26px] bg-[#3a3a3a] p-4 text-center text-[20px] leading-[1.45] font-bold tracking-[-0.4px] whitespace-pre text-on-dark shadow-[0_12px_32px_rgba(0,0,0,0.45)]"
+          style={{
+            left: flying.from.left + flying.from.width / 2 - 130,
+            top: flying.from.top + flying.from.height / 2 - 65,
+            transform: "rotate(-4.91deg)",
+          }}
+        >
+          {flying.text}
+        </div>
+      )}
 
       <div className="flex w-full gap-0.5">
         {QUICK_EMOJIS.map((emoji) => (
