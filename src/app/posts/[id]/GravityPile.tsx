@@ -99,6 +99,14 @@ class PileWorld {
 
   /** 아직 세계에 없는 댓글을 추가합니다. 첫 호출은 미리 쌓아 둔 상태로, 이후는 눈앞에서 떨어집니다. */
   sync(comments: Comment[], nodes: Map<string, HTMLElement>) {
+    // 목록에서 사라진 댓글(삭제·저장소 초기화)은 물리 세계에서도 뺍니다.
+    // 남겨 두면 보이지 않는 몸체가 남아 새 댓글이 허공에 걸립니다.
+    const ids = new Set(comments.map((c) => c.id));
+    for (const [id, { body }] of this.tracked) {
+      if (ids.has(id)) continue;
+      Composite.remove(this.engine.world, body);
+      this.tracked.delete(id);
+    }
     const fresh = comments.filter((c) => !this.tracked.has(c.id) && nodes.has(c.id));
     if (fresh.length === 0) return;
 
@@ -281,7 +289,7 @@ function Bubble({ comment }: { comment: Comment }) {
           {author.flag}
         </span>
       )}
-      {comment.text}
+      {splitLines(comment.text).join("\n")}
     </span>
   );
   if (author.kind !== "author") return bubble;
@@ -295,4 +303,33 @@ function Bubble({ comment }: { comment: Comment }) {
       </span>
     </span>
   );
+}
+
+// 대략적인 글자 폭: 한글·한자·이모지는 영문의 약 2배
+const charWidth = (ch: string) =>
+  /[\u1100-\u11ff\u3130-\u318f\uac00-\ud7af\u4e00-\u9fff]|\p{Extended_Pictographic}/u.test(ch) ? 1 : 0.55;
+const widthOf = (text: string) => Array.from(text).reduce((sum, ch) => sum + charWidth(ch), 0);
+// 한 줄에 한글 약 10자까지. 넘으면 두 줄로 나눕니다.
+const ONE_LINE_MAX = 10;
+
+/** 한 줄로 긴 한마디는 가운데쯤에서 두 줄로 나눕니다 (가능하면 띄어쓰기에서). 이미 줄을 나눴으면 그대로. */
+function splitLines(text: string): string[] {
+  if (text.includes("\n") || widthOf(text) <= ONE_LINE_MAX) return text.split("\n");
+  const chars = Array.from(text);
+  const half = widthOf(text) / 2;
+  let best = -1;
+  let bestScore = Infinity;
+  let acc = 0;
+  chars.forEach((ch, i) => {
+    acc += charWidth(ch);
+    if (i === 0 || i === chars.length - 1) return;
+    // 띄어쓰기에서 나누는 걸 우선하되, 가운데에서 너무 멀면 아무 글자에서나
+    const score = Math.abs(acc - half) + (ch === " " ? 0 : 3);
+    if (score < bestScore) {
+      bestScore = score;
+      best = i;
+    }
+  });
+  const cut = chars[best] === " " ? best : best + 1;
+  return [chars.slice(0, cut).join("").trim(), chars.slice(best + 1).join("").trim()];
 }
