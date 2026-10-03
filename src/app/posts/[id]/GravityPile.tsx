@@ -26,11 +26,15 @@ const STEP_MS = 1000 / 60;
 // 이모지는 제한 없이 굴러갑니다.
 const MAX_TILT = 0.52;
 const PRESETTLE_STEPS = 60;
-// 댓글 전체 화면을 열 때 "와르르" 쏟아지는 연출: 최신 댓글 최대 이만큼을 1초 안에 떨어뜨립니다.
+// 댓글 전체 화면을 열 때 "와르르" 쏟아지는 연출: 최신 댓글 최대 이만큼을 0.7초 안에 떨어뜨립니다.
 // 그보다 오래된 댓글은 이미 쌓인 상태(그라데이션 아래쪽)로 시작합니다.
 const RAIN_MAX = 14;
-const RAIN_TOTAL_MS = 1000;
-const RAIN_GAP_MAX_MS = 90;
+const RAIN_TOTAL_MS = 700;
+const RAIN_GAP_MAX_MS = 70;
+// 더미가 높아질 때 화면이 따라 내려가는 움직임 (스프링: 부드럽게 출발하고 부드럽게 멈춤)
+// 약간 과감쇠(넘치지 않음)로, 연달아 오는 작은 목표 이동을 하나의 매끄러운 내려감으로 이어 줍니다.
+const FOLLOW_STIFFNESS = 0.008;
+const FOLLOW_DAMPING = 0.22;
 // 댓글 사이 간격 (약 1mm). 물리 몸체를 보이는 말풍선보다 이만큼 크게 만듭니다.
 const GAP = 4;
 // 가운데 선호 정도: 높이가 비슷하면 가운데 쪽을 고르는 정도로만 (가운데에서 100px = 5px 차이).
@@ -69,6 +73,17 @@ class PileWorld {
   private scroller: { box: HTMLElement; content: HTMLElement } | null;
   /** 칸 맨 위에 보이는 세계 y좌표 (더미가 높아지면 위로 따라 올라갑니다) */
   private viewTop: number;
+  /** 화면이 따라 내려가는 속도 (스프링) */
+  private viewVel = 0;
+  /**
+    화면이 따라갈 목표. 더미는 쌓이기만 하므로 높아지는 쪽(위)으로만 움직이게 해서,
+    댓글이 자리 잡으며 생기는 미세한 흔들림을 화면이 따라 떨지 않게 합니다.
+    (목표는 닿아서 멈춘 댓글로만 정하므로 실제보다 높게 잡히지 않습니다)
+    댓글이 지워지거나 칸 크기가 바뀌면 null로 풀어 다시 계산합니다.
+  */
+  private followTarget: number | null = null;
+  /** 스크롤 칸 안쪽 높이 (바뀔 때만 다시 그리도록 기억) */
+  private contentHeight = 0;
   private frame = 0;
   private started = false;
   private nextDrop: DropHint | null = null;
@@ -132,6 +147,7 @@ class PileWorld {
   /** 칸 크기가 바뀌면(화면 회전·창 크기 변경) 오른쪽 벽을 옮기고, 댓글을 비율대로 펼쳐 다시 쌓습니다. */
   resize(width: number, height: number) {
     this.height = height;
+    this.followTarget = null;
     if (Math.abs(width - this.width) < 1) return;
     const ratio = width / this.width;
     this.width = width;
@@ -153,6 +169,7 @@ class PileWorld {
       if (ids.has(id)) continue;
       Composite.remove(this.engine.world, body);
       this.tracked.delete(id);
+      this.followTarget = null;
     }
     const fresh = comments.filter((c) => !this.tracked.has(c.id) && !this.pendingRain.has(c.id) && nodes.has(c.id));
     if (fresh.length === 0) return;
@@ -169,7 +186,9 @@ class PileWorld {
       }
       for (let i = 0; i < 120; i++) this.step();
       for (const t of this.tracked.values()) t.landed = true;
-      this.viewTop = this.targetTop();
+      // 미리 쌓아 둔 댓글은 아직 살짝 움직여도 다 넣어서 시작 높이를 잡습니다 (열자마자 화면이 휙 움직이지 않게).
+      this.followTarget = this.targetTop(false);
+      this.viewTop = this.followTarget;
       this.render(false);
       // 오래된 것부터 차례로, 전체가 1초 안에 끝나도록 간격을 둡니다.
       const gap = Math.min(RAIN_GAP_MAX_MS, RAIN_TOTAL_MS / Math.max(rain.length, 1));
@@ -183,6 +202,14 @@ class PileWorld {
           }, i * gap),
         );
       });
+      return;
+    }
+    // 여러 개가 한꺼번에 들어오면(다른 탭에서 쓴 댓글 등) 한꺼번에 겹쳐 떨어뜨리지 않고 조용히 쌓아 둡니다.
+    if (fresh.length > 2) {
+      for (const c of fresh) {
+        this.add(c, nodes.get(c.id)!);
+        for (let i = 0; i < PRESETTLE_STEPS; i++) this.step();
+      }
       return;
     }
     for (const c of fresh) {
@@ -330,27 +357,44 @@ class PileWorld {
   }
 
   /** 더미 맨 위가 칸의 2/3 높이를 넘지 않도록 하는 칸 맨 위 y좌표 */
-  private targetTop() {
+  /** settledOnly: 닿아서 거의 멈춘 댓글만 봅니다 (떨어지거나 통통 튀는 중인 댓글까지 보면 목표가 들쭉날쭉해짐) */
+  private targetTop(settledOnly = true) {
     let pileTop = 0;
     for (const { body, landed } of this.tracked.values()) {
-      if (landed && body.speed < 1.5) pileTop = Math.min(pileTop, body.bounds.min.y);
+      if (landed && (!settledOnly || body.speed < 0.4)) pileTop = Math.min(pileTop, body.bounds.min.y);
     }
     return Math.min(this.defaultTop, pileTop - this.height * (1 - FILL_LIMIT));
   }
 
   private render(smooth: boolean) {
-    const target = this.targetTop();
-    this.viewTop = smooth ? this.viewTop + (target - this.viewTop) * 0.08 : target;
+    const computed = this.targetTop();
+    const target = (this.followTarget = this.followTarget === null ? computed : Math.min(this.followTarget, computed));
+    if (smooth) {
+      // 스프링으로 따라갑니다: 목표와의 거리만큼 당기고, 속도만큼 늦춰서 부드럽게 가속·감속.
+      this.viewVel += (target - this.viewTop) * FOLLOW_STIFFNESS - this.viewVel * FOLLOW_DAMPING;
+      this.viewTop += this.viewVel;
+    } else {
+      this.viewTop = target;
+      this.viewVel = 0;
+    }
     // 스크롤 가능한 칸: 바닥까지 다 보이도록 안쪽 높이를 늘립니다.
-    if (this.scroller) this.scroller.content.style.height = `${Math.max(this.height, -this.viewTop)}px`;
-    for (const { body, el, w, h, ox, oy } of this.tracked.values()) {
+    // 40px 단위로만 바꿔서, 더미가 움직이는 동안 매 프레임 칸 전체를 다시 그리지 않게 합니다.
+    if (this.scroller) {
+      const height = Math.max(this.height, Math.ceil(-this.viewTop / 40) * 40);
+      if (height !== this.contentHeight) {
+        this.contentHeight = height;
+        this.scroller.content.style.height = `${height}px`;
+      }
+    }
+    for (const { body, el, w, h, ox, oy, landed } of this.tracked.values()) {
       // 무게중심 + (회전한) 요소 중심까지의 거리 = 요소 중심
       const cos = Math.cos(body.angle);
       const sin = Math.sin(body.angle);
       const cx = body.position.x + ox * cos - oy * sin;
       const cy = body.position.y + ox * sin + oy * cos - this.viewTop;
-      // 그라데이션 아래로 한참 내려간 댓글은 더 움직일 일이 없으니 고정해서 계산을 아낍니다.
-      if (!body.isStatic && cy - h > this.height + 200) Body.setStatic(body, true);
+      // 그라데이션 아래로 한참 내려가 완전히 멈춘 댓글은 더 움직일 일이 없으니 고정해서 계산을 아낍니다.
+      // (떨어지는 중인 댓글을 고정하면 공중에 걸려 그 위로 탑이 쌓이므로, 닿아서 멈춘 것만)
+      if (!body.isStatic && landed && body.speed < 0.1 && cy - h > this.height + 200) Body.setStatic(body, true);
       el.style.transform = `translate(${cx - w / 2}px, ${cy - h / 2}px) rotate(${body.angle}rad)`;
     }
   }
@@ -366,13 +410,16 @@ export function GravityPile({
   className = "h-[286px]",
   scrollable = false,
   rainOnOpen = false,
+  ready = true,
 }: {
   comments: Comment[];
   ref?: Ref<PileHandle>;
   className?: string;
   scrollable?: boolean;
-  /** 열 때 최신 댓글들이 위에서 와르르 쏟아지는 연출 (1초 이내) */
+  /** 열 때 최신 댓글들이 위에서 와르르 쏟아지는 연출 (0.7초 이내) */
   rainOnOpen?: boolean;
+  /** 저장된 댓글까지 다 읽어 왔는지. 그 전에 쌓기 시작하면 나중에 들어온 댓글이 한꺼번에 떨어집니다. */
+  ready?: boolean;
 }) {
   const zone = useRef<HTMLDivElement>(null);
   const content = useRef<HTMLDivElement>(null);
@@ -409,8 +456,8 @@ export function GravityPile({
   }, [scrollable, rainOnOpen]);
 
   useLayoutEffect(() => {
-    world.current?.sync(comments, nodes.current);
-  }, [comments]);
+    if (ready) world.current?.sync(comments, nodes.current);
+  }, [comments, ready]);
 
   return (
     <div

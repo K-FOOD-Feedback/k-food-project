@@ -74,9 +74,13 @@ function subscribe(onChange: () => void) {
   };
 }
 
+const noopSubscribe = () => () => {};
+
 /** 이 게시글의 댓글 (오래된 순)과 댓글 추가 함수 */
 export function useComments(postId: string, authorFlag: string) {
   const added = useSyncExternalStore(subscribe, () => readAdded(postId), () => EMPTY);
+  // 서버에서 그린 첫 화면에는 이 브라우저에 저장된 댓글이 아직 없습니다. 읽어 온 뒤에 true.
+  const ready = useSyncExternalStore(noopSubscribe, () => true, () => false);
   const comments = [...seedsFor(postId, authorFlag), ...added];
 
   // 앞으로 달 댓글의 색 (보내기 애니메이션이 미리 같은 색으로 날아가도록). ahead: 이미 날아가는 중인 개수
@@ -99,5 +103,5 @@ export function useComments(postId: string, authorFlag: string) {
     window.dispatchEvent(new Event(CHANGE));
   };
 
-  return { comments, addedCount: added.length, add, nextColor };
+  return { comments, addedCount: added.length, add, nextColor, ready };
 }
