@@ -25,8 +25,23 @@ type Flight = {
   dropY: number;
 };
 
-/** 댓글 영역 (Figma: Tile/한마디 참견 + 한마디 입력 + 이모지 키) */
-export function CommentPile({ postId, commentCount, authorFlag }: { postId: string; commentCount: number; authorFlag: string }) {
+/**
+  댓글 영역 (Figma: Tile/한마디 참견 + 한마디 입력 + 이모지 키)
+  variant "preview": 상세 화면 — 댓글 칸 286px, ↗ 버튼으로 댓글 전체 화면 이동
+  variant "full": 댓글 전체 화면 — 남는 높이를 다 쓰고, 칸을 스크롤해서 묻힌 댓글까지 볼 수 있음
+*/
+export function CommentPile({
+  postId,
+  commentCount,
+  authorFlag,
+  variant = "preview",
+}: {
+  postId: string;
+  commentCount: number;
+  authorFlag: string;
+  variant?: "preview" | "full";
+}) {
+  const full = variant === "full";
   const { comments, addedCount, add, nextColor } = useComments(postId, authorFlag);
   const [draft, setDraft] = useState("");
   const card = useRef<HTMLSpanElement>(null);
@@ -45,6 +60,12 @@ export function CommentPile({ postId, commentCount, authorFlag }: { postId: stri
       return;
     }
     // 댓글창 윗부분이 화면 밖이면 먼저 보이게 올려 줍니다 (떨어지는 모습이 보이도록).
+    // 전체 화면: 댓글 칸을 아래로 스크롤해 둔 상태면 맨 위로 올려서 떨어지는 모습이 보이게
+    const scrollBox = zoneEl.firstElementChild;
+    if (full && scrollBox && scrollBox.scrollTop > 0) {
+      pile.current.scrollToTop();
+      await new Promise((r) => setTimeout(r, 300));
+    }
     if (zoneEl.getBoundingClientRect().top < 16) {
       zoneEl.scrollIntoView({ behavior: "smooth", block: "center" });
       await new Promise((r) => setTimeout(r, 380));
@@ -88,23 +109,28 @@ export function CommentPile({ postId, commentCount, authorFlag }: { postId: stri
   };
 
   return (
-    <div className="flex flex-col items-center gap-8">
-      <section className="relative flex w-full flex-col gap-1 overflow-hidden rounded-[32px] bg-white/10 p-1" aria-label="댓글">
+    <div className={`flex flex-col items-center gap-8 ${full ? "min-h-0 flex-1" : ""}`}>
+      <section
+        className={`relative flex w-full flex-col gap-1 overflow-hidden rounded-[32px] bg-white/10 p-1 ${full ? "min-h-0 flex-1" : ""}`}
+        aria-label="댓글"
+      >
         <div ref={titleRow} className="flex h-16 items-center gap-10 pl-5">
           <h2 className="flex flex-1 items-center gap-1.5 text-[18px] leading-[1.3] font-bold tracking-[-0.54px]">
             댓글 <span className="text-neutral-400">{commentCount + addedCount}</span>
           </h2>
-          <Link
-            href={`/posts/${postId}/comments`}
-            aria-label="댓글 전체 보기"
-            className="flex size-16 items-center justify-center rounded-full bg-[#242424]"
-          >
-            <ArrowUpRightIcon />
-          </Link>
+          {!full && (
+            <Link
+              href={`/posts/${postId}/comments`}
+              aria-label="댓글 전체 보기"
+              className="flex size-16 items-center justify-center rounded-full bg-[#242424]"
+            >
+              <ArrowUpRightIcon />
+            </Link>
+          )}
         </div>
 
-        <div ref={zone}>
-          <GravityPile ref={pile} comments={comments} />
+        <div ref={zone} className={full ? "flex min-h-0 flex-1 flex-col" : ""}>
+          <GravityPile ref={pile} comments={comments} {...(full && { className: "min-h-0 flex-1", scrollable: true })} />
         </div>
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[92px] bg-linear-to-b from-[#292929]/0 to-[#292929]" />
       </section>

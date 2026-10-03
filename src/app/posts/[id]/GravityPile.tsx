@@ -14,11 +14,12 @@ const { Engine, Bodies, Body, Composite, Events, Sleeping } = Matter;
   - 이모지는 동그라미라 떨어진 뒤 굴러갑니다.
   - 댓글끼리는 약 1mm(4px) 띄워서 쌓입니다.
   - 더미가 칸 높이의 2/3를 넘으면 맨 위를 2/3 높이에 두고, 넘친 아래쪽은 그라데이션 뒤로 내립니다.
+    댓글 전체 화면(scrollable)에서는 칸을 아래로 스크롤해서 묻힌 댓글도 볼 수 있습니다.
 */
 
-const HEIGHT = 286;
 const FILL_LIMIT = 2 / 3;
-// 바닥은 칸 아래 경계보다 살짝 아래 (Figma처럼 맨 아래 줄이 그라데이션에 반쯤 걸치게)
+// 바닥은 칸 아래 경계보다 살짝 아래 (Figma처럼 맨 아래 줄이 그라데이션에 반쯤 걸치게).
+// 스크롤 가능한 칸에서는 맨 아래까지 내려 봤을 때 다 보이도록 칸 아래 경계에 맞춥니다.
 const FLOOR_BELOW = 12;
 const STEP_MS = 1000 / 60;
 // 글 댓글은 이 각도(약 30°)까지만 기울어집니다. 틈에 비스듬히 끼어 들어갈 만큼은 기울되, 눕지는 않게.
@@ -46,6 +47,8 @@ export type PileHandle = {
   planDrop: (width: number) => number;
   /** 다음에 추가되는 댓글을 이 자리에서 떨어뜨림 */
   setNextDrop: (hint: DropHint) => void;
+  /** (스크롤 가능한 칸) 맨 위로 스크롤 — 새 댓글이 떨어지는 모습이 보이도록 */
+  scrollToTop: () => void;
 };
 
 type Tracked = { body: Matter.Body; el: HTMLElement; w: number; h: number; ox: number; oy: number; landed: boolean };
@@ -55,16 +58,21 @@ class PileWorld {
   private engine = Engine.create({ enableSleeping: true });
   private tracked = new Map<string, Tracked>();
   private width: number;
+  private height: number;
   private rightWall: Matter.Body;
-  private defaultTop = -(HEIGHT + FLOOR_BELOW);
+  /** 스크롤 가능한 칸이면 그 칸과, 높이를 늘려 줄 안쪽 요소 */
+  private scroller: { box: HTMLElement; content: HTMLElement } | null;
   /** 칸 맨 위에 보이는 세계 y좌표 (더미가 높아지면 위로 따라 올라갑니다) */
-  private viewTop = this.defaultTop;
+  private viewTop: number;
   private frame = 0;
   private started = false;
   private nextDrop: DropHint | null = null;
 
-  constructor(width: number) {
+  constructor(width: number, height: number, scroller: { box: HTMLElement; content: HTMLElement } | null) {
     this.width = width;
+    this.height = height;
+    this.scroller = scroller;
+    this.viewTop = this.defaultTop;
     this.engine.gravity.y = 1.1;
     // 벽은 마찰이 없어야 댓글이 벽에 붙어 걸리지 않고 벽을 타고 미끄러져 내려갑니다.
     const wall = { isStatic: true, friction: 0, frictionStatic: 0 };
@@ -102,8 +110,14 @@ class PileWorld {
     this.tracked.clear();
   }
 
-  /** 칸 폭이 바뀌면(화면 회전·창 크기 변경) 오른쪽 벽을 옮기고, 댓글을 비율대로 펼쳐 다시 쌓습니다. */
-  resize(width: number) {
+  /** 더미가 낮을 때 칸 맨 위의 세계 y좌표 (바닥이 칸 아래 경계 근처에 오도록) */
+  private get defaultTop() {
+    return -(this.height + (this.scroller ? 0 : FLOOR_BELOW));
+  }
+
+  /** 칸 크기가 바뀌면(화면 회전·창 크기 변경) 오른쪽 벽을 옮기고, 댓글을 비율대로 펼쳐 다시 쌓습니다. */
+  resize(width: number, height: number) {
+    this.height = height;
     if (Math.abs(width - this.width) < 1) return;
     const ratio = width / this.width;
     this.width = width;
@@ -162,7 +176,9 @@ class PileWorld {
     const h = el.offsetHeight;
     // 날아온 원이 있으면 그 자리에서, 없으면 더미가 가장 낮은 곳의 칸 맨 위 바로 위에서 떨어집니다.
     const x = hint ? Math.min(Math.max(hint.x, w / 2), this.width - w / 2) : this.pickDropX(w + GAP);
-    const y = hint ? this.viewTop + hint.y : Math.min(this.viewTop, this.highest()) - h / 2 - 8;
+    // 스크롤된 칸이면 지금 보이는 맨 위 기준으로 떨어뜨립니다.
+    const scrolled = this.scroller?.box.scrollTop ?? 0;
+    const y = hint ? this.viewTop + scrolled + hint.y : Math.min(this.viewTop, this.highest()) - h / 2 - 8;
     const body = comment.kind === "emoji" ? this.circleBody(x, y, w) : this.bubbleBody(el, x, y, w, h);
     // 기울이거나 옆으로 밀지 않고 곧게 떨어집니다 (부딪힌 뒤 기울고 구르는 건 물리에 맡김).
     // 회전 관성은 약간만 키워 빙글빙글 돌지는 않게.
@@ -268,12 +284,14 @@ class PileWorld {
     for (const { body, landed } of this.tracked.values()) {
       if (landed && body.speed < 1.5) pileTop = Math.min(pileTop, body.bounds.min.y);
     }
-    return Math.min(this.defaultTop, pileTop - HEIGHT * (1 - FILL_LIMIT));
+    return Math.min(this.defaultTop, pileTop - this.height * (1 - FILL_LIMIT));
   }
 
   private render(smooth: boolean) {
     const target = this.targetTop();
     this.viewTop = smooth ? this.viewTop + (target - this.viewTop) * 0.08 : target;
+    // 스크롤 가능한 칸: 바닥까지 다 보이도록 안쪽 높이를 늘립니다.
+    if (this.scroller) this.scroller.content.style.height = `${Math.max(this.height, -this.viewTop)}px`;
     for (const { body, el, w, h, ox, oy } of this.tracked.values()) {
       // 무게중심 + (회전한) 요소 중심까지의 거리 = 요소 중심
       const cos = Math.cos(body.angle);
@@ -281,14 +299,29 @@ class PileWorld {
       const cx = body.position.x + ox * cos - oy * sin;
       const cy = body.position.y + ox * sin + oy * cos - this.viewTop;
       // 그라데이션 아래로 한참 내려간 댓글은 더 움직일 일이 없으니 고정해서 계산을 아낍니다.
-      if (!body.isStatic && cy - h > HEIGHT + 200) Body.setStatic(body, true);
+      if (!body.isStatic && cy - h > this.height + 200) Body.setStatic(body, true);
       el.style.transform = `translate(${cx - w / 2}px, ${cy - h / 2}px) rotate(${body.angle}rad)`;
     }
   }
 }
 
-export function GravityPile({ comments, ref }: { comments: Comment[]; ref?: Ref<PileHandle> }) {
+/**
+  className: 칸 높이 (기본은 상세 화면의 286px)
+  scrollable: 댓글 전체 화면처럼, 칸을 스크롤해서 그라데이션 아래로 묻힌 댓글까지 볼 수 있게
+*/
+export function GravityPile({
+  comments,
+  ref,
+  className = "h-[286px]",
+  scrollable = false,
+}: {
+  comments: Comment[];
+  ref?: Ref<PileHandle>;
+  className?: string;
+  scrollable?: boolean;
+}) {
   const zone = useRef<HTMLDivElement>(null);
+  const content = useRef<HTMLDivElement>(null);
   const nodes = useRef(new Map<string, HTMLElement>());
   const world = useRef<PileWorld | null>(null);
 
@@ -297,41 +330,51 @@ export function GravityPile({ comments, ref }: { comments: Comment[]; ref?: Ref<
     () => ({
       planDrop: (width) => world.current?.planDrop(width) ?? (zone.current?.clientWidth ?? 0) / 2,
       setNextDrop: (hint) => world.current?.setNextDrop(hint),
+      scrollToTop: () => zone.current?.scrollTo({ top: 0, behavior: "smooth" }),
     }),
     [],
   );
 
   useLayoutEffect(() => {
-    const pile = new PileWorld(zone.current!.clientWidth);
+    const box = zone.current!;
+    const pile = new PileWorld(box.clientWidth, box.clientHeight, scrollable ? { box, content: content.current! } : null);
     world.current = pile;
     pile.start();
-    const observer = new ResizeObserver(() => pile.resize(zone.current?.clientWidth ?? 0));
-    observer.observe(zone.current!);
+    const observer = new ResizeObserver(() => pile.resize(box.clientWidth, box.clientHeight));
+    observer.observe(box);
     return () => {
       observer.disconnect();
       pile.destroy();
       world.current = null;
     };
-  }, []);
+  }, [scrollable]);
 
   useLayoutEffect(() => {
     world.current?.sync(comments, nodes.current);
   }, [comments]);
 
   return (
-    <div ref={zone} className="relative h-[286px] w-full select-none" aria-label="최근 댓글">
-      {comments.map((c) => (
-        <div
-          key={c.id}
-          ref={(el) => {
-            if (el) nodes.current.set(c.id, el);
-            else nodes.current.delete(c.id);
-          }}
-          className="invisible absolute top-0 left-0 will-change-transform"
-        >
-          <Bubble comment={c} />
-        </div>
-      ))}
+    <div
+      ref={zone}
+      className={`relative w-full select-none ${className} ${
+        scrollable ? "overflow-x-hidden overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" : ""
+      }`}
+      aria-label="최근 댓글"
+    >
+      <div ref={content} className="relative h-full w-full">
+        {comments.map((c) => (
+          <div
+            key={c.id}
+            ref={(el) => {
+              if (el) nodes.current.set(c.id, el);
+              else nodes.current.delete(c.id);
+            }}
+            className="invisible absolute top-0 left-0 will-change-transform"
+          >
+            <Bubble comment={c} />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
