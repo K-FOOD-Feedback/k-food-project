@@ -42,7 +42,7 @@ export function CommentPile({
   variant?: "preview" | "full";
 }) {
   const full = variant === "full";
-  const { comments, addedCount, add, nextColor } = useComments(postId, authorFlag);
+  const { comments, addedCount, add, nextColor, ready } = useComments(postId, authorFlag);
   const [draft, setDraft] = useState("");
   const card = useRef<HTMLSpanElement>(null);
   const zone = useRef<HTMLDivElement>(null);
@@ -130,7 +130,7 @@ export function CommentPile({
         </div>
 
         <div ref={zone} className={full ? "flex min-h-0 flex-1 flex-col" : ""}>
-          <GravityPile ref={pile} comments={comments} {...(full && { className: "min-h-0 flex-1", scrollable: true, rainOnOpen: true })} />
+          <GravityPile ref={pile} comments={comments} ready={ready} {...(full && { className: "min-h-0 flex-1", scrollable: true, rainOnOpen: true })} />
         </div>
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[92px] bg-linear-to-b from-[#292929]/0 to-[#292929]" />
       </section>
