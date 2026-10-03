@@ -176,7 +176,7 @@ class PileWorld {
     Composite.add(this.engine.world, body);
     this.tracked.set(comment.id, { body, el, w, h, ox: x - body.position.x, oy: y - body.position.y, landed: false });
     el.style.visibility = "visible";
-    // 원 → 말풍선: 가운데 원 크기만 보이던 것이 양옆·위아래로 펼쳐집니다.
+    // 작은 원 → 본래 크기 말풍선: 가운데 원 크기만 보이던 것이 떨어지면서 양옆·위아래로 펼쳐집니다.
     const inner = el.firstElementChild as HTMLElement | null;
     if (hint && inner && hint.d < w) {
       const r = hint.d / 2;
@@ -186,7 +186,7 @@ class PileWorld {
           { clipPath: `inset(0px 0px round ${Math.min(h / 2, 32)}px)`, offset: 0.99 },
           { clipPath: "none" },
         ],
-        { duration: 320, easing: "cubic-bezier(0.3, 1.3, 0.5, 1)" },
+        { duration: 380, easing: "cubic-bezier(0.3, 1.25, 0.5, 1)" },
       );
     }
   }
