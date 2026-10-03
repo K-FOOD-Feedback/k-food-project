@@ -1,7 +1,7 @@
 "use client";
 
 import Matter from "matter-js";
-import { useLayoutEffect, useRef } from "react";
+import { useImperativeHandle, useLayoutEffect, useRef, type Ref } from "react";
 import type { Comment } from "./comments";
 
 const { Engine, Bodies, Body, Composite, Events, Sleeping } = Matter;
@@ -34,6 +34,17 @@ const CENTER_PULL = 0.05;
 const PROBE = 0.4;
 
 /** ox·oy: 몸체 무게중심에서 말풍선 요소 중심까지의 거리 (작성자 태그가 붙은 말풍선은 무게중심이 요소 중심과 다름) */
+/** 날아온 원이 도착한 자리 (칸 기준 좌표)와 원 지름. 다음 새 댓글이 여기서 원 → 말풍선으로 펼쳐지며 떨어집니다. */
+export type DropHint = { x: number; y: number; d: number };
+
+/** 댓글 영역이 더미에 미리 물어보고 지시하는 통로 */
+export type PileHandle = {
+  /** 이 폭의 댓글이 떨어질 자리 x (칸 기준) */
+  planDrop: (width: number) => number;
+  /** 다음에 추가되는 댓글을 이 자리에서 떨어뜨림 */
+  setNextDrop: (hint: DropHint) => void;
+};
+
 type Tracked = { body: Matter.Body; el: HTMLElement; w: number; h: number; ox: number; oy: number; landed: boolean };
 
 /** matter-js 세계. 바닥 윗면이 y = 0이고 더미는 위쪽(음수 y)으로 쌓입니다. */
@@ -47,6 +58,7 @@ class PileWorld {
   private viewTop = this.defaultTop;
   private frame = 0;
   private started = false;
+  private nextDrop: DropHint | null = null;
 
   constructor(width: number) {
     this.width = width;
@@ -127,15 +139,27 @@ class PileWorld {
       this.render(false);
       return;
     }
-    for (const c of fresh) this.add(c, nodes.get(c.id)!);
+    for (const c of fresh) {
+      const hint = this.nextDrop;
+      this.nextDrop = null;
+      this.add(c, nodes.get(c.id)!, hint);
+    }
   }
 
-  private add(comment: Comment, el: HTMLElement) {
+  planDrop(width: number) {
+    return this.pickDropX(width + GAP);
+  }
+
+  setNextDrop(hint: DropHint) {
+    this.nextDrop = hint;
+  }
+
+  private add(comment: Comment, el: HTMLElement, hint: DropHint | null = null) {
     const w = el.offsetWidth;
     const h = el.offsetHeight;
-    const x = this.pickDropX(w + GAP);
-    // 칸 맨 위(또는 더미 꼭대기 중 더 높은 곳) 바로 위에서 떨어집니다.
-    const y = Math.min(this.viewTop, this.highest()) - h / 2 - 8;
+    // 날아온 원이 있으면 그 자리에서, 없으면 더미가 가장 낮은 곳의 칸 맨 위 바로 위에서 떨어집니다.
+    const x = hint ? Math.min(Math.max(hint.x, w / 2), this.width - w / 2) : this.pickDropX(w + GAP);
+    const y = hint ? this.viewTop + hint.y : Math.min(this.viewTop, this.highest()) - h / 2 - 8;
     const body = comment.kind === "emoji" ? this.circleBody(x, y, w) : this.bubbleBody(el, x, y, w, h);
     if (comment.kind === "emoji") {
       // 동그라미는 옆으로 살짝 밀면서 떨어뜨려, 닿은 뒤 그 방향으로 굴러가게 합니다.
@@ -152,6 +176,19 @@ class PileWorld {
     Composite.add(this.engine.world, body);
     this.tracked.set(comment.id, { body, el, w, h, ox: x - body.position.x, oy: y - body.position.y, landed: false });
     el.style.visibility = "visible";
+    // 원 → 말풍선: 가운데 원 크기만 보이던 것이 양옆·위아래로 펼쳐집니다.
+    const inner = el.firstElementChild as HTMLElement | null;
+    if (hint && inner && hint.d < w) {
+      const r = hint.d / 2;
+      inner.animate(
+        [
+          { clipPath: `inset(${(h - hint.d) / 2}px ${(w - hint.d) / 2}px round ${r}px)` },
+          { clipPath: `inset(0px 0px round ${Math.min(h / 2, 32)}px)`, offset: 0.99 },
+          { clipPath: "none" },
+        ],
+        { duration: 320, easing: "cubic-bezier(0.3, 1.3, 0.5, 1)" },
+      );
+    }
   }
 
   private circleBody(x: number, y: number, w: number) {
@@ -258,10 +295,19 @@ class PileWorld {
   }
 }
 
-export function GravityPile({ comments }: { comments: Comment[] }) {
+export function GravityPile({ comments, ref }: { comments: Comment[]; ref?: Ref<PileHandle> }) {
   const zone = useRef<HTMLDivElement>(null);
   const nodes = useRef(new Map<string, HTMLElement>());
   const world = useRef<PileWorld | null>(null);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      planDrop: (width) => world.current?.planDrop(width) ?? (zone.current?.clientWidth ?? 0) / 2,
+      setNextDrop: (hint) => world.current?.setNextDrop(hint),
+    }),
+    [],
+  );
 
   useLayoutEffect(() => {
     const pile = new PileWorld(zone.current!.clientWidth);
@@ -363,4 +409,12 @@ function splitLines(text: string): string[] {
   });
   const cut = chars[best] === " " ? best : best + 1;
   return [chars.slice(0, cut).join("").trim(), chars.slice(best + 1).join("").trim()];
+}
+
+/** 아직 그려지지 않은 댓글의 대략적인 폭 (날아갈 목적지를 미리 정할 때 사용) */
+export function estimateWidth(kind: Comment["kind"], text: string) {
+  if (kind === "emoji") return 54;
+  const longest = Math.max(...splitLines(text).map(widthOf));
+  // 16px 굵은 한글 한 글자 ≈ 16px, 좌우 여백 20px씩
+  return longest * 16 + 40;
 }

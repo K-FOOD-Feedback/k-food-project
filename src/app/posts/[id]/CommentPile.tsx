@@ -2,32 +2,43 @@
 
 import Link from "next/link";
 import { useLayoutEffect, useRef, useState, type FormEvent } from "react";
-import { COMMENT_MAX, QUICK_EMOJIS, useComments } from "./comments";
-import { GravityPile } from "./GravityPile";
+import { COMMENT_MAX, QUICK_EMOJIS, useComments, type Comment } from "./comments";
+import { estimateWidth, GravityPile, type PileHandle } from "./GravityPile";
+
+/** 날아온 원의 지름 (= 이모지 말풍선 크기) */
+const CIRCLE = 54;
+/** 원이 도착하는 높이 (댓글 칸 위에서부터) */
+const ARRIVE_Y = 40;
+
+type Flight = {
+  id: number;
+  kind: Comment["kind"];
+  text: string;
+  color: string;
+  /** 출발: 한마디 카드 또는 누른 이모지 버튼 */
+  from: DOMRect;
+  /** 도착: 화면 좌표 */
+  to: { x: number; y: number };
+  /** 도착 자리 x (댓글 칸 기준) */
+  dropX: number;
+};
 
 /** 댓글 영역 (Figma: Tile/한마디 참견 + 한마디 입력 + 이모지 키) */
 export function CommentPile({ postId, commentCount, authorFlag }: { postId: string; commentCount: number; authorFlag: string }) {
-  const { comments, addedCount, add } = useComments(postId, authorFlag);
+  const { comments, addedCount, add, nextColor } = useComments(postId, authorFlag);
   const [draft, setDraft] = useState("");
   const card = useRef<HTMLSpanElement>(null);
   const zone = useRef<HTMLDivElement>(null);
-  const ghost = useRef<HTMLDivElement>(null);
-  // 보내기 후 날아가는 중인 한마디 카드 (도착하면 댓글로 추가)
-  const [flying, setFlying] = useState<{ text: string; from: DOMRect; to: { x: number; y: number } } | null>(null);
+  const pile = useRef<PileHandle>(null);
+  // 보내기·이모지를 누른 뒤 댓글 칸으로 날아가는 중인 원들 (도착하면 댓글로 추가)
+  const [flights, setFlights] = useState<Flight[]>([]);
+  const nextId = useRef(0);
 
-  const onSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (flying) return;
-    const text = draft
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .join("\n");
-    if (!text) return;
-    setDraft("");
+  /** 출발 요소에서 원으로 바뀌어 댓글 칸으로 날아간 뒤 댓글이 됩니다. */
+  const launch = async (kind: Comment["kind"], text: string, fromEl: HTMLElement | null) => {
     const zoneEl = zone.current;
-    if (!card.current || !zoneEl || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      add("text", text);
+    if (!fromEl || !zoneEl || !pile.current || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      add(kind, text);
       return;
     }
     // 댓글창 윗부분이 화면 밖이면 먼저 보이게 올려 줍니다 (떨어지는 모습이 보이도록).
@@ -36,32 +47,37 @@ export function CommentPile({ postId, commentCount, authorFlag }: { postId: stri
       await new Promise((r) => setTimeout(r, 380));
     }
     const z = zoneEl.getBoundingClientRect();
-    setFlying({ text, from: card.current.getBoundingClientRect(), to: { x: z.left + z.width / 2, y: z.top + 24 } });
+    // 더미가 가장 낮은 곳을 미리 정해, 원이 바로 그 위로 날아가게 합니다.
+    const dropX = pile.current.planDrop(estimateWidth(kind, text));
+    const flight: Flight = {
+      id: nextId.current++,
+      kind,
+      text,
+      color: nextColor(flights.length),
+      from: fromEl.getBoundingClientRect(),
+      to: { x: z.left + dropX, y: z.top + ARRIVE_Y },
+      dropX,
+    };
+    setFlights((list) => [...list, flight]);
   };
 
-  // 카드가 댓글창 위쪽으로 슝 날아가며 작아지고, 도착하면 댓글로 추가되어 더미 위로 떨어집니다.
-  useLayoutEffect(() => {
-    const el = ghost.current;
-    if (!flying || !el) return;
-    const { from, to, text } = flying;
-    const dx = to.x - (from.left + from.width / 2);
-    const dy = to.y - (from.top + from.height / 2);
-    const animation = el.animate(
-      [
-        { transform: "translate(0, 0) rotate(-4.91deg) scale(1)", opacity: 1 },
-        { transform: `translate(${dx * 0.85}px, ${dy * 1.08}px) rotate(4deg) scale(0.62)`, opacity: 1, offset: 0.7 },
-        { transform: `translate(${dx}px, ${dy}px) rotate(0deg) scale(0.4)`, opacity: 0 },
-      ],
-      { duration: 620, easing: "cubic-bezier(0.55, 0, 0.3, 1)", fill: "forwards" },
-    );
-    animation.onfinish = () => {
-      add("text", text);
-      setFlying(null);
-    };
-    return () => animation.cancel();
-    // add는 매 렌더 새로 만들어지지만 이 애니메이션은 카드 하나당 한 번만 돌아야 합니다.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [flying]);
+  const arrive = (flight: Flight) => {
+    pile.current?.setNextDrop({ x: flight.dropX, y: ARRIVE_Y, d: CIRCLE });
+    add(flight.kind, flight.text);
+    setFlights((list) => list.filter((f) => f.id !== flight.id));
+  };
+
+  const onSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    const text = draft
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .join("\n");
+    if (!text) return;
+    setDraft("");
+    launch("text", text, card.current);
+  };
 
   return (
     <div className="flex flex-col items-center gap-8">
@@ -80,7 +96,7 @@ export function CommentPile({ postId, commentCount, authorFlag }: { postId: stri
         </div>
 
         <div ref={zone}>
-          <GravityPile comments={comments} />
+          <GravityPile ref={pile} comments={comments} />
         </div>
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[92px] bg-linear-to-b from-[#292929]/0 to-[#292929]" />
       </section>
@@ -109,7 +125,7 @@ export function CommentPile({ postId, commentCount, authorFlag }: { postId: stri
         <span className="absolute top-[123px] left-[84px] flex h-[58px] w-[112px] items-center justify-center">
           <button
             type="submit"
-            disabled={!draft.trim() || !!flying}
+            disabled={!draft.trim()}
             className="flex rotate-[4.89deg] items-center gap-1.5 rounded-full bg-white px-3.5 py-2.5 text-[20px] leading-[1.45] font-bold tracking-[-0.4px] text-black"
           >
             {/* eslint-disable-next-line @next/next/no-img-element -- 작은 SVG 아이콘 */}
@@ -119,27 +135,16 @@ export function CommentPile({ postId, commentCount, authorFlag }: { postId: stri
         </span>
       </form>
 
-      {flying && (
-        <div
-          ref={ghost}
-          aria-hidden
-          className="pointer-events-none fixed z-30 flex h-[130px] w-[260px] items-center justify-center rounded-[26px] bg-[#3a3a3a] p-4 text-center text-[20px] leading-[1.45] font-bold tracking-[-0.4px] whitespace-pre text-on-dark shadow-[0_12px_32px_rgba(0,0,0,0.45)]"
-          style={{
-            left: flying.from.left + flying.from.width / 2 - 130,
-            top: flying.from.top + flying.from.height / 2 - 65,
-            transform: "rotate(-4.91deg)",
-          }}
-        >
-          {flying.text}
-        </div>
-      )}
+      {flights.map((f) => (
+        <FlyingCircle key={f.id} flight={f} onArrive={() => arrive(f)} />
+      ))}
 
       <div className="flex w-full gap-0.5">
         {QUICK_EMOJIS.map((emoji) => (
           <button
             key={emoji}
             type="button"
-            onClick={() => add("emoji", emoji)}
+            onClick={(e) => launch("emoji", emoji, e.currentTarget)}
             aria-label={`${emoji} 남기기`}
             className="flex aspect-square min-w-0 flex-1 items-center justify-center rounded-full bg-white/10 text-[20px] transition-transform active:scale-90"
           >
@@ -147,6 +152,65 @@ export function CommentPile({ postId, commentCount, authorFlag }: { postId: stri
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+/**
+  날아가는 원. 출발 요소(한마디 카드·이모지 버튼) 모양에서 시작해 새 댓글 색의 원으로 바뀌고,
+  살짝 포물선을 그리며 도착 자리로 날아갑니다.
+*/
+function FlyingCircle({ flight, onArrive }: { flight: Flight; onArrive: () => void }) {
+  const el = useRef<HTMLDivElement>(null);
+  const label = useRef<HTMLSpanElement>(null);
+
+  useLayoutEffect(() => {
+    const node = el.current;
+    if (!node) return;
+    const { from, to, kind, color } = flight;
+    const dx = to.x - (from.left + from.width / 2);
+    const dy = to.y - (from.top + from.height / 2);
+    const isText = kind === "text";
+    const start = isText
+      ? { width: "260px", height: "130px", borderRadius: "26px", backgroundColor: "#292929", rotate: "-4.91deg" }
+      : { width: `${from.width}px`, height: `${from.height}px`, borderRadius: "999px", backgroundColor: "rgb(255 255 255 / 0.1)", rotate: "0deg" };
+    const circle = { width: `${CIRCLE}px`, height: `${CIRCLE}px`, borderRadius: "999px", backgroundColor: color, rotate: "0deg" };
+    const at = (fx: number, fy: number) => `calc(-50% + ${fx}px) calc(-50% + ${fy}px)`;
+    const animation = node.animate(
+      [
+        { ...start, translate: at(0, 0) },
+        // 제자리에서 원으로 바뀐 뒤
+        { ...circle, translate: at(0, -6), offset: isText ? 0.3 : 0.2 },
+        // 위로 솟구쳤다가
+        { ...circle, translate: at(dx * 0.7, dy * 1.12), offset: 0.75 },
+        // 도착 자리에 내려앉음
+        { ...circle, translate: at(dx, dy) },
+      ],
+      { duration: isText ? 720 : 560, easing: "cubic-bezier(0.45, 0, 0.25, 1)", fill: "forwards" },
+    );
+    // 한마디 글자는 원으로 바뀌면서 사라집니다.
+    if (isText) label.current?.animate([{ opacity: 1 }, { opacity: 0, offset: 0.18 }, { opacity: 0 }], { duration: 720, fill: "forwards" });
+    animation.onfinish = onArrive;
+    return () => animation.cancel();
+    // 원 하나당 한 번만 날아갑니다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const { from, kind, text } = flight;
+  return (
+    <div
+      ref={el}
+      aria-hidden
+      className="pointer-events-none fixed z-30 flex items-center justify-center overflow-hidden text-center shadow-[0_10px_24px_rgba(0,0,0,0.35)]"
+      style={{ left: from.left + from.width / 2, top: from.top + from.height / 2, translate: "-50% -50%" }}
+    >
+      {kind === "text" ? (
+        <span ref={label} className="px-4 text-[20px] leading-[1.45] font-bold tracking-[-0.4px] whitespace-pre text-on-dark">
+          {text}
+        </span>
+      ) : (
+        <span className="text-[16px]">{text}</span>
+      )}
     </div>
   );
 }
