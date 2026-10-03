@@ -79,6 +79,9 @@ export function useComments(postId: string, authorFlag: string) {
   const added = useSyncExternalStore(subscribe, () => readAdded(postId), () => EMPTY);
   const comments = [...seedsFor(postId, authorFlag), ...added];
 
+  // 앞으로 달 댓글의 색 (보내기 애니메이션이 미리 같은 색으로 날아가도록). ahead: 이미 날아가는 중인 개수
+  const nextColor = (ahead = 0) => BUBBLE_COLORS[(added.length + ahead + 9) % BUBBLE_COLORS.length];
+
   const add = (kind: Comment["kind"], text: string) => {
     const list = readAdded(postId);
     const comment: Comment = {
@@ -96,5 +99,5 @@ export function useComments(postId: string, authorFlag: string) {
     window.dispatchEvent(new Event(CHANGE));
   };
 
-  return { comments, addedCount: added.length, add };
+  return { comments, addedCount: added.length, add, nextColor };
 }
