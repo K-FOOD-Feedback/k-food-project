@@ -19,7 +19,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 ## 파트와 담당 (URL = 폴더)
 | 파트 | 주소 | 담당 |
 | --- | --- | --- |
-| 1. 랜딩 + 메인 카드 | `/`, `/home` | 지현 |
+| 1. 랜딩 | `/` | 송희 |
+| 1. 메인 카드 | `/home` | 지현 |
 | 2·3. 상세 + 투표 | `/posts/[id]` | 지현 |
 | 4. 댓글 | `/posts/[id]/comments` | 지현 |
 | 5. 수정 (+ 삭제) | `/posts/[id]/edit` | 송희 |
