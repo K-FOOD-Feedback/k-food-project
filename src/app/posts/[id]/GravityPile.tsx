@@ -172,18 +172,14 @@ class PileWorld {
     Composite.add(this.engine.world, body);
     this.tracked.set(comment.id, { body, el, w, h, ox: x - body.position.x, oy: y - body.position.y, landed: false });
     el.style.visibility = "visible";
-    // 작은 원 → 본래 크기 말풍선: 가운데 원 크기만 보이던 것이 떨어지면서 양옆·위아래로 펼쳐집니다.
+    // 작은 원 → 본래 크기 말풍선: 잘라서 가리지 않고, 말풍선 전체가 원 크기에서 본래 크기로 커집니다.
+    // (가운데만 보이게 잘라 두고 펼치면, 떨어지는 동안 양옆이 가려진 것처럼 보였습니다)
     const inner = el.firstElementChild as HTMLElement | null;
     if (hint && inner && hint.d < w) {
-      const r = hint.d / 2;
-      inner.animate(
-        [
-          { clipPath: `inset(${(h - hint.d) / 2}px ${(w - hint.d) / 2}px round ${r}px)` },
-          { clipPath: `inset(0px 0px round ${Math.min(h / 2, 32)}px)`, offset: 0.99 },
-          { clipPath: "none" },
-        ],
-        { duration: 380, easing: "cubic-bezier(0.3, 1.25, 0.5, 1)" },
-      );
+      inner.animate([{ scale: `${hint.d / w}` }, { scale: "1" }], {
+        duration: 300,
+        easing: "cubic-bezier(0.3, 1.3, 0.5, 1)",
+      });
     }
   }
 
