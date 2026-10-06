@@ -38,6 +38,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **데이터**: 게시글 모양은 `src/lib/posts.ts`의 `Post` 타입 하나만 씁니다. 서버 전까지는 `MOCK_POSTS`로 화면을 만듭니다. 타입을 바꾸면 상대에게 알립니다.
 - 한 화면에서만 쓰는 부품은 그 화면 폴더 안에 둬도 됩니다.
 
+## CTA 규칙 (송희·지현 합의)
+- **화살표 CTA** (`ArrowCta`, 알약 + 오른쪽 원 →): "다음 단계로 넘어가는" 버튼에만. 지금은 작성 플로우의 Next · Write with AI · Post.
+- **일반 CTA** (`PillButton` 또는 같은 모양의 알약): 그 자리에서 끝나는 행동 — 저장, 삭제, 취소, 홈으로, 투표하러 가기, Share your K-food 등.
+
 ## 작업 방식
 - 작업은 `feat/파트-이름` 브랜치에서 합니다.
 - **내 담당 화면만 바꾼 경우**: 검사 통과 후 PR 없이 main에 바로 합쳐서 올려도 됩니다. 올린 뒤 상대에게 알립니다.

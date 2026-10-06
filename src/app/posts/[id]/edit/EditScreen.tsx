@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
-import { ArrowCta, IconButton } from "@/components/Buttons";
+import { IconButton, PillButton } from "@/components/Buttons";
 import { TextField } from "@/components/Field";
 import { Icon } from "@/components/Icon";
 import { Screen, StickyBottom, Tile, Toast, TopBar } from "@/components/Layout";
@@ -191,15 +191,18 @@ export function EditScreen() {
       </div>
 
       <StickyBottom>
-        <ArrowCta
-          title="Save changes"
-          compact
-          disabled={!form.title.trim()}
-          onClick={() => {
-            updateMyPost(form);
-            router.push(`/my/posts/${MY_POST_ID}`);
-          }}
-        />
+        <div className="flex">
+          <PillButton
+            tone={form.title.trim() ? "primary" : "disabled"}
+            disabled={!form.title.trim()}
+            onClick={() => {
+              updateMyPost(form);
+              router.push(`/my/posts/${MY_POST_ID}`);
+            }}
+          >
+            Save changes
+          </PillButton>
+        </div>
       </StickyBottom>
 
       <Toast

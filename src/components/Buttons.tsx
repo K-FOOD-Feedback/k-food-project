@@ -33,8 +33,9 @@ export function IconButton({
 }
 
 /**
- * 검정 알약 + 흰 원 화살표 CTA.
- * 홈 진입·질문 CTA처럼 "간혹"만 쓰는 강조 버튼입니다.
+ * 화살표 CTA (알약 + 오른쪽 원 →).
+ * 규칙: "다음 단계로 넘어가는" 버튼에만 씁니다 — 작성 플로우의 Next / Write with AI / Post.
+ * 그 자리에서 끝나는 행동(저장·삭제·이동·투표 등)은 PillButton(일반 CTA)을 씁니다.
  */
 export function ArrowCta({
   title,
@@ -69,6 +70,7 @@ export function ArrowCta({
 }
 
 const PILL_TONES = {
+  primary: "bg-primary text-on-light",
   black: "bg-on-dark text-on-light",
   white: "bg-surface text-on-dark",
   soft: "bg-surface-2 text-on-dark",
@@ -76,7 +78,7 @@ const PILL_TONES = {
   disabled: "bg-surface-2 text-disabled",
 } as const;
 
-/** 일반 CTA — h64, SemiBold 16 */
+/** 일반 CTA — h64, SemiBold 16. 저장·확인·이동처럼 그 자리에서 끝나는 행동 */
 export function PillButton({
   tone = "black",
   children,
