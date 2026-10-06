@@ -9,7 +9,7 @@ import { estimateWidth, GravityPile, type PileHandle } from "./GravityPile";
 const CIRCLE = 20;
 /** 원은 도착 지점보다 이만큼 위까지 솟았다가 내려오며 도착합니다 (그 낙하 속도 그대로 말풍선이 이어서 떨어짐). */
 const RISE = 40;
-const flightMs = (kind: Comment["kind"]) => (kind === "text" ? 700 : 560);
+const flightMs = (kind: Comment["kind"]) => (kind === "text" ? 350 : 280);
 
 type Flight = {
   id: number;
