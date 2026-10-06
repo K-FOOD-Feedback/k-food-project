@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { clearCardTransition, peekCardTransition, type Box } from "@/app/home/cardTransition";
 import { participantsOf, type HomePost } from "@/app/home/mockPosts";
 import { useMyVote } from "@/app/home/votes";
 import { CommentPile } from "./CommentPile";
@@ -45,11 +46,74 @@ export function DetailScreen({ post }: { post: HomePost }) {
 
   const showCta = !voted && !seenVote;
 
+  // 메인 카드에서 넘어왔으면: 카드 속 사진은 위쪽 사진 영역으로, 카드는 아래쪽 본문 카드로 이어지게 움직입니다.
+  const [intro] = useState(() => peekCardTransition(post.id));
+  const [introDone, setIntroDone] = useState(!intro);
+  const tileRef = useRef<HTMLDivElement>(null);
+  const articleRef = useRef<HTMLElement>(null);
+  const photoGhost = useRef<HTMLDivElement>(null);
+  const detailPhoto = useRef<HTMLImageElement>(null);
+  const cardGhost = useRef<HTMLDivElement>(null);
+  const fadeIns = useRef<(HTMLElement | null)[]>([]);
+
+  useLayoutEffect(() => {
+    if (!intro || !tileRef.current || !articleRef.current || !photoGhost.current || !cardGhost.current) return;
+    clearCardTransition();
+    window.scrollTo(0, 0);
+    const tile = tileRef.current.getBoundingClientRect();
+    const article = articleRef.current.getBoundingClientRect();
+    const place = (b: Box, radius: string) => ({
+      left: `${b.left}px`,
+      top: `${b.top}px`,
+      width: `${b.width}px`,
+      height: `${b.height}px`,
+      borderRadius: radius,
+    });
+    const timing = { duration: INTRO_MS, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)", fill: "forwards" as const };
+    const animations = [
+      // 카드(색 배경)는 아래로 내려가며 본문 카드 크기로
+      cardGhost.current.animate([place(intro.card, "34.8px"), place(article, "32px")], timing),
+      // 물결 사진은 위로 올라가며 상세 사진 영역으로 (둥근 모양 → 모서리 둥근 사각형)
+      photoGhost.current.animate([place(intro.photo, "45%"), place(tile, "32px")], timing),
+      // 메인 카드 사진에서 상세 첫 사진으로 자연스럽게 바뀜
+      ...(detailPhoto.current ? [detailPhoto.current.animate([{ opacity: 0 }, { opacity: 0, offset: 0.35 }, { opacity: 1 }], timing)] : []),
+      // 상단 버튼·투표·댓글은 뒤따라 살짝 올라오며 나타남
+      ...fadeIns.current.flatMap((el) =>
+        el
+          ? [
+              el.animate([{ opacity: 0, translate: "0 16px" }, { opacity: 1, translate: "0 0" }], {
+                duration: 380,
+                delay: INTRO_MS * 0.45,
+                easing: "ease-out",
+                fill: "backwards",
+              }),
+            ]
+          : [],
+      ),
+    ];
+    animations[1].onfinish = () => setIntroDone(true);
+    return () => animations.forEach((a) => a.cancel());
+  }, [intro]);
+
+  // 전환이 끝나 진짜 본문 카드가 보이면, 글자만 살짝 나타나게 (배경색은 이미 같은 자리에 있었으므로)
+  useLayoutEffect(() => {
+    if (!intro || !introDone) return;
+    for (const child of Array.from(articleRef.current?.children ?? [])) {
+      child.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, easing: "ease-out" });
+    }
+  }, [intro, introDone]);
+
+  const hiddenUntilIntro = intro && !introDone ? "invisible" : "";
+
   return (
     <main
       className={`${paperlogy.variable} relative mx-auto min-h-dvh w-full max-w-[430px] overflow-x-clip bg-background text-on-dark`}
     >
-      <header className="flex items-center justify-between px-2 pt-[calc(16px+env(safe-area-inset-top))] pb-4">
+      <header
+        ref={(el) => {
+          fadeIns.current[0] = el;
+        }}
+        className="flex items-center justify-between px-2 pt-[calc(16px+env(safe-area-inset-top))] pb-4">
         <Link href="/home" className={circle} aria-label="뒤로 가기">
           <ChevronLeftIcon />
         </Link>
@@ -66,9 +130,15 @@ export function DetailScreen({ post }: { post: HomePost }) {
       </header>
 
       <div className="flex flex-col gap-1 px-2 pb-[calc(48px+env(safe-area-inset-bottom))]">
-        <PhotoTile photos={post.photos} participants={participantsOf(post)} title={post.title} />
+        <div ref={tileRef} className={hiddenUntilIntro}>
+          <PhotoTile photos={post.photos} participants={participantsOf(post)} title={post.title} />
+        </div>
 
-        <article className="flex flex-col gap-5 rounded-[32px] px-7 py-[30px] text-on-light" style={{ background: post.color }}>
+        <article
+          ref={articleRef}
+          className={`flex flex-col gap-5 rounded-[32px] px-7 py-[30px] text-on-light ${hiddenUntilIntro}`}
+          style={{ background: post.color }}
+        >
           <p className="text-[14px] leading-none font-medium tracking-[-0.28px] text-[#696969]">from. {post.author.country}</p>
           <h1 className="max-w-[204px] font-(family-name:--font-paperlogy) text-[31px] leading-[1.2] tracking-[-0.62px] break-keep">
             {post.title}
@@ -76,14 +146,46 @@ export function DetailScreen({ post }: { post: HomePost }) {
           <p className="text-[16px] leading-[1.55] font-medium tracking-[-0.32px] whitespace-pre-line text-[#444]">{post.body}</p>
         </article>
 
-        <div ref={voteRef}>
+        <div
+          ref={(el) => {
+            voteRef.current = el;
+            fadeIns.current[1] = el;
+          }}
+        >
           <VoteBowl post={post} />
         </div>
 
-        <div>
+        <div
+          ref={(el) => {
+            fadeIns.current[2] = el;
+          }}
+        >
           <CommentPile postId={post.id} commentCount={post.commentCount} authorFlag={post.author.flag} />
         </div>
       </div>
+
+      {/* 메인 카드 → 상세 전환용 (끝나면 사라지고 진짜 사진·본문 카드가 보임) */}
+      {intro && !introDone && (
+        <>
+          <div
+            ref={cardGhost}
+            aria-hidden
+            className="pointer-events-none fixed z-30"
+            style={{ ...boxStyle(intro.card), borderRadius: 34.8, background: intro.color }}
+          />
+          <div
+            ref={photoGhost}
+            aria-hidden
+            className="pointer-events-none fixed z-30 overflow-hidden"
+            style={{ ...boxStyle(intro.photo), borderRadius: "45%" }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element -- 전환용 사진 */}
+            <img src={intro.cardPhoto} alt="" className="absolute inset-0 size-full object-cover" />
+            {/* eslint-disable-next-line @next/next/no-img-element -- 전환용 사진 */}
+            <img ref={detailPhoto} src={post.photos[0]} alt="" className="absolute inset-0 size-full object-cover opacity-0" />
+          </div>
+        </>
+      )}
 
       {/* 플로팅 "투표하기" (Figma: Floating CTA (viewport)) */}
       <button
@@ -100,6 +202,9 @@ export function DetailScreen({ post }: { post: HomePost }) {
     </main>
   );
 }
+
+const INTRO_MS = 560;
+const boxStyle = (b: Box) => ({ left: b.left, top: b.top, width: b.width, height: b.height });
 
 /** 사진 넘겨 보기 + 참여 인원 칩 (Figma: Tile/Photo) */
 function PhotoTile({ photos, participants, title }: { photos: string[]; participants: number; title: string }) {

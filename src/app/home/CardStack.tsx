@@ -11,6 +11,8 @@ export type Lang = "ko" | "en";
 const CARD = { left: 31.3, top: 31.61, width: 312.4, height: 438.578, radius: 34.808 };
 const IMAGE = { width: 402.251, height: 280.106, dx: 0.89, dy: -60 };
 const MASK = { x: 64.255, y: 1.914, width: 272.822, height: 271.214 };
+/** 사진 요소 안에서 물결 모양 사진이 보이는 영역 (상세 화면 전환에서 사진의 출발 위치로 씀) */
+export const CARD_MASK_BOX = { left: MASK.x, top: MASK.y, width: MASK.width, height: MASK.height };
 
 type Pose = { x: number; y: number; rotate: number; scale: number; dim: number };
 type Place = Pose & { z: number };
@@ -67,7 +69,8 @@ export function CardStack({
   /** 내가 이미 투표한 게시글 */
   votedIds: Set<string>;
   onIndexChange: (index: number) => void;
-  onOpen: (post: Post) => void;
+  /** cardEl: 누른 카드 요소 (상세 화면 전환의 출발 위치를 재는 데 씀) */
+  onOpen: (post: Post, cardEl: HTMLElement) => void;
 }) {
   const n = posts.length;
   const [dragX, setDragX] = useState<number | null>(null);
@@ -216,9 +219,10 @@ export function CardStack({
             }}
             tabIndex={isFront ? 0 : -1}
             aria-hidden={!isFront}
+            data-front-card={isFront || undefined}
             aria-label={`${lang === "en" ? post.en.title : post.title} (${i + 1}/${n})`}
-            onClick={() => {
-              if (isFront && !moved.current) onOpen(post);
+            onClick={(e) => {
+              if (isFront && !moved.current) onOpen(post, e.currentTarget);
             }}
           >
             <CardContent lang={lang} post={post} voted={votedIds.has(post.id)} />
@@ -242,6 +246,7 @@ function CardContent({ lang, post, voted }: { lang: Lang; post: Post; voted: boo
     <>
       {photo && (
         <span
+          data-card-photo
           className="absolute -translate-x-1/2 -translate-y-1/2 [mask-repeat:no-repeat]"
           style={{
             width: IMAGE.width,
