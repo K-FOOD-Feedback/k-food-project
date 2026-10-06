@@ -1,12 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ShareKfoodButton } from "@/components/ShareKfoodButton";
-import { CardStack, type Lang } from "./CardStack";
+import { measureCard, setCardTransition } from "./cardTransition";
+import { CARD_MASK_BOX, CardStack, type Lang } from "./CardStack";
 import { MainHeader } from "./MainHeader";
-import { HOME_POSTS } from "./mockPosts";
+import { HOME_POSTS, type HomePost } from "./mockPosts";
 import { useVotedIds } from "./votes";
 
 // 상세에 다녀와도 보던 카드에서 다시 시작하도록 기억해 둡니다 (새로고침하면 처음부터).
@@ -27,6 +27,17 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
     setIndex(next);
   };
 
+  // 상세 화면을 미리 받아 두어, 카드를 누르면 바로 전환이 시작되게 합니다.
+  useEffect(() => {
+    for (const p of posts) router.prefetch(`/posts/${p.id}`);
+  }, [router, posts]);
+
+  /** 카드·CTA 어느 쪽으로 가든, 맨 앞 카드에서 상세 화면으로 이어지는 전환과 함께 상세 맨 위로 이동합니다. */
+  const openPost = (post: HomePost, cardEl: Element | null) => {
+    if (cardEl) setCardTransition({ postId: post.id, ...measureCard(cardEl, CARD_MASK_BOX), cardPhoto: post.cardPhoto, color: post.color });
+    router.push(`/posts/${post.id}`);
+  };
+
   return (
     // 랜딩(src/app/page.tsx)과 같은 틀: 가운데 430px 폭의 어두운 화면
     <main className="relative mx-auto min-h-dvh w-full max-w-[430px] overflow-x-clip bg-background text-on-dark">
@@ -38,7 +49,7 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
           index={index}
           votedIds={votedIds}
           onIndexChange={changeIndex}
-          onOpen={(post) => router.push(`/posts/${post.id}`)}
+          onOpen={openPost}
         />
         <div className="mt-3 flex justify-center gap-1.5" aria-hidden>
           {posts.map((p, i) => (
@@ -59,8 +70,9 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
         </ShareKfoodButton>
       ) : (
         // 하단 CTA (Figma: KF/CTA Pill — 투표 전 Primary, 투표 후 Done)
-        <Link
-          href={`/posts/${current.id}${voted ? "" : "#vote"}`}
+        <button
+          type="button"
+          onClick={() => openPost(current, document.querySelector("[data-front-card]"))}
           className={`fixed bottom-[calc(60px+env(safe-area-inset-bottom))] left-1/2 z-10 flex h-[90px] w-[259px] -translate-x-1/2 items-center justify-center rounded-full text-[20px] font-extrabold tracking-[-0.4px] whitespace-nowrap transition-transform active:scale-[0.97] ${
             voted
               ? "bg-white text-background"
@@ -68,7 +80,7 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
           }`}
         >
           {voted ? "투표 결과 보기" : "투표하러 가기"}
-        </Link>
+        </button>
       )}
     </main>
   );
