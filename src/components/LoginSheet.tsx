@@ -3,14 +3,9 @@
 import Image from "next/image";
 import { BottomSheet } from "./Layout";
 
-const PROVIDERS = [
-  { id: "google", label: "Continue with Google", className: "bg-surface-2 text-on-dark" },
-  { id: "kakao", label: "Continue with Kakao", className: "bg-kakao text-on-light" },
-  { id: "apple", label: "Continue with Apple", className: "bg-black text-white border border-white/25" },
-] as const;
-
 /**
- * 02 Login sheet.
+ * 02 Login sheet — 가입·로그인은 Google로만 받습니다 (팀 결정).
+ * 버튼은 Google 브랜드 가이드의 밝은 버튼(흰 바탕 + 공식 로고) 기준.
  * OAuth 리다이렉트 때문에 사진 선택 "전에" 로그인합니다.
  * 지금은 실제 OAuth 없이 로그인된 것으로 처리합니다.
  */
@@ -31,19 +26,14 @@ export function LoginSheet({
           One quick step and Koreans can start judging your dish.
         </p>
       </div>
-      <div className="flex w-full flex-col gap-1">
-        {PROVIDERS.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            onClick={onLoggedIn}
-            className={`flex h-16 w-full items-center justify-center gap-3 rounded-full font-display text-[20px] leading-none transition active:scale-[0.99] ${p.className}`}
-          >
-            <Image src={`/logos/${p.id}.svg`} alt="" width={20} height={20} />
-            {p.label}
-          </button>
-        ))}
-      </div>
+      <button
+        type="button"
+        onClick={onLoggedIn}
+        className="flex h-16 w-full items-center justify-center gap-3 rounded-full bg-white font-display text-[20px] leading-none text-on-light transition active:scale-[0.99]"
+      >
+        <Image src="/logos/google.svg" alt="" width={20} height={20} />
+        Continue with Google
+      </button>
       <p className="w-full px-6 text-center text-[12px] font-medium leading-[1.4] text-muted">
         By continuing, you agree to our Terms and Privacy Policy.
       </p>
