@@ -9,7 +9,8 @@ import { estimateWidth, GravityPile, type PileHandle } from "./GravityPile";
 const CIRCLE = 20;
 /** 원은 도착 지점보다 이만큼 위까지 솟았다가 내려오며 도착합니다 (그 낙하 속도 그대로 말풍선이 이어서 떨어짐). */
 const RISE = 40;
-const flightMs = (kind: Comment["kind"]) => (kind === "text" ? 350 : 280);
+/** 원이 날아가는 시간 (한마디·이모지 같음) */
+const FLIGHT_MS = 300;
 
 type Flight = {
   id: number;
@@ -206,7 +207,7 @@ function FlyingCircle({ flight, onArrive }: { flight: Flight; onArrive: (vy: num
     const dx = to.x - (from.left + from.width / 2);
     const dy = to.y - (from.top + from.height / 2);
     const isText = kind === "text";
-    const duration = flightMs(kind);
+    const duration = FLIGHT_MS;
     const morphAt = isText ? 0.22 : 0.16;
     // 던진 공처럼 같은 중력으로 오르고 내립니다: 오르는 거리 : 내리는 거리 = 시간² 비율.
     // 그래서 꼭대기 근처에 머무는 시간이 짧고 자연스럽습니다.
