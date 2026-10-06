@@ -42,6 +42,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **화살표 CTA** (`ArrowCta`, 알약 + 오른쪽 원 →): "다음 단계로 넘어가는" 버튼에만. 지금은 작성 플로우의 Next · Write with AI · Post.
 - **일반 CTA** (`PillButton` 또는 같은 모양의 알약): 그 자리에서 끝나는 행동 — 저장, 삭제, 취소, 홈으로, 투표하러 가기, Share your K-food 등.
 
+## 데이터 분석 (Mixpanel · 담당 송희)
+- 행동 기록은 `src/lib/analytics.ts` 의 `track()` 만 씁니다. 이벤트 이름은 `EventName` 목록에서만 고르고, 새 이벤트는 목록과 `docs/analytics-events.md` 에 같이 추가합니다.
+- 새 화면·버튼을 만들면 의미 있는 행동에 이벤트를 붙입니다 (타이핑은 입력칸을 나갈 때 한 번).
+- 개인정보·글 내용은 보내지 않습니다. 토큰은 `.env.local` (`.env.example` 참고).
+
 ## 작업 방식
 - 작업은 `feat/파트-이름` 브랜치에서 합니다.
 - **내 담당 화면만 바꾼 경우**: 검사 통과 후 PR 없이 main에 바로 합쳐서 올려도 됩니다. 올린 뒤 상대에게 알립니다.

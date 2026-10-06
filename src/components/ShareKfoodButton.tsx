@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
+import { track } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
 import { LoginSheet } from "./LoginSheet";
 import { usePhotoPicker } from "./PhotoPicker";
@@ -19,7 +20,9 @@ export function ShareKfoodButton({ className, children }: { className?: string; 
   const [loginOpen, setLoginOpen] = useState(false);
 
   const picker = usePhotoPicker((files) => {
-    addPhotos(files, { fresh: true });
+    const { added, overflow } = addPhotos(files, { fresh: true });
+    track("photos_added", { count: added, total: added, from: "share" });
+    if (overflow) track("photo_limit_hit", { from: "share" });
     router.push("/write");
   });
 
@@ -28,15 +31,27 @@ export function ShareKfoodButton({ className, children }: { className?: string; 
       <button
         type="button"
         className={className}
-        onClick={() => (loggedIn ? picker.open() : setLoginOpen(true))}
+        onClick={() => {
+          track("share_clicked", { logged_in: loggedIn });
+          if (loggedIn) {
+            picker.open();
+          } else {
+            track("login_sheet_opened", { from: "share" });
+            setLoginOpen(true);
+          }
+        }}
       >
         {children}
       </button>
       {picker.input}
       <LoginSheet
         open={loginOpen}
-        onClose={() => setLoginOpen(false)}
+        onClose={() => {
+          track("login_cancelled", { from: "share", stage: "sheet" });
+          setLoginOpen(false);
+        }}
         onLoggedIn={() => {
+          track("login_completed", { from: "share", method: "google" });
           logIn();
           setLoginOpen(false);
           // 로그인 버튼 클릭 안에서 바로 사진 선택을 열어야 브라우저가 막지 않습니다

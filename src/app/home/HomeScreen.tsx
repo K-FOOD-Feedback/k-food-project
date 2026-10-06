@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ShareKfoodButton } from "@/components/ShareKfoodButton";
+import { track, useTrackOnce } from "@/lib/analytics";
 import { measureCard, setCardTransition } from "./cardTransition";
 import { CARD_MASK_BOX, CardStack, type Lang } from "./CardStack";
 import { MainHeader } from "./MainHeader";
@@ -33,7 +34,17 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
   }, [router, posts]);
 
   /** 카드·CTA 어느 쪽으로 가든, 맨 앞 카드에서 상세 화면으로 이어지는 전환과 함께 상세 맨 위로 이동합니다. */
-  const openPost = (post: HomePost, cardEl: Element | null) => {
+  const viewer = lang === "en" ? "foreigner" : "korean";
+  useTrackOnce("feed_viewed", { viewer, posts: posts.length });
+
+  const openPost = (post: HomePost, cardEl: Element | null, from: "card" | "cta" = "card") => {
+    track("post_opened", {
+      post_id: post.id,
+      from,
+      viewer,
+      position: posts.indexOf(post),
+      already_voted: votedIds.has(post.id),
+    });
     if (cardEl) setCardTransition({ postId: post.id, ...measureCard(cardEl, CARD_MASK_BOX), cardPhoto: post.cardPhoto, color: post.color });
     router.push(`/posts/${post.id}`);
   };
@@ -72,7 +83,10 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
         // 하단 CTA (Figma: KF/CTA Pill — 투표 전 Primary, 투표 후 Done)
         <button
           type="button"
-          onClick={() => openPost(current, document.querySelector("[data-front-card]"))}
+          onClick={() => {
+            track("feed_cta_clicked", { post_id: current.id, voted });
+            openPost(current, document.querySelector("[data-front-card]"), "cta");
+          }}
           className={`fixed bottom-[calc(60px+env(safe-area-inset-bottom))] left-1/2 z-10 flex h-[90px] w-[259px] -translate-x-1/2 items-center justify-center rounded-full text-[20px] font-extrabold tracking-[-0.4px] whitespace-nowrap transition-transform active:scale-[0.97] ${
             voted
               ? "bg-white text-background"

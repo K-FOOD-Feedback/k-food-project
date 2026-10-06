@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import { TrackedLink } from "@/components/Track";
+import { track } from "@/lib/analytics";
 import { useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { COMMENT_MAX, QUICK_EMOJIS, useComments, type Comment } from "./comments";
 import { estimateWidth, GravityPile, type PileHandle } from "./GravityPile";
@@ -43,6 +44,7 @@ export function CommentPile({
   variant?: "preview" | "full";
 }) {
   const full = variant === "full";
+  const scrolledOld = useRef(false); // 분석: 전체 화면에서 예전 댓글까지 스크롤했는지
   const { comments, addedCount, add, nextColor, ready } = useComments(postId, authorFlag);
   const [draft, setDraft] = useState("");
   const card = useRef<HTMLSpanElement>(null);
@@ -55,6 +57,14 @@ export function CommentPile({
 
   /** 출발 요소에서 원으로 바뀌어 댓글 칸으로 날아간 뒤 댓글이 됩니다. */
   const launch = async (kind: Comment["kind"], text: string, fromEl: HTMLElement | null) => {
+    track("comment_sent", {
+      post_id: postId,
+      type: kind,
+      length: kind === "emoji" ? 0 : text.length,
+      emoji: kind === "emoji" ? text : undefined,
+      lines: text.split("\n").length,
+      screen: full ? "comments" : "detail",
+    });
     const zoneEl = zone.current;
     if (!fromEl || !zoneEl || !pile.current || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       add(kind, text);
@@ -120,17 +130,28 @@ export function CommentPile({
             댓글 <span className="text-neutral-400">{commentCount + addedCount}</span>
           </h2>
           {!full && (
-            <Link
+            <TrackedLink
               href={`/posts/${postId}/comments`}
+              event="comments_opened"
+              props={{ post_id: postId, comment_count: commentCount + addedCount }}
               aria-label="댓글 전체 보기"
               className="flex size-16 items-center justify-center rounded-full bg-[#242424]"
             >
               <ArrowUpRightIcon />
-            </Link>
+            </TrackedLink>
           )}
         </div>
 
-        <div ref={zone} className={full ? "flex min-h-0 flex-1 flex-col" : ""}>
+        <div
+          ref={zone}
+          className={full ? "flex min-h-0 flex-1 flex-col" : ""}
+          onScrollCapture={() => {
+            if (full && !scrolledOld.current) {
+              scrolledOld.current = true;
+              track("old_comments_scrolled", { post_id: postId });
+            }
+          }}
+        >
           <GravityPile ref={pile} comments={comments} ready={ready} {...(full && { className: "min-h-0 flex-1", scrollable: true, rainOnOpen: true })} />
         </div>
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[92px] bg-linear-to-b from-[#292929]/0 to-[#292929]" />

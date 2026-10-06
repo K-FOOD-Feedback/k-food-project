@@ -1,5 +1,5 @@
 import Image from "next/image";
-import Link from "next/link";
+import { TrackedLink, TrackView } from "@/components/Track";
 
 /*
   1. 랜딩페이지 (Figma 259:6859)
@@ -50,26 +50,37 @@ export default function Page() {
         </span>
       </section>
 
+      <TrackView event="landing_viewed" />
       <section className="mt-auto flex animate-rise flex-col items-center px-6 pb-[calc(24px+env(safe-area-inset-bottom))] [animation-delay:850ms]">
         <p className="text-[14px] font-bold leading-[1.3] text-neutral-400">How will you join?</p>
         <div className="mt-[22px] flex w-full flex-col items-center gap-2">
           {/* TODO: 한국인/외국인 구분을 저장해서 메인 화면에 넘기기 */}
-          <Link
+          <TrackedLink
             href="/home"
+            event="role_selected"
+            props={{ role: "korean" }}
+            superProps={{ user_type: "korean" }}
             className="flex h-[72px] w-full items-center justify-center rounded-full bg-primary font-display text-[20px] leading-none text-on-light transition active:scale-[0.99]"
           >
             I&apos;m Korean
-          </Link>
-          <Link
+          </TrackedLink>
+          <TrackedLink
             href="/home/en"
+            event="role_selected"
+            props={{ role: "foreigner" }}
+            superProps={{ user_type: "foreigner" }}
             className="flex h-[72px] w-full items-center justify-center rounded-full bg-secondary font-display text-[20px] leading-none text-on-light transition active:scale-[0.99]"
           >
             I&apos;m not Korean
-          </Link>
+          </TrackedLink>
           {/* TODO: 로그인 시트 연결 (6. 콘텐츠 작성 파트에서 만드는 로그인 시트를 재사용) */}
-          <Link href="/home" className="py-2 text-[14px] font-bold leading-[1.3] text-neutral-400">
+          <TrackedLink
+            href="/home"
+            event="landing_login_clicked"
+            className="py-2 text-[14px] font-bold leading-[1.3] text-neutral-400"
+          >
             Already joined? Log in
-          </Link>
+          </TrackedLink>
         </div>
       </section>
     </main>

@@ -1,12 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { IconButton } from "@/components/Buttons";
 import { BlobPhoto } from "@/components/FeedCard";
 import { Icon } from "@/components/Icon";
 import { Screen, Tile, TopBar } from "@/components/Layout";
 import { SAMPLE_PHOTOS } from "@/lib/write-data";
+import { track } from "@/lib/analytics";
 import { coverOf, useFlow } from "@/lib/write-store";
 
 const STEPS = ["Reading your photos", "Recognizing your dish", "Writing title & story"];
@@ -18,6 +19,13 @@ export function WritingScreen() {
   const [done, setDone] = useState(0); // 끝난 단계 수
   const cover = draft.photos.length ? coverOf(draft) : SAMPLE_PHOTOS[0];
 
+  // 분석용: AI가 글을 쓰는 데 걸린 시간
+  const startedAt = useRef(0);
+  const reported = useRef(false);
+  useEffect(() => {
+    startedAt.current = performance.now();
+  }, []);
+
   // 실제 AI 연동 전까지는 단계별로 시간을 두고 목업 초안을 채웁니다.
   useEffect(() => {
     if (done < STEPS.length) {
@@ -25,9 +33,13 @@ export function WritingScreen() {
       return () => window.clearTimeout(t);
     }
     applyAiDraft();
+    if (!reported.current) {
+      reported.current = true;
+      track("ai_draft_completed", { duration_ms: Math.round(performance.now() - startedAt.current), topic: draft.questionId });
+    }
     const t = window.setTimeout(() => router.replace("/write/post"), 400);
     return () => window.clearTimeout(t);
-  }, [done, applyAiDraft, router]);
+  }, [done, applyAiDraft, router, draft.questionId]);
 
   return (
     <Screen>
@@ -38,6 +50,8 @@ export function WritingScreen() {
             label="Stop and save draft"
             onClick={() => {
               saveDraftForLater("question");
+              track("ai_draft_stopped", { step_done: done });
+              track("draft_saved", { step: "ai_writing" });
               router.push("/home/en");
             }}
           />

@@ -1,8 +1,9 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from "react";
 import type { HomePost } from "@/app/home/mockPosts";
 import { clearVote, saveVote, useMyVote } from "@/app/home/votes";
+import { track } from "@/lib/analytics";
 
 const title = "font-(family-name:--font-paperlogy) text-[24px] leading-[1.3] tracking-[-0.72px]";
 
@@ -37,7 +38,24 @@ export function VoteBowl({ post }: { post: HomePost }) {
     );
   }, [myVote]);
 
-  const vote = (choice: number) => {
+  // 분석: 화면에 들어와서 투표까지 걸린 시간, 다시 투표인지
+  const mountedAt = useRef(0);
+  const previousVote = useRef<number | null>(null);
+  useEffect(() => {
+    mountedAt.current = performance.now();
+  }, []);
+
+  const vote = (choice: number, method: "drag" | "tap" = "tap") => {
+    track(previousVote.current === null ? "vote_cast" : "vote_changed", {
+      post_id: post.id,
+      choice,
+      previous: previousVote.current,
+      options_count: options.length,
+      method,
+      seconds_to_vote: Math.round((performance.now() - mountedAt.current) / 100) / 10,
+      total_votes_before: total,
+    });
+    previousVote.current = null;
     flyFrom.current = token.current?.getBoundingClientRect() ?? null;
     saveVote(post.id, choice);
   };
@@ -63,7 +81,8 @@ export function VoteBowl({ post }: { post: HomePost }) {
   const onPointerUp = (e: PointerEvent<HTMLDivElement>) => {
     const i = columnAt(e.clientX, e.clientY);
     setHover(null);
-    if (i >= 0) vote(i);
+    if (i >= 0) vote(i, "drag");
+    else if (drag && Math.hypot(drag.x, drag.y) > 12) track("vote_drag_missed", { post_id: post.id });
     setDrag(null);
   };
 
@@ -173,7 +192,11 @@ export function VoteBowl({ post }: { post: HomePost }) {
       {voted && (
         <button
           type="button"
-          onClick={() => clearVote(post.id)}
+          onClick={() => {
+            // 다음 투표는 vote_changed 로 기록
+            previousVote.current = myVote;
+            clearVote(post.id);
+          }}
           className="-mt-2 self-center text-[14px] font-semibold text-neutral-400 underline underline-offset-4"
         >
           다시 투표하기

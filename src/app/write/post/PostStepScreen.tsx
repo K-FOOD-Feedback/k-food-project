@@ -9,7 +9,9 @@ import { Chip, Screen, StepProgress, StickyBottom, Tile, Toast, TopBar } from "@
 import { PhotoGrid } from "@/components/PhotoGrid";
 import { usePhotoPicker } from "@/components/PhotoPicker";
 import { MAX_PHOTOS, STORY_MAX, TITLE_MAX } from "@/lib/write-data";
+import { keptRatio, track } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
+import { usePhotoActions } from "../usePhotoActions";
 
 /*
   ③ Your post
@@ -19,12 +21,12 @@ import { useFlow } from "@/lib/write-store";
 */
 export function PostStepScreen() {
   const router = useRouter();
-  const { draft, updateDraft, applyAiDraft, saveDraftForLater, addPhotos, removePhoto, setCover, movePhoto } =
-    useFlow();
+  const { draft, updateDraft, applyAiDraft, saveDraftForLater } = useFlow();
+  const photo = usePhotoActions("post");
   const [limitToast, setLimitToast] = useState(false);
   const closeToast = useCallback(() => setLimitToast(false), []);
   const picker = usePhotoPicker((files) => {
-    if (addPhotos(files).overflow) setLimitToast(true);
+    if (photo.add(files)) setLimitToast(true);
   });
 
   // 바로 이 화면으로 들어와도 비지 않도록 (처음 한 번만)
@@ -42,6 +44,7 @@ export function PostStepScreen() {
   const rewrite = () => {
     const dish = dishInput.trim();
     if (dish) {
+      track("dish_corrected", { ai_dish: draft.ai.dish || draft.dish, user_dish: dish });
       applyAiDraft({ dish });
       setRewriteKey((k) => k + 1);
     }
@@ -59,6 +62,7 @@ export function PostStepScreen() {
             label="Back"
             onClick={() => {
               saveDraftForLater("post");
+              track("draft_saved", { step: "post" });
               router.push("/write/question");
             }}
           />
@@ -109,6 +113,7 @@ export function PostStepScreen() {
                 <button
                   type="button"
                   onClick={() => {
+                    track("dish_correction_opened", { ai_dish: draft.dish });
                     setDishInput(draft.dish);
                     setEditingDish(true);
                   }}
@@ -129,10 +134,15 @@ export function PostStepScreen() {
               photos={draft.photos}
               coverId={draft.coverId}
               coverChip
-              onCover={setCover}
-              onRemove={removePhoto}
-              onMove={movePhoto}
-              onAdd={() => (draft.photos.length >= MAX_PHOTOS ? setLimitToast(true) : picker.open())}
+              onCover={photo.cover}
+              onRemove={photo.remove}
+              onMove={photo.move}
+              onAdd={() => {
+                if (draft.photos.length >= MAX_PHOTOS) {
+                  photo.limitHit();
+                  setLimitToast(true);
+                } else picker.open();
+              }}
             />
           </div>
           <p className="px-5 pt-1 pb-5 text-[13px] leading-[1.4] text-muted">
@@ -174,7 +184,20 @@ export function PostStepScreen() {
         <ArrowCta
           caption="AI makes a vote from your post"
           title="Make the vote"
-          {...(canNext ? { href: "/write/vote" } : { disabled: true })}
+          {...(canNext
+            ? {
+                href: "/write/vote",
+                onClick: () =>
+                  track("post_step_completed", {
+                    dish_corrected: draft.dish !== (draft.ai.dish || draft.dish),
+                    title_kept: keptRatio(draft.ai.title, draft.title),
+                    story_kept: keptRatio(draft.ai.story, draft.story),
+                    title_length: draft.title.length,
+                    story_length: draft.story.length,
+                    photos: draft.photos.length,
+                  }),
+              }
+            : { disabled: true })}
         />
       </StickyBottom>
 

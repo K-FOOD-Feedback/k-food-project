@@ -11,6 +11,7 @@ import { usePhotoPicker } from "@/components/PhotoPicker";
 import { aiVoteFor, getQuestion, MAX_PHOTOS, QUESTIONS, STORY_MAX, TITLE_MAX, VOTE_TITLE_MAX, type Photo } from "@/lib/write-data";
 import { SAMPLE_MY_POST, useFlow, type MyPost, MY_POST_ID } from "@/lib/write-store";
 import { OptionsEditor } from "@/app/write/OptionsEditor";
+import { track } from "@/lib/analytics";
 
 let editSeq = 0;
 
@@ -38,6 +39,16 @@ export function EditScreen() {
     set({ photos: [...form.photos, ...added] });
   });
 
+  // 분석용: 무엇을 고쳤는지 (원래 글과 비교)
+  const changedFields = () => ({
+    photos_changed: form.photos.map((p) => p.id).join() !== initial.photos.map((p) => p.id).join() || form.coverId !== initial.coverId,
+    topic_changed: form.questionId !== initial.questionId,
+    title_changed: form.title !== initial.title,
+    story_changed: form.story !== initial.story,
+    vote_title_changed: form.voteQuestion !== initial.voteQuestion,
+    options_changed: form.options.join("|") !== initial.options.join("|"),
+  });
+
   const removePhoto = (id: string) => {
     if (form.photos.length <= 1) return;
     const photos = form.photos.filter((p) => p.id !== id);
@@ -54,7 +65,17 @@ export function EditScreen() {
   return (
     <Screen className="pb-[140px]">
       <TopBar
-        left={<IconButton icon="x" label="Discard changes" href={`/my/posts/${MY_POST_ID}`} />}
+        left={
+          <IconButton
+            icon="x"
+            label="Discard changes"
+            href={`/my/posts/${MY_POST_ID}`}
+            onClick={() => {
+              const changed = Object.values(changedFields()).some(Boolean);
+              track("post_edit_discarded", { had_changes: changed, locked });
+            }}
+          />
+        }
         title="Edit post"
       />
 
@@ -94,7 +115,10 @@ export function EditScreen() {
               onMove={movePhoto}
               onAdd={form.photos.length < MAX_PHOTOS ? picker.open : undefined}
               addLocked={locked}
-              onLockedTap={() => setLockToast(true)}
+              onLockedTap={() => {
+                track("locked_item_tapped", { item: "add_photo", votes: initial.votes });
+                setLockToast(true);
+              }}
               canRemove={form.photos.length > 1}
             />
           </div>
@@ -113,6 +137,7 @@ export function EditScreen() {
                 key={lockShake}
                 type="button"
                 onClick={() => {
+                  track("locked_item_tapped", { item: "topic", votes: initial.votes });
                   setLockShake((k) => k + 1);
                   setLockToast(true);
                 }}
@@ -138,7 +163,11 @@ export function EditScreen() {
                       type="button"
                       role="radio"
                       aria-checked={on}
-                      onClick={() => set({ questionId: q.id, ...aiVoteFor(q.id, form.dish, form) })}
+                      onClick={() => {
+                        if (q.id === form.questionId) return;
+                        track("edit_topic_changed", { from_topic: form.questionId, to_topic: q.id });
+                        set({ questionId: q.id, ...aiVoteFor(q.id, form.dish, form) });
+                      }}
                       className={`flex h-14 items-center gap-3 rounded-full bg-surface-2 pl-4 pr-3 text-left ${
                         on ? "border-2 border-on-dark" : "border-2 border-transparent"
                       }`}
@@ -191,7 +220,7 @@ export function EditScreen() {
           />
           <div className="flex flex-col gap-2 px-5 pt-3 pb-5">
             <p className="text-[13px] font-semibold leading-[1.3]">Choices Koreans can pick</p>
-            <OptionsEditor options={form.options} locked={locked} onChange={(options) => set({ options })} />
+            <OptionsEditor source="edit" options={form.options} locked={locked} onChange={(options) => set({ options })} />
           </div>
         </Tile>
       </div>
@@ -202,6 +231,7 @@ export function EditScreen() {
             tone={canSave ? "primary" : "disabled"}
             disabled={!canSave}
             onClick={() => {
+              track("post_edit_saved", { ...changedFields(), locked, votes: initial.votes });
               updateMyPost(form);
               router.push(`/my/posts/${MY_POST_ID}`);
             }}

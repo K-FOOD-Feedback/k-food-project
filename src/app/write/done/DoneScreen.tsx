@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, type CSSProperties, type PointerEvent } from "react";
+import { useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { IconButton, PillButton } from "@/components/Buttons";
 import { FeedCard } from "@/components/FeedCard";
 import { Icon } from "@/components/Icon";
 import { Screen, StickyBottom, TopBar } from "@/components/Layout";
+import { track } from "@/lib/analytics";
 import { getQuestion } from "@/lib/write-data";
 import { coverOf, SAMPLE_MY_POST, useFlow, MY_POST_ID } from "@/lib/write-store";
 
@@ -25,7 +26,9 @@ export function DoneScreen() {
   const [tilt, setTilt] = useState({ x: 0, y: 0, active: false });
   const [burst, setBurst] = useState(0); // 탭할 때마다 +1 → 색종이 다시
 
+  const tilted = useRef(false); // 분석용: 카드를 문질러 봤는지
   const onMove = (e: PointerEvent<HTMLDivElement>) => {
+    tilted.current = true;
     const r = e.currentTarget.getBoundingClientRect();
     const px = (e.clientX - r.left) / r.width - 0.5;
     const py = (e.clientY - r.top) / r.height - 0.5;
@@ -37,7 +40,12 @@ export function DoneScreen() {
 
   return (
     <Screen className="pb-[140px]">
-      <TopBar right={<IconButton icon="x" label="Close" href="/home/en" />} />
+      <TopBar right={<IconButton
+            icon="x"
+            label="Close"
+            href="/home/en"
+            onClick={() => track("posted_next_action", { action: "close", taps: burst, tilted: tilted.current })}
+          />} />
 
       {/* 도장 찍힐 때 화면 흔들림 (처음 한 번) */}
       <div className="animate-jolt" style={{ animationDelay: `${T.stamp + 60}ms` }}>
@@ -48,7 +56,10 @@ export function DoneScreen() {
             onPointerMove={onMove}
             onPointerLeave={() => setTilt({ x: 0, y: 0, active: false })}
             onPointerUp={() => setTilt({ x: 0, y: 0, active: false })}
-            onClick={() => setBurst((b) => b + 1)}
+            onClick={() => {
+              track("posted_card_tapped", { taps: burst + 1, tilted: tilted.current });
+              setBurst((b) => b + 1);
+            }}
             style={{
               transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
               transition: tilt.active ? "transform 120ms ease-out" : "transform 600ms cubic-bezier(0.3, 1.6, 0.5, 1)",
@@ -105,10 +116,18 @@ export function DoneScreen() {
 
       <StickyBottom className="animate-rise [animation-delay:1750ms]">
         <div className="flex gap-1">
-          <PillButton tone="white" href="/home/en">
+          <PillButton
+            tone="white"
+            href="/home/en"
+            onClick={() => track("posted_next_action", { action: "home", taps: burst, tilted: tilted.current })}
+          >
             Back to home
           </PillButton>
-          <PillButton tone="black" href={`/my/posts/${MY_POST_ID}`}>
+          <PillButton
+            tone="black"
+            href={`/my/posts/${MY_POST_ID}`}
+            onClick={() => track("posted_next_action", { action: "my_post", taps: burst, tilted: tilted.current })}
+          >
             See my post
           </PillButton>
         </div>

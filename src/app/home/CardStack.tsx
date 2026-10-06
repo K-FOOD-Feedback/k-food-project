@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
+import { track } from "@/lib/analytics";
 import { QUESTION_LABELS, QUESTION_LABELS_EN, participantsOf, type HomePost as Post } from "./mockPosts";
 
 /** ko = 한국인 메인(/home), en = 외국인 메인(/home/en) */
@@ -101,6 +102,7 @@ export function CardStack({
   const goNext = () => {
     if (n < 2) return;
     const id = posts[index].id;
+    track("card_swiped", { direction: "next", post_id: id, position: index, viewer: lang === "en" ? "foreigner" : "korean" });
     setPhase(id, "out");
     onIndexChange((index + 1) % n);
     later(SWING_MS, () => setPhase(id, "tuck"));
@@ -110,6 +112,7 @@ export function CardStack({
   const goPrev = () => {
     if (n < 2) return;
     const prevIndex = (index - 1 + n) % n;
+    track("card_swiped", { direction: "prev", post_id: posts[index].id, position: index, viewer: lang === "en" ? "foreigner" : "korean" });
     const id = posts[prevIndex].id;
     setPhase(id, "emerge");
     later(SWING_MS, () => {

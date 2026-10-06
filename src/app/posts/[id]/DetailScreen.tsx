@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { clearCardTransition, peekCardTransition, type Box } from "@/app/home/cardTransition";
 import { participantsOf, type HomePost } from "@/app/home/mockPosts";
 import { useMyVote } from "@/app/home/votes";
+import { TrackedLink } from "@/components/Track";
+import { track } from "@/lib/analytics";
 import { CommentPile } from "./CommentPile";
 import { paperlogy } from "./font";
 import { VoteBowl } from "./VoteBowl";
@@ -18,6 +20,47 @@ export function DetailScreen({ post }: { post: HomePost }) {
   // 투표 영역을 한 번이라도 봤으면(스크롤 또는 버튼) 플로팅 버튼을 다시 띄우지 않습니다.
   const [seenVote, setSeenVote] = useState(false);
 
+  // ── 분석: 투표·댓글 영역을 봤는지, 얼마나 머물렀는지 (Mixpanel)
+  const commentRef = useRef<HTMLDivElement | null>(null);
+  const reached = useRef({ vote: false, comments: false });
+  const votedRef = useRef(voted);
+  useEffect(() => {
+    votedRef.current = voted;
+  }, [voted]);
+  useEffect(() => {
+    const seen = reached.current; // 같은 객체를 계속 씀
+    const openedAt = performance.now();
+    const onScroll = () => {
+      const c = commentRef.current;
+      if (c && !seen.comments && c.getBoundingClientRect().top < window.innerHeight - 140) {
+        seen.comments = true;
+        track("comment_section_viewed", { post_id: post.id, voted: votedRef.current });
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      const seconds = Math.round((performance.now() - openedAt) / 100) / 10;
+      // 개발 모드에서 effect가 한 번 더 도는 순간(0초)은 빼고 기록
+      if (seconds > 0.3)
+        track("post_closed", {
+          post_id: post.id,
+          seconds,
+          voted: votedRef.current,
+          saw_vote: seen.vote,
+          saw_comments: seen.comments,
+        });
+    };
+  }, [post.id]);
+  const markVoteSeen = useCallback(
+    (via: "scroll" | "cta") => {
+      if (reached.current.vote) return;
+      reached.current.vote = true;
+      track("vote_section_viewed", { post_id: post.id, via });
+    },
+    [post.id],
+  );
+
   useEffect(() => {
     const el = voteRef.current;
     if (!el) return;
@@ -26,6 +69,7 @@ export function DetailScreen({ post }: { post: HomePost }) {
     // 스크롤 위치로 판단해서, 투표 영역을 한 번에 건너뛰어 내려가도 놓치지 않습니다.
     const check = () => {
       if (el.getBoundingClientRect().top < window.innerHeight - 140) {
+        markVoteSeen("scroll");
         setSeenVote(true);
         window.removeEventListener("scroll", check);
       }
@@ -37,9 +81,11 @@ export function DetailScreen({ post }: { post: HomePost }) {
       cancelAnimationFrame(frame);
       window.removeEventListener("scroll", check);
     };
-  }, []);
+  }, [markVoteSeen]);
 
   const goToVote = () => {
+    track("vote_cta_clicked", { post_id: post.id });
+    markVoteSeen("cta");
     setSeenVote(true);
     voteRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
@@ -118,12 +164,17 @@ export function DetailScreen({ post }: { post: HomePost }) {
           <ChevronLeftIcon />
         </Link>
         <div className="flex items-center gap-1">
-          <Link href="/" className={circle} aria-label="언어 선택">
+          <TrackedLink href="/" event="language_clicked" props={{ from: "detail" }} className={circle} aria-label="언어 선택">
             {/* eslint-disable-next-line @next/next/no-img-element -- 작은 SVG 아이콘 */}
             <img src="/images/icon-world.svg" width={24} height={24} alt="" />
-          </Link>
+          </TrackedLink>
           {/* TODO: 더보기 메뉴 (내 글이면 수정·삭제 — 송희 파트와 연결) */}
-          <button type="button" className={circle} aria-label="더보기">
+          <button
+            type="button"
+            className={circle}
+            aria-label="더보기"
+            onClick={() => track("post_more_clicked", { post_id: post.id })}
+          >
             <MoreIcon />
           </button>
         </div>
@@ -131,7 +182,7 @@ export function DetailScreen({ post }: { post: HomePost }) {
 
       <div className="flex flex-col gap-1 px-2 pb-[calc(48px+env(safe-area-inset-bottom))]">
         <div ref={tileRef} className={hiddenUntilIntro}>
-          <PhotoTile photos={post.photos} participants={participantsOf(post)} title={post.title} />
+          <PhotoTile postId={post.id} photos={post.photos} participants={participantsOf(post)} title={post.title} />
         </div>
 
         <article
@@ -158,6 +209,7 @@ export function DetailScreen({ post }: { post: HomePost }) {
         <div
           ref={(el) => {
             fadeIns.current[2] = el;
+            commentRef.current = el;
           }}
         >
           <CommentPile postId={post.id} commentCount={post.commentCount} authorFlag={post.author.flag} />
@@ -207,15 +259,31 @@ const INTRO_MS = 560;
 const boxStyle = (b: Box) => ({ left: b.left, top: b.top, width: b.width, height: b.height });
 
 /** 사진 넘겨 보기 + 참여 인원 칩 (Figma: Tile/Photo) */
-function PhotoTile({ photos, participants, title }: { photos: string[]; participants: number; title: string }) {
+function PhotoTile({
+  postId,
+  photos,
+  participants,
+  title,
+}: {
+  postId: string;
+  photos: string[];
+  participants: number;
+  title: string;
+}) {
   const [index, setIndex] = useState(0);
+  const furthest = useRef(0); // 분석: 몇 번째 사진까지 봤는지
   return (
     <div className="relative aspect-square w-full overflow-hidden rounded-[32px] border border-black/4 bg-[#1e1e1e]">
       <div
         className="flex size-full snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         onScroll={(e) => {
           const el = e.currentTarget;
-          setIndex(Math.round(el.scrollLeft / el.clientWidth));
+          const next = Math.round(el.scrollLeft / el.clientWidth);
+          setIndex(next);
+          if (next > furthest.current) {
+            furthest.current = next;
+            track("photo_swiped", { post_id: postId, index: next, total: photos.length });
+          }
         }}
       >
         {photos.map((src, i) => (

@@ -43,6 +43,9 @@ export type PostContent = {
 export type Draft = PostContent & {
   savedStep: DraftStep | null; // 임시 저장된 경우 이어서 볼 단계
   savedAt: number | null;
+  // ── 분석용 (Mixpanel): 시작 시각, AI가 처음 쓴 원본 (사용자가 얼마나 고쳤는지 비교)
+  startedAt: number | null;
+  ai: { dish: string; title: string; story: string; voteQuestion: string; options: string[] };
 };
 
 export { MY_POST_ID };
@@ -71,6 +74,8 @@ const emptyDraft = (): Draft => ({
   voteBasis: "",
   savedStep: null,
   savedAt: null,
+  startedAt: null,
+  ai: { dish: "", title: "", story: "", voteQuestion: "", options: [] },
 });
 
 // 직접 URL로 들어왔을 때도 화면이 비지 않도록 쓰는 기본 게시글
@@ -139,7 +144,12 @@ export function FlowProvider({ children }: { children: ReactNode }) {
         const photos = [...base.photos, ...accepted];
         return {
           ...s,
-          draft: { ...base, photos, coverId: base.coverId ?? photos[0]?.id ?? null },
+          draft: {
+            ...base,
+            photos,
+            coverId: base.coverId ?? photos[0]?.id ?? null,
+            startedAt: base.startedAt ?? Date.now(),
+          },
         };
       });
       return { added: accepted.length, overflow: files.length > room };
@@ -175,7 +185,10 @@ export function FlowProvider({ children }: { children: ReactNode }) {
   const applyAiDraft = useCallback((opts?: { variant?: number; dish?: string }) => {
     setState((s) => {
       const dish = opts?.dish ?? (s.draft.dish || AI_DISH);
-      return { ...s, draft: { ...s.draft, dish, ...aiPostFor(dish, opts?.variant ?? 0) } };
+      const post = aiPostFor(dish, opts?.variant ?? 0);
+      // ai.dish는 AI가 처음 알아본 이름 그대로 둠 (사용자가 고쳤는지 비교용)
+      const ai = { ...s.draft.ai, dish: s.draft.ai.dish || AI_DISH, ...post };
+      return { ...s, draft: { ...s.draft, dish, ...post, ai } };
     });
   }, []);
 
@@ -184,7 +197,8 @@ export function FlowProvider({ children }: { children: ReactNode }) {
       const d = s.draft;
       const dish = d.dish || AI_DISH;
       const vote = aiVoteFor(d.questionId, dish, d, variant);
-      return { ...s, draft: { ...d, ...vote, voteBasis: voteBasisOf({ ...d, dish }) } };
+      const ai = { ...d.ai, voteQuestion: vote.voteQuestion, options: vote.options };
+      return { ...s, draft: { ...d, ...vote, ai, voteBasis: voteBasisOf({ ...d, dish }) } };
     });
   }, []);
 

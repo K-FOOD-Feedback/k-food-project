@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowCta, IconButton } from "@/components/Buttons";
 import { TextField } from "@/components/Field";
 import { Icon } from "@/components/Icon";
 import { Chip, Screen, StepProgress, StickyBottom, Tile, TopBar } from "@/components/Layout";
 import { getQuestion, VOTE_TITLE_MAX, voteBasisOf } from "@/lib/write-data";
+import { keptRatio, track } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
 import { OptionsEditor } from "../OptionsEditor";
 
@@ -27,17 +28,22 @@ export function VoteStepScreen() {
   const [variant, setVariant] = useState(0);
   const [posting, setPosting] = useState(false);
 
+  // 분석용: 왜 투표를 (다시) 만들었는지
+  const reason = useRef<"first" | "remake" | "update">("first");
+
   // making이 켜지면 잠시 "만드는 중"을 보여 준 뒤 투표를 채움 (처음 진입 · Remake · Update 공통)
   useEffect(() => {
     if (!making) return;
     const t = window.setTimeout(() => {
       makeVote(variant);
       setMaking(false);
+      track("vote_generated", { reason: reason.current, variant, topic: draft.questionId });
     }, MAKING_MS);
     return () => window.clearTimeout(t);
-  }, [making, variant, makeVote]);
+  }, [making, variant, makeVote, draft.questionId]);
 
-  const remake = (nextVariant: number) => {
+  const remake = (nextVariant: number, why: "remake" | "update") => {
+    reason.current = why;
     setVariant(nextVariant);
     setMaking(true);
   };
@@ -45,6 +51,13 @@ export function VoteStepScreen() {
   const stale = !making && draft.options.length > 0 && draft.voteBasis !== "" && voteBasisOf(draft) !== draft.voteBasis;
   const filled = draft.options.filter((o) => o.trim());
   const canPost = !making && draft.voteQuestion.trim().length > 0 && filled.length >= 2;
+
+  // "글이 바뀌었어요" 안내가 뜰 때마다 한 번 기록
+  const staleShown = useRef(false);
+  useEffect(() => {
+    if (stale && !staleShown.current) track("vote_update_prompt_shown");
+    staleShown.current = stale;
+  }, [stale]);
 
   return (
     <Screen className="pb-[140px]">
@@ -55,6 +68,7 @@ export function VoteStepScreen() {
             label="Back"
             onClick={() => {
               saveDraftForLater("vote");
+              track("draft_saved", { step: "vote" });
               router.push("/write/post");
             }}
           />
@@ -75,7 +89,10 @@ export function VoteStepScreen() {
               </p>
               <button
                 type="button"
-                onClick={() => remake(variant)}
+                onClick={() => {
+                  track("vote_update_accepted");
+                  remake(variant, "update");
+                }}
                 className="h-9 shrink-0 rounded-full bg-on-dark px-4 text-[13px] font-bold text-on-light transition active:scale-95"
               >
                 Update
@@ -98,6 +115,7 @@ export function VoteStepScreen() {
             </Chip>
             <Link
               href="/write/question"
+              onClick={() => track("topic_change_clicked", { from: "vote", topic: draft.questionId })}
               aria-label="Change topic"
               className="-m-2 flex size-8 items-center justify-center transition active:scale-90"
             >
@@ -115,20 +133,26 @@ export function VoteStepScreen() {
                 maxLength={VOTE_TITLE_MAX}
                 rows={2}
                 onChange={(voteQuestion) => updateDraft({ voteQuestion })}
+                onBlur={(v) => {
+                  if (v !== draft.ai.voteQuestion) track("vote_title_edited", { length: v.length, source: "write" });
+                }}
               />
               <div className="flex flex-col gap-2 px-5 pt-3 pb-5">
                 <div className="flex items-center">
                   <p className="flex-1 text-[13px] font-semibold leading-[1.3]">Choices Koreans can pick</p>
                   <button
                     type="button"
-                    onClick={() => remake(variant + 1)}
+                    onClick={() => {
+                      track("vote_remade", { attempt: variant + 1 });
+                      remake(variant + 1, "remake");
+                    }}
                     className="flex items-center gap-1 text-[13px] font-semibold leading-[1.3] transition active:scale-95"
                   >
                     <Icon name="refresh" size={14} />
                     Remake
                   </button>
                 </div>
-                <OptionsEditor options={draft.options} onChange={(options) => updateDraft({ options })} />
+                <OptionsEditor source="write" options={draft.options} onChange={(options) => updateDraft({ options })} />
               </div>
             </div>
           )}
@@ -152,6 +176,18 @@ export function VoteStepScreen() {
           className={posting ? "animate-pulse" : ""}
           onClick={() => {
             setPosting(true);
+            const opts = draft.options.filter((o) => o.trim());
+            track("post_published", {
+              topic: draft.questionId,
+              photos: draft.photos.length,
+              options_count: opts.length,
+              options_edited: opts.filter((o) => !draft.ai.options.includes(o)).length,
+              vote_title_kept: keptRatio(draft.ai.voteQuestion, draft.voteQuestion),
+              title_kept: keptRatio(draft.ai.title, draft.title),
+              story_kept: keptRatio(draft.ai.story, draft.story),
+              dish_corrected: draft.dish !== (draft.ai.dish || draft.dish),
+              time_to_publish_sec: draft.startedAt ? Math.round((Date.now() - draft.startedAt) / 1000) : null,
+            });
             window.setTimeout(() => {
               publish();
               router.push("/write/done");

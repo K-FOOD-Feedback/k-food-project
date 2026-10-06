@@ -1,6 +1,8 @@
 "use client";
 
+import { useRef } from "react";
 import { Icon } from "@/components/Icon";
+import { track } from "@/lib/analytics";
 import { OPTION_MAX, OPTIONS_MAX, OPTIONS_MIN } from "@/lib/write-data";
 
 /**
@@ -11,15 +13,25 @@ export function OptionsEditor({
   options,
   onChange,
   locked = false,
+  source,
 }: {
   options: string[];
   onChange?: (options: string[]) => void;
   locked?: boolean;
+  /** 분석용: 어느 화면에서 고쳤는지 */
+  source: "write" | "edit";
 }) {
+  const focusedValue = useRef("");
   const set = (i: number, value: string) =>
     onChange?.(options.map((o, j) => (j === i ? value.replace(/\n/g, "") : o)));
-  const remove = (i: number) => onChange?.(options.filter((_, j) => j !== i));
-  const add = () => onChange?.([...options, ""]);
+  const remove = (i: number) => {
+    onChange?.(options.filter((_, j) => j !== i));
+    track("vote_option_removed", { position: i, options_count: options.length - 1, source });
+  };
+  const add = () => {
+    onChange?.([...options, ""]);
+    track("vote_option_added", { options_count: options.length + 1, source });
+  };
 
   return (
     <div className="flex flex-col gap-1">
@@ -39,6 +51,11 @@ export function OptionsEditor({
               placeholder="Write a choice"
               aria-label={`Choice ${i + 1}`}
               onChange={(e) => set(i, e.target.value)}
+              onFocus={(e) => (focusedValue.current = e.target.value)}
+              onBlur={(e) => {
+                if (e.target.value !== focusedValue.current)
+                  track("vote_option_edited", { position: i, length: e.target.value.length, source });
+              }}
               className={`min-w-0 flex-1 bg-transparent text-[15px] leading-[1.5] outline-none placeholder:text-neutral-400 ${
                 locked ? "text-muted" : "text-on-dark"
               }`}

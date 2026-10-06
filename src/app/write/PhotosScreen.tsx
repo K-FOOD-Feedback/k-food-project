@@ -8,22 +8,25 @@ import { Chip, Screen, StepProgress, StickyBottom, Tile, Toast, TopBar } from "@
 import { PhotoGrid, PhotoImage } from "@/components/PhotoGrid";
 import { usePhotoPicker } from "@/components/PhotoPicker";
 import { MAX_PHOTOS } from "@/lib/write-data";
+import { track } from "@/lib/analytics";
 import { coverOf, useFlow } from "@/lib/write-store";
+import { usePhotoActions } from "./usePhotoActions";
 
 export function PhotosScreen() {
   const router = useRouter();
   // 로그인은 외국인 메인의 Share 버튼(ShareKfoodButton)에서 사진 선택 전에 끝냅니다.
-  const { draft, addPhotos, removePhoto, setCover, movePhoto, saveDraftForLater } = useFlow();
+  const { draft, saveDraftForLater } = useFlow();
+  const photo = usePhotoActions("photos");
   const [limitToast, setLimitToast] = useState(false);
   const closeToast = useCallback(() => setLimitToast(false), []);
 
   const picker = usePhotoPicker((files) => {
-    const { overflow } = addPhotos(files);
-    if (overflow) setLimitToast(true);
+    if (photo.add(files)) setLimitToast(true);
   });
 
   const onAdd = () => {
     if (draft.photos.length >= MAX_PHOTOS) {
+      photo.limitHit();
       setLimitToast(true);
       return;
     }
@@ -32,6 +35,7 @@ export function PhotosScreen() {
 
   const leave = () => {
     saveDraftForLater("photos");
+    track("draft_saved", { step: "photos", photos: draft.photos.length });
     router.push("/home/en");
   };
 
@@ -82,9 +86,9 @@ export function PhotosScreen() {
               <PhotoGrid
                 photos={draft.photos}
                 coverId={draft.coverId}
-                onCover={setCover}
-                onRemove={removePhoto}
-                onMove={movePhoto}
+                onCover={photo.cover}
+                onRemove={photo.remove}
+                onMove={photo.move}
                 onAdd={onAdd}
               />
             </div>
@@ -99,7 +103,9 @@ export function PhotosScreen() {
         <ArrowCta
           title="Next"
           compact
-          {...(draft.photos.length ? { href: "/write/question" } : { disabled: true })}
+          {...(draft.photos.length
+            ? { href: "/write/question", onClick: () => track("photos_completed", { count: draft.photos.length }) }
+            : { disabled: true })}
         />
       </StickyBottom>
 

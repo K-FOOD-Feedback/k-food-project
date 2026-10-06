@@ -11,6 +11,7 @@ export function TextField({
   maxLength,
   rows = 1,
   locked = false,
+  onBlur,
 }: {
   label: string;
   value: string;
@@ -18,6 +19,8 @@ export function TextField({
   maxLength?: number;
   rows?: number;
   locked?: boolean;
+  /** 입력칸에서 나갈 때 (분석 기록 등 — 글자마다가 아니라 한 번만) */
+  onBlur?: (value: string) => void;
 }) {
   const id = useId();
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -50,6 +53,7 @@ export function TextField({
           maxLength={maxLength}
           readOnly={locked}
           aria-readonly={locked}
+          onBlur={(e) => onBlur?.(e.target.value)}
           onChange={(e) => onChange?.(e.target.value.replace(rows === 1 ? /\n/g : /$^/, ""))}
           className={`min-w-0 flex-1 resize-none overflow-hidden bg-transparent text-[15px] leading-[1.5] outline-none ${
             locked ? "text-muted" : "text-on-dark"

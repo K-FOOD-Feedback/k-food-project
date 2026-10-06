@@ -6,6 +6,7 @@ import { ArrowCta, IconButton } from "@/components/Buttons";
 import { Icon } from "@/components/Icon";
 import { Chip, Screen, StepProgress, StickyBottom, TopBar } from "@/components/Layout";
 import { QUESTIONS } from "@/lib/write-data";
+import { track } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
 
 const N = QUESTIONS.length;
@@ -49,10 +50,21 @@ export function QuestionScreen() {
   const [wheel, setWheel] = useState<Wheel>({ pos: initial, prev: initial, dragging: false });
   const selected = mod(wheel.pos);
 
+  // 분석용: 들어올 때 주제, 바꾼 횟수
+  const [enteredWith] = useState(draft.questionId);
+  const changes = useRef(0);
+  const currentId = useRef(draft.questionId);
+
   const snapTo = useCallback(
-    (target: number) => {
+    (target: number, method: "drag" | "scroll" | "tap" | "keyboard") => {
       setWheel((w) => ({ pos: target, prev: w.pos, dragging: false }));
-      updateDraft({ questionId: QUESTIONS[mod(target)].id });
+      const next = QUESTIONS[mod(target)].id;
+      if (next !== currentId.current) {
+        changes.current += 1;
+        track("topic_changed", { from_topic: currentId.current, to_topic: next, method });
+        currentId.current = next;
+      }
+      updateDraft({ questionId: next });
     },
     [updateDraft],
   );
@@ -90,13 +102,13 @@ export function QuestionScreen() {
       const hit = (e.target as HTMLElement).closest<HTMLElement>("[data-qi]");
       if (hit) {
         const off = offsetOf(Number(hit.dataset.qi), wheel.pos);
-        snapTo(Math.round(wheel.pos + off));
+        snapTo(Math.round(wheel.pos + off), "tap");
       }
       return;
     }
     // 던진 속도만큼 조금 더 굴러간 뒤 가장 가까운 칸에 멈춤
     const fling = Math.max(-2, Math.min(2, (-d.v * 160) / STEP_PX));
-    snapTo(Math.round(wheel.pos + fling));
+    snapTo(Math.round(wheel.pos + fling), "drag");
   };
 
   // 마우스 휠 / 트랙패드
@@ -111,7 +123,7 @@ export function QuestionScreen() {
       posRef.current = next;
       setWheel((w) => ({ pos: next, prev: w.pos, dragging: true }));
       window.clearTimeout(timer);
-      timer = window.setTimeout(() => snapTo(Math.round(posRef.current)), 140);
+      timer = window.setTimeout(() => snapTo(Math.round(posRef.current), "scroll"), 140);
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => {
@@ -129,6 +141,7 @@ export function QuestionScreen() {
             label="Back"
             onClick={() => {
               saveDraftForLater("question");
+              track("draft_saved", { step: "topic" });
               router.push("/write");
             }}
           />
@@ -157,7 +170,7 @@ export function QuestionScreen() {
         onKeyDown={(e) => {
           if (e.key === "ArrowDown" || e.key === "ArrowUp") {
             e.preventDefault();
-            snapTo(Math.round(wheel.pos) + (e.key === "ArrowDown" ? 1 : -1));
+            snapTo(Math.round(wheel.pos) + (e.key === "ArrowDown" ? 1 : -1), "keyboard");
           }
         }}
         onPointerDown={onPointerDown}
@@ -228,9 +241,31 @@ export function QuestionScreen() {
       <StickyBottom>
         {draft.title ? (
           // 이미 글을 써 둔 상태에서 주제만 바꾸러 온 경우: 글은 그대로 두고 투표로 돌아감
-          <ArrowCta caption="Your post stays the same" title="Back to the vote" href="/write/vote" />
+          <ArrowCta
+            caption="Your post stays the same"
+            title="Back to the vote"
+            href="/write/vote"
+            onClick={() =>
+              track("topic_reselected", {
+                from_topic: enteredWith,
+                to_topic: draft.questionId,
+                changed: enteredWith !== draft.questionId,
+              })
+            }
+          />
         ) : (
-          <ArrowCta caption="AI drafts your post from the photos" title="Write with AI" href="/write/writing" />
+          <ArrowCta
+            caption="AI drafts your post from the photos"
+            title="Write with AI"
+            href="/write/writing"
+            onClick={() =>
+              track("topic_selected", {
+                topic: draft.questionId,
+                is_ai_top_pick: draft.questionId === QUESTIONS[0].id,
+                changes: changes.current,
+              })
+            }
+          />
         )}
       </StickyBottom>
     </Screen>

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Figtree } from "next/font/google";
 import { FlowProvider } from "@/lib/write-store";
+import { Analytics } from "./Analytics";
 import "./globals.css";
 
 // Gilroy 대체용 영문 제목 폰트
@@ -35,6 +36,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         {/* 작성 → 게시 → 수정 흐름 상태 (서버 연결 전까지 메모리에 보관) */}
         <FlowProvider>{children}</FlowProvider>
+        {/* Mixpanel (토큰 없으면 동작 안 함) */}
+        <Analytics />
       </body>
     </html>
   );

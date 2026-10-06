@@ -6,6 +6,7 @@ import { IconButton, PillButton } from "@/components/Buttons";
 import { Icon } from "@/components/Icon";
 import { BottomSheet, Screen, Tile, TopBar } from "@/components/Layout";
 import { PhotoCarousel } from "@/components/PhotoCarousel";
+import { track, useTrackOnce } from "@/lib/analytics";
 import { getQuestion } from "@/lib/write-data";
 import { SAMPLE_MY_POST, useFlow, MY_POST_ID } from "@/lib/write-store";
 
@@ -21,6 +22,8 @@ export function MyPostScreen({ demoVotes }: { demoVotes?: number }) {
   }, [demoVotes, updateMyPost]);
 
   const post = myPost ?? SAMPLE_MY_POST;
+  useTrackOnce("my_post_viewed", { votes: post.votes, comments: post.comments, views: post.views });
+  const stats = { votes: post.votes, comments: post.comments };
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -39,7 +42,10 @@ export function MyPostScreen({ demoVotes }: { demoVotes?: number }) {
             label="Post options"
             aria-expanded={menuOpen}
             aria-haspopup="menu"
-            onClick={() => setMenuOpen(true)}
+            onClick={() => {
+              track("post_menu_opened", stats);
+              setMenuOpen(true);
+            }}
           />
         }
       />
@@ -103,7 +109,10 @@ export function MyPostScreen({ demoVotes }: { demoVotes?: number }) {
               <button
                 type="button"
                 role="menuitem"
-                onClick={() => router.push(`/posts/${MY_POST_ID}/edit`)}
+                onClick={() => {
+                  track("post_edit_started", { ...stats, locked: post.votes > 0 });
+                  router.push(`/posts/${MY_POST_ID}/edit`);
+                }}
                 className="flex h-12 w-[184px] items-center gap-3 rounded-[18px] px-3 text-[14px] font-bold leading-[1.3] hover:bg-surface-2"
               >
                 <Icon name="pencil" size={20} />
@@ -114,6 +123,7 @@ export function MyPostScreen({ demoVotes }: { demoVotes?: number }) {
                 role="menuitem"
                 onClick={() => {
                   setMenuOpen(false);
+                  track("post_delete_sheet_opened", stats);
                   setDeleteOpen(true);
                 }}
                 className="flex h-12 w-[184px] items-center gap-3 rounded-[18px] px-3 text-[14px] font-bold leading-[1.3] text-error hover:bg-surface-2"
@@ -141,12 +151,19 @@ export function MyPostScreen({ demoVotes }: { demoVotes?: number }) {
           </p>
         </div>
         <div className="flex w-full gap-1">
-          <PillButton tone="soft" onClick={() => setDeleteOpen(false)}>
+          <PillButton
+            tone="soft"
+            onClick={() => {
+              track("post_delete_cancelled", stats);
+              setDeleteOpen(false);
+            }}
+          >
             Cancel
           </PillButton>
           <PillButton
             tone="error"
             onClick={() => {
+              track("post_deleted", stats);
               deleteMyPost();
               router.push("/home/en");
             }}
