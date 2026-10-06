@@ -99,6 +99,8 @@ export function initAnalytics() {
     track_pageview: "url-with-path", // 페이지 이동마다 자동 기록
     debug: DEV,
   });
+  // 개발 중 테스트 기록은 app_env=development 로 구분 (Mixpanel에서 필터해서 제외 가능)
+  mixpanel.register({ app_env: DEV ? "development" : "production" });
   ready = true;
 }
 
