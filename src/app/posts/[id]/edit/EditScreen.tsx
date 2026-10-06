@@ -8,8 +8,9 @@ import { Icon } from "@/components/Icon";
 import { Screen, StickyBottom, Tile, Toast, TopBar } from "@/components/Layout";
 import { PhotoGrid } from "@/components/PhotoGrid";
 import { usePhotoPicker } from "@/components/PhotoPicker";
-import { getQuestion, MAX_PHOTOS, QUESTIONS, STORY_MAX, TITLE_MAX, type Photo } from "@/lib/write-data";
+import { aiVoteFor, getQuestion, MAX_PHOTOS, QUESTIONS, STORY_MAX, TITLE_MAX, VOTE_TITLE_MAX, type Photo } from "@/lib/write-data";
 import { SAMPLE_MY_POST, useFlow, type MyPost, MY_POST_ID } from "@/lib/write-store";
+import { OptionsEditor } from "@/app/write/OptionsEditor";
 
 let editSeq = 0;
 
@@ -25,6 +26,7 @@ export function EditScreen() {
   const [lockShake, setLockShake] = useState(0);
   const [lockToast, setLockToast] = useState(false);
   const closeLockToast = useCallback(() => setLockToast(false), []);
+  const canSave = form.title.trim().length > 0 && form.options.filter((o) => o.trim()).length >= 2;
   const set = (patch: Partial<MyPost>) => setForm((f) => ({ ...f, ...patch }));
 
   const picker = usePhotoPicker((files) => {
@@ -136,7 +138,7 @@ export function EditScreen() {
                       type="button"
                       role="radio"
                       aria-checked={on}
-                      onClick={() => set({ questionId: q.id, voteQuestion: q.voteQuestion })}
+                      onClick={() => set({ questionId: q.id, ...aiVoteFor(q.id, form.dish, form) })}
                       className={`flex h-14 items-center gap-3 rounded-full bg-surface-2 pl-4 pr-3 text-left ${
                         on ? "border-2 border-on-dark" : "border-2 border-transparent"
                       }`}
@@ -156,7 +158,7 @@ export function EditScreen() {
               </div>
               <p className="flex items-center gap-1.5 px-5 pt-1 pb-5 text-[13px] font-medium leading-[1.3] text-muted">
                 <Icon name="info" size={14} />
-                Changing this will rewrite the vote question.
+                Changing this will remake the vote.
               </p>
             </>
           )}
@@ -177,24 +179,28 @@ export function EditScreen() {
 
         <Tile>
           <h2 className="px-5 pt-5 pb-2 text-[18px] font-bold leading-[1.3]">
-            {locked ? "Vote question (locked)" : "Vote question"}
+            {locked ? "Vote (locked)" : "Vote"}
           </h2>
           <TextField
-            label="Question"
+            label="Vote title"
             value={form.voteQuestion}
+            maxLength={VOTE_TITLE_MAX}
             rows={2}
             locked={locked}
             onChange={(voteQuestion) => set({ voteQuestion })}
           />
-          <div className="h-2" />
+          <div className="flex flex-col gap-2 px-5 pt-3 pb-5">
+            <p className="text-[13px] font-semibold leading-[1.3]">Choices Koreans can pick</p>
+            <OptionsEditor options={form.options} locked={locked} onChange={(options) => set({ options })} />
+          </div>
         </Tile>
       </div>
 
       <StickyBottom>
         <div className="flex">
           <PillButton
-            tone={form.title.trim() ? "primary" : "disabled"}
-            disabled={!form.title.trim()}
+            tone={canSave ? "primary" : "disabled"}
+            disabled={!canSave}
             onClick={() => {
               updateMyPost(form);
               router.push(`/my/posts/${MY_POST_ID}`);

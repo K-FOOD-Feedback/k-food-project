@@ -226,11 +226,12 @@ export function QuestionScreen() {
       </div>
 
       <StickyBottom>
-        <ArrowCta
-          caption="AI drafts your post from the photos"
-          title="Write with AI"
-          href="/write/writing"
-        />
+        {draft.title ? (
+          // 이미 글을 써 둔 상태에서 주제만 바꾸러 온 경우: 글은 그대로 두고 투표로 돌아감
+          <ArrowCta caption="Your post stays the same" title="Back to the vote" href="/write/vote" />
+        ) : (
+          <ArrowCta caption="AI drafts your post from the photos" title="Write with AI" href="/write/writing" />
+        )}
       </StickyBottom>
     </Screen>
   );

@@ -186,21 +186,21 @@ export function Tile({
   return <Tag className={`flex w-full flex-col gap-1 overflow-hidden rounded-[32px] bg-surface p-1 ${className}`}>{children}</Tag>;
 }
 
-/** 업로드 3단계 진행 바 */
-export function StepProgress({ step }: { step: 1 | 2 | 3 }) {
+/** 작성 단계 진행 바 (Photos · Topic · Post · Vote) */
+export function StepProgress({ step, total = 4 }: { step: number; total?: number }) {
   return (
     <div
       className="flex gap-1 px-2 pb-3"
       role="progressbar"
       aria-valuemin={1}
-      aria-valuemax={3}
+      aria-valuemax={total}
       aria-valuenow={step}
-      aria-label={`Step ${step} of 3`}
+      aria-label={`Step ${step} of ${total}`}
     >
-      {[1, 2, 3].map((n) => (
+      {Array.from({ length: total }, (_, i) => i + 1).map((n) => (
         <div
           key={n}
-          className={`h-1 flex-1 rounded-full transition-colors ${n <= step ? "bg-on-dark" : "bg-white/15"}`}
+          className={`h-1 flex-1 rounded-full transition-colors duration-500 ${n <= step ? "bg-on-dark" : "bg-white/15"}`}
         />
       ))}
     </div>

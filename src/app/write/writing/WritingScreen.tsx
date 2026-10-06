@@ -9,7 +9,7 @@ import { Screen, Tile, TopBar } from "@/components/Layout";
 import { SAMPLE_PHOTOS } from "@/lib/write-data";
 import { coverOf, useFlow } from "@/lib/write-store";
 
-const STEPS = ["Reading your photos", "Writing title & story", "Making the vote question"];
+const STEPS = ["Reading your photos", "Recognizing your dish", "Writing title & story"];
 const STEP_MS = 1300;
 
 export function WritingScreen() {
@@ -25,7 +25,7 @@ export function WritingScreen() {
       return () => window.clearTimeout(t);
     }
     applyAiDraft();
-    const t = window.setTimeout(() => router.replace("/write/review"), 400);
+    const t = window.setTimeout(() => router.replace("/write/post"), 400);
     return () => window.clearTimeout(t);
   }, [done, applyAiDraft, router]);
 

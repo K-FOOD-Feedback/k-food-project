@@ -9,14 +9,16 @@ import {
   type ReactNode,
 } from "react";
 import {
-  AI_DRAFTS,
-  getQuestion,
+  AI_DISH,
+  aiPostFor,
+  aiVoteFor,
   MAX_PHOTOS,
   MY_POST_ID,
   QUESTIONS,
   SAMPLE_PHOTOS,
   type Photo,
   type QuestionId,
+  voteBasisOf,
 } from "./write-data";
 
 /*
@@ -24,15 +26,18 @@ import {
   아직 서버가 없어서 메모리에만 저장합니다 (새로고침하면 초기화).
 */
 
-export type DraftStep = "photos" | "question" | "review";
+export type DraftStep = "photos" | "question" | "post" | "vote";
 
 export type PostContent = {
   photos: Photo[];
   coverId: string | null;
   questionId: QuestionId;
+  dish: string; // AI가 알아본 음식 이름 (사용자가 고칠 수 있음)
   title: string;
   story: string;
-  voteQuestion: string;
+  voteQuestion: string; // 투표 제목 — 상세 화면 투표 카드 맨 위에 보임
+  options: string[]; // 투표 선택지 2~4개 (AI가 만들고 사용자가 고침)
+  voteBasis: string; // 투표를 만들 때 쓴 재료(주제·음식·제목·본문). 바뀌면 "다시 맞출까요?"
 };
 
 export type Draft = PostContent & {
@@ -58,9 +63,12 @@ const emptyDraft = (): Draft => ({
   photos: [],
   coverId: null,
   questionId: QUESTIONS[0].id,
+  dish: "",
   title: "",
   story: "",
   voteQuestion: "",
+  options: [],
+  voteBasis: "",
   savedStep: null,
   savedAt: null,
 });
@@ -70,9 +78,10 @@ export const SAMPLE_MY_POST: MyPost = {
   photos: SAMPLE_PHOTOS,
   coverId: SAMPLE_PHOTOS[0].id,
   questionId: "eat",
-  title: AI_DRAFTS[0].title,
-  story: AI_DRAFTS[0].story,
-  voteQuestion: getQuestion("eat").voteQuestion,
+  dish: AI_DISH,
+  ...aiPostFor(AI_DISH),
+  ...aiVoteFor("eat", AI_DISH, aiPostFor(AI_DISH)),
+  voteBasis: "",
   votes: 0,
   comments: 0,
   views: 12,
@@ -88,7 +97,10 @@ type FlowActions = {
   setCover: (id: string) => void;
   movePhoto: (from: number, to: number) => void;
   updateDraft: (patch: Partial<PostContent>) => void;
-  applyAiDraft: (variant?: number) => void;
+  /** ①② 음식 인식 + 제목·본문 (dish를 주면 그 이름으로 다시 씀) */
+  applyAiDraft: (opts?: { variant?: number; dish?: string }) => void;
+  /** ③ 투표 제목 + 선택지 (지금 주제·음식·제목·본문 기준) */
+  makeVote: (variant?: number) => void;
   saveDraftForLater: (step: DraftStep) => void;
   discardDraft: () => void;
   publish: () => void;
@@ -160,18 +172,19 @@ export function FlowProvider({ children }: { children: ReactNode }) {
     setState((s) => ({ ...s, draft: { ...s.draft, ...patch } }));
   }, []);
 
-  const applyAiDraft = useCallback((variant = 0) => {
+  const applyAiDraft = useCallback((opts?: { variant?: number; dish?: string }) => {
     setState((s) => {
-      const copy = AI_DRAFTS[variant % AI_DRAFTS.length];
-      return {
-        ...s,
-        draft: {
-          ...s.draft,
-          title: copy.title,
-          story: copy.story,
-          voteQuestion: getQuestion(s.draft.questionId).voteQuestion,
-        },
-      };
+      const dish = opts?.dish ?? (s.draft.dish || AI_DISH);
+      return { ...s, draft: { ...s.draft, dish, ...aiPostFor(dish, opts?.variant ?? 0) } };
+    });
+  }, []);
+
+  const makeVote = useCallback((variant = 0) => {
+    setState((s) => {
+      const d = s.draft;
+      const dish = d.dish || AI_DISH;
+      const vote = aiVoteFor(d.questionId, dish, d, variant);
+      return { ...s, draft: { ...d, ...vote, voteBasis: voteBasisOf({ ...d, dish }) } };
     });
   }, []);
 
@@ -197,9 +210,12 @@ export function FlowProvider({ children }: { children: ReactNode }) {
           photos,
           coverId: d.coverId ?? photos[0].id,
           questionId: d.questionId,
-          title: d.title || AI_DRAFTS[0].title,
-          story: d.story || AI_DRAFTS[0].story,
-          voteQuestion: d.voteQuestion || getQuestion(d.questionId).voteQuestion,
+          dish: d.dish || AI_DISH,
+          title: d.title || SAMPLE_MY_POST.title,
+          story: d.story || SAMPLE_MY_POST.story,
+          voteQuestion: d.voteQuestion || SAMPLE_MY_POST.voteQuestion,
+          options: d.options.filter((o) => o.trim()).length >= 2 ? d.options.filter((o) => o.trim()) : SAMPLE_MY_POST.options,
+          voteBasis: d.voteBasis,
           votes: 0,
           comments: 0,
           views: 0,
@@ -227,6 +243,7 @@ export function FlowProvider({ children }: { children: ReactNode }) {
       movePhoto,
       updateDraft,
       applyAiDraft,
+      makeVote,
       saveDraftForLater,
       discardDraft,
       publish,
@@ -242,6 +259,7 @@ export function FlowProvider({ children }: { children: ReactNode }) {
       movePhoto,
       updateDraft,
       applyAiDraft,
+      makeVote,
       saveDraftForLater,
       discardDraft,
       publish,
