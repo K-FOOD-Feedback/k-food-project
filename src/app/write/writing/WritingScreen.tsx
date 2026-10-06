@@ -44,20 +44,20 @@ export function WritingScreen() {
         }
       />
 
-      <div className="relative mx-auto mt-2 h-[280px] w-full max-w-[375px]">
+      <div className="stagger mx-8 mt-1 flex flex-col items-center gap-2 text-center" aria-live="polite">
+        <h1 className="font-display text-[28px] leading-[1.1]">Cooking up your post…</h1>
+        <p className="text-[15px] leading-[1.5] text-muted">
+          AI is looking at your photos and writing a draft. You can edit everything next.
+        </p>
+      </div>
+
+      <div className="relative mx-auto mt-8 h-[280px] w-full max-w-[375px]">
         <div className="absolute left-1/2 top-0 -translate-x-1/2 animate-pop">
           <BlobPhoto src={cover.src} size={272} priority className="relative animate-float" />
         </div>
         <Sticker className="left-10 top-[12px] size-14 bg-primary" size={28} delay="0s" />
         <Sticker className="left-[292px] top-[42px] size-10 bg-content" size={20} delay=".4s" />
         <Sticker className="left-[300px] top-[232px] size-12 bg-secondary" size={24} delay=".8s" />
-      </div>
-
-      <div className="stagger mx-8 mt-10 flex flex-col items-center gap-2 text-center" aria-live="polite">
-        <h1 className="font-display text-[28px] leading-[1.1]">Cooking up your post…</h1>
-        <p className="text-[15px] leading-[1.5] text-muted">
-          AI is looking at your photos and writing a draft. You can edit everything next.
-        </p>
       </div>
 
       <div className="mt-8 animate-rise px-2 pb-[calc(24px+env(safe-area-inset-bottom))] [animation-delay:200ms]">
