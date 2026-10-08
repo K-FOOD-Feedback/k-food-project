@@ -92,6 +92,8 @@ export function DetailScreen({ post }: { post: HomePost }) {
   };
 
   const showCta = !voted && !seenVote;
+
+
   // 다음 훈수 거리: 메인 카드 순서상 다음 게시글 (마지막이면 처음으로)
   const next = HOME_POSTS[(HOME_POSTS.findIndex((p) => p.id === post.id) + 1) % HOME_POSTS.length];
 
@@ -151,6 +153,23 @@ export function DetailScreen({ post }: { post: HomePost }) {
       child.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, easing: "ease-out" });
     }
   }, [intro, introDone]);
+
+  // 주소가 #vote로 열리면(예: 투표 안 하고 한마디 전체 화면에 들어왔다가 돌려보내진 경우) 투표 영역을 가운데로.
+  // 메인 카드 전환이 있으면 끝난 뒤에 스크롤합니다.
+  const hashHandled = useRef(false);
+  useEffect(() => {
+    if (hashHandled.current || !introDone) return;
+    // 다른 화면에서 router로 넘어오면 주소(#vote)가 화면보다 조금 늦게 바뀌고,
+    // Next.js도 #vote 위치로 한 번 스크롤(맨 위에 붙임)하므로, 잠시 뒤에 주소를 보고 가운데로 맞춥니다.
+    const timer = window.setTimeout(() => {
+      hashHandled.current = true;
+      if (window.location.hash !== "#vote") return;
+      voteRef.current?.scrollIntoView({ block: "center" });
+      markVoteSeen("scroll");
+      setSeenVote(true);
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [introDone, markVoteSeen]);
 
   const hiddenUntilIntro = intro && !introDone ? "invisible" : "";
 
