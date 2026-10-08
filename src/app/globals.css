@@ -34,7 +34,8 @@
   --font-sans: "Pretendard Variable", Pretendard, -apple-system,
     BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", system-ui,
     sans-serif;
-  --font-gilroy: "Gilroy", var(--font-figtree), "Pretendard Variable",
+  /* 영문 글자에는 Gilroy/Figtree, 한글에는 Paperlogy가 쓰입니다 (영문 폰트에 한글이 없어서 다음 폰트로 넘어감) */
+  --font-gilroy: "Gilroy", var(--font-figtree), var(--font-paperlogy), "Pretendard Variable",
     Pretendard, system-ui, sans-serif;
 
   /* 진입 애니메이션 (지연은 [animation-delay:…]로 지정) */

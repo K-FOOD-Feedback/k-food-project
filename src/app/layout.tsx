@@ -2,8 +2,10 @@ import type { Metadata, Viewport } from "next";
 import { Figtree } from "next/font/google";
 import { FlowProvider } from "@/lib/write-store";
 import { Analytics } from "./Analytics";
+import { paperlogy } from "./posts/[id]/font";
 import "./globals.css";
 
+// 굵은 제목 폰트: 영문 Gilroy(없으면 Figtree) · 한글 Paperlogy ExtraBold (font-display)
 // Gilroy 대체용 영문 제목 폰트
 const figtree = Figtree({
   subsets: ["latin"],
@@ -25,7 +27,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ko" className={`${figtree.variable} h-full antialiased`}>
+    <html lang="ko" className={`${figtree.variable} ${paperlogy.variable} h-full antialiased`}>
       <head>
         {/* Pretendard (OFL) — 한글/본문 폰트 */}
         <link

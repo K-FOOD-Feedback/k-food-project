@@ -103,7 +103,7 @@ export function LandingScreen() {
   return (
     <main className="mx-auto w-full max-w-[430px] bg-background text-on-dark">
       {/* 상단: 로고 · 언어 */}
-      <header className="fixed inset-x-0 top-0 z-40 mx-auto flex w-full max-w-[430px] items-center justify-between bg-gradient-to-b from-background via-background/90 to-background/0 px-5 pt-[calc(14px+env(safe-area-inset-top))] pb-5">
+      <header className="fixed inset-x-0 top-0 z-40 mx-auto flex h-[calc(56px+env(safe-area-inset-top))] w-full max-w-[430px] items-center justify-between bg-background px-5 pt-[env(safe-area-inset-top)]">
         <span className="font-display text-[19px] leading-none">{t.brand}</span>
         <div className="flex rounded-full bg-surface p-1 text-[13px] font-bold" role="group" aria-label="Language">
           {(["ko", "en"] as const).map((l) => (
@@ -125,9 +125,9 @@ export function LandingScreen() {
 
       {/* 첫 화면부터 장면이 보이고, 스크롤하면 이어집니다 */}
       <section ref={story} className="relative h-[400svh]" aria-label={t.scroll}>
-        <div className="sticky top-0 flex h-[100svh] flex-col items-center overflow-hidden px-4 pt-[calc(64px+env(safe-area-inset-top))]">
+        <div className="sticky top-0 flex h-[100svh] flex-col overflow-hidden px-5 pt-[calc(72px+env(safe-area-inset-top))]">
           {/* 제목 (항상 맨 위) */}
-          <h1 key={lang} className="w-full break-keep px-1 font-display text-[clamp(26px,8vw,32px)] leading-[1.1]">
+          <h1 key={lang} className="break-keep font-display text-[clamp(26px,8vw,32px)] leading-[1.15]">
             {t.headline.map((line, i) => (
               <span key={line} className="block animate-rise" style={{ animationDelay: `${i * 100}ms` }}>
                 {line}
@@ -135,41 +135,36 @@ export function LandingScreen() {
             ))}
           </h1>
 
-          {/* 단계 */}
-          <div className="mt-4 flex w-full flex-col gap-2 px-1">
-            <div className="flex gap-1" aria-hidden="true">
-              {STEP_AT.map((_, i) => (
-                <span key={i} className={`h-1 flex-1 rounded-full transition-colors duration-300 ${i <= step ? "bg-on-dark" : "bg-white/15"}`} />
-              ))}
-            </div>
+          {/* 단계 설명 */}
+          <div className="mt-5 min-h-[44px]">
             {done ? (
-              <p key={`${lang}-end`} className="animate-rise text-[16px] font-bold leading-[1.4]">
+              <p key={`${lang}-end`} className="animate-rise text-[17px] font-bold leading-[1.35]">
                 {t.endTitle.join(" ")}
               </p>
             ) : (
-              <p key={`${lang}-${step}`} className="flex animate-rise flex-wrap items-baseline gap-x-2 text-[16px] leading-[1.4]">
-                <span className="font-bold">
+              <div key={`${lang}-${step}`} className="animate-rise">
+                <p className="text-[17px] font-bold leading-[1.35]">
                   <span className="mr-1.5 text-primary">{step + 1}</span>
                   {t.steps[step].title}
-                </span>
-                <span className="text-[13px] font-medium text-neutral-400">{t.steps[step].sub}</span>
-              </p>
+                </p>
+                <p className="mt-0.5 text-[13px] font-medium leading-[1.4] text-neutral-400">{t.steps[step].sub}</p>
+              </div>
             )}
           </div>
 
           {/* 게시물 — 마지막에 버튼이 올라오면 작아지며 위로 */}
           <div
-            className="mt-4 origin-top animate-rise [animation-delay:250ms]"
-            style={{ scale: `${1 - 0.27 * shrink}`, translate: `0 ${14 * shrink}px` }}
+            className="mt-5 origin-top animate-rise [animation-delay:250ms]"
+            style={{ scale: `${1 - 0.32 * shrink}` }}
           >
-          <div className="relative w-[min(300px,80vw,36svh)]">
+          <div className="relative w-full">
             <div className="overflow-hidden rounded-[28px] bg-content text-on-light shadow-[0_24px_60px_rgba(0,0,0,0.5)]">
-              <div className="relative aspect-[4/3]">
+              <div className="relative h-[min(230px,27svh)]">
                 <Image
                   src="/images/buldak-skillet.jpg"
                   alt={lang === "ko" ? "치즈를 듬뿍 올린 불닭볶음면" : "Buldak noodles with lots of cheese"}
                   fill
-                  sizes="300px"
+                  sizes="400px"
                   priority
                   className="object-cover object-[50%_65%]"
                 />
@@ -227,27 +222,27 @@ export function LandingScreen() {
             <Bubble
               lang={lang}
               r={REACTIONS[0]}
-              className="-left-5 top-[7%] bg-primary"
+              className="-left-2 top-[7%] bg-primary"
               style={fly(p, 0.42, 0.49, { x: -300, y: -40, r: -30 }, -5)}
             />
             <Bubble
               lang={lang}
               r={REACTIONS[1]}
-              className="-right-5 top-[19%] max-w-[190px] bg-secondary"
+              className="-right-2 top-[19%] max-w-[190px] bg-secondary"
               style={fly(p, 0.48, 0.55, { x: 300, y: 20, r: 25 }, 4)}
             />
             <Bubble
               lang={lang}
               r={REACTIONS[2]}
-              className="-left-4 top-[33%] bg-lilac"
+              className="-left-1 top-[33%] bg-lilac"
               style={fly(p, 0.54, 0.61, { x: -300, y: 60, r: -20 }, 3)}
             />
-            <Emoji emoji="🧀" className="-right-3 -top-4" style={fly(p, 0.58, 0.64, { y: -300, r: 180, s: 0.3 }, 12)} />
+            <Emoji emoji="🧀" className="right-4 -top-5" style={fly(p, 0.58, 0.64, { y: -300, r: 180, s: 0.3 }, 12)} />
             <Emoji emoji="🔥" className="left-[40%] -top-6" style={fly(p, 0.62, 0.68, { y: -300, r: -180, s: 0.3 }, -8)} />
 
             {/* 글쓴이 답글 */}
             <div
-              className="absolute -right-3 bottom-[-38px] flex max-w-[230px] items-start gap-2 rounded-[20px] bg-content px-3.5 py-2.5 text-on-light shadow-[0_12px_30px_rgba(0,0,0,0.5)]"
+              className="absolute right-2 bottom-[-38px] flex max-w-[230px] items-start gap-2 rounded-[20px] bg-content px-3.5 py-2.5 text-on-light shadow-[0_12px_30px_rgba(0,0,0,0.5)]"
               style={fly(p, 0.74, 0.82, { y: 220, s: 0.6 }, -2)}
             >
               <span aria-hidden="true" className="text-[16px] leading-[1.3]">
