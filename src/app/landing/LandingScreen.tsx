@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { TrackedLink } from "@/components/Track";
 import { track, useTrackOnce } from "@/lib/analytics";
 import { COPY, REACTIONS, SAMPLE_PCTS, type LandingLang } from "./copy";
@@ -164,7 +164,7 @@ export function LandingScreen() {
           <h1
             key={`${lang}-${scene}`}
             aria-live="polite"
-            className="min-h-[2.3em] break-keep font-display text-[clamp(26px,8vw,32px)] leading-[1.15]"
+            className="min-h-[2.3em] break-keep font-display text-[clamp(32px,10vw,40px)] leading-[1.12]"
           >
             {t.titles[scene].map((line, i) => (
               <span key={line} className="block animate-rise" style={{ animationDelay: `${i * 80}ms` }}>
@@ -180,97 +180,125 @@ export function LandingScreen() {
             style={{ scale: `${1 - (1 - endScale) * shrink}`, translate: `0 ${centerOffset}px` }}
           >
           <div className="relative w-full animate-card-enter [animation-delay:350ms]">
-            <div ref={postRef} className="overflow-hidden rounded-[28px] bg-content text-on-light shadow-[0_24px_60px_rgba(0,0,0,0.5)]">
-              <div className="relative h-[min(230px,27svh)]">
+            {/* 피드 카드 (앱 메인과 같은 모양: 노란 카드 + 물결 사진 + 질문 칩 + 제목 + 작성자) */}
+            <div ref={postRef} className="rounded-[32px] bg-content px-5 pt-4 pb-5 text-on-light">
+              <div
+                className="relative mx-auto aspect-square h-[min(200px,23svh)] overflow-hidden"
+                style={{
+                  maskImage: "url(/images/card-mask.svg)",
+                  WebkitMaskImage: "url(/images/card-mask.svg)",
+                  maskSize: "100% 100%",
+                  WebkitMaskSize: "100% 100%",
+                }}
+              >
                 <Image
                   src="/images/buldak-skillet.jpg"
                   alt={lang === "ko" ? "치즈를 듬뿍 올린 불닭볶음면" : "Buldak noodles with lots of cheese"}
                   fill
-                  sizes="400px"
+                  sizes="220px"
                   priority
-                  className="animate-photo-in object-cover object-[50%_65%] [animation-delay:350ms]"
+                  className="animate-photo-in object-cover object-[50%_70%] [animation-delay:350ms]"
                 />
               </div>
-              <div className="flex flex-col gap-1.5 px-4 pt-3 pb-4">
-                <div className="flex animate-pop items-center gap-1.5 text-[12px] font-bold [animation-delay:1000ms]">
-                  <span aria-hidden="true">🇨🇦</span>
-                  {t.author}
-                </div>
-                <p className="min-h-[2.8em] break-keep text-[15px] font-semibold leading-[1.4]">
-                  “{t.story.slice(0, typed)}
-                  {typed < t.story.length && <span className="ml-px inline-block h-[1em] w-0.5 translate-y-[2px] animate-pulse bg-on-light" />}
-                  {typed >= t.story.length && "”"}
+              <div className="mt-3 flex flex-col items-start gap-2">
+                <span className="animate-pop rounded-full bg-black/8 px-2.5 py-[5px] text-[12px] font-semibold leading-[1.2] [animation-delay:900ms]">
+                  {t.question}
+                </span>
+                {/* 완성된 글 크기만큼 자리를 먼저 잡고, 그 위에 타이핑 (아래가 비거나 들썩이지 않게) */}
+                <p className="relative w-full break-keep text-[22px] font-extrabold leading-[1.2] tracking-[-0.66px]">
+                  <span className="invisible">{t.story}</span>
+                  <span className="absolute inset-0">
+                    {t.story.slice(0, typed)}
+                    {typed < t.story.length && (
+                      <span className="ml-0.5 inline-block h-[0.9em] w-[3px] translate-y-[2px] animate-pulse bg-on-light" />
+                    )}
+                  </span>
                 </p>
+                <span className="flex animate-pop items-center gap-[5px] text-[13px] font-semibold text-black/60 [animation-delay:1000ms]">
+                  <span className="text-[15px]" aria-hidden="true">
+                    🇨🇦
+                  </span>
+                  {t.author}
+                </span>
               </div>
             </div>
 
-            {/* 투표 */}
-            <div className="relative -mt-3 rounded-[24px] bg-surface px-4 pt-4 pb-4 shadow-[0_16px_40px_rgba(0,0,0,0.5)]" style={fly(p, 0.1, 0.17, { x: -260, r: -12 })}>
-              <p className="text-[14px] font-bold">{t.question}</p>
-              <ul className="mt-3 flex flex-col gap-1.5">
+            {/* 투표 (앱 상세와 같은 모양: 세로 칸이 아래에서 차오름) */}
+            <div className="relative -mt-4 rounded-[32px] bg-surface-2 px-4 pt-5 pb-4" style={fly(p, 0.1, 0.17, { y: 260, r: -6 })}>
+              <p className="text-center font-display text-[18px] leading-[1.3]">{t.voteTitle}</p>
+              <div className="mt-3 flex h-[min(128px,15svh)] gap-1.5">
                 {t.options.map((opt, i) => {
                   const fill = seg(p, 0.24 + i * 0.02, 0.34) * SAMPLE_PCTS[i];
+                  const mine = i === 0;
                   return (
-                    <li
+                    <div
                       key={opt}
-                      className="relative flex h-9 items-center overflow-hidden rounded-full bg-surface-2 px-3.5 text-[13px] font-semibold"
-                      style={fly(p, 0.15 + i * 0.03, 0.22 + i * 0.03, { x: 280, r: 8 })}
+                      className="relative min-w-0 flex-1 rounded-[20px] bg-surface"
+                      style={fly(p, 0.14 + i * 0.03, 0.21 + i * 0.03, { y: 120 })}
                     >
-                      <span className={`absolute inset-y-0 left-0 rounded-full ${i === 0 ? "bg-primary" : "bg-white/15"}`} style={{ width: `${fill}%` }} />
-                      <span className={`relative flex-1 ${i === 0 && fill > 20 ? "text-on-light" : ""}`}>{opt}</span>
-                      <span className="relative tabular-nums text-neutral-400">{Math.round(fill)}%</span>
-                    </li>
+                      <span
+                        className={`absolute inset-x-0 bottom-0 rounded-b-[20px] ${mine ? "bg-primary" : "bg-white/10"}`}
+                        style={{ height: `${fill}%` }}
+                      />
+                      {/* 🇰🇷 토큰이 위에서 떨어져 내가 고른 칸으로 */}
+                      {mine && (
+                        <span
+                          aria-hidden="true"
+                          className="absolute right-1.5 top-1.5 flex size-9 items-center justify-center rounded-full bg-on-dark text-[16px]"
+                          style={fly(p, 0.2, 0.27, { y: -420, r: 120, s: 0.6 })}
+                        >
+                          🇰🇷
+                        </span>
+                      )}
+                      <span className="absolute left-3 top-2.5 whitespace-pre-line pr-1 text-[12px] font-medium leading-[1.25] opacity-60">
+                        {opt}
+                      </span>
+                      <span
+                        className={`absolute bottom-2 left-3 font-display text-[18px] tabular-nums ${mine ? "text-on-light" : "text-on-dark"}`}
+                        style={{ opacity: seg(p, 0.24, 0.28) }}
+                      >
+                        {Math.round(fill)}%
+                      </span>
+                    </div>
                   );
                 })}
-              </ul>
-              {/* 🇰🇷 토큰이 위에서 떨어져 칸에 들어감 */}
-              {[0, 1, 2].map((i) => (
-                <span
-                  key={i}
-                  aria-hidden="true"
-                  className="absolute flex size-8 items-center justify-center rounded-full bg-on-dark text-[15px] shadow-[0_4px_10px_rgba(0,0,0,0.4)]"
-                  style={{
-                    right: 18 + i * 30,
-                    top: -14,
-                    ...fly(p, 0.26 + i * 0.025, 0.33 + i * 0.025, { y: -340, r: 90, s: 0.5 }),
-                  }}
-                >
-                  🇰🇷
-                </span>
-              ))}
+              </div>
             </div>
 
-            {/* 한국인 반응 — 사진 가장자리에 걸치게 */}
+            {/* 한국인 반응 — 앱 댓글 더미처럼 알약 모양, 사진 가장자리에 걸치게 */}
             <Bubble
               lang={lang}
               r={REACTIONS[0]}
-              className="-left-2 top-[7%]"
-              style={fly(p, 0.42, 0.49, { x: -300, y: -40, r: -30 }, -5)}
+              className="-left-2 top-[5%]"
+              style={fly(p, 0.42, 0.49, { x: -300, y: -40, r: -30 }, -6)}
             />
             <Bubble
               lang={lang}
               r={REACTIONS[1]}
-              className="-right-2 top-[19%] max-w-[190px]"
-              style={fly(p, 0.48, 0.55, { x: 300, y: 20, r: 25 }, 4)}
+              className="-right-2 top-[17%] max-w-[200px]"
+              style={fly(p, 0.48, 0.55, { x: 300, y: 20, r: 25 }, 5)}
             />
             <Bubble
               lang={lang}
               r={REACTIONS[2]}
-              className="-left-1 top-[33%]"
+              className="-left-1 top-[30%]"
               style={fly(p, 0.54, 0.61, { x: -300, y: 60, r: -20 }, 3)}
             />
-            <Emoji emoji="🧀" className="right-4 -top-5" style={fly(p, 0.58, 0.64, { y: -300, r: 180, s: 0.3 }, 12)} />
-            <Emoji emoji="🔥" className="left-[40%] -top-6" style={fly(p, 0.62, 0.68, { y: -300, r: -180, s: 0.3 }, -8)} />
 
-            {/* 글쓴이 답글 */}
+            {/* 글쓴이 답글 — 앱 댓글의 작성자 말풍선 */}
             <div
-              className="absolute right-2 bottom-[-38px] flex max-w-[230px] items-start gap-2 rounded-[20px] bg-content px-3.5 py-2.5 text-on-light shadow-[0_12px_30px_rgba(0,0,0,0.5)]"
-              style={fly(p, 0.74, 0.82, { y: 220, s: 0.6 }, -2)}
+              className="absolute right-2 bottom-[-30px] pt-2.5"
+              style={fly(p, 0.74, 0.82, { y: 220, s: 0.6 }, -3)}
             >
-              <span aria-hidden="true" className="text-[16px] leading-[1.3]">
-                🇨🇦
+              <span className="flex items-center gap-2 rounded-[32px] bg-content py-2 pr-4 pl-2 text-on-light">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-on-dark text-[17px]" aria-hidden="true">
+                  🇨🇦
+                </span>
+                <span className="max-w-[190px] break-keep text-[14px] font-bold leading-[1.35]">{t.reply}</span>
               </span>
-              <span className="break-keep text-[13px] font-bold leading-[1.35]">{t.reply}</span>
+              <span className="absolute left-7 top-0 rounded-full bg-black px-1.5 py-1 text-[10px] font-bold leading-none text-white">
+                {t.authorTag}
+              </span>
             </div>
           </div>
           </div>
@@ -366,23 +394,11 @@ function Bubble({
 }) {
   return (
     <div
-      className={`absolute z-10 flex flex-col rounded-[20px] bg-primary px-4 py-2.5 text-on-light shadow-[0_10px_26px_rgba(0,0,0,0.45)] ${className}`}
+      className={`absolute z-10 flex flex-col items-center rounded-[32px] bg-primary px-5 py-3 text-center text-on-light ${className}`}
       style={style}
     >
-      <span className="break-keep text-[15px] font-extrabold leading-[1.3]">{r.ko}</span>
+      <span className="break-keep text-[15px] font-bold leading-[1.35] tracking-[-0.3px]">{r.ko}</span>
       {lang === "en" && <span className="text-[11px] font-semibold leading-[1.3] opacity-60">{r.en}</span>}
     </div>
-  );
-}
-
-function Emoji({ emoji, className, style }: { emoji: string; className: string; style: CSSProperties }): ReactNode {
-  return (
-    <span
-      aria-hidden="true"
-      className={`absolute z-10 flex size-12 items-center justify-center rounded-full bg-on-dark text-[24px] shadow-[0_8px_20px_rgba(0,0,0,0.4)] ${className}`}
-      style={style}
-    >
-      {emoji}
-    </span>
   );
 }
