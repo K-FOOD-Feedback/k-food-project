@@ -216,7 +216,20 @@ export function DetailScreen({ post }: { post: HomePost }) {
             commentRef.current = el;
           }}
         >
-          <CommentPile postId={post.id} commentCount={post.commentCount} authorFlag={post.author.flag} />
+          {/*
+            투표 전에는 이모지·한마디 입력 카드를 숨기고(투표하면 나타남), 한마디 칸은 잠금 레이어로 덮어 누를 수 없게(inert) 합니다.
+            (CommentPile은 한마디 세션 담당이라 안을 고치지 않고 바깥에서 감쌉니다 — 칸(section) 아래 요소들만 숨김)
+          */}
+          <div
+            inert={!voted}
+            className={
+              voted
+                ? "[&>div>*:not(section)]:transition-opacity [&>div>*:not(section)]:duration-500 [&>div>*:not(section)]:starting:opacity-0"
+                : "[&>div>*:not(section)]:hidden"
+            }
+          >
+            <CommentPile postId={post.id} commentCount={post.commentCount} authorFlag={post.author.flag} />
+          </div>
           <CommentLock locked={!voted} onVote={goToVote} />
         </div>
 
