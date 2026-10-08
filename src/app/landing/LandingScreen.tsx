@@ -159,7 +159,7 @@ export function LandingScreen() {
 
       {/* 첫 화면부터 장면이 보이고, 스크롤하면 이어집니다 */}
       <section ref={story} className="relative h-[400svh]" aria-label={t.scroll}>
-        <div className="sticky top-0 flex h-[100svh] flex-col overflow-hidden px-5 pt-[calc(72px+env(safe-area-inset-top))]">
+        <div className="sticky top-0 flex h-[100svh] flex-col overflow-hidden px-5 pt-[calc(112px+env(safe-area-inset-top))]">
           {/* 제목 — 스크롤 단계마다 바뀜 (첫 화면은 서비스 한 줄 소개) */}
           <h1
             key={`${lang}-${scene}`}
