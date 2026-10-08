@@ -119,9 +119,10 @@ export function LandingScreen() {
   // 제목: 0 소개(=글 올리기) · 1 투표 · 2 한마디 · 3 답글 · 4 마지막
   const scene = done ? 4 : step;
   const shrink = seg(p, 0.84, 0.94);
-  // 처음엔 게시물이 남은 공간 가운데, 투표가 붙을수록 위로 올라감 (마지막엔 제목 바로 아래)
+  // 처음엔 게시물이 조금 아래, 투표가 붙을수록 위로 올라감 (마지막엔 제목 바로 아래)
   const shown = box.post + (box.full - box.post) * seg(p, 0.06, 0.2);
-  const centerOffset = Math.max(0, (box.room - shown) / 2) * (1 - shrink);
+  // 수학적 가운데는 눈에 낮아 보여서, 남는 공간의 35% 지점(최대 120px)에 둡니다
+  const centerOffset = Math.min(120, Math.max(0, (box.room - shown) * 0.35)) * (1 - shrink);
   // 사연은 들어오자마자 저절로 타이핑 (첫 화면이 비어 보이지 않게)
   const [clock, setClock] = useState(0);
   useEffect(() => {
