@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from "react";
 import type { HomePost } from "@/app/home/mockPosts";
-import { clearVote, saveVote, useMyVote } from "@/app/home/votes";
+import { saveVote, useMyVote } from "@/app/home/votes";
 import { track } from "@/lib/analytics";
 
 const title = "font-(family-name:--font-paperlogy) text-[24px] leading-[1.3] tracking-[-0.72px]";
@@ -10,6 +10,8 @@ const title = "font-(family-name:--font-paperlogy) text-[24px] leading-[1.3] tra
 /**
   투표 카드 (Figma: VoteCard / Bowl)
   🇰🇷 토큰을 칸으로 끌어다 놓거나 칸을 누르면 투표되고, 바로 결과가 칸 높이로 보입니다.
+  투표한 뒤 다른 칸을 누르면 내 선택이 그 칸으로 바뀝니다 (투표 전으로 되돌리지 않음 —
+  되돌리면 투표한 사람에게만 보이는 한마디 영역이 사라졌다 다시 나타나기 때문).
 */
 export function VoteBowl({ post }: { post: HomePost }) {
   const myVote = useMyVote(post.id);
@@ -38,24 +40,23 @@ export function VoteBowl({ post }: { post: HomePost }) {
     );
   }, [myVote]);
 
-  // 분석: 화면에 들어와서 투표까지 걸린 시간, 다시 투표인지
+  // 분석: 화면에 들어와서 투표까지 걸린 시간, 처음 투표인지 선택을 바꾼 건지
   const mountedAt = useRef(0);
-  const previousVote = useRef<number | null>(null);
   useEffect(() => {
     mountedAt.current = performance.now();
   }, []);
 
   const vote = (choice: number, method: "drag" | "tap" = "tap") => {
-    track(previousVote.current === null ? "vote_cast" : "vote_changed", {
+    if (choice === myVote) return; // 이미 고른 칸
+    track(myVote === null ? "vote_cast" : "vote_changed", {
       post_id: post.id,
       choice,
-      previous: previousVote.current,
+      previous: myVote,
       options_count: options.length,
       method,
       seconds_to_vote: Math.round((performance.now() - mountedAt.current) / 100) / 10,
       total_votes_before: total,
     });
-    previousVote.current = null;
     flyFrom.current = token.current?.getBoundingClientRect() ?? null;
     saveVote(post.id, choice);
   };
@@ -117,9 +118,12 @@ export function VoteBowl({ post }: { post: HomePost }) {
       {/* 토큰 자리: 투표 전엔 토큰, 투표 후엔 결과 요약 */}
       <div className="flex h-16 items-center justify-center">
         {voted ? (
-          <p className="text-center text-[15px] leading-[1.4] font-semibold text-neutral-400">
-            {total}명 중 <span className="text-on-dark">{pcts[myVote]}%</span>가 같은 생각이에요
-          </p>
+          <div className="flex flex-col items-center gap-1 text-center">
+            <p className="text-[15px] leading-[1.4] font-semibold text-neutral-400">
+              {total}명 중 <span className="text-on-dark">{pcts[myVote]}%</span>가 같은 생각이에요
+            </p>
+            <p className="text-[12px] leading-[1.4] font-medium text-neutral-400/70">다른 칸을 누르면 선택을 바꿀 수 있어요</p>
+          </div>
         ) : (
           <div
             className={`relative z-10 touch-none select-none ${drag ? "cursor-grabbing" : "cursor-grab transition-transform duration-300"}`}
@@ -149,13 +153,16 @@ export function VoteBowl({ post }: { post: HomePost }) {
                 columns.current[i] = el;
               }}
               type="button"
-              disabled={voted}
               onClick={() => vote(i)}
               aria-pressed={mine}
-              aria-label={voted ? `${label.replace("\n", " ")} ${pcts[i]}%` : `${label.replace("\n", " ")}에 투표`}
-              className={`relative h-[230px] min-w-0 flex-1 overflow-hidden rounded-[20px] text-left transition-colors ${
+              aria-label={
+                voted
+                  ? `${label.replace("\n", " ")} ${pcts[i]}%${mine ? " (내 선택)" : " — 눌러서 선택 바꾸기"}`
+                  : `${label.replace("\n", " ")}에 투표`
+              }
+              className={`relative h-[230px] min-w-0 flex-1 overflow-hidden rounded-[20px] text-left transition-[background-color,scale] ${
                 hover === i ? "bg-[#2e2e2e]" : "bg-[#1e1e1e]"
-              }`}
+              } ${mine ? "cursor-default" : "active:scale-[0.98]"}`}
             >
               {voted && (
                 <span
@@ -189,19 +196,6 @@ export function VoteBowl({ post }: { post: HomePost }) {
         })}
       </div>
 
-      {voted && (
-        <button
-          type="button"
-          onClick={() => {
-            // 다음 투표는 vote_changed 로 기록
-            previousVote.current = myVote;
-            clearVote(post.id);
-          }}
-          className="-mt-2 self-center text-[14px] font-semibold text-neutral-400 underline underline-offset-4"
-        >
-          다시 투표하기
-        </button>
-      )}
     </section>
   );
 }
