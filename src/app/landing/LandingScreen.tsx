@@ -177,7 +177,7 @@ export function LandingScreen() {
           <h1
             key={`${lang}-${scene}`}
             aria-live="polite"
-            className="min-h-[2.7em] break-keep text-center font-display text-[clamp(30px,9vw,36px)] leading-[1.35]"
+            className="min-h-[2.4em] break-keep text-center font-display text-[32px] leading-[1.2]"
           >
             {t.titles[scene].map((line, i) => (
               <span key={line} className="block animate-rise" style={{ animationDelay: `${i * 80}ms` }}>
