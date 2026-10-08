@@ -97,7 +97,7 @@ export function LandingScreen() {
   const postRef = useRef<HTMLDivElement>(null);
   const [endScale, setEndScale] = useState(0.85);
   // 가운데 정렬용: 제목 아래 남는 높이, 게시물만의 높이, 투표·답글까지 붙은 높이
-  const [box, setBox] = useState({ room: 0, post: 0, full: 0 });
+  const [box, setBox] = useState({ room: 0, post: 0, full: 0, endRoom: 0 });
   useEffect(() => {
     const measure = () => {
       const card = cardRef.current;
@@ -109,7 +109,7 @@ export function LandingScreen() {
       const room = cta.offsetTop + 24 - top; // 버튼 영역 위쪽 그라데이션까지는 겹쳐도 됨
       const full = card.offsetHeight + 44; // 아래로 삐져나온 글쓴이 답글
       setEndScale(clamp(room / full, 0.6, 0.85));
-      setBox({ room: stage.clientHeight - top - 64, post: post.offsetHeight, full });
+      setBox({ room: stage.clientHeight - top - 64, post: post.offsetHeight, full, endRoom: room });
     };
     measure();
     window.addEventListener("resize", measure);
@@ -122,7 +122,10 @@ export function LandingScreen() {
   // 처음엔 게시물이 조금 아래, 투표가 붙을수록 위로 올라감 (마지막엔 제목 바로 아래)
   const shown = box.post + (box.full - box.post) * seg(p, 0.06, 0.2);
   // 수학적 가운데는 눈에 낮아 보여서, 남는 공간의 35% 지점(최대 120px)에 둡니다
-  const centerOffset = Math.min(120, Math.max(0, (box.room - shown) * 0.35)) * (1 - shrink);
+  const startOffset = Math.min(120, Math.max(0, (box.room - shown) * 0.35));
+  // 마지막: 제목과 버튼 사이에서도 같은 방식으로 (작아진 크기 기준)
+  const endOffset = Math.max(0, (box.endRoom - box.full * endScale) * 0.4);
+  const centerOffset = startOffset + (endOffset - startOffset) * shrink;
   // 사연은 들어오자마자 저절로 타이핑 (첫 화면이 비어 보이지 않게)
   const [clock, setClock] = useState(0);
   useEffect(() => {
@@ -241,19 +244,19 @@ export function LandingScreen() {
             <Bubble
               lang={lang}
               r={REACTIONS[0]}
-              className="-left-2 top-[7%] bg-primary"
+              className="-left-2 top-[7%]"
               style={fly(p, 0.42, 0.49, { x: -300, y: -40, r: -30 }, -5)}
             />
             <Bubble
               lang={lang}
               r={REACTIONS[1]}
-              className="-right-2 top-[19%] max-w-[190px] bg-secondary"
+              className="-right-2 top-[19%] max-w-[190px]"
               style={fly(p, 0.48, 0.55, { x: 300, y: 20, r: 25 }, 4)}
             />
             <Bubble
               lang={lang}
               r={REACTIONS[2]}
-              className="-left-1 top-[33%] bg-lilac"
+              className="-left-1 top-[33%]"
               style={fly(p, 0.54, 0.61, { x: -300, y: 60, r: -20 }, 3)}
             />
             <Emoji emoji="🧀" className="right-4 -top-5" style={fly(p, 0.58, 0.64, { y: -300, r: 180, s: 0.3 }, 12)} />
@@ -303,7 +306,7 @@ function RoleButtons({ lang }: { lang: LandingLang }) {
   return (
     <div className="flex flex-col gap-2">
       <RoleButton href="/home" tone="bg-primary" role={t.korean.role} action={t.korean.action} kind="korean" />
-      <RoleButton href="/home/en" tone="bg-secondary" role={t.foreigner.role} action={t.foreigner.action} kind="foreigner" />
+      <RoleButton href="/home/en" tone="bg-content" role={t.foreigner.role} action={t.foreigner.action} kind="foreigner" />
       <TrackedLink
         href="/home"
         event="landing_login_clicked"
@@ -363,7 +366,7 @@ function Bubble({
 }) {
   return (
     <div
-      className={`absolute z-10 flex flex-col rounded-[20px] px-4 py-2.5 text-on-light shadow-[0_10px_26px_rgba(0,0,0,0.45)] ${className}`}
+      className={`absolute z-10 flex flex-col rounded-[20px] bg-primary px-4 py-2.5 text-on-light shadow-[0_10px_26px_rgba(0,0,0,0.45)] ${className}`}
       style={style}
     >
       <span className="break-keep text-[15px] font-extrabold leading-[1.3]">{r.ko}</span>
