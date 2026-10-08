@@ -94,16 +94,22 @@ export function LandingScreen() {
   // 마지막에 버튼이 올라오면, 게시물은 버튼 위에 딱 들어갈 만큼만 작아짐 (최대 85%)
   const cardRef = useRef<HTMLDivElement>(null);
   const ctaRef = useRef<HTMLDivElement>(null);
+  const postRef = useRef<HTMLDivElement>(null);
   const [endScale, setEndScale] = useState(0.85);
+  // 가운데 정렬용: 제목 아래 남는 높이, 게시물만의 높이, 투표·답글까지 붙은 높이
+  const [box, setBox] = useState({ room: 0, post: 0, full: 0 });
   useEffect(() => {
     const measure = () => {
       const card = cardRef.current;
       const cta = ctaRef.current;
-      if (!card || !cta) return;
+      const post = postRef.current;
+      const stage = card?.parentElement;
+      if (!card || !cta || !post || !stage) return;
       const top = card.offsetTop;
       const room = cta.offsetTop + 24 - top; // 버튼 영역 위쪽 그라데이션까지는 겹쳐도 됨
-      const height = card.offsetHeight + 44; // 아래로 삐져나온 글쓴이 답글
-      setEndScale(clamp(room / height, 0.6, 0.85));
+      const full = card.offsetHeight + 44; // 아래로 삐져나온 글쓴이 답글
+      setEndScale(clamp(room / full, 0.6, 0.85));
+      setBox({ room: stage.clientHeight - top - 64, post: post.offsetHeight, full });
     };
     measure();
     window.addEventListener("resize", measure);
@@ -113,6 +119,9 @@ export function LandingScreen() {
   // 제목: 0 소개(=글 올리기) · 1 투표 · 2 한마디 · 3 답글 · 4 마지막
   const scene = done ? 4 : step;
   const shrink = seg(p, 0.84, 0.94);
+  // 처음엔 게시물이 남은 공간 가운데, 투표가 붙을수록 위로 올라감 (마지막엔 제목 바로 아래)
+  const shown = box.post + (box.full - box.post) * seg(p, 0.06, 0.2);
+  const centerOffset = Math.max(0, (box.room - shown) / 2) * (1 - shrink);
   // 사연은 들어오자마자 저절로 타이핑 (첫 화면이 비어 보이지 않게)
   const [clock, setClock] = useState(0);
   useEffect(() => {
@@ -164,10 +173,10 @@ export function LandingScreen() {
           <div
             ref={cardRef}
             className="mt-6 origin-top animate-rise [animation-delay:250ms]"
-            style={{ scale: `${1 - (1 - endScale) * shrink}` }}
+            style={{ scale: `${1 - (1 - endScale) * shrink}`, translate: `0 ${centerOffset}px` }}
           >
           <div className="relative w-full">
-            <div className="overflow-hidden rounded-[28px] bg-content text-on-light shadow-[0_24px_60px_rgba(0,0,0,0.5)]">
+            <div ref={postRef} className="overflow-hidden rounded-[28px] bg-content text-on-light shadow-[0_24px_60px_rgba(0,0,0,0.5)]">
               <div className="relative h-[min(230px,27svh)]">
                 <Image
                   src="/images/buldak-skillet.jpg"
