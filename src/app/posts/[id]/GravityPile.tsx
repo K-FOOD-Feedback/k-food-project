@@ -1,7 +1,7 @@
 "use client";
 
 import Matter from "matter-js";
-import { useImperativeHandle, useLayoutEffect, useRef, type Ref } from "react";
+import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type Ref } from "react";
 import type { Comment } from "./comments";
 
 const { Engine, Bodies, Body, Composite, Events, Sleeping } = Matter;
@@ -30,9 +30,8 @@ const STEP_MS = 1000 / 60;
 // 이모지는 제한 없이 굴러갑니다.
 const MAX_TILT = 0.52;
 const PRESETTLE_STEPS = 60;
-// 댓글 전체 화면을 열 때 "와르르" 쏟아지는 연출: 최신 댓글 최대 이만큼을 0.7초 안에 떨어뜨립니다.
-// 그보다 오래된 댓글은 이미 쌓인 상태(그라데이션 아래쪽)로 시작합니다.
-const RAIN_MAX = 14;
+// 열 때 "와르르" 쏟아지는 연출: 최신 댓글 몇 개(rainOnOpen, 맨 위에 쌓일 댓글들)를 0.7초 안에 떨어뜨립니다.
+// 그보다 오래된 댓글은 이미 쌓인 상태(아래쪽)로 시작합니다. 댓글이 많아도 오래 걸리지 않도록.
 const RAIN_TOTAL_MS = 700;
 const RAIN_GAP_MAX_MS = 70;
 // 더미가 높아질 때 화면이 따라 내려가는 움직임 (스프링: 부드럽게 출발하고 부드럽게 멈춤)
@@ -102,7 +101,8 @@ class PileWorld {
     width: number,
     height: number,
     scroller: { box: HTMLElement; content: HTMLElement } | null,
-    private rainOnOpen = false,
+    /** 열 때 쏟아질 최신 댓글 수 (0이면 쏟아지지 않음) */
+    private rainCount = 0,
   ) {
     this.width = width;
     this.height = height;
@@ -184,7 +184,7 @@ class PileWorld {
     if (!this.started) {
       this.started = true;
       // 쏟아지는 연출이면 최신 댓글 몇 개는 남겨 두었다가 눈앞에서 떨어뜨립니다.
-      const rain = this.rainOnOpen ? fresh.slice(-RAIN_MAX) : [];
+      const rain = this.rainCount > 0 ? fresh.slice(-this.rainCount) : [];
       const settled = fresh.slice(0, fresh.length - rain.length);
       // 나머지(처음 열 때 기본)는 오래된 순서대로 같은 규칙으로 떨어뜨려 미리 쌓아 둡니다.
       for (const c of settled) {
@@ -435,7 +435,7 @@ export function GravityPile({
   ref,
   className = "h-[286px]",
   scrollable = false,
-  rainOnOpen = false,
+  rainOnOpen = 0,
   ready = true,
   onOverflowChange,
 }: {
@@ -443,8 +443,11 @@ export function GravityPile({
   ref?: Ref<PileHandle>;
   className?: string;
   scrollable?: boolean;
-  /** 열 때 최신 댓글들이 위에서 와르르 쏟아지는 연출 (0.7초 이내) */
-  rainOnOpen?: boolean;
+  /**
+    열 때 최신 댓글 이만큼이 위에서 와르르 쏟아지는 연출 (0.7초 이내, 0이면 없음).
+    칸이 화면에 보일 때 시작합니다 (상세 화면처럼 칸이 아래쪽에 있으면 스크롤해서 보일 때).
+  */
+  rainOnOpen?: number;
   /** 저장된 댓글까지 다 읽어 왔는지. 그 전에 쌓기 시작하면 나중에 들어온 댓글이 한꺼번에 떨어집니다. */
   ready?: boolean;
   /** 더미가 칸의 채움 한도를 넘어 아래쪽이 그라데이션 아래로 묻히기 시작했는지 / 다시 다 보이는지 */
@@ -454,6 +457,8 @@ export function GravityPile({
   const content = useRef<HTMLDivElement>(null);
   const nodes = useRef(new Map<string, HTMLElement>());
   const world = useRef<PileWorld | null>(null);
+  // 쏟아지는 연출은 칸이 화면에 보인 뒤에 시작 (그 전엔 쌓지 않고 비워 둠)
+  const [seen, setSeen] = useState(rainOnOpen === 0);
   const overflowCallback = useRef(onOverflowChange);
   useLayoutEffect(() => {
     overflowCallback.current = onOverflowChange;
@@ -489,9 +494,21 @@ export function GravityPile({
     };
   }, [scrollable, rainOnOpen]);
 
+  useEffect(() => {
+    if (seen) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) setSeen(true);
+      },
+      { threshold: 0.4 },
+    );
+    observer.observe(zone.current!);
+    return () => observer.disconnect();
+  }, [seen]);
+
   useLayoutEffect(() => {
-    if (ready) world.current?.sync(comments, nodes.current);
-  }, [comments, ready]);
+    if (ready && seen) world.current?.sync(comments, nodes.current);
+  }, [comments, ready, seen]);
 
   // 태그용: 답글의 원글 찾기, 한마디별 답글 수
   const byId = new Map(comments.map((c) => [c.id, c]));

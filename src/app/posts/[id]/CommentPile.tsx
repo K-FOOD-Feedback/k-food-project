@@ -178,7 +178,7 @@ export function CommentPile({
               ready={ready}
               className="min-h-0 flex-1"
               scrollable
-              rainOnOpen
+              rainOnOpen={14}
               onOverflowChange={setOverflowing}
             />
           </div>
@@ -249,7 +249,8 @@ export function CommentPile({
         </div>
 
         <div ref={zone}>
-          <GravityPile ref={pile} comments={comments} ready={ready} />
+          {/* 칸이 작아서 맨 위에 쌓일 최신 6개만 쏟아집니다 (많아도 금방 끝나게) */}
+          <GravityPile ref={pile} comments={comments} ready={ready} rainOnOpen={6} />
         </div>
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[92px] bg-linear-to-b from-[#292929]/0 to-[#292929]" />
       </section>
