@@ -129,10 +129,10 @@ export function LandingScreen() {
   // 사연은 들어오자마자 저절로 타이핑 (첫 화면이 비어 보이지 않게)
   const [clock, setClock] = useState(0);
   useEffect(() => {
-    const id = window.setInterval(() => setClock((c) => (c > 80 ? (window.clearInterval(id), c) : c + 1)), 45);
+    const id = window.setInterval(() => setClock((c) => (c > 120 ? (window.clearInterval(id), c) : c + 1)), 45);
     return () => window.clearInterval(id);
   }, []);
-  const typed = Math.min(t.story.length, Math.max(clock - 12, 0));
+  const typed = Math.min(t.story.length, Math.max(clock - 30, 0));
 
   return (
     <main className="mx-auto w-full max-w-[430px] bg-background text-on-dark">
@@ -159,7 +159,7 @@ export function LandingScreen() {
 
       {/* 첫 화면부터 장면이 보이고, 스크롤하면 이어집니다 */}
       <section ref={story} className="relative h-[400svh]" aria-label={t.scroll}>
-        <div className="sticky top-0 flex h-[100svh] flex-col overflow-hidden px-5 pt-[calc(112px+env(safe-area-inset-top))]">
+        <div className="sticky top-0 flex h-[100svh] flex-col overflow-hidden px-5 pt-[calc(100px+env(safe-area-inset-top))]">
           {/* 제목 — 스크롤 단계마다 바뀜 (첫 화면은 서비스 한 줄 소개) */}
           <h1
             key={`${lang}-${scene}`}
@@ -176,10 +176,10 @@ export function LandingScreen() {
           {/* 게시물 — 마지막에 버튼이 올라오면 작아지며 위로 */}
           <div
             ref={cardRef}
-            className="mt-6 origin-top animate-rise [animation-delay:250ms]"
+            className="mt-6 origin-top"
             style={{ scale: `${1 - (1 - endScale) * shrink}`, translate: `0 ${centerOffset}px` }}
           >
-          <div className="relative w-full">
+          <div className="relative w-full animate-card-enter [animation-delay:350ms]">
             <div ref={postRef} className="overflow-hidden rounded-[28px] bg-content text-on-light shadow-[0_24px_60px_rgba(0,0,0,0.5)]">
               <div className="relative h-[min(230px,27svh)]">
                 <Image
@@ -188,11 +188,11 @@ export function LandingScreen() {
                   fill
                   sizes="400px"
                   priority
-                  className="object-cover object-[50%_65%]"
+                  className="animate-photo-in object-cover object-[50%_65%] [animation-delay:350ms]"
                 />
               </div>
               <div className="flex flex-col gap-1.5 px-4 pt-3 pb-4">
-                <div className="flex items-center gap-1.5 text-[12px] font-bold">
+                <div className="flex animate-pop items-center gap-1.5 text-[12px] font-bold [animation-delay:1000ms]">
                   <span aria-hidden="true">🇨🇦</span>
                   {t.author}
                 </div>
@@ -278,8 +278,8 @@ export function LandingScreen() {
           {/* 스크롤 안내 — 조금 내리면 사라짐 */}
           <span
             aria-hidden="true"
-            className="absolute bottom-[calc(20px+env(safe-area-inset-bottom))] left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-surface px-4 py-2 text-[13px] font-semibold text-neutral-400 transition-opacity duration-300"
-            style={{ opacity: p < 0.03 ? 1 : 0 }}
+            className="absolute bottom-[calc(20px+env(safe-area-inset-bottom))] left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-surface px-4 py-2 text-[13px] font-semibold text-neutral-400 transition-opacity duration-500"
+            style={{ opacity: clock > 45 && p < 0.03 ? 1 : 0 }}
           >
             <span className="animate-float">↓</span>
             {t.scroll}
