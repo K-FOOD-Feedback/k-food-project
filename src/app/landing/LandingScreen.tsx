@@ -95,9 +95,22 @@ export function LandingScreen() {
   const cardRef = useRef<HTMLDivElement>(null);
   const ctaRef = useRef<HTMLDivElement>(null);
   const postRef = useRef<HTMLDivElement>(null);
+  const authorRef = useRef<HTMLSpanElement>(null);
+  const replyRef = useRef<HTMLDivElement>(null);
+  const slotRef = useRef<HTMLSpanElement>(null);
   const [endScale, setEndScale] = useState(0.85);
   // 가운데 정렬용: 제목 아래 남는 높이, 게시물만의 높이, 투표·답글까지 붙은 높이
-  const [box, setBox] = useState({ room: 0, post: 0, full: 0, last: 0, endRoom: 0, fit: 1 });
+  const [box, setBox] = useState({
+    room: 0,
+    post: 0,
+    full: 0,
+    last: 0,
+    endRoom: 0,
+    fit: 1,
+    // 작성자 표시: 카드 안 자리 → 답글 위 자리 (게시물 카드 기준 좌표)
+    author: { x: 0, y: 0 },
+    slot: { x: 0, y: 0 },
+  });
   useEffect(() => {
     const measure = () => {
       const card = cardRef.current;
@@ -108,7 +121,10 @@ export function LandingScreen() {
       const top = card.offsetTop;
       const room = cta.offsetTop - 8 - top; // 버튼과 40px 정도 띄움 (버튼 영역 위쪽 32px은 그라데이션)
       const full = card.offsetHeight; // 게시물 + 투표
-      const last = post.offsetHeight + 40; // 마지막 장면: 게시물 + 아래로 삐져나온 글쓴이 답글
+      const last = post.offsetHeight + 84; // 마지막 장면: 게시물 + 아래로 삐져나온 글쓴이 답글
+      const author = authorRef.current;
+      const reply = replyRef.current;
+      const slot = slotRef.current;
       setEndScale(clamp(room / last, 0.6, 0.9));
       setBox({
         room: stage.clientHeight - top - 64,
@@ -118,14 +134,24 @@ export function LandingScreen() {
         endRoom: room,
         // 투표가 붙어 있을 때 화면 안에 다 들어오게 하는 크기
         fit: clamp((stage.clientHeight - top - 40) / full, 0.6, 1),
+        author: { x: author?.offsetLeft ?? 0, y: author?.offsetTop ?? 0 },
+        slot: {
+          x: (reply?.offsetLeft ?? 0) + (slot?.offsetLeft ?? 0),
+          y: (reply?.offsetTop ?? 0) + (slot?.offsetTop ?? 0),
+        },
       });
     };
     measure();
-    // 첫 진입 연출(사진 크기 변화)이 끝난 뒤 다시 잼
+    // 첫 진입 연출(사진 크기 변화)이 끝난 뒤, 글꼴이 다 불러와진 뒤, 크기가 바뀔 때마다 다시 잼
     const later = window.setTimeout(measure, 2000);
+    document.fonts?.ready.then(measure);
+    const observer = new ResizeObserver(measure);
+    if (postRef.current) observer.observe(postRef.current);
+    if (replyRef.current) observer.observe(replyRef.current);
     window.addEventListener("resize", measure);
     return () => {
       window.clearTimeout(later);
+      observer.disconnect();
       window.removeEventListener("resize", measure);
     };
   }, [lang]);
@@ -137,7 +163,10 @@ export function LandingScreen() {
   // 한 번에 하나만: 투표는 다음 단계(한마디)가 오면 내려가며 사라짐
   const voteOut = seg(p, 0.36, 0.43);
   const voteShown = seg(p, 0.06, 0.2) * (1 - voteOut);
-  const shown = box.post + (box.full - box.post) * voteShown + 40 * seg(p, 0.74, 0.82);
+  const shown = box.post + (box.full - box.post) * voteShown + 84 * seg(p, 0.74, 0.84);
+  // 답글 단계: 작성자 표시가 카드에서 답글 자리로 이동 (부드럽게 출발·도착)
+  const moveRaw = seg(p, 0.72, 0.79);
+  const move = moveRaw < 0.5 ? 2 * moveRaw * moveRaw : 1 - (-2 * moveRaw + 2) ** 2 / 2;
   // 수학적 가운데는 눈에 낮아 보여서, 남는 공간의 35% 지점(최대 120px)에 둡니다
   const stepScale = 1 - (1 - box.fit) * voteShown;
   const startOffset = Math.min(120, Math.max(0, (box.room - shown * stepScale) * 0.35));
@@ -247,26 +276,48 @@ export function LandingScreen() {
                     )}
                   </span>
                 </p>
-                <span className="flex animate-pop items-center gap-[5px] text-[13px] font-semibold text-neutral-400 [animation-delay:1650ms]">
-                  <span className="text-[15px]" aria-hidden="true">
-                    🇨🇦
-                  </span>
+                {/* 자리만 잡아 둠 — 실제 작성자 표시는 아래 traveler (답글 단계에서 답글 자리로 옮겨 감) */}
+                <span ref={authorRef} className="invisible flex items-center gap-[5px] text-[13px] font-semibold" aria-hidden="true">
+                  <span className="text-[15px]">🇨🇦</span>
                   {t.author}
                 </span>
               </div>
-              {/* 글쓴이 답글 — 앱 댓글의 작성자 말풍선 */}
-              <div
-                className="absolute -bottom-[34px] right-2 z-10 pt-2.5"
-                style={fly(p, 0.74, 0.82, { y: 220, s: 0.6 }, -3)}
+
+              {/* 작성자: 카드에서 → 답글 작성자 자리로 이동 */}
+              <span
+                className="absolute z-20 flex animate-pop items-center gap-[5px] whitespace-nowrap text-[13px] font-semibold text-neutral-400 [animation-delay:1650ms]"
+                style={{
+                  left: box.author.x,
+                  top: box.author.y,
+                  translate: `${(box.slot.x - box.author.x) * move}px ${(box.slot.y - box.author.y) * move}px`,
+                  color: move > 0.5 ? "var(--color-on-dark)" : undefined,
+                  transition: "color 300ms",
+                }}
               >
-                <span className="flex items-center gap-2 rounded-[32px] bg-surface-2 py-2 pr-4 pl-2 text-on-dark ring-1 ring-white/10">
-                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-[17px]" aria-hidden="true">
-                    🇨🇦
-                  </span>
-                  <span className="max-w-[190px] break-keep text-[14px] font-bold leading-[1.35]">{t.reply}</span>
+                <span className="text-[15px]" aria-hidden="true">
+                  🇨🇦
                 </span>
-                <span className="absolute left-7 top-0 rounded-full bg-on-dark px-1.5 py-1 text-[10px] font-bold leading-none text-on-light">
-                  {t.authorTag}
+                {t.author}
+              </span>
+              {/* 글쓴이 답글 — 작성자(위에서 옮겨 온) + 답글 말풍선 */}
+              <div ref={replyRef} className="absolute right-2 top-[calc(100%+10px)] z-10 flex flex-col items-start gap-1.5">
+                <span className="flex items-center gap-1.5">
+                  <span ref={slotRef} className="invisible flex items-center gap-[5px] whitespace-nowrap text-[13px] font-semibold" aria-hidden="true">
+                    <span className="text-[15px]">🇨🇦</span>
+                    {t.author}
+                  </span>
+                  <span
+                    className="rounded-full bg-on-dark px-1.5 py-1 text-[10px] font-bold leading-none text-on-light"
+                    style={{ opacity: seg(p, 0.78, 0.8) }}
+                  >
+                    {t.authorTag}
+                  </span>
+                </span>
+                <span
+                  className="max-w-[230px] break-keep rounded-[32px] bg-surface-2 px-4 py-2.5 text-[14px] font-bold leading-[1.35] text-on-dark ring-1 ring-white/10"
+                  style={fly(p, 0.78, 0.85, { y: 40, s: 0.6 }, -2)}
+                >
+                  {t.reply}
                 </span>
               </div>
             </div>
