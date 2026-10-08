@@ -59,7 +59,7 @@ export function CommentPile({
   const pile = useRef<PileHandle>(null);
   // 보내기·이모지를 누른 뒤 댓글 칸으로 날아가는 중인 원들 (도착하면 댓글로 추가)
   const [flights, setFlights] = useState<Flight[]>([]);
-  // 전체 화면: 더미가 칸의 2/3를 넘었을 때만 아래 그라데이션을 보여 줍니다.
+  // 전체 화면: 더미가 칸의 3/4를 넘었을 때만 아래 그라데이션을 보여 줍니다.
   const [overflowing, setOverflowing] = useState(false);
   const nextId = useRef(0);
 

@@ -13,12 +13,15 @@ const { Engine, Bodies, Body, Composite, Events, Sleeping } = Matter;
   - 글 댓글은 돌지 않고 떨어져, 부딪힐 때만 살짝(최대 20°) 기울어진 채 차분히 쌓입니다.
   - 이모지는 동그라미라 떨어진 뒤 굴러갑니다.
   - 댓글끼리는 약 1mm(4px) 띄워서 쌓입니다.
-  - 더미가 칸 높이의 2/3를 넘으면 맨 위를 2/3 높이에 두고, 넘친 아래쪽은 그라데이션 뒤로 내립니다.
+  - 더미가 칸 높이의 2/3(댓글 전체 화면은 3/4)를 넘으면 맨 위를 그 높이에 두고, 넘친 아래쪽은 그라데이션 뒤로 내립니다.
     댓글 전체 화면(scrollable)에서는 칸을 아래로 스크롤해서 묻힌 댓글도 볼 수 있습니다.
-    2/3를 넘지 않으면 스크롤도 없고, 바닥부터 다 보입니다 (넘쳤는지는 onOverflowChange로 알려 줌).
+    그 높이를 넘지 않으면 스크롤도 없고, 바닥부터 다 보입니다 (넘쳤는지는 onOverflowChange로 알려 줌).
 */
 
+// 더미가 칸을 이만큼 채우면 그 뒤로는 화면이 따라 내려갑니다.
+// 상세 화면 칸은 2/3, 댓글 전체 화면은 칸이 커서 2/3면 너무 비어 보여 3/4.
 const FILL_LIMIT = 2 / 3;
+const FILL_LIMIT_FULL = 3 / 4;
 // 바닥은 칸 아래 경계보다 살짝 아래 (Figma처럼 맨 아래 줄이 그라데이션에 반쯤 걸치게).
 // 스크롤 가능한 칸에서는 맨 아래까지 내려 봤을 때 다 보이도록 칸 아래 경계에 맞춥니다.
 const FLOOR_BELOW = 12;
@@ -91,7 +94,7 @@ class PileWorld {
   /** 열 때 쏟아지기로 예약된 댓글 (아직 떨어지기 전) */
   private pendingRain = new Set<string>();
   private timers: number[] = [];
-  /** 더미가 2/3를 넘어 아래쪽이 묻혔는지 (바뀔 때만 알림) */
+  /** 더미가 채움 한도를 넘어 아래쪽이 묻혔는지 (바뀔 때만 알림) */
   private overflowing = false;
   onOverflowChange: ((overflowing: boolean) => void) | null = null;
 
@@ -360,14 +363,15 @@ class PileWorld {
     }
   }
 
-  /** 더미 맨 위가 칸의 2/3 높이를 넘지 않도록 하는 칸 맨 위 y좌표 */
+  /** 더미 맨 위가 칸의 채움 한도(2/3, 전체 화면 3/4)를 넘지 않도록 하는 칸 맨 위 y좌표 */
   /** settledOnly: 닿아서 거의 멈춘 댓글만 봅니다 (떨어지거나 통통 튀는 중인 댓글까지 보면 목표가 들쭉날쭉해짐) */
   private targetTop(settledOnly = true) {
     let pileTop = 0;
     for (const { body, landed } of this.tracked.values()) {
       if (landed && (!settledOnly || body.speed < 0.4)) pileTop = Math.min(pileTop, body.bounds.min.y);
     }
-    return Math.min(this.defaultTop, pileTop - this.height * (1 - FILL_LIMIT));
+    const limit = this.scroller ? FILL_LIMIT_FULL : FILL_LIMIT;
+    return Math.min(this.defaultTop, pileTop - this.height * (1 - limit));
   }
 
   private render(smooth: boolean) {
@@ -383,7 +387,7 @@ class PileWorld {
     }
     // 스크롤 가능한 칸: 바닥까지 다 보이도록 안쪽 높이를 늘립니다.
     // 40px 단위로만 바꿔서, 더미가 움직이는 동안 매 프레임 칸 전체를 다시 그리지 않게 합니다.
-    // 더미가 2/3를 넘지 않았으면 칸 높이 그대로 (스크롤 없음).
+    // 더미가 채움 한도를 넘지 않았으면 칸 높이 그대로 (스크롤 없음).
     const overflowing = target < this.defaultTop - 1;
     if (overflowing !== this.overflowing) {
       this.overflowing = overflowing;
@@ -432,7 +436,7 @@ export function GravityPile({
   rainOnOpen?: boolean;
   /** 저장된 댓글까지 다 읽어 왔는지. 그 전에 쌓기 시작하면 나중에 들어온 댓글이 한꺼번에 떨어집니다. */
   ready?: boolean;
-  /** 더미가 칸의 2/3를 넘어 아래쪽이 그라데이션 아래로 묻히기 시작했는지 / 다시 다 보이는지 */
+  /** 더미가 칸의 채움 한도를 넘어 아래쪽이 그라데이션 아래로 묻히기 시작했는지 / 다시 다 보이는지 */
   onOverflowChange?: (overflowing: boolean) => void;
 }) {
   const zone = useRef<HTMLDivElement>(null);
