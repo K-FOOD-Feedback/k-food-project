@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { clearCardTransition, peekCardTransition, type Box } from "@/app/home/cardTransition";
-import { participantsOf, type HomePost } from "@/app/home/mockPosts";
+import { HOME_POSTS, participantsOf, type HomePost } from "@/app/home/mockPosts";
+import { ArrowCta } from "@/components/Buttons";
 import { useMyVote } from "@/app/home/votes";
 import { TrackedLink } from "@/components/Track";
 import { track } from "@/lib/analytics";
@@ -91,6 +92,8 @@ export function DetailScreen({ post }: { post: HomePost }) {
   };
 
   const showCta = !voted && !seenVote;
+  // 다음 훈수 거리: 메인 카드 순서상 다음 게시글 (마지막이면 처음으로)
+  const next = HOME_POSTS[(HOME_POSTS.findIndex((p) => p.id === post.id) + 1) % HOME_POSTS.length];
 
   // 메인 카드에서 넘어왔으면: 카드 속 사진은 위쪽 사진 영역으로, 카드는 아래쪽 본문 카드로 이어지게 움직입니다.
   const [intro] = useState(() => peekCardTransition(post.id));
@@ -180,7 +183,8 @@ export function DetailScreen({ post }: { post: HomePost }) {
         </div>
       </header>
 
-      <div className="flex flex-col gap-1 px-2 pb-[calc(48px+env(safe-area-inset-bottom))]">
+      {/* 아래쪽 여백: 하단에 붙은 "다음 훈수 거리" 버튼에 마지막 내용이 가리지 않도록 */}
+      <div className="flex flex-col gap-1 px-2 pb-[calc(170px+env(safe-area-inset-bottom))]">
         <div ref={tileRef} className={hiddenUntilIntro}>
           <PhotoTile postId={post.id} photos={post.photos} participants={participantsOf(post)} title={post.title} />
         </div>
@@ -214,6 +218,25 @@ export function DetailScreen({ post }: { post: HomePost }) {
         >
           <CommentPile postId={post.id} commentCount={post.commentCount} authorFlag={post.author.flag} />
         </div>
+      </div>
+
+      {/*
+        하단에 붙은 "다음 훈수 거리" (Figma 332:3426 Sticky · Question CTA)
+        플로팅 "투표하기"가 떠 있는 동안에는 숨기고, 투표 영역을 본 뒤(또는 투표 후)부터 보여 줍니다.
+      */}
+      <div
+        aria-hidden={showCta}
+        className={`fixed inset-x-0 bottom-0 z-20 mx-auto w-full max-w-[430px] bg-linear-to-b from-background/0 via-background via-40% to-background px-2 pt-[50px] pb-[calc(40px+env(safe-area-inset-bottom))] transition-[opacity,translate] duration-300 ${
+          showCta ? "pointer-events-none translate-y-6 opacity-0" : "opacity-100"
+        }`}
+      >
+        <ArrowCta
+          href={`/posts/${next.id}`}
+          caption="다음 훈수 거리"
+          title={next.title}
+          tabIndex={showCta ? -1 : 0}
+          onClick={() => track("post_opened", { post_id: next.id, from: "next", from_post_id: post.id })}
+        />
       </div>
 
       {/* 메인 카드 → 상세 전환용 (끝나면 사라지고 진짜 사진·본문 카드가 보임) */}
