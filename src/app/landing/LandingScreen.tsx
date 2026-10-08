@@ -43,6 +43,8 @@ function fly(p: number, a: number, b: number, from: { x?: number; y?: number; r?
 }
 
 const subscribeNone = () => () => {};
+/** 글쓴이 답글 말풍선 기울기 (작성자 표시도 들어가면서 같이 기울어짐) */
+const REPLY_TILT = -3;
 
 export function LandingScreen() {
   // 언어: 처음엔 브라우저 언어, 이후엔 고른 언어
@@ -123,7 +125,7 @@ export function LandingScreen() {
       const room = cta.offsetTop - 8 - top; // 버튼과 40px 정도 띄움 (버튼 영역 위쪽 32px은 그라데이션)
       const full = card.offsetHeight; // 게시물 + 투표
       // 마지막 장면: 게시물 + 아래로 삐져나온 글쓴이 답글
-      const overhang = Math.max(0, (authorRef.current?.offsetTop ?? 0) + (replyRef.current?.offsetHeight ?? 0) - post.offsetHeight);
+      const overhang = Math.max(0, (authorRef.current?.offsetTop ?? 0) - 2 + (replyRef.current?.offsetHeight ?? 0) - post.offsetHeight + 6);
       const last = post.offsetHeight + overhang;
       const author = authorRef.current;
       const reply = replyRef.current;
@@ -142,7 +144,7 @@ export function LandingScreen() {
         slot: {
           x: (reply?.offsetLeft ?? 0) + (slot?.offsetLeft ?? 0),
           // 답글 묶음은 작성자 원래 줄(author.y)에 맞춰 놓으므로 그 기준으로
-          y: (author?.offsetTop ?? 0) + (slot?.offsetTop ?? 0),
+          y: (author?.offsetTop ?? 0) - 2 + (slot?.offsetTop ?? 0),
         },
       });
     };
@@ -168,9 +170,9 @@ export function LandingScreen() {
   // 한 번에 하나만: 투표는 다음 단계(한마디)가 오면 내려가며 사라짐
   const voteOut = seg(p, 0.36, 0.43);
   const voteShown = seg(p, 0.06, 0.2) * (1 - voteOut);
-  const shown = box.post + (box.full - box.post) * voteShown + box.overhang * seg(p, 0.74, 0.84);
+  const shown = box.post + (box.full - box.post) * voteShown + box.overhang * seg(p, 0.72, 0.82);
   // 답글 단계: 작성자 표시가 카드에서 답글 자리로 이동 (부드럽게 출발·도착)
-  const moveRaw = seg(p, 0.72, 0.79);
+  const moveRaw = seg(p, 0.75, 0.82);
   const move = moveRaw < 0.5 ? 2 * moveRaw * moveRaw : 1 - (-2 * moveRaw + 2) ** 2 / 2;
   // 수학적 가운데는 눈에 낮아 보여서, 남는 공간의 35% 지점(최대 120px)에 둡니다
   const stepScale = 1 - (1 - box.fit) * voteShown;
@@ -295,8 +297,8 @@ export function LandingScreen() {
                   left: box.author.x,
                   top: box.author.y,
                   translate: `${(box.slot.x - box.author.x) * move}px ${(box.slot.y - box.author.y) * move}px`,
-                  color: move > 0.5 ? "var(--color-on-dark)" : undefined,
-                  transition: "color 300ms",
+                  rotate: `${REPLY_TILT * move}deg`,
+                  transformOrigin: "0 50%",
                 }}
               >
                 <span className="text-[15px]" aria-hidden="true">
@@ -304,19 +306,21 @@ export function LandingScreen() {
                 </span>
                 {t.author}
               </span>
-              {/* 글쓴이 답글 — 작성자가 같은 줄 오른쪽으로 옮겨 오고, 그 아래 답글 말풍선 */}
-              <div ref={replyRef} className="absolute right-2 z-10 flex flex-col items-start gap-1.5" style={{ top: box.author.y }}>
-                <span className="flex items-center gap-1.5">
-                  <span ref={slotRef} className="invisible ml-4 flex items-center gap-[5px] whitespace-nowrap text-[13px] font-semibold" aria-hidden="true">
+              {/* 글쓴이 답글 — 말풍선이 먼저 붙고, 카드의 작성자(Sam)가 말풍선 안 맨 위로 들어감 (같이 기울어짐) */}
+              <div
+                ref={replyRef}
+                className="absolute right-0 z-10"
+                style={{ top: box.author.y - 2, rotate: `${REPLY_TILT}deg`, transformOrigin: "16px 19px" }}
+              >
+                <span
+                  className="flex max-w-[240px] flex-col gap-1 rounded-[24px] bg-surface-2 px-4 pt-2.5 pb-3 text-on-dark ring-1 ring-white/10"
+                  style={fly(p, 0.72, 0.79, { y: 40, s: 0.6 })}
+                >
+                  <span ref={slotRef} className="invisible flex items-center gap-[5px] whitespace-nowrap text-[13px] font-semibold" aria-hidden="true">
                     <span className="text-[15px]">🇨🇦</span>
                     {t.author}
                   </span>
-                </span>
-                <span
-                  className="max-w-[230px] break-keep rounded-[32px] bg-surface-2 px-4 py-2.5 text-[14px] font-bold leading-[1.35] text-on-dark ring-1 ring-white/10"
-                  style={fly(p, 0.78, 0.85, { y: 40, s: 0.6 })}
-                >
-                  {t.reply}
+                  <span className="break-keep text-[14px] font-bold leading-[1.35]">{t.reply}</span>
                 </span>
               </div>
             </div>
