@@ -20,6 +20,10 @@ export type Comment = {
   text: string;
   color: string;
   author: CommentAuthor;
+  /** 답글이면 원글(한마디) id */
+  replyTo?: string;
+  /** 내가(이 브라우저에서) 남긴 한마디 — "나" 태그 */
+  mine?: boolean;
 };
 
 const KOREAN: CommentAuthor = { kind: "korean" };
@@ -35,8 +39,10 @@ function seedsFor(postId: string, authorFlag: string): Comment[] {
     { id: id(5), kind: "text", text: "참치마요 삼김이랑\n같이 먹어보세요", color: "#ffc6ff", author: KOREAN },
     { id: id(6), kind: "emoji", text: "🤤", color: "#ffae8f", author: KOREAN },
     { id: id(7), kind: "text", text: "소시지 칼집 미쳤다", color: "#c8b5ff", author: KOREAN },
-    { id: id(8), kind: "text", text: "치즈는 많을수록\n맛있죠!", color: "#ffe056", author: { kind: "foreigner", flag: "🇺🇸" } },
-    { id: id(9), kind: "text", text: "고마워요 다음에\n시도해볼게요!", color: "#ffab8a", author: { kind: "author", flag: authorFlag } },
+    // 답글 예시 (Figma 344:3209): 참치마요 한마디에 답글 2개
+    { id: id(8), kind: "text", text: "치즈는 많을수록\n맛있죠!", color: "#ffe056", author: { kind: "foreigner", flag: "🇺🇸" }, replyTo: id(5) },
+    { id: id(9), kind: "text", text: "고마워요 다음에\n시도해볼게요!", color: "#ffab8a", author: { kind: "author", flag: authorFlag }, replyTo: id(5) },
+    { id: id(10), kind: "emoji", text: "❤️", color: "#ffae8f", author: { kind: "author", flag: authorFlag } },
   ];
 }
 
@@ -94,6 +100,7 @@ export function useComments(postId: string, authorFlag: string) {
       text,
       color: BUBBLE_COLORS[(list.length + 9) % BUBBLE_COLORS.length],
       author: KOREAN, // 지금은 한국인 화면만 있습니다.
+      mine: true,
     };
     try {
       localStorage.setItem(storageKey(postId), JSON.stringify([...list, comment]));
