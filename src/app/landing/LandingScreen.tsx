@@ -9,14 +9,13 @@ import { COPY, REACTIONS, SAMPLE_PCTS, type LandingLang } from "./copy";
 /*
   랜딩 — "한 접시를 둘러싼 참견" (6. 랜딩, 담당 송희)
 
-  1. 첫 화면: 제목만
-  2. 스크롤 이야기: 화면에 고정된 게시물 하나에 스크롤할수록
-     글 → 투표 → 한마디 → 글쓴이 답글이 차례로 날아와 붙습니다.
-  3. 장면이 끝나면 게시물이 작아지고 역할 버튼이 아래에서 올라옵니다.
+  제목은 맨 위에 고정, 첫 화면부터 게시물(사진 + 사연 타이핑)이 보입니다.
+  스크롤할수록 투표 → 한마디 → 글쓴이 답글이 차례로 날아와 붙고,
+  장면이 끝나면 게시물이 작아지며 역할 버튼이 아래에서 올라옵니다.
 */
 
 // 스크롤 이야기 구간 (0~1)
-const STEP_AT = [0, 0.22, 0.5, 0.8];
+const STEP_AT = [0, 0.1, 0.42, 0.74];
 
 const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 /** p가 a→b 사이에서 0→1 */
@@ -91,9 +90,15 @@ export function LandingScreen() {
   }, []);
 
   const step = STEP_AT.filter((s) => p >= s).length - 1;
-  const done = p >= 0.88;
-  const shrink = seg(p, 0.86, 0.95);
-  const typed = Math.round(seg(p, 0.03, 0.18) * t.story.length);
+  const done = p >= 0.86;
+  const shrink = seg(p, 0.84, 0.94);
+  // 사연은 들어오자마자 저절로 타이핑 (첫 화면이 비어 보이지 않게)
+  const [clock, setClock] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => setClock((c) => (c > 80 ? (window.clearInterval(id), c) : c + 1)), 45);
+    return () => window.clearInterval(id);
+  }, []);
+  const typed = Math.min(t.story.length, Math.max(clock - 12, 0));
 
   return (
     <main className="mx-auto w-full max-w-[430px] bg-background text-on-dark">
@@ -118,54 +123,46 @@ export function LandingScreen() {
         </div>
       </header>
 
-      {/* 1. 첫 화면 — 제목만. 설명은 아래 장면이 대신합니다 */}
-      <section className="flex min-h-[100svh] flex-col justify-center px-5 pt-[env(safe-area-inset-top)]">
-        <h1 key={lang} className="break-keep font-display text-[clamp(40px,12.5vw,54px)] leading-[1.05]">
-          {t.headline.map((line, i) => (
-            <span key={line} className="block animate-rise" style={{ animationDelay: `${i * 120}ms` }}>
-              {line}
-            </span>
-          ))}
-        </h1>
-        <span
-          aria-hidden="true"
-          className="mt-14 flex size-12 animate-rise items-center justify-center self-center rounded-full bg-surface text-neutral-400 [animation-delay:600ms]"
-        >
-          <span className="animate-float">↓</span>
-        </span>
-      </section>
+      {/* 첫 화면부터 장면이 보이고, 스크롤하면 이어집니다 */}
+      <section ref={story} className="relative h-[400svh]" aria-label={t.scroll}>
+        <div className="sticky top-0 flex h-[100svh] flex-col items-center overflow-hidden px-4 pt-[calc(64px+env(safe-area-inset-top))]">
+          {/* 제목 (항상 맨 위) */}
+          <h1 key={lang} className="w-full break-keep px-1 font-display text-[clamp(26px,8vw,32px)] leading-[1.1]">
+            {t.headline.map((line, i) => (
+              <span key={line} className="block animate-rise" style={{ animationDelay: `${i * 100}ms` }}>
+                {line}
+              </span>
+            ))}
+          </h1>
 
-      {/* 2. 스크롤 이야기 */}
-      <section ref={story} className="relative h-[460svh]" aria-label={t.scroll}>
-        <div className="sticky top-0 flex h-[100svh] flex-col items-center overflow-hidden px-4 pt-[calc(76px+env(safe-area-inset-top))]">
-          {/* 단계 설명 */}
-          <div className="flex w-full flex-col gap-2 px-1">
+          {/* 단계 */}
+          <div className="mt-4 flex w-full flex-col gap-2 px-1">
             <div className="flex gap-1" aria-hidden="true">
               {STEP_AT.map((_, i) => (
                 <span key={i} className={`h-1 flex-1 rounded-full transition-colors duration-300 ${i <= step ? "bg-on-dark" : "bg-white/15"}`} />
               ))}
             </div>
             {done ? (
-              <p key={`${lang}-end`} className="animate-rise pt-2 font-display text-[26px] leading-[1.15]">
+              <p key={`${lang}-end`} className="animate-rise text-[16px] font-bold leading-[1.4]">
                 {t.endTitle.join(" ")}
               </p>
             ) : (
-              <div key={`${lang}-${step}`} className="animate-rise pt-2">
-                <p className="font-display text-[26px] leading-[1.15]">
-                  <span className="mr-2 text-primary">{step + 1}</span>
+              <p key={`${lang}-${step}`} className="flex animate-rise flex-wrap items-baseline gap-x-2 text-[16px] leading-[1.4]">
+                <span className="font-bold">
+                  <span className="mr-1.5 text-primary">{step + 1}</span>
                   {t.steps[step].title}
-                </p>
-                <p className="mt-1 text-[14px] font-medium text-neutral-400">{t.steps[step].sub}</p>
-              </div>
+                </span>
+                <span className="text-[13px] font-medium text-neutral-400">{t.steps[step].sub}</span>
+              </p>
             )}
           </div>
 
           {/* 게시물 — 마지막에 버튼이 올라오면 작아지며 위로 */}
           <div
-            className="mt-5 origin-top"
-            style={{ scale: `${1 - 0.2 * shrink}`, translate: `0 ${-8 * shrink}px` }}
+            className="mt-4 origin-top animate-rise [animation-delay:250ms]"
+            style={{ scale: `${1 - 0.27 * shrink}`, translate: `0 ${14 * shrink}px` }}
           >
-          <div className="relative w-[min(300px,80vw,40svh)]" style={fly(p, 0, 0.06, { y: 120, s: 0.9 })}>
+          <div className="relative w-[min(300px,80vw,36svh)]">
             <div className="overflow-hidden rounded-[28px] bg-content text-on-light shadow-[0_24px_60px_rgba(0,0,0,0.5)]">
               <div className="relative aspect-[4/3]">
                 <Image
@@ -191,16 +188,16 @@ export function LandingScreen() {
             </div>
 
             {/* 투표 */}
-            <div className="relative -mt-3 rounded-[24px] bg-surface px-4 pt-4 pb-4 shadow-[0_16px_40px_rgba(0,0,0,0.5)]" style={fly(p, 0.22, 0.29, { x: -260, r: -12 })}>
+            <div className="relative -mt-3 rounded-[24px] bg-surface px-4 pt-4 pb-4 shadow-[0_16px_40px_rgba(0,0,0,0.5)]" style={fly(p, 0.1, 0.17, { x: -260, r: -12 })}>
               <p className="text-[14px] font-bold">{t.question}</p>
               <ul className="mt-3 flex flex-col gap-1.5">
                 {t.options.map((opt, i) => {
-                  const fill = seg(p, 0.36 + i * 0.02, 0.46) * SAMPLE_PCTS[i];
+                  const fill = seg(p, 0.24 + i * 0.02, 0.34) * SAMPLE_PCTS[i];
                   return (
                     <li
                       key={opt}
                       className="relative flex h-9 items-center overflow-hidden rounded-full bg-surface-2 px-3.5 text-[13px] font-semibold"
-                      style={fly(p, 0.27 + i * 0.03, 0.34 + i * 0.03, { x: 280, r: 8 })}
+                      style={fly(p, 0.15 + i * 0.03, 0.22 + i * 0.03, { x: 280, r: 8 })}
                     >
                       <span className={`absolute inset-y-0 left-0 rounded-full ${i === 0 ? "bg-primary" : "bg-white/15"}`} style={{ width: `${fill}%` }} />
                       <span className={`relative flex-1 ${i === 0 && fill > 20 ? "text-on-light" : ""}`}>{opt}</span>
@@ -218,7 +215,7 @@ export function LandingScreen() {
                   style={{
                     right: 18 + i * 30,
                     top: -14,
-                    ...fly(p, 0.38 + i * 0.025, 0.45 + i * 0.025, { y: -340, r: 90, s: 0.5 }),
+                    ...fly(p, 0.26 + i * 0.025, 0.33 + i * 0.025, { y: -340, r: 90, s: 0.5 }),
                   }}
                 >
                   🇰🇷
@@ -231,27 +228,27 @@ export function LandingScreen() {
               lang={lang}
               r={REACTIONS[0]}
               className="-left-5 top-[7%] bg-primary"
-              style={fly(p, 0.5, 0.57, { x: -300, y: -40, r: -30 }, -5)}
+              style={fly(p, 0.42, 0.49, { x: -300, y: -40, r: -30 }, -5)}
             />
             <Bubble
               lang={lang}
               r={REACTIONS[1]}
               className="-right-5 top-[19%] max-w-[190px] bg-secondary"
-              style={fly(p, 0.56, 0.63, { x: 300, y: 20, r: 25 }, 4)}
+              style={fly(p, 0.48, 0.55, { x: 300, y: 20, r: 25 }, 4)}
             />
             <Bubble
               lang={lang}
               r={REACTIONS[2]}
               className="-left-4 top-[33%] bg-lilac"
-              style={fly(p, 0.62, 0.69, { x: -300, y: 60, r: -20 }, 3)}
+              style={fly(p, 0.54, 0.61, { x: -300, y: 60, r: -20 }, 3)}
             />
-            <Emoji emoji="🧀" className="-right-3 -top-4" style={fly(p, 0.66, 0.72, { y: -300, r: 180, s: 0.3 }, 12)} />
-            <Emoji emoji="🔥" className="left-[40%] -top-6" style={fly(p, 0.7, 0.76, { y: -300, r: -180, s: 0.3 }, -8)} />
+            <Emoji emoji="🧀" className="-right-3 -top-4" style={fly(p, 0.58, 0.64, { y: -300, r: 180, s: 0.3 }, 12)} />
+            <Emoji emoji="🔥" className="left-[40%] -top-6" style={fly(p, 0.62, 0.68, { y: -300, r: -180, s: 0.3 }, -8)} />
 
             {/* 글쓴이 답글 */}
             <div
               className="absolute -right-3 bottom-[-38px] flex max-w-[230px] items-start gap-2 rounded-[20px] bg-content px-3.5 py-2.5 text-on-light shadow-[0_12px_30px_rgba(0,0,0,0.5)]"
-              style={fly(p, 0.8, 0.88, { y: 220, s: 0.6 }, -2)}
+              style={fly(p, 0.74, 0.82, { y: 220, s: 0.6 }, -2)}
             >
               <span aria-hidden="true" className="text-[16px] leading-[1.3]">
                 🇨🇦
@@ -261,11 +258,21 @@ export function LandingScreen() {
           </div>
           </div>
 
-          {/* 3. 장면이 다 끝나면 역할 버튼 */}
+          {/* 스크롤 안내 — 조금 내리면 사라짐 */}
+          <span
+            aria-hidden="true"
+            className="absolute bottom-[calc(20px+env(safe-area-inset-bottom))] left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-surface px-4 py-2 text-[13px] font-semibold text-neutral-400 transition-opacity duration-300"
+            style={{ opacity: p < 0.03 ? 1 : 0 }}
+          >
+            <span className="animate-float">↓</span>
+            {t.scroll}
+          </span>
+
+          {/* 장면이 다 끝나면 역할 버튼 */}
           <div
             inert={!done}
             className="absolute inset-x-0 bottom-0 bg-gradient-to-b from-background/0 via-background via-25% to-background px-5 pt-8 pb-[calc(20px+env(safe-area-inset-bottom))]"
-            style={fly(p, 0.88, 0.95, { y: 260 })}
+            style={fly(p, 0.86, 0.94, { y: 260 })}
           >
             <RoleButtons lang={lang} />
           </div>
