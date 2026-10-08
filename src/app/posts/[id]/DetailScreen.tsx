@@ -210,12 +210,14 @@ export function DetailScreen({ post }: { post: HomePost }) {
         </div>
 
         <div
+          className="relative"
           ref={(el) => {
             fadeIns.current[2] = el;
             commentRef.current = el;
           }}
         >
           <CommentPile postId={post.id} commentCount={post.commentCount} authorFlag={post.author.flag} />
+          <CommentLock locked={!voted} onVote={goToVote} />
         </div>
 
         {/* 화면 맨 아래 "다음 훈수 거리" (Figma 332:3426 Question CTA) — 떠 있지 않고 내용 끝에 놓임 */}
@@ -266,6 +268,43 @@ export function DetailScreen({ post }: { post: HomePost }) {
         투표하기
       </button>
     </main>
+  );
+}
+
+/**
+  투표 전에는 한마디 칸(위쪽 362px) 위에 잠금 레이어를 덮습니다 (Figma 333:4130 layer_lock).
+  한마디 칸 자체는 한마디 세션 담당(CommentPile)이라, 상세 화면에서 위에 겹쳐 올립니다.
+*/
+function CommentLock({ locked, onVote }: { locked: boolean; onVote: () => void }) {
+  return (
+    <div
+      aria-hidden={!locked}
+      className={`absolute inset-x-0 top-0 z-10 flex h-[362px] items-center justify-center overflow-hidden rounded-[32px] bg-background/50 backdrop-blur-[8px] transition-opacity duration-500 ${
+        locked ? "opacity-100" : "pointer-events-none opacity-0"
+      }`}
+    >
+      <div className="flex w-[178px] flex-col items-center gap-[30px]">
+        <div className="flex flex-col items-center gap-5">
+          <span className="flex size-[60px] items-center justify-center rounded-full bg-[#292929]">
+            {/* eslint-disable-next-line @next/next/no-img-element -- 작은 SVG 아이콘 */}
+            <img src="/images/icon-lock.svg" width={32} height={32} alt="" />
+          </span>
+          <p className="text-center text-[20px] leading-[1.45] font-extrabold tracking-[-0.4px] whitespace-nowrap text-white">
+            투표하고 다른 사람들과
+            <br />
+            한마디를 나눠보세요!
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onVote}
+          tabIndex={locked ? 0 : -1}
+          className="rounded-full bg-primary px-5 py-3.5 text-[18px] leading-[1.45] font-extrabold tracking-[-0.36px] text-white transition-transform active:scale-95"
+        >
+          투표하기
+        </button>
+      </div>
+    </div>
   );
 }
 
