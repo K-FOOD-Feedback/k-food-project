@@ -9,10 +9,10 @@ import { COPY, REACTIONS, SAMPLE_PCTS, type LandingLang } from "./copy";
 /*
   랜딩 — "한 접시를 둘러싼 참견" (6. 랜딩, 담당 송희)
 
-  1. 첫 화면: 무슨 곳인지 + 역할 버튼 (애니메이션 없이도 바로 이해되게)
+  1. 첫 화면: 제목만
   2. 스크롤 이야기: 화면에 고정된 게시물 하나에 스크롤할수록
      글 → 투표 → 한마디 → 글쓴이 답글이 차례로 날아와 붙습니다.
-  3. 마지막: 역할 버튼 한 번 더
+  3. 장면이 끝나면 게시물이 작아지고 역할 버튼이 아래에서 올라옵니다.
 */
 
 // 스크롤 이야기 구간 (0~1)
@@ -91,6 +91,8 @@ export function LandingScreen() {
   }, []);
 
   const step = STEP_AT.filter((s) => p >= s).length - 1;
+  const done = p >= 0.88;
+  const shrink = seg(p, 0.86, 0.95);
   const typed = Math.round(seg(p, 0.03, 0.18) * t.story.length);
 
   return (
@@ -116,34 +118,21 @@ export function LandingScreen() {
         </div>
       </header>
 
-      {/* 1. 첫 화면 */}
-      <section className="flex min-h-[100svh] flex-col px-5 pt-[calc(96px+env(safe-area-inset-top))] pb-6">
-        <h1 key={lang} className="break-keep font-display text-[clamp(34px,10.5vw,44px)] leading-[1.08]">
+      {/* 1. 첫 화면 — 제목만. 설명은 아래 장면이 대신합니다 */}
+      <section className="flex min-h-[100svh] flex-col justify-center px-5 pt-[env(safe-area-inset-top)]">
+        <h1 key={lang} className="break-keep font-display text-[clamp(40px,12.5vw,54px)] leading-[1.05]">
           {t.headline.map((line, i) => (
-            <span key={line} className="block animate-rise" style={{ animationDelay: `${i * 90}ms` }}>
+            <span key={line} className="block animate-rise" style={{ animationDelay: `${i * 120}ms` }}>
               {line}
             </span>
           ))}
         </h1>
-        <p className="mt-4 max-w-[330px] animate-rise break-keep text-[16px] leading-[1.55] text-neutral-400 [animation-delay:200ms]">
-          {t.sub}
-        </p>
-
-        {/* 첫 화면에서 살짝 보이는 게시물 — 아래로 내리고 싶게 */}
-        <div className="relative mt-7 flex min-h-[140px] flex-1 animate-rise justify-center [animation-delay:300ms]">
-          <div className="relative w-[min(300px,80vw)] overflow-hidden rounded-t-[28px] [mask-image:linear-gradient(to_bottom,black_55%,transparent)]">
-            <Image src="/images/buldak-skillet.jpg" alt="" fill sizes="300px" className="object-cover object-[50%_65%]" priority />
-            <SampleChip label={t.sample} />
-          </div>
-          <span className="absolute right-[calc(50%-160px)] top-[38%] -rotate-6 animate-pop rounded-full bg-primary px-4 py-2.5 text-[15px] font-extrabold text-on-light shadow-[0_8px_20px_rgba(0,0,0,0.4)] [animation-delay:700ms]">
-            {REACTIONS[2].ko}
-          </span>
-        </div>
-
-        <RoleButtons lang={lang} from="hero" />
-        <p className="mt-3 animate-rise text-center text-[13px] font-semibold text-muted [animation-delay:500ms]">
-          ↓ {t.scroll}
-        </p>
+        <span
+          aria-hidden="true"
+          className="mt-14 flex size-12 animate-rise items-center justify-center self-center rounded-full bg-surface text-neutral-400 [animation-delay:600ms]"
+        >
+          <span className="animate-float">↓</span>
+        </span>
       </section>
 
       {/* 2. 스크롤 이야기 */}
@@ -156,21 +145,37 @@ export function LandingScreen() {
                 <span key={i} className={`h-1 flex-1 rounded-full transition-colors duration-300 ${i <= step ? "bg-on-dark" : "bg-white/15"}`} />
               ))}
             </div>
-            <div key={`${lang}-${step}`} className="animate-rise pt-2">
-              <p className="font-display text-[26px] leading-[1.15]">
-                <span className="mr-2 text-primary">{step + 1}</span>
-                {t.steps[step].title}
+            {done ? (
+              <p key={`${lang}-end`} className="animate-rise pt-2 font-display text-[26px] leading-[1.15]">
+                {t.endTitle.join(" ")}
               </p>
-              <p className="mt-1 text-[14px] font-medium text-neutral-400">{t.steps[step].sub}</p>
-            </div>
+            ) : (
+              <div key={`${lang}-${step}`} className="animate-rise pt-2">
+                <p className="font-display text-[26px] leading-[1.15]">
+                  <span className="mr-2 text-primary">{step + 1}</span>
+                  {t.steps[step].title}
+                </p>
+                <p className="mt-1 text-[14px] font-medium text-neutral-400">{t.steps[step].sub}</p>
+              </div>
+            )}
           </div>
 
-          {/* 게시물 */}
-          <div className="relative mt-5 w-[min(300px,80vw,40svh)]" style={fly(p, 0, 0.06, { y: 120, s: 0.9 })}>
+          {/* 게시물 — 마지막에 버튼이 올라오면 작아지며 위로 */}
+          <div
+            className="mt-5 origin-top"
+            style={{ scale: `${1 - 0.2 * shrink}`, translate: `0 ${-8 * shrink}px` }}
+          >
+          <div className="relative w-[min(300px,80vw,40svh)]" style={fly(p, 0, 0.06, { y: 120, s: 0.9 })}>
             <div className="overflow-hidden rounded-[28px] bg-content text-on-light shadow-[0_24px_60px_rgba(0,0,0,0.5)]">
               <div className="relative aspect-[4/3]">
-                <Image src="/images/buldak-skillet.jpg" alt={lang === "ko" ? "치즈를 듬뿍 올린 불닭볶음면 (예시)" : "Buldak noodles with lots of cheese (example)"} fill sizes="300px" className="object-cover object-[50%_65%]" />
-                <SampleChip label={t.sample} className="bottom-3 right-3" />
+                <Image
+                  src="/images/buldak-skillet.jpg"
+                  alt={lang === "ko" ? "치즈를 듬뿍 올린 불닭볶음면" : "Buldak noodles with lots of cheese"}
+                  fill
+                  sizes="300px"
+                  priority
+                  className="object-cover object-[50%_65%]"
+                />
               </div>
               <div className="flex flex-col gap-1.5 px-4 pt-3 pb-4">
                 <div className="flex items-center gap-1.5 text-[12px] font-bold">
@@ -254,35 +259,33 @@ export function LandingScreen() {
               <span className="break-keep text-[13px] font-bold leading-[1.35]">{t.reply}</span>
             </div>
           </div>
+          </div>
+
+          {/* 3. 장면이 다 끝나면 역할 버튼 */}
+          <div
+            inert={!done}
+            className="absolute inset-x-0 bottom-0 bg-gradient-to-b from-background/0 via-background via-25% to-background px-5 pt-8 pb-[calc(20px+env(safe-area-inset-bottom))]"
+            style={fly(p, 0.88, 0.95, { y: 260 })}
+          >
+            <RoleButtons lang={lang} />
+          </div>
         </div>
       </section>
 
-      {/* 3. 마지막 */}
-      <section className="flex flex-col px-5 pt-10 pb-[calc(28px+env(safe-area-inset-bottom))]">
-        <h2 key={lang} className="font-display text-[36px] leading-[1.08]">
-          {t.endTitle.map((line) => (
-            <span key={line} className="block">
-              {line}
-            </span>
-          ))}
-        </h2>
-        <RoleButtons lang={lang} from="end" />
-      </section>
     </main>
   );
 }
 
-function RoleButtons({ lang, from }: { lang: LandingLang; from: "hero" | "end" }) {
+function RoleButtons({ lang }: { lang: LandingLang }) {
   const t = COPY[lang];
   return (
-    <div className="mt-6 flex animate-rise flex-col gap-2 [animation-delay:400ms]">
-      <RoleButton href="/home" tone="bg-primary" role={t.korean.role} action={t.korean.action} kind="korean" from={from} />
-      <RoleButton href="/home/en" tone="bg-secondary" role={t.foreigner.role} action={t.foreigner.action} kind="foreigner" from={from} />
+    <div className="flex flex-col gap-2">
+      <RoleButton href="/home" tone="bg-primary" role={t.korean.role} action={t.korean.action} kind="korean" />
+      <RoleButton href="/home/en" tone="bg-secondary" role={t.foreigner.role} action={t.foreigner.action} kind="foreigner" />
       <TrackedLink
         href="/home"
         event="landing_login_clicked"
-        props={{ from }}
-        className="py-2 text-center text-[14px] font-bold leading-[1.3] text-neutral-400"
+        className="py-1 text-center text-[14px] font-bold leading-[1.3] text-neutral-400"
       >
         {t.login}
       </TrackedLink>
@@ -296,20 +299,18 @@ function RoleButton({
   role,
   action,
   kind,
-  from,
 }: {
   href: string;
   tone: string;
   role: string;
   action: string;
   kind: "korean" | "foreigner";
-  from: "hero" | "end";
 }) {
   return (
     <TrackedLink
       href={href}
       event="role_selected"
-      props={{ role: kind, from }}
+      props={{ role: kind }}
       superProps={{ user_type: kind }}
       className={`flex h-[72px] items-center gap-3 rounded-full py-2 pl-7 pr-2 text-on-light transition active:scale-[0.99] ${tone}`}
     >
@@ -324,14 +325,6 @@ function RoleButton({
         </svg>
       </span>
     </TrackedLink>
-  );
-}
-
-function SampleChip({ label, className = "left-3 top-3" }: { label: string; className?: string }) {
-  return (
-    <span className={`absolute ${className} rounded-full bg-background/70 px-2.5 py-1 text-[11px] font-bold text-on-dark backdrop-blur-sm`}>
-      {label}
-    </span>
   );
 }
 

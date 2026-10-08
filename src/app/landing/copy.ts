@@ -1,6 +1,6 @@
 /*
   랜딩 문구 (한국어 / 영어) — 6. 랜딩, 담당 송희
-  가운데 게시물은 "예시"입니다. 실제 글·실사용 숫자처럼 꾸미지 않습니다.
+  가운데 게시물은 서비스 설명용 장면입니다 (실제 글 아님).
 */
 
 export type LandingLang = "ko" | "en";
@@ -9,12 +9,10 @@ export const COPY = {
   ko: {
     brand: "오늘의 참견",
     headline: ["전 세계의 한식 도전에,", "한국인이 한마디."],
-    sub: "외국인이 한식 사진을 올리면, 한국인이 투표하고 한마디씩 남겨요.",
     korean: { role: "한국인이에요", action: "투표하고 한마디 하기" },
     foreigner: { role: "외국인이에요", action: "둘러보고 한식 올리기" },
     login: "이미 가입했다면 로그인",
     scroll: "어떻게 하는지 볼까요?",
-    sample: "예시",
     steps: [
       { title: "외국인이 한식을 올리면", sub: "사진과 사연을 함께 올려요" },
       { title: "한국인이 투표하고", sub: "글쓴이가 고른 질문에 답해요" },
@@ -31,12 +29,10 @@ export const COPY = {
   en: {
     brand: "오늘의 참견",
     headline: ["Tried Korean food?", "See how Koreans react."],
-    sub: "Post a photo of your Korean food. Koreans vote and leave comments.",
     korean: { role: "I'm Korean", action: "Vote and comment" },
     foreigner: { role: "I'm not Korean", action: "Look around and share" },
     login: "Already have an account? Log in",
     scroll: "See how it works",
-    sample: "Example",
     steps: [
       { title: "You post your dish", sub: "Add a photo and a short story" },
       { title: "Koreans vote", sub: "They answer the question you picked" },
