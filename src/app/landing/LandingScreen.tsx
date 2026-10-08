@@ -97,7 +97,7 @@ export function LandingScreen() {
   const postRef = useRef<HTMLDivElement>(null);
   const [endScale, setEndScale] = useState(0.85);
   // 가운데 정렬용: 제목 아래 남는 높이, 게시물만의 높이, 투표·답글까지 붙은 높이
-  const [box, setBox] = useState({ room: 0, post: 0, full: 0, last: 0, endRoom: 0 });
+  const [box, setBox] = useState({ room: 0, post: 0, full: 0, last: 0, endRoom: 0, fit: 1 });
   useEffect(() => {
     const measure = () => {
       const card = cardRef.current;
@@ -110,7 +110,15 @@ export function LandingScreen() {
       const full = card.offsetHeight; // 게시물 + 투표
       const last = post.offsetHeight + 40; // 마지막 장면: 게시물 + 아래로 삐져나온 글쓴이 답글
       setEndScale(clamp(room / last, 0.6, 0.9));
-      setBox({ room: stage.clientHeight - top - 64, post: post.offsetHeight, full, last, endRoom: room });
+      setBox({
+        room: stage.clientHeight - top - 64,
+        post: post.offsetHeight,
+        full,
+        last,
+        endRoom: room,
+        // 투표가 붙어 있을 때 화면 안에 다 들어오게 하는 크기
+        fit: clamp((stage.clientHeight - top - 40) / full, 0.6, 1),
+      });
     };
     measure();
     window.addEventListener("resize", measure);
@@ -126,7 +134,8 @@ export function LandingScreen() {
   const voteShown = seg(p, 0.06, 0.2) * (1 - voteOut);
   const shown = box.post + (box.full - box.post) * voteShown + 40 * seg(p, 0.74, 0.82);
   // 수학적 가운데는 눈에 낮아 보여서, 남는 공간의 35% 지점(최대 120px)에 둡니다
-  const startOffset = Math.min(120, Math.max(0, (box.room - shown) * 0.35));
+  const stepScale = 1 - (1 - box.fit) * voteShown;
+  const startOffset = Math.min(120, Math.max(0, (box.room - shown * stepScale) * 0.35));
   // 마지막: 제목과 버튼 사이에서도 같은 방식으로 (작아진 크기 기준)
   const endOffset = Math.max(0, (box.endRoom - box.last * endScale) * 0.4);
   const centerOffset = startOffset + (endOffset - startOffset) * shrink;
@@ -168,7 +177,7 @@ export function LandingScreen() {
           <h1
             key={`${lang}-${scene}`}
             aria-live="polite"
-            className="min-h-[2.3em] break-keep font-display text-[clamp(32px,10vw,40px)] leading-[1.12]"
+            className="min-h-[2.7em] break-keep text-center font-display text-[clamp(30px,9vw,36px)] leading-[1.35]"
           >
             {t.titles[scene].map((line, i) => (
               <span key={line} className="block animate-rise" style={{ animationDelay: `${i * 80}ms` }}>
@@ -181,11 +190,11 @@ export function LandingScreen() {
           <div
             ref={cardRef}
             className="mt-6 origin-top"
-            style={{ scale: `${1 - (1 - endScale) * shrink}`, translate: `0 ${centerOffset}px` }}
+            style={{ scale: `${stepScale + (endScale - stepScale) * shrink}`, translate: `0 ${centerOffset}px` }}
           >
           <div className="relative w-full animate-card-enter [animation-delay:350ms]">
             {/* 피드 카드 (앱 메인과 같은 모양: 노란 카드 + 물결 사진 + 질문 칩 + 제목 + 작성자) */}
-            <div ref={postRef} className="relative rounded-[32px] bg-content px-5 pt-4 pb-5 text-on-light">
+            <div ref={postRef} className="relative rounded-[32px] bg-surface px-5 pt-7 pb-6 text-on-dark">
               <div
                 className="relative mx-auto aspect-square h-[min(200px,23svh)] overflow-hidden"
                 style={{
@@ -204,8 +213,8 @@ export function LandingScreen() {
                   className="animate-photo-in object-cover object-[50%_70%] [animation-delay:350ms]"
                 />
               </div>
-              <div className="mt-3 flex flex-col items-start gap-2">
-                <span className="animate-pop rounded-full bg-black/8 px-2.5 py-[5px] text-[12px] font-semibold leading-[1.2] [animation-delay:900ms]">
+              <div className="mt-6 flex flex-col items-start gap-2">
+                <span className="animate-pop rounded-full bg-white/10 px-2.5 py-[5px] text-[12px] font-semibold leading-[1.2] text-neutral-400 [animation-delay:900ms]">
                   {t.question}
                 </span>
                 {/* 완성된 글 크기만큼 자리를 먼저 잡고, 그 위에 타이핑 (아래가 비거나 들썩이지 않게) */}
@@ -214,11 +223,11 @@ export function LandingScreen() {
                   <span className="absolute inset-0">
                     {t.story.slice(0, typed)}
                     {typed < t.story.length && (
-                      <span className="ml-0.5 inline-block h-[0.9em] w-[3px] translate-y-[2px] animate-pulse bg-on-light" />
+                      <span className="ml-0.5 inline-block h-[0.9em] w-[3px] translate-y-[2px] animate-pulse bg-on-dark" />
                     )}
                   </span>
                 </p>
-                <span className="flex animate-pop items-center gap-[5px] text-[13px] font-semibold text-black/60 [animation-delay:1000ms]">
+                <span className="flex animate-pop items-center gap-[5px] text-[13px] font-semibold text-neutral-400 [animation-delay:1000ms]">
                   <span className="text-[15px]" aria-hidden="true">
                     🇨🇦
                   </span>
@@ -230,20 +239,20 @@ export function LandingScreen() {
                 className="absolute -bottom-[34px] right-2 z-10 pt-2.5"
                 style={fly(p, 0.74, 0.82, { y: 220, s: 0.6 }, -3)}
               >
-                <span className="flex items-center gap-2 rounded-[32px] bg-content py-2 pr-4 pl-2 text-on-light">
-                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-on-dark text-[17px]" aria-hidden="true">
+                <span className="flex items-center gap-2 rounded-[32px] bg-surface-2 py-2 pr-4 pl-2 text-on-dark ring-1 ring-white/10">
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-[17px]" aria-hidden="true">
                     🇨🇦
                   </span>
                   <span className="max-w-[190px] break-keep text-[14px] font-bold leading-[1.35]">{t.reply}</span>
                 </span>
-                <span className="absolute left-7 top-0 rounded-full bg-black px-1.5 py-1 text-[10px] font-bold leading-none text-white">
+                <span className="absolute left-7 top-0 rounded-full bg-on-dark px-1.5 py-1 text-[10px] font-bold leading-none text-on-light">
                   {t.authorTag}
                 </span>
               </div>
             </div>
 
             {/* 투표 (앱 상세와 같은 모양: 세로 칸이 아래에서 차오름) */}
-            <div className="-mt-4" style={{ opacity: 1 - voteOut, translate: `0 ${voteOut * 60}px` }} aria-hidden={voteOut >= 1}>
+            <div className="mt-3" style={{ opacity: 1 - voteOut, translate: `0 ${voteOut * 60}px` }} aria-hidden={voteOut >= 1}>
             <div className="relative rounded-[32px] bg-surface-2 px-4 pt-5 pb-4" style={fly(p, 0.1, 0.17, { y: 260, r: -6 })}>
               <p className="text-center font-display text-[18px] leading-[1.3]">{t.voteTitle}</p>
               <div className="mt-3 flex h-[min(128px,15svh)] gap-1.5">
@@ -370,13 +379,13 @@ function RoleButton({
       event="role_selected"
       props={{ role: kind }}
       superProps={{ user_type: kind }}
-      className={`flex h-[72px] items-center gap-3 rounded-full py-2 pl-7 pr-2 text-on-light transition active:scale-[0.99] ${tone}`}
+      className="flex h-[72px] items-center gap-3 rounded-full bg-surface-2 py-2 pl-7 pr-2 text-on-dark transition active:scale-[0.99]"
     >
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="font-display text-[20px] leading-[1.15]">{role}</span>
-        <span className="text-[13px] font-semibold opacity-70">{action}</span>
+        <span className="text-[13px] font-semibold text-neutral-400">{action}</span>
       </span>
-      <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-background text-on-dark" aria-hidden="true">
+      <span className={`flex size-14 shrink-0 items-center justify-center rounded-full text-on-light ${tone}`} aria-hidden="true">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M5 12h14" />
           <path d="m12 5 7 7-7 7" />
@@ -399,7 +408,7 @@ function Bubble({
 }) {
   return (
     <div
-      className={`absolute z-10 flex flex-col items-center rounded-[32px] bg-primary px-5 py-3 text-center text-on-light ${className}`}
+      className={`absolute z-10 flex flex-col items-center rounded-[32px] bg-on-dark px-5 py-3 text-center text-on-light ${className}`}
       style={style}
     >
       <span className="break-keep text-[15px] font-bold leading-[1.35] tracking-[-0.3px]">{r.ko}</span>
