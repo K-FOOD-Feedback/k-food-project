@@ -121,8 +121,13 @@ export function LandingScreen() {
       });
     };
     measure();
+    // 첫 진입 연출(사진 크기 변화)이 끝난 뒤 다시 잼
+    const later = window.setTimeout(measure, 2000);
     window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
+    return () => {
+      window.clearTimeout(later);
+      window.removeEventListener("resize", measure);
+    };
   }, [lang]);
   const done = p >= 0.86;
   // 제목: 0 소개(=글 올리기) · 1 투표 · 2 한마디 · 3 답글 · 4 마지막
@@ -145,7 +150,7 @@ export function LandingScreen() {
     const id = window.setInterval(() => setClock((c) => (c > 120 ? (window.clearInterval(id), c) : c + 1)), 45);
     return () => window.clearInterval(id);
   }, []);
-  const typed = Math.min(t.story.length, Math.max(clock - 30, 0));
+  const typed = Math.min(t.story.length, Math.max(clock - 36, 0));
 
   return (
     <main className="mx-auto w-full max-w-[430px] bg-background text-on-dark">
@@ -192,17 +197,32 @@ export function LandingScreen() {
             className="mt-6 origin-top"
             style={{ scale: `${stepScale + (endScale - stepScale) * shrink}`, translate: `0 ${centerOffset}px` }}
           >
-          <div className="relative w-full animate-card-enter [animation-delay:350ms]">
-            {/* 피드 카드 (앱 메인과 같은 모양: 노란 카드 + 물결 사진 + 질문 칩 + 제목 + 작성자) */}
-            <div ref={postRef} className="relative rounded-[32px] bg-surface px-5 pt-7 pb-6 text-on-dark">
+          <div className="relative w-full">
+            {/* 피드 카드 (앱 메인과 같은 모양: 물결 사진 + 질문 칩 + 제목 + 작성자)
+                첫 진입: 사진이 크게 "올라왔다가" 삐죽한 물결 모양으로 오므라들고, 그 둘레로 카드가 생김 */}
+            <div ref={postRef} className="relative isolate rounded-[32px] px-5 pt-7 pb-6 text-on-dark">
+              <span
+                aria-hidden="true"
+                className="absolute inset-0 -z-10 animate-[fade-in_500ms_ease-out_1300ms_both] rounded-[32px] bg-surface"
+              />
               <div
-                className="relative mx-auto aspect-square h-[min(200px,23svh)] overflow-hidden"
-                style={{
-                  maskImage: "url(/images/card-mask.svg)",
-                  WebkitMaskImage: "url(/images/card-mask.svg)",
-                  maskSize: "100% 100%",
-                  WebkitMaskSize: "100% 100%",
-                }}
+                className="relative mx-auto animate-photo-frame overflow-hidden [animation-delay:250ms]"
+                style={
+                  {
+                    "--s": "min(200px, 23svh)",
+                    "--big": "min(280px, 32svh)",
+                    width: "var(--s)",
+                    height: "var(--s)",
+                    maskImage: "url(/images/card-mask.svg)",
+                    WebkitMaskImage: "url(/images/card-mask.svg)",
+                    maskSize: "100% 100%",
+                    WebkitMaskSize: "100% 100%",
+                    maskPosition: "center",
+                    WebkitMaskPosition: "center",
+                    maskRepeat: "no-repeat",
+                    WebkitMaskRepeat: "no-repeat",
+                  } as CSSProperties
+                }
               >
                 <Image
                   src="/images/buldak-skillet.jpg"
@@ -214,20 +234,20 @@ export function LandingScreen() {
                 />
               </div>
               <div className="mt-6 flex flex-col items-start gap-2">
-                <span className="animate-pop rounded-full bg-white/10 px-2.5 py-[5px] text-[12px] font-semibold leading-[1.2] text-neutral-400 [animation-delay:900ms]">
+                <span className="animate-pop rounded-full bg-white/10 px-2.5 py-[5px] text-[12px] font-semibold leading-[1.2] text-neutral-400 [animation-delay:1500ms]">
                   {t.question}
                 </span>
                 {/* 완성된 글 크기만큼 자리를 먼저 잡고, 그 위에 타이핑 (아래가 비거나 들썩이지 않게) */}
-                <p className="relative w-full break-keep text-[22px] font-extrabold leading-[1.2] tracking-[-0.66px]">
+                <p className="relative w-full break-keep font-display text-[22px] leading-[1.25]">
                   <span className="invisible">{t.story}</span>
                   <span className="absolute inset-0">
                     {t.story.slice(0, typed)}
-                    {typed < t.story.length && (
+                    {clock >= 34 && typed < t.story.length && (
                       <span className="ml-0.5 inline-block h-[0.9em] w-[3px] translate-y-[2px] animate-pulse bg-on-dark" />
                     )}
                   </span>
                 </p>
-                <span className="flex animate-pop items-center gap-[5px] text-[13px] font-semibold text-neutral-400 [animation-delay:1000ms]">
+                <span className="flex animate-pop items-center gap-[5px] text-[13px] font-semibold text-neutral-400 [animation-delay:1650ms]">
                   <span className="text-[15px]" aria-hidden="true">
                     🇨🇦
                   </span>
