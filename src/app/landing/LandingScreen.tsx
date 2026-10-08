@@ -16,6 +16,8 @@ import { COPY, REACTIONS, SAMPLE_PCTS, type LandingLang } from "./copy";
 
 // 스크롤 이야기 구간 (0~1)
 const STEP_AT = [0, 0.1, 0.42, 0.74];
+// 스크롤이 멈추는 자리 (진행도). 섹션 높이 400svh - 화면 100svh = 300svh 기준
+const SNAP_AT = [0, 0.345, 0.66, 0.83, 1];
 
 const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 /** p가 a→b 사이에서 0→1 */
@@ -60,26 +62,50 @@ export function LandingScreen() {
   useTrackOnce("landing_viewed", { variant: "story", lang });
 
   // 스크롤 진행도
+  // - 화면에 쓰는 값(p)은 실제 스크롤 위치를 부드럽게 따라감 → 휙 내려도 연출이 다 보임
+  // - 단계마다 스크롤이 멈추는 자리(스냅)가 있어서, 세게 넘겨도 한 단계씩 넘어감
   const story = useRef<HTMLElement>(null);
   const [p, setP] = useState(0);
   const seen = useRef(0);
   useEffect(() => {
+    // 새로고침하면 맨 위에서 시작
+    if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+    window.scrollTo(0, 0);
+
+    const root = document.documentElement;
+    const prevSnap = root.style.scrollSnapType;
+    root.style.scrollSnapType = "y mandatory";
+
+    let target = 0;
+    let shown = 0;
     let frame = 0;
-    const update = () => {
-      frame = 0;
+    const read = () => {
       const el = story.current;
       if (!el) return;
       const r = el.getBoundingClientRect();
-      const next = clamp(-r.top / (r.height - window.innerHeight));
-      setP(next);
-      const step = STEP_AT.filter((s) => next >= s + 0.02).length;
+      target = clamp(-r.top / (r.height - window.innerHeight));
+      const step = STEP_AT.filter((s) => target >= s + 0.02).length;
       if (step > seen.current) {
         seen.current = step;
         track("landing_scrolled", { step });
       }
     };
+    const tick = () => {
+      const gap = target - shown;
+      if (Math.abs(gap) < 0.0005) {
+        shown = target;
+        setP(shown);
+        frame = 0;
+        return;
+      }
+      // 한 프레임에 남은 거리의 12%씩 (휙 내려도 0.5초쯤에 걸쳐 따라감)
+      shown += gap * (noMotion() ? 1 : 0.12);
+      setP(shown);
+      frame = requestAnimationFrame(tick);
+    };
     const onScroll = () => {
-      if (!frame) frame = requestAnimationFrame(update);
+      read();
+      if (!frame) frame = requestAnimationFrame(tick);
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
@@ -88,6 +114,7 @@ export function LandingScreen() {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
       cancelAnimationFrame(frame);
+      root.style.scrollSnapType = prevSnap;
     };
   }, []);
 
@@ -213,6 +240,15 @@ export function LandingScreen() {
 
       {/* 첫 화면부터 장면이 보이고, 스크롤하면 이어집니다 */}
       <section ref={story} className="relative h-[400svh]" aria-label={t.scroll}>
+        {/* 스크롤이 멈추는 자리: 첫 화면 · 투표 · 한마디 · 답글 · 마지막 (각 장면이 다 그려진 지점) */}
+        {SNAP_AT.map((at) => (
+          <span
+            key={at}
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 h-px snap-start snap-always"
+            style={{ top: `${at * 300}svh` }}
+          />
+        ))}
         <div className="sticky top-0 flex h-[100svh] flex-col overflow-hidden px-5 pt-[calc(100px+env(safe-area-inset-top))]">
           {/* 제목 — 스크롤 단계마다 바뀜 (첫 화면은 서비스 한 줄 소개) */}
           <h1
