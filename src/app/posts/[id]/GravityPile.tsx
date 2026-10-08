@@ -1,7 +1,7 @@
 "use client";
 
 import Matter from "matter-js";
-import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type Ref } from "react";
+import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type KeyboardEvent, type Ref } from "react";
 import type { Comment } from "./comments";
 
 const { Engine, Bodies, Body, Composite, Events, Sleeping } = Matter;
@@ -471,6 +471,7 @@ export function GravityPile({
   rainOnOpen = 0,
   ready = true,
   onOverflowChange,
+  onSelect,
 }: {
   comments: Comment[];
   ref?: Ref<PileHandle>;
@@ -485,6 +486,8 @@ export function GravityPile({
   ready?: boolean;
   /** 더미가 칸의 채움 한도를 넘어 아래쪽이 그라데이션 아래로 묻히기 시작했는지 / 다시 다 보이는지 */
   onOverflowChange?: (overflowing: boolean) => void;
+  /** 말풍선을 누르면 (없으면 누를 수 없는 그냥 말풍선) */
+  onSelect?: (comment: Comment) => void;
 }) {
   const zone = useRef<HTMLDivElement>(null);
   const content = useRef<HTMLDivElement>(null);
@@ -585,7 +588,19 @@ export function GravityPile({
               if (el) nodes.current.set(c.id, el);
               else nodes.current.delete(c.id);
             }}
-            className="invisible absolute top-0 left-0 will-change-transform"
+            className={`invisible absolute top-0 left-0 will-change-transform ${onSelect ? "cursor-pointer" : ""}`}
+            {...(onSelect && {
+              role: "button",
+              tabIndex: 0,
+              "aria-label": `한마디 보기: ${c.text.replace(/\n/g, " ")}`,
+              onClick: () => onSelect(c),
+              onKeyDown: (e: KeyboardEvent<HTMLDivElement>) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onSelect(c);
+                }
+              },
+            })}
           >
             <Bubble comment={c} tags={tagsOf(c, byId, replyCounts)} />
           </div>

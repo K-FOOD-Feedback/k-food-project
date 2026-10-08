@@ -4,6 +4,7 @@ import { useMyVote } from "@/app/home/votes";
 import { TrackedLink } from "@/components/Track";
 import { track } from "@/lib/analytics";
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
+import { CommentModal } from "./CommentModal";
 import { COMMENT_MAX, QUICK_EMOJIS, useComments, type Comment } from "./comments";
 import { estimateWidth, GravityPile, type PileHandle } from "./GravityPile";
 
@@ -63,6 +64,8 @@ export function CommentPile({
   // 전체 화면: 더미가 칸의 3/4를 넘었을 때만 아래 그라데이션을 보여 줍니다.
   const [overflowing, setOverflowing] = useState(false);
   const nextId = useRef(0);
+  // 전체 화면: 누른 말풍선 (레이어가 떠 있는 동안)
+  const [opened, setOpened] = useState<Comment | null>(null);
 
   // 상세 화면: 투표를 마치면 잠금이 풀리면서 맨 위 한마디들이 다시 와르르 쏟아집니다.
   // (ready 전에는 투표 기록을 아직 못 읽은 상태라, 그때의 '투표 전'은 세지 않습니다)
@@ -191,6 +194,7 @@ export function CommentPile({
               scrollable
               rainOnOpen={14}
               onOverflowChange={setOverflowing}
+              onSelect={setOpened}
             />
           </div>
           <div
@@ -234,6 +238,7 @@ export function CommentPile({
         </form>
 
         {flying}
+        {opened && <CommentModal comment={opened} onClose={() => setOpened(null)} />}
       </div>
     );
   }
