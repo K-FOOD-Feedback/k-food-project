@@ -161,14 +161,23 @@ export function DetailScreen({ post }: { post: HomePost }) {
     if (hashHandled.current || !introDone) return;
     // 다른 화면에서 router로 넘어오면 주소(#vote)가 화면보다 조금 늦게 바뀌고,
     // Next.js도 #vote 위치로 한 번 스크롤(맨 위에 붙임)하므로, 잠시 뒤에 주소를 보고 가운데로 맞춥니다.
-    const timer = window.setTimeout(() => {
-      hashHandled.current = true;
-      if (window.location.hash !== "#vote") return;
-      voteRef.current?.scrollIntoView({ block: "center" });
-      markVoteSeen("scroll");
-      setSeenVote(true);
-    }, 150);
-    return () => clearTimeout(timer);
+    // 주소창에 #vote를 넣고 새로 열면 브라우저가 페이지를 다 불러온 뒤 한 번 더 스크롤하므로, 그 뒤에 맞춥니다.
+    let timer = 0;
+    const center = () => {
+      timer = window.setTimeout(() => {
+        hashHandled.current = true;
+        if (window.location.hash !== "#vote") return;
+        voteRef.current?.scrollIntoView({ block: "center" });
+        markVoteSeen("scroll");
+        setSeenVote(true);
+      }, 150);
+    };
+    if (document.readyState === "complete") center();
+    else window.addEventListener("load", center, { once: true });
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("load", center);
+    };
   }, [introDone, markVoteSeen]);
 
   const hiddenUntilIntro = intro && !introDone ? "invisible" : "";
