@@ -97,7 +97,7 @@ export function LandingScreen() {
   const postRef = useRef<HTMLDivElement>(null);
   const [endScale, setEndScale] = useState(0.85);
   // 가운데 정렬용: 제목 아래 남는 높이, 게시물만의 높이, 투표·답글까지 붙은 높이
-  const [box, setBox] = useState({ room: 0, post: 0, full: 0, endRoom: 0 });
+  const [box, setBox] = useState({ room: 0, post: 0, full: 0, last: 0, endRoom: 0 });
   useEffect(() => {
     const measure = () => {
       const card = cardRef.current;
@@ -107,9 +107,10 @@ export function LandingScreen() {
       if (!card || !cta || !post || !stage) return;
       const top = card.offsetTop;
       const room = cta.offsetTop + 24 - top; // 버튼 영역 위쪽 그라데이션까지는 겹쳐도 됨
-      const full = card.offsetHeight + 44; // 아래로 삐져나온 글쓴이 답글
-      setEndScale(clamp(room / full, 0.6, 0.85));
-      setBox({ room: stage.clientHeight - top - 64, post: post.offsetHeight, full, endRoom: room });
+      const full = card.offsetHeight; // 게시물 + 투표
+      const last = post.offsetHeight + 40; // 마지막 장면: 게시물 + 아래로 삐져나온 글쓴이 답글
+      setEndScale(clamp(room / last, 0.6, 0.9));
+      setBox({ room: stage.clientHeight - top - 64, post: post.offsetHeight, full, last, endRoom: room });
     };
     measure();
     window.addEventListener("resize", measure);
@@ -120,11 +121,14 @@ export function LandingScreen() {
   const scene = done ? 4 : step;
   const shrink = seg(p, 0.84, 0.94);
   // 처음엔 게시물이 조금 아래, 투표가 붙을수록 위로 올라감 (마지막엔 제목 바로 아래)
-  const shown = box.post + (box.full - box.post) * seg(p, 0.06, 0.2);
+  // 한 번에 하나만: 투표는 다음 단계(한마디)가 오면 내려가며 사라짐
+  const voteOut = seg(p, 0.36, 0.43);
+  const voteShown = seg(p, 0.06, 0.2) * (1 - voteOut);
+  const shown = box.post + (box.full - box.post) * voteShown + 40 * seg(p, 0.74, 0.82);
   // 수학적 가운데는 눈에 낮아 보여서, 남는 공간의 35% 지점(최대 120px)에 둡니다
   const startOffset = Math.min(120, Math.max(0, (box.room - shown) * 0.35));
   // 마지막: 제목과 버튼 사이에서도 같은 방식으로 (작아진 크기 기준)
-  const endOffset = Math.max(0, (box.endRoom - box.full * endScale) * 0.4);
+  const endOffset = Math.max(0, (box.endRoom - box.last * endScale) * 0.4);
   const centerOffset = startOffset + (endOffset - startOffset) * shrink;
   // 사연은 들어오자마자 저절로 타이핑 (첫 화면이 비어 보이지 않게)
   const [clock, setClock] = useState(0);
@@ -181,7 +185,7 @@ export function LandingScreen() {
           >
           <div className="relative w-full animate-card-enter [animation-delay:350ms]">
             {/* 피드 카드 (앱 메인과 같은 모양: 노란 카드 + 물결 사진 + 질문 칩 + 제목 + 작성자) */}
-            <div ref={postRef} className="rounded-[32px] bg-content px-5 pt-4 pb-5 text-on-light">
+            <div ref={postRef} className="relative rounded-[32px] bg-content px-5 pt-4 pb-5 text-on-light">
               <div
                 className="relative mx-auto aspect-square h-[min(200px,23svh)] overflow-hidden"
                 style={{
@@ -221,10 +225,26 @@ export function LandingScreen() {
                   {t.author}
                 </span>
               </div>
+              {/* 글쓴이 답글 — 앱 댓글의 작성자 말풍선 */}
+              <div
+                className="absolute -bottom-[34px] right-2 z-10 pt-2.5"
+                style={fly(p, 0.74, 0.82, { y: 220, s: 0.6 }, -3)}
+              >
+                <span className="flex items-center gap-2 rounded-[32px] bg-content py-2 pr-4 pl-2 text-on-light">
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-on-dark text-[17px]" aria-hidden="true">
+                    🇨🇦
+                  </span>
+                  <span className="max-w-[190px] break-keep text-[14px] font-bold leading-[1.35]">{t.reply}</span>
+                </span>
+                <span className="absolute left-7 top-0 rounded-full bg-black px-1.5 py-1 text-[10px] font-bold leading-none text-white">
+                  {t.authorTag}
+                </span>
+              </div>
             </div>
 
             {/* 투표 (앱 상세와 같은 모양: 세로 칸이 아래에서 차오름) */}
-            <div className="relative -mt-4 rounded-[32px] bg-surface-2 px-4 pt-5 pb-4" style={fly(p, 0.1, 0.17, { y: 260, r: -6 })}>
+            <div className="-mt-4" style={{ opacity: 1 - voteOut, translate: `0 ${voteOut * 60}px` }} aria-hidden={voteOut >= 1}>
+            <div className="relative rounded-[32px] bg-surface-2 px-4 pt-5 pb-4" style={fly(p, 0.1, 0.17, { y: 260, r: -6 })}>
               <p className="text-center font-display text-[18px] leading-[1.3]">{t.voteTitle}</p>
               <div className="mt-3 flex h-[min(128px,15svh)] gap-1.5">
                 {t.options.map((opt, i) => {
@@ -264,6 +284,7 @@ export function LandingScreen() {
                 })}
               </div>
             </div>
+            </div>
 
             {/* 한국인 반응 — 앱 댓글 더미처럼 알약 모양, 사진 가장자리에 걸치게 */}
             <Bubble
@@ -284,22 +305,6 @@ export function LandingScreen() {
               className="-left-1 top-[30%]"
               style={fly(p, 0.54, 0.61, { x: -300, y: 60, r: -20 }, 3)}
             />
-
-            {/* 글쓴이 답글 — 앱 댓글의 작성자 말풍선 */}
-            <div
-              className="absolute right-2 bottom-[-30px] pt-2.5"
-              style={fly(p, 0.74, 0.82, { y: 220, s: 0.6 }, -3)}
-            >
-              <span className="flex items-center gap-2 rounded-[32px] bg-content py-2 pr-4 pl-2 text-on-light">
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-on-dark text-[17px]" aria-hidden="true">
-                  🇨🇦
-                </span>
-                <span className="max-w-[190px] break-keep text-[14px] font-bold leading-[1.35]">{t.reply}</span>
-              </span>
-              <span className="absolute left-7 top-0 rounded-full bg-black px-1.5 py-1 text-[10px] font-bold leading-none text-white">
-                {t.authorTag}
-              </span>
-            </div>
           </div>
           </div>
 
