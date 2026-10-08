@@ -264,14 +264,14 @@ export function CommentPile({
           <span ref={card} className="relative flex h-[130px] w-[260px] -rotate-[4.91deg] items-center justify-center rounded-[26px] bg-[#292929] px-6 py-[30px]">
             <textarea
               value={draft}
-              onChange={(e) => setDraft(limitDraft(e.target.value))}
+              onChange={(e) => setDraft(fitTwoLines(e.target, limitDraft(e.target.value)))}
               onKeyDown={(e) => {
                 // Enter는 줄바꿈만 합니다 (최대 2줄). 보내기는 버튼으로만.
                 if (e.key === "Enter" && draft.includes("\n")) e.preventDefault();
               }}
               rows={2}
               placeholder={"한마디를\n남겨보세요"}
-              className="w-full resize-none bg-transparent text-center text-[20px] leading-[1.45] font-bold tracking-[-0.4px] text-on-dark outline-none placeholder:text-white/70"
+              className="w-full resize-none overflow-hidden bg-transparent text-center text-[20px] leading-[1.45] font-bold tracking-[-0.4px] text-on-dark outline-none placeholder:text-white/70"
             />
             <span className="absolute right-4 bottom-[26px] text-[10px] font-bold text-white/70">
               {charCount(draft)}/{COMMENT_MAX}
@@ -382,6 +382,22 @@ const MAX_LINES = 2;
 
 /** 줄바꿈은 글자 수에 세지 않습니다. */
 const charCount = (text: string) => text.replace(/\n/g, "").length;
+
+/**
+  화면에 보이는 줄도 2줄까지만: 한 줄이 카드 폭을 넘어 저절로 줄바꿈되면 3줄이 될 수 있어서,
+  넣어 보고 2줄 높이를 넘으면 넘치지 않을 때까지 끝에서부터 글자를 뺍니다.
+  (타이핑은 그 글자가 안 들어가고, 붙여넣기는 들어갈 만큼만 들어갑니다)
+*/
+function fitTwoLines(el: HTMLTextAreaElement, value: string) {
+  let text = value;
+  el.value = text;
+  // rows={2}라 칸 높이(clientHeight)가 곧 2줄 높이입니다.
+  while (text && el.scrollHeight > el.clientHeight + 1) {
+    text = Array.from(text).slice(0, -1).join("");
+    el.value = text;
+  }
+  return text;
+}
 
 /** 입력값을 최대 2줄, 20자로 자릅니다 (붙여넣기 포함). */
 function limitDraft(value: string) {
