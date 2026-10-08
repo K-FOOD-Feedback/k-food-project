@@ -21,6 +21,7 @@ export type EventName =
   | "landing_viewed"
   | "role_selected"
   | "landing_login_clicked"
+  | "landing_scrolled"
   | "language_clicked"
   | "my_page_clicked"
   | "login_sheet_opened"

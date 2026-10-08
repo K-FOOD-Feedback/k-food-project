@@ -1,0 +1,370 @@
+"use client";
+
+import Image from "next/image";
+import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
+import { TrackedLink } from "@/components/Track";
+import { track, useTrackOnce } from "@/lib/analytics";
+import { COPY, REACTIONS, SAMPLE_PCTS, type LandingLang } from "./copy";
+
+/*
+  랜딩 — "한 접시를 둘러싼 참견" (6. 랜딩, 담당 송희)
+
+  1. 첫 화면: 무슨 곳인지 + 역할 버튼 (애니메이션 없이도 바로 이해되게)
+  2. 스크롤 이야기: 화면에 고정된 게시물 하나에 스크롤할수록
+     글 → 투표 → 한마디 → 글쓴이 답글이 차례로 날아와 붙습니다.
+  3. 마지막: 역할 버튼 한 번 더
+*/
+
+// 스크롤 이야기 구간 (0~1)
+const STEP_AT = [0, 0.22, 0.5, 0.8];
+
+const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+/** p가 a→b 사이에서 0→1 */
+const seg = (p: number, a: number, b: number) => clamp((p - a) / (b - a));
+/** 살짝 지나쳤다가 돌아오는 (통통 튀는) 곡선 */
+const backOut = (t: number) => {
+  const c = 1.9;
+  return 1 + (c + 1) * (t - 1) ** 3 + c * (t - 1) ** 2;
+};
+
+const noMotion = () =>
+  typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/** 화면 밖에서 날아와 자리에 붙는 스타일 */
+function fly(p: number, a: number, b: number, from: { x?: number; y?: number; r?: number; s?: number }, rest = 0): CSSProperties {
+  const raw = seg(p, a, b);
+  const t = noMotion() ? (raw > 0 ? 1 : 0) : backOut(raw);
+  const k = 1 - t;
+  return {
+    opacity: clamp(raw * 3),
+    translate: `${(from.x ?? 0) * k}px ${(from.y ?? 0) * k}px`,
+    rotate: `${(from.r ?? 0) * k + rest}deg`,
+    scale: `${1 - (1 - (from.s ?? 1)) * k}`,
+  };
+}
+
+const subscribeNone = () => () => {};
+
+export function LandingScreen() {
+  // 언어: 처음엔 브라우저 언어, 이후엔 고른 언어
+  const browserLang = useSyncExternalStore<LandingLang>(
+    subscribeNone,
+    () => (navigator.language.toLowerCase().startsWith("ko") ? "ko" : "en"),
+    () => "ko",
+  );
+  const [chosen, setChosen] = useState<LandingLang | null>(null);
+  const lang = chosen ?? browserLang;
+  const t = COPY[lang];
+
+  useTrackOnce("landing_viewed", { variant: "story", lang });
+
+  // 스크롤 진행도
+  const story = useRef<HTMLElement>(null);
+  const [p, setP] = useState(0);
+  const seen = useRef(0);
+  useEffect(() => {
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const el = story.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const next = clamp(-r.top / (r.height - window.innerHeight));
+      setP(next);
+      const step = STEP_AT.filter((s) => next >= s + 0.02).length;
+      if (step > seen.current) {
+        seen.current = step;
+        track("landing_scrolled", { step });
+      }
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    onScroll();
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      cancelAnimationFrame(frame);
+    };
+  }, []);
+
+  const step = STEP_AT.filter((s) => p >= s).length - 1;
+  const typed = Math.round(seg(p, 0.03, 0.18) * t.story.length);
+
+  return (
+    <main className="mx-auto w-full max-w-[430px] bg-background text-on-dark">
+      {/* 상단: 로고 · 언어 */}
+      <header className="fixed inset-x-0 top-0 z-40 mx-auto flex w-full max-w-[430px] items-center justify-between bg-gradient-to-b from-background via-background/90 to-background/0 px-5 pt-[calc(14px+env(safe-area-inset-top))] pb-5">
+        <span className="font-display text-[19px] leading-none">{t.brand}</span>
+        <div className="flex rounded-full bg-surface p-1 text-[13px] font-bold" role="group" aria-label="Language">
+          {(["ko", "en"] as const).map((l) => (
+            <button
+              key={l}
+              type="button"
+              aria-pressed={lang === l}
+              onClick={() => {
+                setChosen(l);
+                track("language_clicked", { from: "landing", to: l });
+              }}
+              className={`rounded-full px-3 py-1.5 uppercase transition ${lang === l ? "bg-on-dark text-on-light" : "text-neutral-400"}`}
+            >
+              {l}
+            </button>
+          ))}
+        </div>
+      </header>
+
+      {/* 1. 첫 화면 */}
+      <section className="flex min-h-[100svh] flex-col px-5 pt-[calc(96px+env(safe-area-inset-top))] pb-6">
+        <h1 key={lang} className="break-keep font-display text-[clamp(34px,10.5vw,44px)] leading-[1.08]">
+          {t.headline.map((line, i) => (
+            <span key={line} className="block animate-rise" style={{ animationDelay: `${i * 90}ms` }}>
+              {line}
+            </span>
+          ))}
+        </h1>
+        <p className="mt-4 max-w-[330px] animate-rise break-keep text-[16px] leading-[1.55] text-neutral-400 [animation-delay:200ms]">
+          {t.sub}
+        </p>
+
+        {/* 첫 화면에서 살짝 보이는 게시물 — 아래로 내리고 싶게 */}
+        <div className="relative mt-7 flex min-h-[140px] flex-1 animate-rise justify-center [animation-delay:300ms]">
+          <div className="relative w-[min(300px,80vw)] overflow-hidden rounded-t-[28px] [mask-image:linear-gradient(to_bottom,black_55%,transparent)]">
+            <Image src="/images/buldak-skillet.jpg" alt="" fill sizes="300px" className="object-cover object-[50%_65%]" priority />
+            <SampleChip label={t.sample} />
+          </div>
+          <span className="absolute right-[calc(50%-160px)] top-[38%] -rotate-6 animate-pop rounded-full bg-primary px-4 py-2.5 text-[15px] font-extrabold text-on-light shadow-[0_8px_20px_rgba(0,0,0,0.4)] [animation-delay:700ms]">
+            {REACTIONS[2].ko}
+          </span>
+        </div>
+
+        <RoleButtons lang={lang} from="hero" />
+        <p className="mt-3 animate-rise text-center text-[13px] font-semibold text-muted [animation-delay:500ms]">
+          ↓ {t.scroll}
+        </p>
+      </section>
+
+      {/* 2. 스크롤 이야기 */}
+      <section ref={story} className="relative h-[460svh]" aria-label={t.scroll}>
+        <div className="sticky top-0 flex h-[100svh] flex-col items-center overflow-hidden px-4 pt-[calc(76px+env(safe-area-inset-top))]">
+          {/* 단계 설명 */}
+          <div className="flex w-full flex-col gap-2 px-1">
+            <div className="flex gap-1" aria-hidden="true">
+              {STEP_AT.map((_, i) => (
+                <span key={i} className={`h-1 flex-1 rounded-full transition-colors duration-300 ${i <= step ? "bg-on-dark" : "bg-white/15"}`} />
+              ))}
+            </div>
+            <div key={`${lang}-${step}`} className="animate-rise pt-2">
+              <p className="font-display text-[26px] leading-[1.15]">
+                <span className="mr-2 text-primary">{step + 1}</span>
+                {t.steps[step].title}
+              </p>
+              <p className="mt-1 text-[14px] font-medium text-neutral-400">{t.steps[step].sub}</p>
+            </div>
+          </div>
+
+          {/* 게시물 */}
+          <div className="relative mt-5 w-[min(300px,80vw,40svh)]" style={fly(p, 0, 0.06, { y: 120, s: 0.9 })}>
+            <div className="overflow-hidden rounded-[28px] bg-content text-on-light shadow-[0_24px_60px_rgba(0,0,0,0.5)]">
+              <div className="relative aspect-[4/3]">
+                <Image src="/images/buldak-skillet.jpg" alt={lang === "ko" ? "치즈를 듬뿍 올린 불닭볶음면 (예시)" : "Buldak noodles with lots of cheese (example)"} fill sizes="300px" className="object-cover object-[50%_65%]" />
+                <SampleChip label={t.sample} className="bottom-3 right-3" />
+              </div>
+              <div className="flex flex-col gap-1.5 px-4 pt-3 pb-4">
+                <div className="flex items-center gap-1.5 text-[12px] font-bold">
+                  <span aria-hidden="true">🇨🇦</span>
+                  {t.author}
+                </div>
+                <p className="min-h-[2.8em] break-keep text-[15px] font-semibold leading-[1.4]">
+                  “{t.story.slice(0, typed)}
+                  {typed < t.story.length && <span className="ml-px inline-block h-[1em] w-0.5 translate-y-[2px] animate-pulse bg-on-light" />}
+                  {typed >= t.story.length && "”"}
+                </p>
+              </div>
+            </div>
+
+            {/* 투표 */}
+            <div className="relative -mt-3 rounded-[24px] bg-surface px-4 pt-4 pb-4 shadow-[0_16px_40px_rgba(0,0,0,0.5)]" style={fly(p, 0.22, 0.29, { x: -260, r: -12 })}>
+              <p className="text-[14px] font-bold">{t.question}</p>
+              <ul className="mt-3 flex flex-col gap-1.5">
+                {t.options.map((opt, i) => {
+                  const fill = seg(p, 0.36 + i * 0.02, 0.46) * SAMPLE_PCTS[i];
+                  return (
+                    <li
+                      key={opt}
+                      className="relative flex h-9 items-center overflow-hidden rounded-full bg-surface-2 px-3.5 text-[13px] font-semibold"
+                      style={fly(p, 0.27 + i * 0.03, 0.34 + i * 0.03, { x: 280, r: 8 })}
+                    >
+                      <span className={`absolute inset-y-0 left-0 rounded-full ${i === 0 ? "bg-primary" : "bg-white/15"}`} style={{ width: `${fill}%` }} />
+                      <span className={`relative flex-1 ${i === 0 && fill > 20 ? "text-on-light" : ""}`}>{opt}</span>
+                      <span className="relative tabular-nums text-neutral-400">{Math.round(fill)}%</span>
+                    </li>
+                  );
+                })}
+              </ul>
+              {/* 🇰🇷 토큰이 위에서 떨어져 칸에 들어감 */}
+              {[0, 1, 2].map((i) => (
+                <span
+                  key={i}
+                  aria-hidden="true"
+                  className="absolute flex size-8 items-center justify-center rounded-full bg-on-dark text-[15px] shadow-[0_4px_10px_rgba(0,0,0,0.4)]"
+                  style={{
+                    right: 18 + i * 30,
+                    top: -14,
+                    ...fly(p, 0.38 + i * 0.025, 0.45 + i * 0.025, { y: -340, r: 90, s: 0.5 }),
+                  }}
+                >
+                  🇰🇷
+                </span>
+              ))}
+            </div>
+
+            {/* 한국인 반응 — 사진 가장자리에 걸치게 */}
+            <Bubble
+              lang={lang}
+              r={REACTIONS[0]}
+              className="-left-5 top-[7%] bg-primary"
+              style={fly(p, 0.5, 0.57, { x: -300, y: -40, r: -30 }, -5)}
+            />
+            <Bubble
+              lang={lang}
+              r={REACTIONS[1]}
+              className="-right-5 top-[19%] max-w-[190px] bg-secondary"
+              style={fly(p, 0.56, 0.63, { x: 300, y: 20, r: 25 }, 4)}
+            />
+            <Bubble
+              lang={lang}
+              r={REACTIONS[2]}
+              className="-left-4 top-[33%] bg-lilac"
+              style={fly(p, 0.62, 0.69, { x: -300, y: 60, r: -20 }, 3)}
+            />
+            <Emoji emoji="🧀" className="-right-3 -top-4" style={fly(p, 0.66, 0.72, { y: -300, r: 180, s: 0.3 }, 12)} />
+            <Emoji emoji="🔥" className="left-[40%] -top-6" style={fly(p, 0.7, 0.76, { y: -300, r: -180, s: 0.3 }, -8)} />
+
+            {/* 글쓴이 답글 */}
+            <div
+              className="absolute -right-3 bottom-[-38px] flex max-w-[230px] items-start gap-2 rounded-[20px] bg-content px-3.5 py-2.5 text-on-light shadow-[0_12px_30px_rgba(0,0,0,0.5)]"
+              style={fly(p, 0.8, 0.88, { y: 220, s: 0.6 }, -2)}
+            >
+              <span aria-hidden="true" className="text-[16px] leading-[1.3]">
+                🇨🇦
+              </span>
+              <span className="break-keep text-[13px] font-bold leading-[1.35]">{t.reply}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 3. 마지막 */}
+      <section className="flex flex-col px-5 pt-10 pb-[calc(28px+env(safe-area-inset-bottom))]">
+        <h2 key={lang} className="font-display text-[36px] leading-[1.08]">
+          {t.endTitle.map((line) => (
+            <span key={line} className="block">
+              {line}
+            </span>
+          ))}
+        </h2>
+        <RoleButtons lang={lang} from="end" />
+      </section>
+    </main>
+  );
+}
+
+function RoleButtons({ lang, from }: { lang: LandingLang; from: "hero" | "end" }) {
+  const t = COPY[lang];
+  return (
+    <div className="mt-6 flex animate-rise flex-col gap-2 [animation-delay:400ms]">
+      <RoleButton href="/home" tone="bg-primary" role={t.korean.role} action={t.korean.action} kind="korean" from={from} />
+      <RoleButton href="/home/en" tone="bg-secondary" role={t.foreigner.role} action={t.foreigner.action} kind="foreigner" from={from} />
+      <TrackedLink
+        href="/home"
+        event="landing_login_clicked"
+        props={{ from }}
+        className="py-2 text-center text-[14px] font-bold leading-[1.3] text-neutral-400"
+      >
+        {t.login}
+      </TrackedLink>
+    </div>
+  );
+}
+
+function RoleButton({
+  href,
+  tone,
+  role,
+  action,
+  kind,
+  from,
+}: {
+  href: string;
+  tone: string;
+  role: string;
+  action: string;
+  kind: "korean" | "foreigner";
+  from: "hero" | "end";
+}) {
+  return (
+    <TrackedLink
+      href={href}
+      event="role_selected"
+      props={{ role: kind, from }}
+      superProps={{ user_type: kind }}
+      className={`flex h-[72px] items-center gap-3 rounded-full py-2 pl-7 pr-2 text-on-light transition active:scale-[0.99] ${tone}`}
+    >
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="font-display text-[20px] leading-[1.15]">{role}</span>
+        <span className="text-[13px] font-semibold opacity-70">{action}</span>
+      </span>
+      <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-background text-on-dark" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M5 12h14" />
+          <path d="m12 5 7 7-7 7" />
+        </svg>
+      </span>
+    </TrackedLink>
+  );
+}
+
+function SampleChip({ label, className = "left-3 top-3" }: { label: string; className?: string }) {
+  return (
+    <span className={`absolute ${className} rounded-full bg-background/70 px-2.5 py-1 text-[11px] font-bold text-on-dark backdrop-blur-sm`}>
+      {label}
+    </span>
+  );
+}
+
+function Bubble({
+  lang,
+  r,
+  className,
+  style,
+}: {
+  lang: LandingLang;
+  r: { ko: string; en: string };
+  className: string;
+  style: CSSProperties;
+}) {
+  return (
+    <div
+      className={`absolute z-10 flex flex-col rounded-[20px] px-4 py-2.5 text-on-light shadow-[0_10px_26px_rgba(0,0,0,0.45)] ${className}`}
+      style={style}
+    >
+      <span className="break-keep text-[15px] font-extrabold leading-[1.3]">{r.ko}</span>
+      {lang === "en" && <span className="text-[11px] font-semibold leading-[1.3] opacity-60">{r.en}</span>}
+    </div>
+  );
+}
+
+function Emoji({ emoji, className, style }: { emoji: string; className: string; style: CSSProperties }): ReactNode {
+  return (
+    <span
+      aria-hidden="true"
+      className={`absolute z-10 flex size-12 items-center justify-center rounded-full bg-on-dark text-[24px] shadow-[0_8px_20px_rgba(0,0,0,0.4)] ${className}`}
+      style={style}
+    >
+      {emoji}
+    </span>
+  );
+}

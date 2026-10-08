@@ -18,6 +18,7 @@
 | `landing_viewed` | 랜딩 | |
 | `role_selected` | 랜딩 I'm Korean / I'm not Korean | `role` |
 | `landing_login_clicked` | 랜딩 Already joined? Log in | |
+| `landing_scrolled` | 랜딩 스크롤 이야기 단계 도달 | `step`(1~4) |
 | `language_clicked` | 🌐 (메인·상세) | `from`, `viewer` |
 | `my_page_clicked` | 👤 (메인) | `from`, `viewer` |
 | `login_sheet_opened` | 로그인 시트 열림 | `from` |
