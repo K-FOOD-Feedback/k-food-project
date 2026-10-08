@@ -59,6 +59,8 @@ export function CommentPile({
   const pile = useRef<PileHandle>(null);
   // 보내기·이모지를 누른 뒤 댓글 칸으로 날아가는 중인 원들 (도착하면 댓글로 추가)
   const [flights, setFlights] = useState<Flight[]>([]);
+  // 전체 화면: 더미가 칸의 2/3를 넘었을 때만 아래 그라데이션을 보여 줍니다.
+  const [overflowing, setOverflowing] = useState(false);
   const nextId = useRef(0);
 
   /** 출발 요소에서 원으로 바뀌어 댓글 칸으로 날아간 뒤 댓글이 됩니다. */
@@ -170,9 +172,21 @@ export function CommentPile({
               }
             }}
           >
-            <GravityPile ref={pile} comments={comments} ready={ready} className="min-h-0 flex-1" scrollable rainOnOpen />
+            <GravityPile
+              ref={pile}
+              comments={comments}
+              ready={ready}
+              className="min-h-0 flex-1"
+              scrollable
+              rainOnOpen
+              onOverflowChange={setOverflowing}
+            />
           </div>
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[92px] bg-linear-to-b from-background/0 to-background" />
+          <div
+            className={`pointer-events-none absolute inset-x-0 bottom-0 h-[92px] bg-linear-to-b from-background/0 to-background transition-opacity duration-300 ${
+              overflowing ? "opacity-100" : "opacity-0"
+            }`}
+          />
         </section>
 
         {emojiKeys}
