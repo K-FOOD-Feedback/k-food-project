@@ -15,6 +15,7 @@ const { Engine, Bodies, Body, Composite, Events, Sleeping } = Matter;
   - 댓글끼리는 약 1mm(4px) 띄워서 쌓입니다.
   - 더미가 칸 높이의 2/3를 넘으면 맨 위를 2/3 높이에 두고, 넘친 아래쪽은 그라데이션 뒤로 내립니다.
     댓글 전체 화면(scrollable)에서는 칸을 아래로 스크롤해서 묻힌 댓글도 볼 수 있습니다.
+    2/3를 넘지 않으면 스크롤도 없고, 바닥부터 다 보입니다 (넘쳤는지는 onOverflowChange로 알려 줌).
 */
 
 const FILL_LIMIT = 2 / 3;
@@ -90,6 +91,9 @@ class PileWorld {
   /** 열 때 쏟아지기로 예약된 댓글 (아직 떨어지기 전) */
   private pendingRain = new Set<string>();
   private timers: number[] = [];
+  /** 더미가 2/3를 넘어 아래쪽이 묻혔는지 (바뀔 때만 알림) */
+  private overflowing = false;
+  onOverflowChange: ((overflowing: boolean) => void) | null = null;
 
   constructor(
     width: number,
@@ -379,8 +383,15 @@ class PileWorld {
     }
     // 스크롤 가능한 칸: 바닥까지 다 보이도록 안쪽 높이를 늘립니다.
     // 40px 단위로만 바꿔서, 더미가 움직이는 동안 매 프레임 칸 전체를 다시 그리지 않게 합니다.
+    // 더미가 2/3를 넘지 않았으면 칸 높이 그대로 (스크롤 없음).
+    const overflowing = target < this.defaultTop - 1;
+    if (overflowing !== this.overflowing) {
+      this.overflowing = overflowing;
+      this.onOverflowChange?.(overflowing);
+    }
     if (this.scroller) {
-      const height = Math.max(this.height, Math.ceil(-this.viewTop / 40) * 40);
+      const below = -this.viewTop - this.height;
+      const height = below < 1 ? this.height : this.height + Math.ceil(below / 40) * 40;
       if (height !== this.contentHeight) {
         this.contentHeight = height;
         this.scroller.content.style.height = `${height}px`;
@@ -411,6 +422,7 @@ export function GravityPile({
   scrollable = false,
   rainOnOpen = false,
   ready = true,
+  onOverflowChange,
 }: {
   comments: Comment[];
   ref?: Ref<PileHandle>;
@@ -420,11 +432,17 @@ export function GravityPile({
   rainOnOpen?: boolean;
   /** 저장된 댓글까지 다 읽어 왔는지. 그 전에 쌓기 시작하면 나중에 들어온 댓글이 한꺼번에 떨어집니다. */
   ready?: boolean;
+  /** 더미가 칸의 2/3를 넘어 아래쪽이 그라데이션 아래로 묻히기 시작했는지 / 다시 다 보이는지 */
+  onOverflowChange?: (overflowing: boolean) => void;
 }) {
   const zone = useRef<HTMLDivElement>(null);
   const content = useRef<HTMLDivElement>(null);
   const nodes = useRef(new Map<string, HTMLElement>());
   const world = useRef<PileWorld | null>(null);
+  const overflowCallback = useRef(onOverflowChange);
+  useLayoutEffect(() => {
+    overflowCallback.current = onOverflowChange;
+  });
 
   useImperativeHandle(
     ref,
@@ -445,6 +463,7 @@ export function GravityPile({
       rainOnOpen,
     );
     world.current = pile;
+    pile.onOverflowChange = (v) => overflowCallback.current?.(v);
     pile.start();
     const observer = new ResizeObserver(() => pile.resize(box.clientWidth, box.clientHeight));
     observer.observe(box);
@@ -467,7 +486,9 @@ export function GravityPile({
       }`}
       aria-label="최근 댓글"
     >
-      <div ref={content} className="relative h-full w-full">
+      {/* 스크롤 칸: 기울어진 이모지 원의 모서리가 아래로 삐져나와 스크롤이 생기지 않도록 잘라 냅니다.
+          (상세 화면 칸은 제목 줄에서 떨어지는 말풍선이 보여야 해서 자르지 않음) */}
+      <div ref={content} className={`relative h-full w-full ${scrollable ? "overflow-clip" : ""}`}>
         {comments.map((c) => (
           <div
             key={c.id}
