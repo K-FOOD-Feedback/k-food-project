@@ -127,7 +127,7 @@ export function CommentPile({
       >
         <div ref={titleRow} className="flex h-16 items-center gap-10 pl-5">
           <h2 className="flex flex-1 items-center gap-1.5 text-[18px] leading-[1.3] font-bold tracking-[-0.54px]">
-            댓글 <span className="text-neutral-400">{commentCount + addedCount}</span>
+            한마디 <span className="text-neutral-400">{commentCount + addedCount}</span>
           </h2>
           {!full && (
             <TrackedLink
@@ -157,11 +157,26 @@ export function CommentPile({
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[92px] bg-linear-to-b from-[#292929]/0 to-[#292929]" />
       </section>
 
+      {/* 이모지 키 → 한마디 입력 카드 순서 (Figma 332:3426) */}
+      <div className="flex w-full gap-0.5">
+        {QUICK_EMOJIS.map((emoji) => (
+          <button
+            key={emoji}
+            type="button"
+            onClick={(e) => launch("emoji", emoji, e.currentTarget)}
+            aria-label={`${emoji} 남기기`}
+            className="flex aspect-square min-w-0 flex-1 items-center justify-center rounded-full bg-white/10 text-[20px] transition-transform active:scale-90"
+          >
+            {emoji}
+          </button>
+        ))}
+      </div>
+
       {/* 한마디 입력 카드 + 보내기 */}
       <form onSubmit={onSubmit} className="relative h-[181px] w-[270px]">
         <label className="absolute inset-x-0 top-0 flex h-[152px] items-center justify-center">
           <span className="sr-only">한마디 남기기</span>
-          <span ref={card} className="relative flex h-[130px] w-[260px] -rotate-[4.91deg] items-center justify-center rounded-[26px] bg-[#292929] p-4">
+          <span ref={card} className="relative flex h-[130px] w-[260px] -rotate-[4.91deg] items-center justify-center rounded-[26px] bg-[#292929] px-6 py-[30px]">
             <textarea
               value={draft}
               onChange={(e) => setDraft(limitDraft(e.target.value))}
@@ -170,7 +185,7 @@ export function CommentPile({
                 if (e.key === "Enter" && draft.includes("\n")) e.preventDefault();
               }}
               rows={2}
-              placeholder={"떠오른 한마디를\n남겨보세요"}
+              placeholder={"한마디를\n남겨보세요"}
               className="w-full resize-none bg-transparent text-center text-[20px] leading-[1.45] font-bold tracking-[-0.4px] text-on-dark outline-none placeholder:text-white/70"
             />
             <span className="absolute right-4 bottom-[26px] text-[10px] font-bold text-white/70">
@@ -194,20 +209,6 @@ export function CommentPile({
       {flights.map((f) => (
         <FlyingCircle key={f.id} flight={f} onArrive={(vy) => arrive(f, vy)} />
       ))}
-
-      <div className="flex w-full gap-0.5">
-        {QUICK_EMOJIS.map((emoji) => (
-          <button
-            key={emoji}
-            type="button"
-            onClick={(e) => launch("emoji", emoji, e.currentTarget)}
-            aria-label={`${emoji} 남기기`}
-            className="flex aspect-square min-w-0 flex-1 items-center justify-center rounded-full bg-white/10 text-[20px] transition-transform active:scale-90"
-          >
-            {emoji}
-          </button>
-        ))}
-      </div>
     </div>
   );
 }
