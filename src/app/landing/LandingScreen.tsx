@@ -90,7 +90,28 @@ export function LandingScreen() {
   }, []);
 
   const step = STEP_AT.filter((s) => p >= s).length - 1;
+
+  // 마지막에 버튼이 올라오면, 게시물은 버튼 위에 딱 들어갈 만큼만 작아짐 (최대 85%)
+  const cardRef = useRef<HTMLDivElement>(null);
+  const ctaRef = useRef<HTMLDivElement>(null);
+  const [endScale, setEndScale] = useState(0.85);
+  useEffect(() => {
+    const measure = () => {
+      const card = cardRef.current;
+      const cta = ctaRef.current;
+      if (!card || !cta) return;
+      const top = card.offsetTop;
+      const room = cta.offsetTop + 24 - top; // 버튼 영역 위쪽 그라데이션까지는 겹쳐도 됨
+      const height = card.offsetHeight + 44; // 아래로 삐져나온 글쓴이 답글
+      setEndScale(clamp(room / height, 0.6, 0.85));
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [lang]);
   const done = p >= 0.86;
+  // 제목: 0 소개(=글 올리기) · 1 투표 · 2 한마디 · 3 답글 · 4 마지막
+  const scene = done ? 4 : step;
   const shrink = seg(p, 0.84, 0.94);
   // 사연은 들어오자마자 저절로 타이핑 (첫 화면이 비어 보이지 않게)
   const [clock, setClock] = useState(0);
@@ -126,36 +147,24 @@ export function LandingScreen() {
       {/* 첫 화면부터 장면이 보이고, 스크롤하면 이어집니다 */}
       <section ref={story} className="relative h-[400svh]" aria-label={t.scroll}>
         <div className="sticky top-0 flex h-[100svh] flex-col overflow-hidden px-5 pt-[calc(72px+env(safe-area-inset-top))]">
-          {/* 제목 (항상 맨 위) */}
-          <h1 key={lang} className="break-keep font-display text-[clamp(26px,8vw,32px)] leading-[1.15]">
-            {t.headline.map((line, i) => (
-              <span key={line} className="block animate-rise" style={{ animationDelay: `${i * 100}ms` }}>
+          {/* 제목 — 스크롤 단계마다 바뀜 (첫 화면은 서비스 한 줄 소개) */}
+          <h1
+            key={`${lang}-${scene}`}
+            aria-live="polite"
+            className="min-h-[2.3em] break-keep font-display text-[clamp(26px,8vw,32px)] leading-[1.15]"
+          >
+            {t.titles[scene].map((line, i) => (
+              <span key={line} className="block animate-rise" style={{ animationDelay: `${i * 80}ms` }}>
                 {line}
               </span>
             ))}
           </h1>
 
-          {/* 단계 설명 */}
-          <div className="mt-5 min-h-[44px]">
-            {done ? (
-              <p key={`${lang}-end`} className="animate-rise text-[17px] font-bold leading-[1.35]">
-                {t.endTitle.join(" ")}
-              </p>
-            ) : (
-              <div key={`${lang}-${step}`} className="animate-rise">
-                <p className="text-[17px] font-bold leading-[1.35]">
-                  <span className="mr-1.5 text-primary">{step + 1}</span>
-                  {t.steps[step].title}
-                </p>
-                <p className="mt-0.5 text-[13px] font-medium leading-[1.4] text-neutral-400">{t.steps[step].sub}</p>
-              </div>
-            )}
-          </div>
-
           {/* 게시물 — 마지막에 버튼이 올라오면 작아지며 위로 */}
           <div
-            className="mt-5 origin-top animate-rise [animation-delay:250ms]"
-            style={{ scale: `${1 - 0.32 * shrink}` }}
+            ref={cardRef}
+            className="mt-6 origin-top animate-rise [animation-delay:250ms]"
+            style={{ scale: `${1 - (1 - endScale) * shrink}` }}
           >
           <div className="relative w-full">
             <div className="overflow-hidden rounded-[28px] bg-content text-on-light shadow-[0_24px_60px_rgba(0,0,0,0.5)]">
@@ -265,6 +274,7 @@ export function LandingScreen() {
 
           {/* 장면이 다 끝나면 역할 버튼 */}
           <div
+            ref={ctaRef}
             inert={!done}
             className="absolute inset-x-0 bottom-0 bg-gradient-to-b from-background/0 via-background via-25% to-background px-5 pt-8 pb-[calc(20px+env(safe-area-inset-bottom))]"
             style={fly(p, 0.86, 0.94, { y: 260 })}

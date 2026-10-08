@@ -8,43 +8,42 @@ export type LandingLang = "ko" | "en";
 export const COPY = {
   ko: {
     brand: "오늘의 참견",
-    headline: ["전 세계의 한식 도전에,", "한국인이 한마디."],
+    // 스크롤 단계마다 바뀌는 제목 (두 줄씩)
+    titles: [
+      ["전 세계의 한식 도전에,", "한국인이 한마디."],
+      ["한국인이 보고", "투표하고"],
+      ["한마디씩", "보태요"],
+      ["글쓴이도", "답할 수 있어요"],
+      ["이제 한마디", "보태러 가볼까요?"],
+    ],
     korean: { role: "한국인이에요", action: "투표하고 한마디 하기" },
     foreigner: { role: "외국인이에요", action: "둘러보고 한식 올리기" },
     login: "이미 가입했다면 로그인",
     scroll: "어떻게 하는지 볼까요?",
-    steps: [
-      { title: "외국인이 한식을 올리면", sub: "사진과 사연을 함께 올려요" },
-      { title: "한국인이 투표하고", sub: "글쓴이가 고른 질문에 답해요" },
-      { title: "한마디씩 보태요", sub: "칭찬도, 훈수도, 장난도" },
-      { title: "글쓴이도 답해요", sub: "다음 한식이 조금 더 맛있어져요" },
-    ],
     author: "Sam · 캐나다",
     story: "불닭이 너무 매워서 치즈를 좀 넣었어요.",
     question: "한국인이 먹을까요?",
     options: ["먹을래요", "바꾸면 먹을래요", "안 먹을래요"],
     reply: "다음엔 치즈를 반만 넣어 볼게요!",
-    endTitle: ["이제 한마디", "보태러 가볼까요?"],
   },
   en: {
     brand: "오늘의 참견",
-    headline: ["Tried Korean food?", "See how Koreans react."],
+    titles: [
+      ["Tried Korean food?", "See how Koreans react."],
+      ["Koreans vote", "on your question"],
+      ["And leave", "a comment"],
+      ["You can", "reply too"],
+      ["Ready to", "jump in?"],
+    ],
     korean: { role: "I'm Korean", action: "Vote and comment" },
     foreigner: { role: "I'm not Korean", action: "Look around and share" },
     login: "Already have an account? Log in",
     scroll: "See how it works",
-    steps: [
-      { title: "You post your dish", sub: "Add a photo and a short story" },
-      { title: "Koreans vote", sub: "They answer the question you picked" },
-      { title: "And leave comments", sub: "Compliments, tips, and jokes" },
-      { title: "You can reply", sub: "Your next dish gets even better" },
-    ],
     author: "Sam · Canada",
     story: "Buldak was too spicy, so I added some cheese.",
     question: "Would Koreans eat this?",
     options: ["I'd eat it", "With changes", "I'd pass"],
     reply: "Next time I'll use half the cheese!",
-    endTitle: ["Ready to", "jump in?"],
   },
 } as const;
 
