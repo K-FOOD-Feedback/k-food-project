@@ -197,7 +197,7 @@ export function LandingScreen() {
             className="mt-6 origin-top"
             style={{ scale: `${stepScale + (endScale - stepScale) * shrink}`, translate: `0 ${centerOffset}px` }}
           >
-          <div className="relative w-full">
+          <div className="relative mx-auto w-full max-w-[300px]">
             {/* 피드 카드 (앱 메인과 같은 모양: 물결 사진 + 질문 칩 + 제목 + 작성자)
                 첫 진입: 사진이 크게 "올라왔다가" 삐죽한 물결 모양으로 오므라들고, 그 둘레로 카드가 생김 */}
             <div ref={postRef} className="relative isolate rounded-[32px] px-5 pt-7 pb-6 text-on-dark">
@@ -238,7 +238,7 @@ export function LandingScreen() {
                   {t.question}
                 </span>
                 {/* 완성된 글 크기만큼 자리를 먼저 잡고, 그 위에 타이핑 (아래가 비거나 들썩이지 않게) */}
-                <p className="relative w-full break-keep font-display text-[22px] leading-[1.25]">
+                <p className="relative w-full whitespace-pre-line break-keep font-display text-[22px] leading-[1.25]">
                   <span className="invisible">{t.story}</span>
                   <span className="absolute inset-0">
                     {t.story.slice(0, typed)}
@@ -399,13 +399,13 @@ function RoleButton({
       event="role_selected"
       props={{ role: kind }}
       superProps={{ user_type: kind }}
-      className="flex h-[72px] items-center gap-3 rounded-full bg-surface-2 py-2 pl-7 pr-2 text-on-dark transition active:scale-[0.99]"
+      className={`flex h-[72px] items-center gap-3 rounded-full py-2 pl-7 pr-2 text-on-light transition active:scale-[0.99] ${tone}`}
     >
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="font-display text-[20px] leading-[1.15]">{role}</span>
-        <span className="text-[13px] font-semibold text-neutral-400">{action}</span>
+        <span className="text-[13px] font-semibold opacity-70">{action}</span>
       </span>
-      <span className={`flex size-14 shrink-0 items-center justify-center rounded-full text-on-light ${tone}`} aria-hidden="true">
+      <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-background text-on-dark" aria-hidden="true">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M5 12h14" />
           <path d="m12 5 7 7-7 7" />
@@ -428,7 +428,7 @@ function Bubble({
 }) {
   return (
     <div
-      className={`absolute z-10 flex flex-col items-center rounded-[32px] bg-on-dark px-5 py-3 text-center text-on-light ${className}`}
+      className={`absolute z-10 flex flex-col items-center rounded-[32px] bg-primary px-5 py-3 text-center text-on-light ${className}`}
       style={style}
     >
       <span className="break-keep text-[15px] font-bold leading-[1.35] tracking-[-0.3px]">{r.ko}</span>

@@ -1,7 +1,7 @@
 /*
   랜딩 문구 (한국어 / 영어) — 6. 랜딩, 담당 송희
   가운데 게시물은 서비스 설명용 장면입니다 (실제 글 아님).
-  색: 바탕은 검정·회색으로 차분하게, 핑크(한국인)·노랑(외국인)은 버튼 화살표와 투표 막대에만 작게
+  색: 카드는 회색으로 차분하게, 한국인 반응·투표·한국인 버튼은 핑크, 외국인 버튼은 노랑
 */
 
 export type LandingLang = "ko" | "en";
@@ -24,7 +24,7 @@ export const COPY = {
     author: "캐나다의 Sam",
     authorTag: "작성자",
     voteTitle: "어떻게 생각하세요?",
-    story: "불닭이 너무 매워서 치즈를 좀 넣었어요.",
+    story: "불닭이 너무 매워서\n치즈를 좀 넣었어요.",
     question: "한국인이 먹을지 궁금해요",
     options: ["먹을래요", "바꾸면\n먹을래요", "안\n먹을래요"],
     reply: "다음엔 치즈를 반만 넣어 볼게요!",
@@ -45,7 +45,7 @@ export const COPY = {
     author: "Sam from Canada",
     authorTag: "Author",
     voteTitle: "What do you think?",
-    story: "Buldak was too spicy, so I added some cheese.",
+    story: "Buldak was too spicy,\nso I added some cheese.",
     question: "Would Koreans eat this?",
     options: ["I'd\neat it", "With\nchanges", "I'd\npass"],
     reply: "Next time I'll use half the cheese!",
