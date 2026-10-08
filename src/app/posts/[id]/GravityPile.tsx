@@ -13,15 +13,14 @@ const { Engine, Bodies, Body, Composite, Events, Sleeping } = Matter;
   - 글 댓글은 돌지 않고 떨어져, 부딪힐 때만 살짝(최대 20°) 기울어진 채 차분히 쌓입니다.
   - 이모지는 동그라미라 떨어진 뒤 굴러갑니다.
   - 댓글끼리는 약 1mm(4px) 띄워서 쌓입니다.
-  - 더미가 칸 높이의 2/3(댓글 전체 화면은 3/4)를 넘으면 맨 위를 그 높이에 두고, 넘친 아래쪽은 그라데이션 뒤로 내립니다.
+  - 더미가 칸 높이의 3/4를 넘으면 맨 위를 그 높이에 두고, 넘친 아래쪽은 그라데이션 뒤로 내립니다.
     댓글 전체 화면(scrollable)에서는 칸을 아래로 스크롤해서 묻힌 댓글도 볼 수 있습니다.
     그 높이를 넘지 않으면 스크롤도 없고, 바닥부터 다 보입니다 (넘쳤는지는 onOverflowChange로 알려 줌).
 */
 
 // 더미가 칸을 이만큼 채우면 그 뒤로는 화면이 따라 내려갑니다.
-// 상세 화면 칸은 2/3, 댓글 전체 화면은 칸이 커서 2/3면 너무 비어 보여 3/4.
-const FILL_LIMIT = 2 / 3;
-const FILL_LIMIT_FULL = 3 / 4;
+// 2/3면 화면이 너무 비어 보여서 3/4 (상세 화면 칸·댓글 전체 화면 같음).
+const FILL_LIMIT = 3 / 4;
 // 바닥은 칸 아래 경계보다 살짝 아래 (Figma처럼 맨 아래 줄이 그라데이션에 반쯤 걸치게).
 // 스크롤 가능한 칸에서는 맨 아래까지 내려 봤을 때 다 보이도록 칸 아래 경계에 맞춥니다.
 const FLOOR_BELOW = 12;
@@ -34,6 +33,8 @@ const PRESETTLE_STEPS = 60;
 // 그보다 오래된 댓글은 이미 쌓인 상태(아래쪽)로 시작합니다. 댓글이 많아도 오래 걸리지 않도록.
 const RAIN_TOTAL_MS = 700;
 const RAIN_GAP_MAX_MS = 70;
+// 투표를 마치고 다시 쏟아질 때, 잠금 레이어가 걷히길 기다리는 시간
+const REPLAY_DELAY_MS = 250;
 // 더미가 높아질 때 화면이 따라 내려가는 움직임 (스프링: 부드럽게 출발하고 부드럽게 멈춤)
 // 약간 과감쇠(넘치지 않음)로, 연달아 오는 작은 목표 이동을 하나의 매끄러운 내려감으로 이어 줍니다.
 const FOLLOW_STIFFNESS = 0.008;
@@ -61,9 +62,20 @@ export type PileHandle = {
   setNextDrop: (hint: DropHint) => void;
   /** (스크롤 가능한 칸) 맨 위로 스크롤 — 새 댓글이 떨어지는 모습이 보이도록 */
   scrollToTop: () => void;
+  /** 맨 위 최신 댓글들을 다시 쏟아지게 (칸이 화면에 보일 때 시작) */
+  replayRain: () => void;
 };
 
-type Tracked = { body: Matter.Body; el: HTMLElement; w: number; h: number; ox: number; oy: number; landed: boolean };
+type Tracked = {
+  comment: Comment;
+  body: Matter.Body;
+  el: HTMLElement;
+  w: number;
+  h: number;
+  ox: number;
+  oy: number;
+  landed: boolean;
+};
 
 /** matter-js 세계. 바닥 윗면이 y = 0이고 더미는 위쪽(음수 y)으로 쌓입니다. */
 class PileWorld {
@@ -197,18 +209,7 @@ class PileWorld {
       this.followTarget = this.targetTop(false);
       this.viewTop = this.followTarget;
       this.render(false);
-      // 오래된 것부터 차례로, 전체가 1초 안에 끝나도록 간격을 둡니다.
-      const gap = Math.min(RAIN_GAP_MAX_MS, RAIN_TOTAL_MS / Math.max(rain.length, 1));
-      rain.forEach((c, i) => {
-        this.pendingRain.add(c.id);
-        this.timers.push(
-          window.setTimeout(() => {
-            this.pendingRain.delete(c.id);
-            const el = nodes.get(c.id);
-            if (el && !this.tracked.has(c.id)) this.add(c, el, null, true);
-          }, i * gap),
-        );
-      });
+      this.rainDown(rain, nodes);
       return;
     }
     // 여러 개가 한꺼번에 들어오면(다른 탭에서 쓴 댓글 등) 한꺼번에 겹쳐 떨어뜨리지 않고 조용히 쌓아 둡니다.
@@ -224,6 +225,39 @@ class PileWorld {
       this.nextDrop = null;
       this.add(c, nodes.get(c.id)!, hint);
     }
+  }
+
+  /** 이 댓글들을 칸 위에서 차례로 떨어뜨립니다. 오래된 것부터, 전체가 0.7초 안에 끝나도록 간격을 둡니다. */
+  private rainDown(rain: Comment[], nodes: Map<string, HTMLElement>) {
+    const gap = Math.min(RAIN_GAP_MAX_MS, RAIN_TOTAL_MS / Math.max(rain.length, 1));
+    rain.forEach((c, i) => {
+      this.pendingRain.add(c.id);
+      this.timers.push(
+        window.setTimeout(() => {
+          this.pendingRain.delete(c.id);
+          const el = nodes.get(c.id);
+          if (el && !this.tracked.has(c.id)) this.add(c, el, null, true);
+        }, i * gap),
+      );
+    });
+  }
+
+  /**
+    다시 쏟아지기 (투표를 마친 뒤 등): 맨 위에 쌓인 최신 댓글들을 빼서 칸 위에서 다시 떨어뜨립니다.
+    화면 높이는 그대로 두어(따라 내려가지 않게) 빈자리로 그대로 떨어져 채워집니다.
+  */
+  replayRain(nodes: Map<string, HTMLElement>) {
+    if (!this.started || this.rainCount === 0) return;
+    const latest = [...this.tracked.values()].slice(-this.rainCount);
+    for (const t of latest) {
+      Composite.remove(this.engine.world, t.body);
+      this.tracked.delete(t.comment.id);
+      t.el.style.visibility = "hidden";
+    }
+    this.rainDown(
+      latest.map((t) => t.comment),
+      nodes,
+    );
   }
 
   planDrop(width: number) {
@@ -256,7 +290,7 @@ class PileWorld {
     // 쏟아질 때는 처음부터 조금 빠르게 (1초 안에 시원하게 떨어지도록)
     if (rain) Body.setVelocity(body, { x: 0, y: 6 });
     Composite.add(this.engine.world, body);
-    this.tracked.set(comment.id, { body, el, w, h, ox: x - body.position.x, oy: y - body.position.y, landed: false });
+    this.tracked.set(comment.id, { comment, body, el, w, h, ox: x - body.position.x, oy: y - body.position.y, landed: false });
     el.style.visibility = "visible";
     // 작은 원 → 본래 크기 말풍선: 잘라서 가리지 않고, 말풍선 전체가 원 크기에서 본래 크기로 커집니다.
     // (가운데만 보이게 잘라 두고 펼치면, 떨어지는 동안 양옆이 가려진 것처럼 보였습니다)
@@ -374,15 +408,14 @@ class PileWorld {
     }
   }
 
-  /** 더미 맨 위가 칸의 채움 한도(2/3, 전체 화면 3/4)를 넘지 않도록 하는 칸 맨 위 y좌표 */
+  /** 더미 맨 위가 칸의 채움 한도(3/4)를 넘지 않도록 하는 칸 맨 위 y좌표 */
   /** settledOnly: 닿아서 거의 멈춘 댓글만 봅니다 (떨어지거나 통통 튀는 중인 댓글까지 보면 목표가 들쭉날쭉해짐) */
   private targetTop(settledOnly = true) {
     let pileTop = 0;
     for (const { body, landed } of this.tracked.values()) {
       if (landed && (!settledOnly || body.speed < 0.4)) pileTop = Math.min(pileTop, body.bounds.min.y);
     }
-    const limit = this.scroller ? FILL_LIMIT_FULL : FILL_LIMIT;
-    return Math.min(this.defaultTop, pileTop - this.height * (1 - limit));
+    return Math.min(this.defaultTop, pileTop - this.height * (1 - FILL_LIMIT));
   }
 
   private render(smooth: boolean) {
@@ -459,6 +492,8 @@ export function GravityPile({
   const world = useRef<PileWorld | null>(null);
   // 쏟아지는 연출은 칸이 화면에 보인 뒤에 시작 (그 전엔 쌓지 않고 비워 둠)
   const [seen, setSeen] = useState(rainOnOpen === 0);
+  /** 다시 쏟아지기를 기다리는 중인 관찰자 (칸이 보이면 시작) */
+  const replayWatch = useRef<IntersectionObserver | null>(null);
   const overflowCallback = useRef(onOverflowChange);
   useLayoutEffect(() => {
     overflowCallback.current = onOverflowChange;
@@ -470,9 +505,26 @@ export function GravityPile({
       planDrop: (width) => world.current?.planDrop(width) ?? (zone.current?.clientWidth ?? 0) / 2,
       setNextDrop: (hint) => world.current?.setNextDrop(hint),
       scrollToTop: () => zone.current?.scrollTo({ top: 0, behavior: "smooth" }),
+      replayRain: () => {
+        replayWatch.current?.disconnect();
+        // 칸이 화면에 보일 때 시작합니다 (투표 영역에 있다가 스크롤해 내려오면 그때).
+        const observer = new IntersectionObserver(
+          ([entry]) => {
+            if (!entry.isIntersecting) return;
+            observer.disconnect();
+            replayWatch.current = null;
+            // 투표 전 잠금 레이어가 걷히는 동안 잠깐 기다렸다가
+            window.setTimeout(() => world.current?.replayRain(nodes.current), REPLAY_DELAY_MS);
+          },
+          { threshold: 0.4 },
+        );
+        observer.observe(zone.current!);
+        replayWatch.current = observer;
+      },
     }),
     [],
   );
+  useEffect(() => () => replayWatch.current?.disconnect(), []);
 
   useLayoutEffect(() => {
     const box = zone.current!;
