@@ -18,8 +18,10 @@ type Flight = {
   kind: Comment["kind"];
   text: string;
   color: string;
-  /** 출발: 한마디 카드 또는 누른 이모지 버튼 */
+  /** 출발: 한마디 카드(상세)·입력칸(전체 화면) 또는 누른 이모지 버튼 */
   from: DOMRect;
+  /** 한마디 출발 모양: 기울어진 카드(상세) 또는 알약 입력칸(전체 화면) */
+  fromField: boolean;
   /** 도착: 화면 좌표 */
   to: { x: number; y: number };
   /** 도착 자리 (댓글 칸 기준) */
@@ -30,24 +32,28 @@ type Flight = {
 /**
   댓글 영역 (Figma: Tile/한마디 참견 + 한마디 입력 + 이모지 키)
   variant "preview": 상세 화면 — 댓글 칸 286px, ↗ 버튼으로 댓글 전체 화면 이동
-  variant "full": 댓글 전체 화면 — 남는 높이를 다 쓰고, 칸을 스크롤해서 묻힌 댓글까지 볼 수 있음
+  variant "full": 댓글 전체 화면 (Figma 332:3245) — 카드 없이 제목 + 게시글 제목, 남는 높이를 다 쓰고,
+    칸을 스크롤해서 묻힌 댓글까지 볼 수 있음. 입력은 한 줄 알약 입력칸 + 보내기 원 버튼
 */
 export function CommentPile({
   postId,
   commentCount,
   authorFlag,
+  postTitle,
   variant = "preview",
 }: {
   postId: string;
   commentCount: number;
   authorFlag: string;
+  /** 전체 화면 제목 아래에 보이는 게시글 제목 */
+  postTitle?: string;
   variant?: "preview" | "full";
 }) {
   const full = variant === "full";
   const scrolledOld = useRef(false); // 분석: 전체 화면에서 예전 댓글까지 스크롤했는지
   const { comments, addedCount, add, nextColor, ready } = useComments(postId, authorFlag);
   const [draft, setDraft] = useState("");
-  const card = useRef<HTMLSpanElement>(null);
+  const card = useRef<HTMLElement>(null);
   const zone = useRef<HTMLDivElement>(null);
   const titleRow = useRef<HTMLDivElement>(null);
   const pile = useRef<PileHandle>(null);
@@ -93,6 +99,7 @@ export function CommentPile({
       text,
       color: nextColor(flights.length),
       from: fromEl.getBoundingClientRect(),
+      fromField: full,
       to: { x: z.left + dropX, y: arriveY },
       dropX,
       dropY: arriveY - z.top,
@@ -119,18 +126,104 @@ export function CommentPile({
     launch("text", text, card.current);
   };
 
+  const emojiKeys = (
+    <div className={`flex w-full gap-0.5 ${full ? "px-2" : ""}`}>
+      {QUICK_EMOJIS.map((emoji) => (
+        <button
+          key={emoji}
+          type="button"
+          onClick={(e) => launch("emoji", emoji, e.currentTarget)}
+          aria-label={`${emoji} 남기기`}
+          className="flex aspect-square min-w-0 flex-1 items-center justify-center rounded-full bg-white/10 text-[20px] transition-transform active:scale-90"
+        >
+          {emoji}
+        </button>
+      ))}
+    </div>
+  );
+
+  const flying = flights.map((f) => <FlyingCircle key={f.id} flight={f} onArrive={(vy) => arrive(f, vy)} />);
+
+  if (full) {
+    const count = commentCount + addedCount;
+    return (
+      <div className="flex min-h-0 flex-1 flex-col gap-4">
+        <div ref={titleRow} className="flex flex-col gap-3 px-5">
+          <h2 className="flex items-center gap-1.5 text-[18px] leading-[1.3] font-bold tracking-[-0.54px]">
+            한마디 <span className="text-neutral-400">{count}</span>
+          </h2>
+          {postTitle && (
+            <p className="font-(family-name:--font-paperlogy) text-[24px] leading-[1.4] tracking-[-0.48px] break-keep text-neutral-400">
+              {postTitle}
+            </p>
+          )}
+        </div>
+
+        <section aria-label="댓글" className="relative flex min-h-0 flex-1 flex-col">
+          <div
+            ref={zone}
+            className="flex min-h-0 flex-1 flex-col"
+            onScrollCapture={() => {
+              if (!scrolledOld.current) {
+                scrolledOld.current = true;
+                track("old_comments_scrolled", { post_id: postId });
+              }
+            }}
+          >
+            <GravityPile ref={pile} comments={comments} ready={ready} className="min-h-0 flex-1" scrollable rainOnOpen />
+          </div>
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[92px] bg-linear-to-b from-background/0 to-background" />
+        </section>
+
+        {emojiKeys}
+
+        {/* 한마디 입력칸 + 보내기 */}
+        <form onSubmit={onSubmit} className="flex items-center gap-0.5 px-2">
+          <label
+            ref={(el) => {
+              card.current = el;
+            }}
+            className="flex h-16 min-w-0 flex-1 items-center gap-2 rounded-full border-[1.5px] border-white/40 px-5 font-medium focus-within:border-white/70"
+          >
+            <span className="sr-only">한마디 남기기</span>
+            <input
+              value={draft}
+              onChange={(e) => setDraft(limitDraft(e.target.value.replace(/\n/g, "")))}
+              placeholder="한마디를 남겨보세요"
+              enterKeyHint="send"
+              className="min-w-0 flex-1 bg-transparent text-[16px] text-on-dark outline-none placeholder:text-white/40"
+            />
+            <span className="shrink-0 text-[12px] text-white/40">
+              {charCount(draft)}/{COMMENT_MAX}
+            </span>
+          </label>
+          <button
+            type="submit"
+            disabled={!draft.trim()}
+            aria-label="보내기"
+            className="flex size-16 shrink-0 items-center justify-center rounded-full bg-white transition-transform active:scale-90"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element -- 작은 SVG 아이콘 */}
+            <img src="/images/icon-send.svg" width={22} height={22} alt="" className="-rotate-30" />
+          </button>
+        </form>
+
+        {flying}
+      </div>
+    );
+  }
+
   return (
-    <div className={`flex flex-col items-center gap-8 ${full ? "min-h-0 flex-1" : ""}`}>
+    <div className="flex flex-col items-center gap-8">
       <section
-        className={`relative flex w-full flex-col gap-1 overflow-hidden rounded-[32px] bg-white/10 p-1 ${full ? "min-h-0 flex-1" : ""}`}
+        className="relative flex w-full flex-col gap-1 overflow-hidden rounded-[32px] bg-white/10 p-1"
         aria-label="댓글"
       >
         <div ref={titleRow} className="flex h-16 items-center gap-10 pl-5">
           <h2 className="flex flex-1 items-center gap-1.5 text-[18px] leading-[1.3] font-bold tracking-[-0.54px]">
             한마디 <span className="text-neutral-400">{commentCount + addedCount}</span>
           </h2>
-          {!full && (
-            <TrackedLink
+          <TrackedLink
               href={`/posts/${postId}/comments`}
               event="comments_opened"
               props={{ post_id: postId, comment_count: commentCount + addedCount }}
@@ -139,38 +232,16 @@ export function CommentPile({
             >
               <ArrowUpRightIcon />
             </TrackedLink>
-          )}
         </div>
 
-        <div
-          ref={zone}
-          className={full ? "flex min-h-0 flex-1 flex-col" : ""}
-          onScrollCapture={() => {
-            if (full && !scrolledOld.current) {
-              scrolledOld.current = true;
-              track("old_comments_scrolled", { post_id: postId });
-            }
-          }}
-        >
-          <GravityPile ref={pile} comments={comments} ready={ready} {...(full && { className: "min-h-0 flex-1", scrollable: true, rainOnOpen: true })} />
+        <div ref={zone}>
+          <GravityPile ref={pile} comments={comments} ready={ready} />
         </div>
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[92px] bg-linear-to-b from-[#292929]/0 to-[#292929]" />
       </section>
 
       {/* 이모지 키 → 한마디 입력 카드 순서 (Figma 332:3426) */}
-      <div className="flex w-full gap-0.5">
-        {QUICK_EMOJIS.map((emoji) => (
-          <button
-            key={emoji}
-            type="button"
-            onClick={(e) => launch("emoji", emoji, e.currentTarget)}
-            aria-label={`${emoji} 남기기`}
-            className="flex aspect-square min-w-0 flex-1 items-center justify-center rounded-full bg-white/10 text-[20px] transition-transform active:scale-90"
-          >
-            {emoji}
-          </button>
-        ))}
-      </div>
+      {emojiKeys}
 
       {/* 한마디 입력 카드 + 보내기 */}
       <form onSubmit={onSubmit} className="relative h-[181px] w-[270px]">
@@ -206,9 +277,7 @@ export function CommentPile({
         </span>
       </form>
 
-      {flights.map((f) => (
-        <FlyingCircle key={f.id} flight={f} onArrive={(vy) => arrive(f, vy)} />
-      ))}
+      {flying}
     </div>
   );
 }
@@ -237,7 +306,9 @@ function FlyingCircle({ flight, onArrive }: { flight: Flight; onArrive: (vy: num
     const flyMs = duration * (1 - morphAt);
     const fallMs = (flyMs * Math.sqrt(RISE)) / (Math.sqrt(riseDist) + Math.sqrt(RISE));
     const apexAt = 1 - fallMs / duration;
-    const start = isText
+    const start = isText && flight.fromField
+      ? { width: `${from.width}px`, height: `${from.height}px`, borderRadius: "999px", backgroundColor: "rgb(255 255 255 / 0)", rotate: "0deg" }
+      : isText
       ? { width: "260px", height: "130px", borderRadius: "26px", backgroundColor: "#292929", rotate: "-4.91deg" }
       : { width: `${from.width}px`, height: `${from.height}px`, borderRadius: "999px", backgroundColor: "rgb(255 255 255 / 0.1)", rotate: "0deg" };
     const circle = { width: `${CIRCLE}px`, height: `${CIRCLE}px`, borderRadius: "999px", backgroundColor: color, rotate: "0deg" };
