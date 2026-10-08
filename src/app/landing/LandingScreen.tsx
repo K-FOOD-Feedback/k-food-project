@@ -106,7 +106,7 @@ export function LandingScreen() {
       const stage = card?.parentElement;
       if (!card || !cta || !post || !stage) return;
       const top = card.offsetTop;
-      const room = cta.offsetTop + 24 - top; // 버튼 영역 위쪽 그라데이션까지는 겹쳐도 됨
+      const room = cta.offsetTop - 8 - top; // 버튼과 40px 정도 띄움 (버튼 영역 위쪽 32px은 그라데이션)
       const full = card.offsetHeight; // 게시물 + 투표
       const last = post.offsetHeight + 40; // 마지막 장면: 게시물 + 아래로 삐져나온 글쓴이 답글
       setEndScale(clamp(room / last, 0.6, 0.9));
