@@ -197,7 +197,7 @@ export function LandingScreen() {
             className="mt-6 origin-top"
             style={{ scale: `${stepScale + (endScale - stepScale) * shrink}`, translate: `0 ${centerOffset}px` }}
           >
-          <div className="relative mx-auto w-full max-w-[300px]">
+          <div className="relative mx-auto w-full" style={{ maxWidth: `calc(300px + (100% - 300px) * ${voteShown})` }}>
             {/* 피드 카드 (앱 메인과 같은 모양: 물결 사진 + 질문 칩 + 제목 + 작성자)
                 첫 진입: 사진이 크게 "올라왔다가" 삐죽한 물결 모양으로 오므라들고, 그 둘레로 카드가 생김 */}
             <div ref={postRef} className="relative isolate rounded-[32px] px-5 pt-7 pb-6 text-on-dark">
@@ -234,7 +234,7 @@ export function LandingScreen() {
                 />
               </div>
               <div className="mt-6 flex flex-col items-start gap-2">
-                <span className="animate-pop rounded-full bg-white/10 px-2.5 py-[5px] text-[12px] font-semibold leading-[1.2] text-neutral-400 [animation-delay:1500ms]">
+                <span className="animate-pop rounded-full bg-white/10 px-2.5 py-[5px] text-[12px] font-semibold leading-[1.2] mb-1.5 text-neutral-400 [animation-delay:1500ms]">
                   {t.question}
                 </span>
                 {/* 완성된 글 크기만큼 자리를 먼저 잡고, 그 위에 타이핑 (아래가 비거나 들썩이지 않게) */}
@@ -319,19 +319,19 @@ export function LandingScreen() {
             <Bubble
               lang={lang}
               r={REACTIONS[0]}
-              className="-left-2 top-[5%]"
+              className="-left-2 top-[5%] bg-primary"
               style={fly(p, 0.42, 0.49, { x: -300, y: -40, r: -30 }, -6)}
             />
             <Bubble
               lang={lang}
               r={REACTIONS[1]}
-              className="-right-2 top-[17%] max-w-[200px]"
+              className="-right-2 top-[17%] max-w-[200px] bg-content"
               style={fly(p, 0.48, 0.55, { x: 300, y: 20, r: 25 }, 5)}
             />
             <Bubble
               lang={lang}
               r={REACTIONS[2]}
-              className="-left-1 top-[30%]"
+              className="-left-1 top-[30%] bg-lilac"
               style={fly(p, 0.54, 0.61, { x: -300, y: 60, r: -20 }, 3)}
             />
           </div>
@@ -340,11 +340,10 @@ export function LandingScreen() {
           {/* 스크롤 안내 — 조금 내리면 사라짐 */}
           <span
             aria-hidden="true"
-            className="absolute bottom-[calc(20px+env(safe-area-inset-bottom))] left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-surface px-4 py-2 text-[13px] font-semibold text-neutral-400 transition-opacity duration-500"
+            className="absolute bottom-[calc(20px+env(safe-area-inset-bottom))] left-1/2 flex size-11 -translate-x-1/2 items-center justify-center rounded-full bg-surface text-[16px] font-semibold text-neutral-400 transition-opacity duration-500"
             style={{ opacity: clock > 45 && p < 0.03 ? 1 : 0 }}
           >
             <span className="animate-float">↓</span>
-            {t.scroll}
           </span>
 
           {/* 장면이 다 끝나면 역할 버튼 */}
@@ -428,7 +427,7 @@ function Bubble({
 }) {
   return (
     <div
-      className={`absolute z-10 flex flex-col items-center rounded-[32px] bg-primary px-5 py-3 text-center text-on-light ${className}`}
+      className={`absolute z-10 flex flex-col items-center rounded-[32px] px-5 py-3 text-center text-on-light ${className}`}
       style={style}
     >
       <span className="break-keep text-[15px] font-bold leading-[1.35] tracking-[-0.3px]">{r.ko}</span>
