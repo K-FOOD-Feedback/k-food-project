@@ -71,7 +71,9 @@
 | `topic_change_clicked` | ④ 주제 연필 | `topic` |
 | `post_published` | ④ Post | `topic`, `photos`, `options_count`, `options_edited`, `vote_title_kept`, `title_kept`, `story_kept`, `dish_corrected`, `time_to_publish_sec` |
 | `posted_card_tapped` | 완료 카드 탭 | `taps`, `tilted` |
-| `posted_next_action` | 완료 화면 버튼 | `action`(home/my_post/close) |
+| `posted_next_action` | 완료 화면 버튼 | `action`(share/home/my_post/close) |
+| `share_sheet_opened` | 공유 시트 열림 | `from`(posted/my_post) |
+| `post_shared` | 공유 채널 누름 | `channel`(copy_link/sms/whatsapp/x/native), `from` |
 
 `*_kept` 는 AI가 쓴 글을 얼마나 그대로 썼는지 (0~1, 단어 기준).
 
@@ -87,5 +89,16 @@
 | `post_edit_discarded` | X로 나감 | `had_changes`, `locked` |
 | `post_edit_saved` | Save changes | 바뀐 항목들(`*_changed`), `locked`, `votes` |
 
+## 인앱 알림 (송희)
+| 이벤트 | 어디서 | 속성 |
+|---|---|---|
+| `notifications_clicked` | 외국인 메인 🔔 | `from` |
+| `notifications_viewed` | 알림함 열림 | `unread` |
+| `notification_filter_changed` | All/Votes/Comments 탭 | `filter` |
+| `notification_stack_opened` | 묶인 카드 더미 펼침 | `type`, `count` |
+| `notification_clicked` | 알림 누름 | `type`, `grouped` |
+
+투표 로그인: `login_sheet_opened` / `login_cancelled` / `login_completed` 에 `from: "vote"` (한국인이 로그인 없이 투표하려 할 때).
+
 ## 아직 없음 (기능 생기면 추가)
-알림(`notify_prompt_shown`, `notify_enabled`, `notification_clicked`), 임시 저장 이어 쓰기/버리기(`draft_resumed`, `draft_discarded`), 로그인 후 사용자 연결(`identify` — Supabase 사용자 ID).
+푸시 알림 허용(`notify_prompt_shown`, `notify_enabled`), 임시 저장 이어 쓰기/버리기(`draft_resumed`, `draft_discarded`), 로그인 후 사용자 연결(`identify` — Supabase 사용자 ID).

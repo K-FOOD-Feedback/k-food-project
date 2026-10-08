@@ -8,6 +8,7 @@ import { Screen, StickyBottom, TopBar } from "@/components/Layout";
 import { track } from "@/lib/analytics";
 import { getQuestion } from "@/lib/write-data";
 import { coverOf, SAMPLE_MY_POST, useFlow, MY_POST_ID } from "@/lib/write-store";
+import { ShareSheet } from "./ShareSheet";
 
 /*
   08 Posted 연출 (ms)
@@ -25,6 +26,7 @@ export function DoneScreen() {
 
   const [tilt, setTilt] = useState({ x: 0, y: 0, active: false });
   const [burst, setBurst] = useState(0); // 탭할 때마다 +1 → 색종이 다시
+  const [shareOpen, setShareOpen] = useState(false);
 
   const tilted = useRef(false); // 분석용: 카드를 문질러 봤는지
   const onMove = (e: PointerEvent<HTMLDivElement>) => {
@@ -39,7 +41,7 @@ export function DoneScreen() {
   const stampDelay = burst ? 0 : T.stamp;
 
   return (
-    <Screen className="pb-[140px]">
+    <Screen className="pb-[210px]">
       <TopBar right={<IconButton
             icon="x"
             label="Close"
@@ -115,6 +117,19 @@ export function DoneScreen() {
       </div>
 
       <StickyBottom className="animate-rise [animation-delay:1750ms]">
+        {/* 공유 유도: 메인 CTA는 공유, 나머지는 작게 */}
+        <PillButton
+          tone="primary"
+          className="flex-none gap-2"
+          onClick={() => {
+            track("posted_next_action", { action: "share", taps: burst, tilted: tilted.current });
+            track("share_sheet_opened", { from: "posted" });
+            setShareOpen(true);
+          }}
+        >
+          <Icon name="share" size={20} />
+          Share with friends
+        </PillButton>
         <div className="flex gap-1">
           <PillButton
             tone="white"
@@ -124,7 +139,7 @@ export function DoneScreen() {
             Back to home
           </PillButton>
           <PillButton
-            tone="black"
+            tone="white"
             href={`/my/posts/${MY_POST_ID}`}
             onClick={() => track("posted_next_action", { action: "my_post", taps: burst, tilted: tilted.current })}
           >
@@ -132,6 +147,16 @@ export function DoneScreen() {
           </PillButton>
         </div>
       </StickyBottom>
+
+      <ShareSheet
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        postId={MY_POST_ID}
+        title={post.title}
+        photo={coverOf(post).src}
+        topic={getQuestion(post.questionId).label}
+        from="posted"
+      />
     </Screen>
   );
 }

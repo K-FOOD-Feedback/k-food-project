@@ -3,13 +3,16 @@
 import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from "react";
 import type { HomePost } from "@/app/home/mockPosts";
 import { clearVote, saveVote, useMyVote } from "@/app/home/votes";
+import { LoginSheet } from "@/components/LoginSheet";
 import { track } from "@/lib/analytics";
+import { useFlow } from "@/lib/write-store";
 
 const title = "font-(family-name:--font-paperlogy) text-[24px] leading-[1.3] tracking-[-0.72px]";
 
 /**
   투표 카드 (Figma: VoteCard / Bowl)
   🇰🇷 토큰을 칸으로 끌어다 놓거나 칸을 누르면 투표되고, 바로 결과가 칸 높이로 보입니다.
+  로그인 안 했으면 투표 대신 로그인 시트가 뜨고, 로그인하면 고른 칸에 바로 투표됩니다. (송희)
 */
 export function VoteBowl({ post }: { post: HomePost }) {
   const myVote = useMyVote(post.id);
@@ -45,7 +48,20 @@ export function VoteBowl({ post }: { post: HomePost }) {
     mountedAt.current = performance.now();
   }, []);
 
+  // 로그인 전에 고른 칸 — 로그인하면 바로 투표
+  const { loggedIn, logIn } = useFlow();
+  const [pending, setPending] = useState<{ choice: number; method: "drag" | "tap" } | null>(null);
+
   const vote = (choice: number, method: "drag" | "tap" = "tap") => {
+    if (!loggedIn) {
+      track("login_sheet_opened", { from: "vote", post_id: post.id, method });
+      setPending({ choice, method });
+      return;
+    }
+    castVote(choice, method);
+  };
+
+  const castVote = (choice: number, method: "drag" | "tap") => {
     track(previousVote.current === null ? "vote_cast" : "vote_changed", {
       post_id: post.id,
       choice,
@@ -202,6 +218,33 @@ export function VoteBowl({ post }: { post: HomePost }) {
           다시 투표하기
         </button>
       )}
+
+      <LoginSheet
+        lang="ko"
+        open={pending !== null}
+        title={pending ? `‘${options[pending.choice].replace("\n", " ")}’에 투표할까요?` : undefined}
+        onClose={() => {
+          track("login_cancelled", { from: "vote", stage: "sheet", post_id: post.id });
+          setPending(null);
+        }}
+        onLoggedIn={() => {
+          track("login_completed", { from: "vote", method: "google" });
+          logIn();
+          if (pending) castVote(pending.choice, pending.method);
+          setPending(null);
+        }}
+      >
+        <div className="flex items-center gap-2 pt-2" aria-hidden="true">
+          <span className="flex size-14 animate-pop items-center justify-center rounded-full bg-on-dark text-[24px] shadow-[0_6px_16px_rgba(0,0,0,0.35)]">
+            🇰🇷
+          </span>
+          <span className="flex size-14 animate-pop items-center justify-center rounded-full bg-primary text-on-light [animation-delay:120ms]">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 6 9 17l-5-5" />
+            </svg>
+          </span>
+        </div>
+      </LoginSheet>
     </section>
   );
 }
