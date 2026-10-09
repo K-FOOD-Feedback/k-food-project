@@ -190,7 +190,8 @@ export function DetailScreen({ post }: { post: HomePost }) {
         ref={(el) => {
           fadeIns.current[0] = el;
         }}
-        className="flex items-center justify-between px-2 pt-[calc(16px+env(safe-area-inset-top))] pb-4">
+        // 스크롤해도 상단 고정 (송희) — 아래 내용이 비쳐 지나가게 위에서 아래로 옅어지는 바탕
+        className="sticky top-0 z-30 flex items-center justify-between bg-gradient-to-b from-background via-background/90 to-background/0 px-2 pt-[calc(16px+env(safe-area-inset-top))] pb-4">
         <Link href="/home" className={circle} aria-label="뒤로 가기">
           <ChevronLeftIcon />
         </Link>
