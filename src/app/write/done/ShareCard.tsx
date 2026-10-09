@@ -34,11 +34,44 @@ function StarPhoto({ src, size, className = "" }: { src: string; size: number; c
 }
 
 export type CardStyle = "photo" | "vote" | "verdict";
-export const CARD_STYLES: { id: CardStyle; label: string }[] = [
-  { id: "photo", label: "Photo" },
-  { id: "vote", label: "Vote" },
-  { id: "verdict", label: "Verdict" },
+/** 카드 글 언어 — 한국인 화면(상세)은 한국어, 외국인 화면(글 올린 뒤)은 영어 */
+export type CardLang = "en" | "ko";
+
+export const CARD_STYLES: { id: CardStyle; label: Record<CardLang, string> }[] = [
+  { id: "photo", label: { en: "Photo", ko: "사진" } },
+  { id: "vote", label: { en: "Vote", ko: "투표" } },
+  { id: "verdict", label: { en: "Verdict", ko: "판결" } },
 ];
+
+// 카드 안 글
+const COPY = {
+  en: {
+    footer: "Koreans, vote 👉 link",
+    court: "K-FOOD COURT",
+    caseNo: "CASE NO. 0001 · 🇰🇷",
+    exhibit: "EXHIBIT A",
+    cook: "COOK",
+    charge: "CHARGE",
+    jury: "JURY",
+    juryValue: "KOREANS NEEDED",
+    verdict: "VERDICT",
+    pending: "VERDICT PENDING",
+    voteNow: "VOTE NOW!",
+  },
+  ko: {
+    footer: "링크에서 투표하기 👉",
+    court: "한식 법정",
+    caseNo: "사건 번호 0001 · 🇰🇷",
+    exhibit: "증거 A",
+    cook: "요리",
+    charge: "혐의",
+    jury: "배심원",
+    juryValue: "한국인 모집 중",
+    verdict: "판결",
+    pending: "판결 대기 중",
+    voteNow: "지금 투표하기!",
+  },
+};
 
 export type CardTheme = { bg: string; fg: string };
 
@@ -52,16 +85,19 @@ export type ShareCardPost = {
 };
 
 // 탭할 때마다 바뀌는 스티커 문구 · 색 · 자리
-const STICKER_TEXTS = [
-  "Koreans, judge this 🇰🇷",
-  "찐 한식?",
-  "Vote now!",
-  "선 넘었나요? 🚫",
-  "한국인 출동 🚨",
-  "Is this legal? 😳",
-  "K-food or crime?",
-  "한 표 부탁 🙏",
-];
+const STICKER_TEXTS: Record<CardLang, string[]> = {
+  en: [
+    "Koreans, judge this 🇰🇷",
+    "Real K-food?",
+    "Vote now!",
+    "Crossed the line? 🚫",
+    "Koreans, assemble 🚨",
+    "Is this legal? 😳",
+    "K-food or crime?",
+    "One vote please 🙏",
+  ],
+  ko: ["찐 한식?", "지금 투표!", "선 넘었나요? 🚫", "한국인 출동 🚨", "이거 합법? 😳", "한식이냐 범죄냐", "한 표 부탁 🙏", "판결 부탁 ⚖️"],
+};
 const STICKER_COLORS = ["var(--color-primary)", "var(--color-content)", "var(--color-secondary)", "var(--color-lilac)", "#ffffff"];
 // 카드 스타일마다 스티커가 붙을 만한 자리 — 모두 카드 안쪽(가장자리에서 8 이상)에 둬서 잘리지 않게
 // 두 장은 (0,2) 또는 (1,3) 짝으로 붙으므로 짝끼리 겹치지 않는 자리로
@@ -84,13 +120,13 @@ const SPOTS: Record<CardStyle, CSSProperties[]> = {
   verdict: [],
 };
 
-function stickersFor(style: CardStyle, seed: number, bg: string) {
+function stickersFor(style: CardStyle, seed: number, bg: string, lang: CardLang) {
   const colors = STICKER_COLORS.filter((c) => c !== bg);
   const count = style === "verdict" ? 0 : 2;
   return Array.from({ length: count }, (_, n) => {
     const k = seed * 7 + n * 3 + style.length;
     return {
-      text: STICKER_TEXTS[(seed * 3 + n * 5 + style.length) % STICKER_TEXTS.length],
+      text: STICKER_TEXTS[lang][(seed * 3 + n * 5 + style.length) % STICKER_TEXTS[lang].length],
       color: colors[(seed + n * 2) % colors.length],
       spot: SPOTS[style][(seed + n * 2) % SPOTS[style].length],
       rotate: ((k * 37) % 22) - 11,
@@ -103,23 +139,26 @@ export function ShareCard({
   post,
   theme,
   seed,
+  lang = "en",
 }: {
   style: CardStyle;
   post: ShareCardPost;
   theme: CardTheme;
   seed: number;
+  lang?: CardLang;
 }) {
+  const t = COPY[lang];
   return (
     <div
-      className="relative overflow-hidden rounded-[22px] text-left"
+      className="relative overflow-hidden rounded-[22px] text-left break-keep"
       style={{ width: CARD_W, height: CARD_H, background: theme.bg, color: theme.fg }}
     >
-      {style === "photo" && <PhotoCard post={post} />}
-      {style === "vote" && <VoteCard post={post} />}
-      {style === "verdict" && <VerdictCard post={post} theme={theme} />}
+      {style === "photo" && <PhotoCard post={post} t={t} />}
+      {style === "vote" && <VoteCard post={post} t={t} />}
+      {style === "verdict" && <VerdictCard post={post} theme={theme} t={t} />}
 
       {/* 스티커 — key가 바뀌면 톡 튀어나옴 */}
-      {stickersFor(style, seed, theme.bg).map((s, i) => (
+      {stickersFor(style, seed, theme.bg, lang).map((s, i) => (
         <span
           key={`${seed}-${i}`}
           className="absolute animate-pop whitespace-nowrap rounded-full px-2.5 py-1.5 font-display text-[11px] leading-none text-on-light shadow-[0_4px_10px_rgba(0,0,0,0.25)]"
@@ -139,16 +178,18 @@ export function ShareCard({
 */
 
 /** 카드 맨 아래 — 어디서 투표하는지 (세 카드 모두 같은 문구) */
-function Footer() {
+type Copy = (typeof COPY)["en"];
+
+function Footer({ t }: { t: Copy }) {
   return (
     <div className="mt-auto flex items-center justify-between border-t border-current/15 pt-2.5 text-[8px] font-bold leading-none">
       <span className="font-display text-[10px]">오늘의 참견</span>
-      <span className="opacity-70">Koreans, vote 👉 link</span>
+      <span className="opacity-70">{t.footer}</span>
     </div>
   );
 }
 
-function PhotoCard({ post }: { post: ShareCardPost }) {
+function PhotoCard({ post, t }: { post: ShareCardPost; t: Copy }) {
   return (
     <div className="flex h-full flex-col p-3">
       <StarPhoto src={post.photo} size={176} className="mx-auto" />
@@ -157,12 +198,12 @@ function PhotoCard({ post }: { post: ShareCardPost }) {
         <p className="line-clamp-2 font-display text-[19px] leading-[1.08] [text-wrap:balance]">{post.title}</p>
         <p className="text-[9px] font-semibold opacity-70">{post.author}</p>
       </div>
-      <Footer />
+      <Footer t={t} />
     </div>
   );
 }
 
-function VoteCard({ post }: { post: ShareCardPost }) {
+function VoteCard({ post, t }: { post: ShareCardPost; t: Copy }) {
   return (
     <div className="flex h-full flex-col items-center p-3 pt-5">
       {/* 별 모양 사진 (살짝 기울여서) */}
@@ -181,7 +222,7 @@ function VoteCard({ post }: { post: ShareCardPost }) {
         </div>
       </div>
       <div className="mt-auto w-full pt-4">
-        <Footer />
+        <Footer t={t} />
       </div>
     </div>
   );
@@ -192,7 +233,7 @@ function Rule() {
   return <span className="my-2.5 block border-t border-dashed border-black/30" />;
 }
 
-function VerdictCard({ post, theme }: { post: ShareCardPost; theme: CardTheme }) {
+function VerdictCard({ post, theme, t }: { post: ShareCardPost; theme: CardTheme; t: Copy }) {
   const row = "flex justify-between gap-2";
   return (
     <div className="flex h-full flex-col p-3 pt-4">
@@ -208,34 +249,34 @@ function VerdictCard({ post, theme }: { post: ShareCardPost; theme: CardTheme })
       >
         {/* 머리 */}
         <div className="flex flex-col items-center gap-1">
-          <p className="font-display text-[13px] leading-none tracking-wide">K-FOOD COURT</p>
-          <p className="opacity-60">CASE NO. 0001 · 🇰🇷</p>
+          <p className="font-display text-[13px] leading-none tracking-wide">{t.court}</p>
+          <p className="opacity-60">{t.caseNo}</p>
         </div>
         <Rule />
         {/* 증거 */}
         <div className="flex items-center gap-2.5">
           <img src={post.photo} alt="" className="size-[56px] shrink-0 rounded-[4px] object-cover" draggable={false} />
           <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="opacity-60">EXHIBIT A</span>
+            <span className="opacity-60">{t.exhibit}</span>
             <span className="line-clamp-2 font-bold uppercase">{post.dish}</span>
-            <span className="truncate opacity-60">COOK: {post.author}</span>
+            <span className="truncate opacity-60">{t.cook}: {post.author}</span>
           </div>
         </div>
         <Rule />
         {/* 혐의 */}
         <div className="flex flex-col gap-0.5">
-          <span className="opacity-60">CHARGE</span>
+          <span className="opacity-60">{t.charge}</span>
           <p className="line-clamp-3 font-bold">{post.voteQuestion}</p>
         </div>
         <Rule />
         {/* 판결 */}
         <div className="flex flex-col gap-1">
           <div className={row}>
-            <span>JURY</span>
-            <span className="font-bold">KOREANS NEEDED</span>
+            <span>{t.jury}</span>
+            <span className="font-bold">{t.juryValue}</span>
           </div>
           <div className={row}>
-            <span>VERDICT</span>
+            <span>{t.verdict}</span>
             <span className="font-bold">???</span>
           </div>
         </div>
@@ -245,11 +286,11 @@ function VerdictCard({ post, theme }: { post: ShareCardPost; theme: CardTheme })
         className="pointer-events-none mx-auto mt-4 rounded-[8px] border-[2.5px] px-2.5 py-1 font-display text-[15px] leading-none tracking-wide"
         style={{ borderColor: theme.fg, color: theme.fg }}
       >
-        VERDICT PENDING
+        {t.pending}
       </span>
-      <p className="mt-2 text-center font-display text-[11px] leading-none tracking-[0.12em]">VOTE NOW!</p>
+      <p className={`mt-2 text-center font-display text-[11px] leading-none ${t === COPY.en ? "tracking-[0.12em]" : ""}`}>{t.voteNow}</p>
       <div className="mt-auto pt-3">
-        <Footer />
+        <Footer t={t} />
       </div>
     </div>
   );

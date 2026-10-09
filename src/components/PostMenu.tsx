@@ -16,7 +16,7 @@ import { BottomSheet } from "./Layout";
  * 게시글 "더보기(⋯)" 메뉴 (담당 송희 — 상세 화면 등에 끼워 씀)
  * - 내 글: 공유하기 · 수정하기 · 삭제하기(확인 시트)
  * - 남의 글: 공유하기 · 링크 복사 · 신고하기(이유 고르는 시트)
- * - 공유하기 → 글 올린 뒤와 같은 공유 시트 (스토리 카드 꾸미기)
+ * - 공유하기 → 글 올린 뒤와 같은 공유 시트 (스토리 카드 꾸미기). 상세는 한국인 화면이라 한국어로
  * 메뉴·시트는 화면 맨 바깥(body)에 띄워서, 버튼이 어디에 있든 화면 전체를 덮습니다.
  */
 const REPORT_REASONS = ["스팸·광고예요", "욕설이나 혐오 표현이 있어요", "음식과 관계없는 사진이에요", "기타"];
@@ -80,18 +80,18 @@ export function PostMenu({
         photo: coverOf(p).src,
         voteQuestion: p.voteQuestion,
         options: p.options.filter((o) => o.trim()),
-        author: "Sam · Canada",
+        author: "Sam · 캐나다",
       };
     }
     const p = getHomePost(postId);
     if (!p) return null;
     return {
       title: p.title,
-      dish: p.en.title,
+      dish: p.title,
       photo: p.cardPhoto,
       voteQuestion: p.question.text,
       options: p.question.options.map((o) => o.replace(/\n/g, " ")),
-      author: `${p.author.name} · ${p.en.country}`,
+      author: `${p.author.name} · ${p.author.country}`,
     };
   };
   const card = sharePost();
@@ -299,7 +299,7 @@ export function PostMenu({
           document.body,
         )}
       {card && (
-        <ShareSheet open={shareOpen} onClose={() => setShareOpen(false)} postId={postId} post={card} from="detail_menu" />
+        <ShareSheet open={shareOpen} onClose={() => setShareOpen(false)} postId={postId} post={card} from="detail_menu" lang="ko" />
       )}
     </>
   );

@@ -5,7 +5,7 @@ import { useLayoutEffect, useRef, useState, type ReactNode, type RefObject } fro
 import { Icon, type IconName } from "@/components/Icon";
 import { BottomSheet } from "@/components/Layout";
 import { track } from "@/lib/analytics";
-import { CARD_H, CARD_STYLES, CARD_W, ShareCard, type CardTheme, type ShareCardPost } from "./ShareCard";
+import { CARD_H, CARD_STYLES, CARD_W, ShareCard, type CardLang, type CardTheme, type ShareCardPost } from "./ShareCard";
 
 /**
  * 게시 직후 "친구에게 공유" 시트 (3. 공유 유도, 담당 송희)
@@ -29,6 +29,48 @@ const THEMES: CardTheme[] = [
   { bg: "var(--color-surface)", fg: "var(--color-on-dark)" },
 ];
 
+// 시트 글 — 한국인 화면(상세 ⋯)은 한국어, 외국인 화면(글 올린 뒤)은 영어
+const COPY = {
+  en: {
+    sheet: "Share with friends",
+    text: (title: string) => `Is this real K-food? 🇰🇷 Koreans, judge my "${title}"`,
+    card: (label: string) => `${label} card`,
+    shuffle: "tap to shuffle stickers",
+    styles: "Card style",
+    colors: "Card color",
+    color: (n: number) => `Color ${n}`,
+    save: "Save",
+    stories: "Stories",
+    copy: "Copy link",
+    sms: "Messages",
+    more: "More",
+    saved: "Saved! 📸",
+    savedStory: "Saved! Add it to your story 📸",
+    imageFail: "Couldn't make the image",
+    copied: "Link copied!",
+    copyFail: "Couldn't copy the link",
+  },
+  ko: {
+    sheet: "친구에게 공유",
+    text: (title: string) => `이거 찐 한식 맞아? 🇰🇷 "${title}" 같이 판결해 줘`,
+    card: (label: string) => `${label} 카드`,
+    shuffle: "누르면 스티커가 바뀌어요",
+    styles: "카드 모양",
+    colors: "카드 색",
+    color: (n: number) => `색 ${n}`,
+    save: "저장",
+    stories: "스토리",
+    copy: "링크 복사",
+    sms: "메시지",
+    more: "더보기",
+    saved: "저장했어요 📸",
+    savedStory: "저장했어요! 스토리에 올려 보세요 📸",
+    imageFail: "이미지를 만들지 못했어요",
+    copied: "링크를 복사했어요",
+    copyFail: "링크를 복사하지 못했어요",
+  },
+};
+
 export function ShareSheet({
   open,
   onClose,
@@ -36,6 +78,7 @@ export function ShareSheet({
   post,
   origin,
   from,
+  lang = "en",
 }: {
   open: boolean;
   onClose: () => void;
@@ -45,10 +88,12 @@ export function ShareSheet({
   origin?: RefObject<HTMLElement | null>;
   /** 분석용: 어디서 열었는지 */
   from: "posted" | "detail_menu";
+  lang?: CardLang;
 }) {
+  const t = COPY[lang];
   // 시트는 버튼을 누른 뒤(브라우저에서만) 열리므로 여기서 주소를 읽어도 됩니다
   const url = open ? `${window.location.origin}/posts/${postId}` : "";
-  const text = `Is this real K-food? 🇰🇷 Koreans, judge my "${post.title}"`;
+  const text = t.text(post.title);
 
   const [themeIndex, setThemeIndex] = useState(0);
   const theme = THEMES[themeIndex];
@@ -94,10 +139,10 @@ export function ShareSheet({
     const from = origin?.current?.getBoundingClientRect();
     if (!card || !sheet) return;
     // 완료 화면 카드가 내려오는 전환은 너무 빠르면 뭐가 지나갔는지 모름 → 1.1초 동안 천천히
-    // 출발할 카드가 없으면(상세 ⋯ 공유하기) 시트만 올라오니 빠르게
+    // 출발할 카드가 없으면(상세 ⋯ 공유하기) 시트만 올라오니 그보다 빠르게 (0.56초)
     const timing = from
       ? { duration: 1100, easing: "cubic-bezier(0.4, 0, 0.15, 1)" }
-      : { duration: 380, easing: "cubic-bezier(0.32, 0.72, 0, 1)" };
+      : { duration: 560, easing: "cubic-bezier(0.32, 0.72, 0, 1)" };
     // 공용 시트의 기본 올라오기 효과는 끄고 여기서 직접 움직임
     for (const a of sheet.getAnimations()) a.finish();
     const lift = sheet.offsetHeight;
@@ -143,8 +188,8 @@ export function ShareSheet({
     const rest = [...Array.from(rail.current?.children ?? []).slice(1), ...Array.from(controls.current?.children ?? [])];
     rest.forEach((el, i) =>
       (el as HTMLElement).animate([{ opacity: 0, translate: "0 12px" }, { opacity: 1, translate: "0 0" }], {
-        duration: from ? 420 : 280,
-        delay: from ? 750 + i * 80 : 120 + i * 50,
+        duration: from ? 420 : 360,
+        delay: from ? 750 + i * 80 : 260 + i * 70,
         easing: "ease-out",
         fill: "backwards",
       }),
@@ -211,20 +256,20 @@ export function ShareSheet({
 
   const saveImage = async () => {
     const file = await makeImage();
-    if (!file) return say("Couldn't make the image");
+    if (!file) return say(t.imageFail);
     shared("save_image");
     const a = document.createElement("a");
     a.href = URL.createObjectURL(file);
     a.download = file.name;
     a.click();
     window.setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-    say("Saved! 📸");
+    say(t.saved);
   };
 
   // 스토리: 휴대폰 공유창에 이미지를 넘김 (인스타 스토리 선택 가능). 안 되면 저장
   const toStory = async () => {
     const file = await makeImage();
-    if (!file) return say("Couldn't make the image");
+    if (!file) return say(t.imageFail);
     if (navigator.canShare?.({ files: [file] })) {
       try {
         await navigator.share({ files: [file], text: `${text} ${url}` });
@@ -235,17 +280,17 @@ export function ShareSheet({
       return;
     }
     await saveImage();
-    say("Saved! Add it to your story 📸");
+    say(t.savedStory);
   };
 
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(url);
     } catch {
-      return say("Couldn't copy the link");
+      return say(t.copyFail);
     }
     shared("copy_link");
-    say("Link copied!");
+    say(t.copied);
   };
 
   const more = async () => {
@@ -262,7 +307,7 @@ export function ShareSheet({
   const encoded = encodeURIComponent(`${text} ${url}`);
 
   return (
-    <BottomSheet open={open} onClose={onClose} label="Share with friends">
+    <BottomSheet open={open} onClose={onClose} label={t.sheet}>
       {/* 카드 넘기기 */}
       <div className="relative w-full">
         <div
@@ -278,7 +323,7 @@ export function ShareSheet({
               <button
                 key={s.id}
                 type="button"
-                aria-label={isActive ? `${s.label} card — tap to shuffle stickers` : `${s.label} card`}
+                aria-label={isActive ? `${t.card(s.label[lang])} — ${t.shuffle}` : t.card(s.label[lang])}
                 onClick={() => {
                   if (!isActive) return goTo(i);
                   track("share_card_shuffled", { style: s.id, taps: seed + 1 });
@@ -311,7 +356,7 @@ export function ShareSheet({
                     }}
                     className="relative rounded-[22px] shadow-[0_16px_40px_rgba(0,0,0,0.45)]"
                   >
-                    <ShareCard style={s.id} post={post} theme={theme} seed={seed} />
+                    <ShareCard style={s.id} post={post} theme={theme} seed={seed} lang={lang} />
                   </div>
                 </div>
               </button>
@@ -331,7 +376,7 @@ export function ShareSheet({
 
       {/* 꾸미기(탭 · 색)는 붙여서, 공유 채널은 선으로 떼어서 */}
       <div ref={controls} className="flex w-full flex-col items-center gap-3">
-        <div role="tablist" aria-label="Card style" className="flex rounded-full bg-surface-2 p-1">
+        <div role="tablist" aria-label={t.styles} className="flex rounded-full bg-surface-2 p-1">
           {CARD_STYLES.map((s, i) => (
             <button
               key={s.id}
@@ -343,36 +388,36 @@ export function ShareSheet({
                 i === active ? "bg-on-dark text-on-light" : "text-neutral-400"
               }`}
             >
-              {s.label}
+              {s.label[lang]}
             </button>
           ))}
         </div>
-        <div role="radiogroup" aria-label="Card color" className="flex items-center gap-3">
-          {THEMES.map((t, i) => (
+        <div role="radiogroup" aria-label={t.colors} className="flex items-center gap-3">
+          {THEMES.map((th, i) => (
             <button
-              key={`${t.bg}-${i}`}
+              key={`${th.bg}-${i}`}
               type="button"
               role="radio"
               aria-checked={i === themeIndex}
-              aria-label={`Color ${i + 1}`}
+              aria-label={t.color(i + 1)}
               onClick={() => pickTheme(i)}
               className={`size-9 rounded-full transition active:scale-90 ${
                 // 다크 색은 시트 배경과 같아서 얇은 테두리로 보이게
                 i === themeIndex ? "scale-110 ring-2 ring-on-dark ring-offset-2 ring-offset-surface" : "ring-1 ring-white/20"
               }`}
-              style={{ background: t.bg }}
+              style={{ background: th.bg }}
             />
           ))}
         </div>
 
         {/* 공유 채널 — 옆으로 넘김 */}
         <div className="mt-4 flex w-full gap-4 overflow-x-auto border-t border-white/10 px-4 pt-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <Channel label="Save" icon="download" onClick={saveImage} className="bg-on-dark text-on-light" />
-          <Channel label="Stories" onClick={toStory} className="bg-[linear-gradient(45deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5)] text-white">
+          <Channel label={t.save} icon="download" onClick={saveImage} className="bg-on-dark text-on-light" />
+          <Channel label={t.stories} onClick={toStory} className="bg-[linear-gradient(45deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5)] text-white">
             <InstagramLogo />
           </Channel>
-          <Channel label="Copy link" icon="link" onClick={copy} className="bg-surface-2 text-on-dark" />
-          <Channel label="Messages" icon="message" href={`sms:?&body=${encoded}`} onClick={() => shared("sms")} className="bg-[#34c759] text-white" />
+          <Channel label={t.copy} icon="link" onClick={copy} className="bg-surface-2 text-on-dark" />
+          <Channel label={t.sms} icon="message" href={`sms:?&body=${encoded}`} onClick={() => shared("sms")} className="bg-[#34c759] text-white" />
           <Channel label="WhatsApp" href={`https://wa.me/?text=${encoded}`} onClick={() => shared("whatsapp")} className="bg-[#25d366] text-white">
             <WhatsAppLogo />
           </Channel>
@@ -384,7 +429,7 @@ export function ShareSheet({
           >
             <XLogo />
           </Channel>
-          <Channel label="More" icon="share" onClick={more} className="bg-surface-2 text-on-dark" />
+          <Channel label={t.more} icon="share" onClick={more} className="bg-surface-2 text-on-dark" />
         </div>
       </div>
     </BottomSheet>
