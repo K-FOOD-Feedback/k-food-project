@@ -598,30 +598,23 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
                   near ? "scale-[1.03] bg-white/10" : "bg-surface"
                 } ${picked !== null && !mine ? "opacity-40" : ""}`}
               >
-                {/* 힌트: 토큰이 들어갔다 나올 때 칸도 살짝 차오름 */}
+                {/* 글자 (기본: 밝은 글자) */}
+                <ColumnText role={label(i).role} action={label(i).action} />
+                {/* 차오르는 색 안에는 같은 글자를 어두운 색으로 겹쳐서, 색이 덮은 부분만 글자가 어두워짐 */}
                 {hinting && (
                   <span
-                    className={`absolute inset-x-0 bottom-0 ${role.fill} opacity-60`}
+                    className={`absolute inset-x-0 bottom-0 overflow-hidden ${role.fill}`}
                     style={{ animation: `${i === 0 ? "col-peek-l" : "col-peek-r"} 3.6s ease-in-out 2200ms infinite`, height: 0 }}
-                  />
+                  >
+                    <ColumnText role={label(i).role} action={label(i).action} dark />
+                  </span>
                 )}
                 {/* 아래에서 차오르는 색 (끌어다 대면 살짝, 고르면 가득) */}
                 <span
-                  className={`absolute inset-x-0 bottom-0 ${role.fill} transition-[height] duration-500 ease-[cubic-bezier(0.3,1.3,0.5,1)]`}
+                  className={`absolute inset-x-0 bottom-0 overflow-hidden ${role.fill} transition-[height] duration-500 ease-[cubic-bezier(0.3,1.3,0.5,1)]`}
                   style={{ height: mine ? "100%" : near ? "18%" : "0%" }}
-                />
-                <span className={`relative flex h-full flex-col justify-between p-4 ${mine ? "text-on-light" : ""}`}>
-                  <span className="font-display text-[20px] leading-[1.2]">{label(i).role}</span>
-                  <span className="flex items-end justify-between gap-1">
-                    <span className={`text-[13px] font-semibold leading-[1.35] ${mine ? "opacity-70" : "text-neutral-400"}`}>
-                      {label(i).action}
-                    </span>
-                    {mine && (
-                      <span className="flex size-9 shrink-0 animate-pop items-center justify-center rounded-full bg-on-dark text-[18px]">
-                        👋
-                      </span>
-                    )}
-                  </span>
+                >
+                  <ColumnText role={label(i).role} action={label(i).action} dark picked={mine} />
                 </span>
               </button>
             );
@@ -636,6 +629,24 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
         {t.login}
       </TrackedLink>
     </div>
+  );
+}
+
+/** 역할 칸 안의 글자. dark = 차오른 색 위에 겹치는 어두운 글자 (칸 아래 끝에 맞춰 붙음) */
+function ColumnText({ role, action, dark = false, picked = false }: { role: string; action: string; dark?: boolean; picked?: boolean }) {
+  return (
+    <span
+      className={`${dark ? "absolute inset-x-0 bottom-0 text-on-light" : "relative"} flex h-[min(200px,26svh)] flex-col justify-between p-4`}
+      aria-hidden={dark || undefined}
+    >
+      <span className="font-display text-[20px] leading-[1.2]">{role}</span>
+      <span className="flex items-end justify-between gap-1">
+        <span className={`text-[13px] font-semibold leading-[1.35] ${dark ? "opacity-70" : "text-neutral-400"}`}>{action}</span>
+        {picked && (
+          <span className="flex size-9 shrink-0 animate-pop items-center justify-center rounded-full bg-on-dark text-[18px]">👋</span>
+        )}
+      </span>
+    </span>
   );
 }
 
