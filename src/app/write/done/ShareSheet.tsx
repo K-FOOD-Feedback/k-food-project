@@ -93,8 +93,11 @@ export function ShareSheet({
     const sheet = rail.current?.closest<HTMLElement>("[role=dialog]");
     const from = origin?.current?.getBoundingClientRect();
     if (!card || !sheet) return;
-    // 너무 빠르면 뭐가 지나갔는지 모름 → 1.1초 동안 천천히
-    const timing = { duration: 1100, easing: "cubic-bezier(0.4, 0, 0.15, 1)" };
+    // 완료 화면 카드가 내려오는 전환은 너무 빠르면 뭐가 지나갔는지 모름 → 1.1초 동안 천천히
+    // 출발할 카드가 없으면(상세 ⋯ 공유하기) 시트만 올라오니 빠르게
+    const timing = from
+      ? { duration: 1100, easing: "cubic-bezier(0.4, 0, 0.15, 1)" }
+      : { duration: 380, easing: "cubic-bezier(0.32, 0.72, 0, 1)" };
     // 공용 시트의 기본 올라오기 효과는 끄고 여기서 직접 움직임
     for (const a of sheet.getAnimations()) a.finish();
     const lift = sheet.offsetHeight;
@@ -140,8 +143,8 @@ export function ShareSheet({
     const rest = [...Array.from(rail.current?.children ?? []).slice(1), ...Array.from(controls.current?.children ?? [])];
     rest.forEach((el, i) =>
       (el as HTMLElement).animate([{ opacity: 0, translate: "0 12px" }, { opacity: 1, translate: "0 0" }], {
-        duration: 420,
-        delay: 750 + i * 80,
+        duration: from ? 420 : 280,
+        delay: from ? 750 + i * 80 : 120 + i * 50,
         easing: "ease-out",
         fill: "backwards",
       }),
