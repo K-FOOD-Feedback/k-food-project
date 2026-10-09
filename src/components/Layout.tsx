@@ -120,7 +120,7 @@ export function BottomSheet({
         aria-modal="true"
         aria-label={label}
         tabIndex={-1}
-        className="absolute inset-x-0 bottom-0 mx-auto flex w-full max-w-[430px] animate-sheet-up flex-col items-center gap-4 rounded-t-[32px] bg-surface px-2 pt-3 pb-[calc(24px+env(safe-area-inset-bottom))] outline-none"
+        className="absolute inset-x-0 bottom-0 mx-auto flex w-full max-w-[430px] animate-sheet-up flex-col items-center gap-4 rounded-t-[32px] bg-surface px-2 text-on-dark pt-3 pb-[calc(24px+env(safe-area-inset-bottom))] outline-none"
       >
         <div className="h-1 w-10 shrink-0 rounded-full bg-white/20" aria-hidden="true" />
         {children}
