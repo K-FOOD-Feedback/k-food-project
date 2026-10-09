@@ -1,7 +1,7 @@
 "use client";
 
 import { toBlob } from "html-to-image";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Icon, type IconName } from "@/components/Icon";
 import { BottomSheet } from "@/components/Layout";
 import { track } from "@/lib/analytics";
@@ -10,6 +10,7 @@ import { CARD_H, CARD_STYLES, CARD_W, ShareCard, type CardTheme, type ShareCardP
 /**
  * 게시 직후 "친구에게 공유" 시트 (3. 공유 유도, 담당 송희)
  * 레퍼런스: Spotify 공유 카드 · Eimi 공유 카드
+ * - 열릴 때: 완료 화면의 카드가 아래로 내려오며 작아져 시트 안 카드 자리로 들어감 (origin)
  * - 위: 인스타 스토리용 세로 카드. 옆으로 넘겨 디자인 고르기 (Photo · Vote · Verdict)
  *   카드를 탭하면 스티커가 다시 붙음 / 마우스로 문지르면 3D로 기울어짐
  * - 가운데: 디자인 탭 + 색 고르기 (사진에서 뽑은 색 2 + 브랜드 색 3) → 아래에서 차오르듯 바뀜
@@ -30,12 +31,15 @@ export function ShareSheet({
   onClose,
   postId,
   post,
+  origin,
   from,
 }: {
   open: boolean;
   onClose: () => void;
   postId: string;
   post: ShareCardPost;
+  /** 시트가 열릴 때 카드가 출발할 자리 (완료 화면의 카드) */
+  origin?: RefObject<HTMLElement | null>;
   /** 분석용: 어디서 열었는지 */
   from: "posted" | "my_post";
 }) {
@@ -66,19 +70,46 @@ export function ShareSheet({
     window.setTimeout(() => setToast(""), 1800);
   };
 
-  // 시트가 열릴 때 카드가 위에서 날아 들어옴
-  useEffect(() => {
+  // 시트가 열릴 때: 화면의 카드가 아래로 내려오며 작아져 시트 속 카드 자리로 (Eimi 레퍼런스)
+  // 시트와 카드를 같은 시간·같은 곡선으로 움직여서, 시트가 올라오는 만큼 카드 위치를 빼 줌 → 카드는 곧게 내려가 보임
+  const controls = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
     if (!open) return;
-    const el = rail.current;
-    el?.animate(
-      [
-        { transform: "translateY(-240px) rotate(-10deg) scale(1.18)", opacity: 0 },
-        { opacity: 1, offset: 0.4 },
-        { transform: "none", opacity: 1 },
-      ],
-      { duration: 750, easing: "cubic-bezier(0.3, 1.35, 0.5, 1)" },
+    const card = rail.current?.children[0] as HTMLElement | undefined;
+    const sheet = rail.current?.closest<HTMLElement>("[role=dialog]");
+    const from = origin?.current?.getBoundingClientRect();
+    if (!card || !sheet) return;
+    const timing = { duration: 620, easing: "cubic-bezier(0.32, 0.72, 0, 1)" };
+    // 공용 시트의 기본 올라오기 효과는 끄고 여기서 직접 움직임
+    for (const a of sheet.getAnimations()) a.finish();
+    const lift = sheet.offsetHeight;
+    const to = card.getBoundingClientRect(); // 도착 자리 — 시트를 내리기 전에 잼
+    sheet.animate([{ transform: `translateY(${lift}px)` }, { transform: "none" }], timing);
+    if (from) {
+      const dx = from.left + from.width / 2 - (to.left + to.width / 2);
+      const dy = from.top + from.height / 2 - (to.top + to.height / 2);
+      const k = from.width / to.width;
+      // 가로 넘김 줄은 바깥을 잘라내므로, 카드가 들어오는 동안만 바깥도 보이게
+      const railEl = rail.current!;
+      railEl.style.overflow = "visible";
+      card
+        .animate(
+          [{ transform: `translate(${dx}px, ${dy - lift}px) scale(${k})`, zIndex: 1 }, { transform: "none", zIndex: 1 }],
+          timing,
+        )
+        .finished.finally(() => (railEl.style.overflow = ""));
+    }
+    // 나머지(옆 카드 · 탭 · 색 · 채널)는 카드가 거의 도착할 즈음 차례로
+    const rest = [...Array.from(rail.current?.children ?? []).slice(1), ...Array.from(controls.current?.children ?? [])];
+    rest.forEach((el, i) =>
+      (el as HTMLElement).animate([{ opacity: 0, translate: "0 12px" }, { opacity: 1, translate: "0 0" }], {
+        duration: 360,
+        delay: 320 + i * 60,
+        easing: "ease-out",
+        fill: "backwards",
+      }),
     );
-  }, [open]);
+  }, [open, origin]);
 
   // ── 디자인 넘기기
   const onScroll = () => {
@@ -258,8 +289,8 @@ export function ShareSheet({
         )}
       </div>
 
-      {/* 디자인 탭 + 색 */}
-      <div className="flex w-full flex-col items-center gap-4">
+      {/* 꾸미기(탭 · 색)는 붙여서, 공유 채널은 선으로 떼어서 */}
+      <div ref={controls} className="flex w-full flex-col items-center gap-3">
         <div role="tablist" aria-label="Card style" className="flex rounded-full bg-surface-2 p-1">
           {CARD_STYLES.map((s, i) => (
             <button
@@ -292,28 +323,28 @@ export function ShareSheet({
             />
           ))}
         </div>
-      </div>
 
-      {/* 공유 채널 — 옆으로 넘김 */}
-      <div className="stagger flex w-full gap-4 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <Channel label="Save" icon="download" onClick={saveImage} className="bg-on-dark text-on-light" />
-        <Channel label="Stories" onClick={toStory} className="bg-[linear-gradient(45deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5)] text-white">
-          <InstagramLogo />
-        </Channel>
-        <Channel label="Copy link" icon="link" onClick={copy} className="bg-surface-2 text-on-dark" />
-        <Channel label="Messages" icon="message" href={`sms:?&body=${encoded}`} onClick={() => shared("sms")} className="bg-[#34c759] text-white" />
-        <Channel label="WhatsApp" href={`https://wa.me/?text=${encoded}`} onClick={() => shared("whatsapp")} className="bg-[#25d366] text-white">
-          <WhatsAppLogo />
-        </Channel>
-        <Channel
-          label="X"
-          href={`https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`}
-          onClick={() => shared("x")}
-          className="bg-black text-white ring-1 ring-white/15"
-        >
-          <XLogo />
-        </Channel>
-        <Channel label="More" icon="share" onClick={more} className="bg-surface-2 text-on-dark" />
+        {/* 공유 채널 — 옆으로 넘김 */}
+        <div className="mt-4 flex w-full gap-4 overflow-x-auto border-t border-white/10 px-4 pt-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <Channel label="Save" icon="download" onClick={saveImage} className="bg-on-dark text-on-light" />
+          <Channel label="Stories" onClick={toStory} className="bg-[linear-gradient(45deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5)] text-white">
+            <InstagramLogo />
+          </Channel>
+          <Channel label="Copy link" icon="link" onClick={copy} className="bg-surface-2 text-on-dark" />
+          <Channel label="Messages" icon="message" href={`sms:?&body=${encoded}`} onClick={() => shared("sms")} className="bg-[#34c759] text-white" />
+          <Channel label="WhatsApp" href={`https://wa.me/?text=${encoded}`} onClick={() => shared("whatsapp")} className="bg-[#25d366] text-white">
+            <WhatsAppLogo />
+          </Channel>
+          <Channel
+            label="X"
+            href={`https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`}
+            onClick={() => shared("x")}
+            className="bg-black text-white ring-1 ring-white/15"
+          >
+            <XLogo />
+          </Channel>
+          <Channel label="More" icon="share" onClick={more} className="bg-surface-2 text-on-dark" />
+        </div>
       </div>
     </BottomSheet>
   );
@@ -449,7 +480,7 @@ function Channel({
       <span className="whitespace-nowrap text-[12px] font-semibold text-neutral-400">{label}</span>
     </>
   );
-  const cls = "flex w-[60px] shrink-0 animate-pop flex-col items-center gap-2 transition active:scale-90";
+  const cls = "flex w-[60px] shrink-0 flex-col items-center gap-2 transition active:scale-90";
   return href ? (
     <a href={href} target="_blank" rel="noreferrer" onClick={onClick} className={cls}>
       {inner}

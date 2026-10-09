@@ -29,6 +29,7 @@ export function DoneScreen() {
   const [shareOpen, setShareOpen] = useState(false);
 
   const tilted = useRef(false); // 분석용: 카드를 문질러 봤는지
+  const cardRef = useRef<HTMLDivElement>(null); // 공유 시트가 열릴 때 카드가 여기서 출발
   const onMove = (e: PointerEvent<HTMLDivElement>) => {
     tilted.current = true;
     const r = e.currentTarget.getBoundingClientRect();
@@ -68,8 +69,12 @@ export function DoneScreen() {
               transformStyle: "preserve-3d",
             }}
           >
-            {/* 둥실둥실 (등장이 끝난 뒤부터) */}
-            <div className="animate-float" style={{ animationDelay: `${T.float}ms` }}>
+            {/* 둥실둥실 (등장이 끝난 뒤부터) · 공유 시트가 열리면 카드가 시트로 내려간 것처럼 감춤 */}
+            <div
+              ref={cardRef}
+              className="animate-float transition-opacity duration-200"
+              style={{ animationDelay: `${T.float}ms`, opacity: shareOpen ? 0 : 1 }}
+            >
               {/* 솟아올라 정방향으로 */}
               <div className="relative animate-card-enter">
                 <div key={`squash-${burst}`} className="relative animate-squash" style={{ animationDelay: `${stampDelay + 40}ms` }}>
@@ -152,6 +157,7 @@ export function DoneScreen() {
         open={shareOpen}
         onClose={() => setShareOpen(false)}
         postId={MY_POST_ID}
+        origin={cardRef}
         post={{
           title: post.title,
           dish: post.dish,
