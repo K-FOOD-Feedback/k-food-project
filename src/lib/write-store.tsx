@@ -292,5 +292,6 @@ export function useFlow() {
 }
 
 export function coverOf(post: Pick<PostContent, "photos" | "coverId">) {
-  return post.photos.find((p) => p.id === post.coverId) ?? post.photos[0];
+  // 맨 앞 사진이 대표 (순서를 바꿔 맨 앞으로 옮기면 그게 대표)
+  return post.photos[0];
 }

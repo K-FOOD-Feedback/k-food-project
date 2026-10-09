@@ -30,17 +30,17 @@ export function PhotoImage({
   );
 }
 
-const LONG_PRESS_MS = 250;
+/** 이만큼 움직이면 바로 끌기 시작 (길게 누를 필요 없음) */
+const DRAG_START_PX = 6;
 
 type Drag = { from: number; over: number; dx: number; dy: number };
 
 /**
- * 썸네일 그리드: 탭 = 대표 사진, 길게 눌러 끌기 = 순서 변경, × = 삭제.
+ * 썸네일 그리드: 끌어서 순서 변경(바로), × = 삭제.
+ * 맨 앞 사진이 대표(Cover) — 따로 고르지 않고 맨 앞으로 옮기면 대표가 됨.
  */
 export function PhotoGrid({
   photos,
-  coverId,
-  onCover,
   onRemove,
   onMove,
   onAdd,
@@ -50,8 +50,6 @@ export function PhotoGrid({
   onLockedTap,
 }: {
   photos: Photo[];
-  coverId: string | null;
-  onCover: (id: string) => void;
   onRemove: (id: string) => void;
   onMove: (from: number, to: number) => void;
   onAdd?: () => void;
@@ -64,32 +62,15 @@ export function PhotoGrid({
 }) {
   const [shakeKey, setShakeKey] = useState(0);
   const [drag, setDrag] = useState<Drag | null>(null);
-  const press = useRef<{ index: number; x: number; y: number; timer: number; active: boolean } | null>(
-    null,
-  );
-
-  const clearPress = () => {
-    if (press.current) window.clearTimeout(press.current.timer);
-    press.current = null;
-  };
+  const press = useRef<{ index: number; x: number; y: number; active: boolean } | null>(null);
 
   const onPointerDown = (index: number) => (e: PointerEvent<HTMLButtonElement>) => {
-    const el = e.currentTarget;
-    const pointerId = e.pointerId;
-    const start = { x: e.clientX, y: e.clientY };
-    clearPress();
-    press.current = {
-      index,
-      ...start,
-      active: false,
-      timer: window.setTimeout(() => {
-        if (!press.current) return;
-        press.current.active = true;
-        el.setPointerCapture(pointerId);
-        navigator.vibrate?.(10); // 들렸다는 느낌 (지원하는 폰만)
-        setDrag({ from: index, over: index, dx: 0, dy: 0 });
-      }, LONG_PRESS_MS),
-    };
+    press.current = { index, x: e.clientX, y: e.clientY, active: false };
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId); // 손가락이 칸 밖으로 나가도 계속 따라가게
+    } catch {
+      // 캡처를 못 해도 끌기는 동작함
+    }
   };
 
   const onPointerMove = (e: PointerEvent<HTMLButtonElement>) => {
@@ -98,9 +79,9 @@ export function PhotoGrid({
     const dx = e.clientX - p.x;
     const dy = e.clientY - p.y;
     if (!p.active) {
-      // 길게 누르기 전에 움직이면 스크롤로 보고 취소
-      if (Math.hypot(dx, dy) > 12) clearPress();
-      return;
+      if (Math.hypot(dx, dy) < DRAG_START_PX) return;
+      p.active = true; // 조금만 움직여도 바로 끌기 시작
+      navigator.vibrate?.(8);
     }
     const hit = document
       .elementsFromPoint(e.clientX, e.clientY)
@@ -111,26 +92,21 @@ export function PhotoGrid({
     setDrag({ from: p.index, over, dx, dy });
   };
 
-  const onPointerUp = (id: string) => () => {
-    const p = press.current;
-    if (p?.active && drag) {
-      if (drag.over !== drag.from) onMove(drag.from, drag.over);
-    } else if (p) {
-      onCover(id);
-    }
-    clearPress();
+  const onPointerUp = () => {
+    if (press.current?.active && drag && drag.over !== drag.from) onMove(drag.from, drag.over);
+    press.current = null;
     setDrag(null);
   };
 
   const onPointerCancel = () => {
-    clearPress();
+    press.current = null;
     setDrag(null);
   };
 
   return (
     <ul className="grid grid-cols-4 gap-2">
       {photos.map((photo, i) => {
-        const isCover = photo.id === coverId;
+        const isCover = i === 0;
         const dragging = drag?.from === i;
         const isTarget = drag && drag.over === i && drag.from !== i;
         return (
@@ -141,18 +117,13 @@ export function PhotoGrid({
           >
             <button
               type="button"
-              aria-label={`Photo ${i + 1}${isCover ? " (cover)" : ""}. Tap to make it the cover`}
-              aria-pressed={isCover}
+              aria-label={`Photo ${i + 1}${isCover ? " (cover)" : ""}. Drag to reorder`}
               onPointerDown={onPointerDown(i)}
               onPointerMove={onPointerMove}
-              onPointerUp={onPointerUp(photo.id)}
+              onPointerUp={onPointerUp}
               onPointerCancel={onPointerCancel}
               onContextMenu={(e) => e.preventDefault()}
               onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  onCover(photo.id);
-                }
                 if (e.key === "ArrowLeft" && i > 0) onMove(i, i - 1);
                 if (e.key === "ArrowRight" && i < photos.length - 1) onMove(i, i + 1);
               }}

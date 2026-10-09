@@ -85,15 +85,13 @@ export function PhotosScreen({ backHref = "/home/en" }: { backHref?: string }) {
             <div className="px-5 pt-4 pb-3">
               <PhotoGrid
                 photos={draft.photos}
-                coverId={draft.coverId}
-                onCover={photo.cover}
                 onRemove={photo.remove}
                 onMove={photo.move}
                 onAdd={onAdd}
               />
             </div>
             <p className="px-5 pt-1 pb-5 text-[13px] leading-[1.4] text-muted">
-              Tap a photo to make it the cover · Hold &amp; drag to reorder
+              Drag to reorder · The first photo is the cover
             </p>
           </Tile>
         )}

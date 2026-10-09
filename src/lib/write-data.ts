@@ -1,4 +1,5 @@
 // 6. 콘텐츠 작성 · 5. 수정 화면에서 쓰는 질문 목록과 AI 초안 목업입니다. (담당 송희)
+import type { IconName } from "@/components/Icon";
 export const MAX_PHOTOS = 10;
 /** 서버 전까지 내 글은 하나만 다루며 이 id를 씁니다. (서버 컴포넌트에서도 읽도록 여기에 둠) */
 export const MY_POST_ID = "mine";
@@ -12,47 +13,52 @@ export const OPTIONS_MAX = 4;
 
 export type Photo = { id: string; src: string };
 
-export type QuestionId = "korean" | "eat" | "fix" | "spice" | "look";
+export type QuestionId =
+  | "korean"
+  | "eat"
+  | "fix"
+  | "spice"
+  | "look"
+  | "combo"
+  | "add"
+  | "side"
+  | "drink"
+  | "plating"
+  | "price"
+  | "name"
+  | "when"
+  | "rate"
+  | "chef";
 
 export type Question = {
   id: QuestionId;
   label: string;
   hint: string;
-  icon: "badge-check" | "heart" | "wrench" | "sparkle" | "image";
+  icon: IconName;
 };
 
-// 휠 순서 = 배열 순서 (무한 루프). 0번이 AI 추천 1순위입니다.
+/*
+  질문 목록 15개 (사진과 글만 보고 한국인이 답할 수 있는 것)
+  휠 순서 = 배열 순서 (무한 루프). 0번이 AI 추천 1순위입니다.
+  실제 AI가 붙으면: 이 목록 안에서 사진에 맞는 순서로 다시 정렬하고, 1순위를 미리 선택합니다.
+  아이콘은 질문마다 정해 둔 것이라 AI가 고른 질문과 함께 자동으로 따라옵니다.
+*/
 export const QUESTIONS: Question[] = [
-  {
-    id: "korean",
-    label: "Is it really Korean?",
-    hint: "Does it taste like the real deal?",
-    icon: "badge-check",
-  },
-  {
-    id: "eat",
-    label: "Would Koreans eat this?",
-    hint: "Would they order it at a restaurant?",
-    icon: "heart",
-  },
-  {
-    id: "fix",
-    label: "What should I fix?",
-    hint: "Get one tip to make it better.",
-    icon: "wrench",
-  },
-  {
-    id: "spice",
-    label: "Is the spice level right?",
-    hint: "Too mild? Too hot?",
-    icon: "sparkle",
-  },
-  {
-    id: "look",
-    label: "Does it look like the real thing?",
-    hint: "Does it look like it would in Korea?",
-    icon: "image",
-  },
+  { id: "korean", label: "Is it really Korean?", hint: "Does it taste like the real deal?", icon: "badge-check" },
+  { id: "eat", label: "Would Koreans eat this?", hint: "Would they order it at a restaurant?", icon: "heart" },
+  { id: "fix", label: "What should I fix?", hint: "Get one tip to make it better.", icon: "wrench" },
+  { id: "spice", label: "Is the spice level right?", hint: "Too mild? Too hot?", icon: "flame" },
+  { id: "look", label: "Does it look like the real thing?", hint: "Does it look like it would in Korea?", icon: "image" },
+  { id: "combo", label: "Does this combo work?", hint: "Do the ingredients go together?", icon: "layers" },
+  { id: "add", label: "What would you add?", hint: "One more thing to put in.", icon: "plus-circle" },
+  { id: "side", label: "What side dish goes with it?", hint: "What Koreans would put next to it.", icon: "utensils" },
+  { id: "drink", label: "What should I drink with it?", hint: "Soju, beer, or something else?", icon: "cup" },
+  { id: "plating", label: "How's my plating?", hint: "Does it look good on the plate?", icon: "palette" },
+  { id: "price", label: "How much would this cost in Korea?", hint: "What would a restaurant charge?", icon: "coins" },
+  { id: "name", label: "What do Koreans call this?", hint: "Is there a Korean name for it?", icon: "tag" },
+  { id: "when", label: "When would Koreans eat this?", hint: "Lunch, late-night snack, or party?", icon: "clock" },
+  { id: "rate", label: "How would you rate it?", hint: "Give it a score from the photo.", icon: "star" },
+  { id: "chef", label: "Is it restaurant-level?", hint: "Could it be on a Korean menu?", icon: "chef-hat" },
 ];
 
 export function getQuestion(id: QuestionId): Question {
@@ -155,6 +161,66 @@ export function aiVoteFor(
       {
         voteQuestion: `Would this ${dish} pass in a Korean restaurant?`,
         options: [`Yes, totally`, `Needs a garnish`, `Too much ${main} on top`],
+      },
+    ],
+    combo: [
+      {
+        voteQuestion: `Does ${main} work in this ${dish}?`,
+        options: [`Great combo!`, `Okay, but not Korean`, `Leave out the ${main}`],
+      },
+    ],
+    add: [
+      {
+        voteQuestion: `What would you add to this ${dish}?`,
+        options: [`A fried egg`, `Kimchi`, `More green onion`, `Nothing, it's done`],
+      },
+    ],
+    side: [
+      {
+        voteQuestion: `What side dish goes with this ${dish}?`,
+        options: [`Kimchi`, `Pickled radish`, `Rice ball`, `Nothing needed`],
+      },
+    ],
+    drink: [
+      {
+        voteQuestion: `What should I drink with this ${dish}?`,
+        options: [`Soju`, `Beer`, `Milk (for the spice!)`, `Cold soda`],
+      },
+    ],
+    plating: [
+      {
+        voteQuestion: `How's the plating of this ${dish}?`,
+        options: [`Looks great`, `Serve it in the pan`, `Add some garnish`],
+      },
+    ],
+    price: [
+      {
+        voteQuestion: `How much would this ${dish} cost in Korea?`,
+        options: [`Under ₩8,000`, `₩8,000–12,000`, `Over ₩12,000`],
+      },
+    ],
+    name: [
+      {
+        voteQuestion: `What would Koreans call this ${dish}?`,
+        options: [`Cheese buldak`, `Buldak carbonara`, `Something new!`],
+      },
+    ],
+    when: [
+      {
+        voteQuestion: `When would Koreans eat this ${dish}?`,
+        options: [`Late-night snack`, `Lunch`, `With friends and drinks`, `Anytime`],
+      },
+    ],
+    rate: [
+      {
+        voteQuestion: `How would you rate this ${dish}?`,
+        options: [`5 — perfect`, `4 — really good`, `3 — not bad`, `Needs work`],
+      },
+    ],
+    chef: [
+      {
+        voteQuestion: `Could this ${dish} be on a Korean menu?`,
+        options: [`Yes, today!`, `Almost there`, `Home-style only`],
       },
     ],
   };

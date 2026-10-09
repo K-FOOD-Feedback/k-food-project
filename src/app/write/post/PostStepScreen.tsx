@@ -67,7 +67,6 @@ export function PostStepScreen() {
             }}
           />
         }
-        title="Your post"
       />
       <StepProgress step={3} />
 
@@ -139,9 +138,7 @@ export function PostStepScreen() {
             <p className="text-[13px] font-semibold leading-[1.3]">Photos</p>
             <PhotoGrid
               photos={draft.photos}
-              coverId={draft.coverId}
               coverChip
-              onCover={photo.cover}
               onRemove={photo.remove}
               onMove={photo.move}
               onAdd={() => {
@@ -151,7 +148,7 @@ export function PostStepScreen() {
                 } else picker.open();
               }}
             />
-            <p className="text-[13px] leading-[1.4] text-muted">Tap to set the cover · Hold to reorder</p>
+            <p className="text-[13px] leading-[1.4] text-muted">Drag to reorder · The first photo is the cover</p>
           </div>
         </Tile>
 

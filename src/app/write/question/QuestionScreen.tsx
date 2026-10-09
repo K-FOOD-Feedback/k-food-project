@@ -153,7 +153,7 @@ export function QuestionScreen() {
       <div className="flex flex-col items-start gap-2 px-8 pt-3">
         <Chip tone="yellow" className="py-1.5 text-[12px]">
           <Icon name="sparkle" size={14} />
-          AI picked {N} for your dish
+          AI sorted these for your dish
         </Chip>
         <h2 className="font-display text-[28px] leading-[1.1] [text-wrap:balance]">
           What should Koreans tell you?

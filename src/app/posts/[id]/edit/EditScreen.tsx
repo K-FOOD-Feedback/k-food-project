@@ -109,8 +109,6 @@ export function EditScreen() {
           <div className="px-5 pt-3.5 pb-3">
             <PhotoGrid
               photos={form.photos}
-              coverId={form.coverId}
-              onCover={(coverId) => set({ coverId })}
               onRemove={removePhoto}
               onMove={movePhoto}
               onAdd={form.photos.length < MAX_PHOTOS ? picker.open : undefined}
@@ -125,7 +123,7 @@ export function EditScreen() {
           <p className="px-5 pt-1 pb-5 text-[13px] leading-[1.4] text-muted">
             {locked
               ? "Keep at least 1 photo. To remove everything, delete the post."
-              : "Tap a photo to make it the cover · Hold & drag to reorder"}
+              : "Drag to reorder · The first photo is the cover"}
           </p>
         </Tile>
 
