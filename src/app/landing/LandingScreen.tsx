@@ -46,11 +46,18 @@ function fly(p: number, a: number, b: number, from: { x?: number; y?: number; r?
 }
 
 const subscribeNone = () => () => {};
-/** 배경 도형 세 장면: 자리(화면 %)·각도·색 토큰 */
-const SHAPES = [
-  { x: 14, y: 52, r: -12, color: "--color-content" }, // 카드만 — 노랑, 왼쪽 위
-  { x: 84, y: 80, r: 24, color: "--color-primary" }, // 투표 — 핑크, 오른쪽 아래
-  { x: 88, y: 50, r: 60, color: "--color-secondary" }, // 한마디 — 보라, 오른쪽 위
+/**
+ * 배경 도형들. poses = 장면별 [가로 %, 세로 %, 각도] — 카드만 · 투표 · 한마디
+ * 화면 가장자리에 걸쳐 잘리게 두고, 카드에 반쯤 가려지는 자리에 둡니다.
+ */
+type ShapeKind = "scallop" | "clover" | "flower" | "capsule" | "circle" | "half";
+const DECOR: { kind: ShapeKind; color: string; size: number; poses: [number, number, number][] }[] = [
+  { kind: "scallop", color: "--color-content", size: 96, poses: [[6, 40, -10], [4, 64, 30], [8, 34, 60]] },
+  { kind: "clover", color: "--color-primary", size: 72, poses: [[94, 30, 0], [92, 86, 45], [95, 58, 90]] },
+  { kind: "capsule", color: "--color-secondary", size: 84, poses: [[90, 74, -35], [8, 88, 15], [90, 30, -60]] },
+  { kind: "flower", color: "--color-lilac", size: 64, poses: [[10, 84, 0], [94, 44, 40], [6, 76, 80]] },
+  { kind: "circle", color: "--color-primary", size: 40, poses: [[78, 92, 0], [16, 24, 0], [24, 92, 0]] },
+  { kind: "half", color: "--color-content", size: 70, poses: [[58, 99, 0], [70, 99, 15], [72, 98, -10]] },
 ];
 
 /** 글쓴이 답글 말풍선 기울기 (작성자 표시도 들어가면서 같이 기울어짐) */
@@ -205,8 +212,7 @@ export function LandingScreen() {
   const toVote = seg(p, 0.06, 0.22);
   const toComments = seg(p, 0.36, 0.5);
   const w = [1 - toVote, toVote * (1 - toComments), toComments];
-  const mixed = (key: "x" | "y" | "r") => SHAPES.reduce((sum, g, i) => sum + g[key] * w[i], 0);
-  const shape = { w, x: mixed("x"), y: mixed("y"), r: mixed("r") };
+
   // 처음엔 게시물이 조금 아래, 투표가 붙을수록 위로 올라감 (마지막엔 제목 바로 아래)
   // 한 번에 하나만: 투표는 다음 단계(한마디)가 오면 내려가며 사라짐
   const voteOut = seg(p, 0.36, 0.43);
@@ -264,30 +270,23 @@ export function LandingScreen() {
           />
         ))}
         <div className="sticky top-0 flex h-[100svh] flex-col overflow-hidden px-5 pt-[calc(100px+env(safe-area-inset-top))]">
-          {/* 카드 뒤 큰 물결 도형 (앱의 사진 마스크와 같은 모양, 단색) — 장면마다 자리·색·각도가 바뀜
-              1) 카드만: 노랑, 왼쪽 위  2) 투표: 핑크, 오른쪽 아래  3) 한마디: 보라, 오른쪽 위 */}
+          {/* 카드 뒤에 흩어진 작은 도형들 (구글 랩스 레퍼런스: 물결 원·클로버·꽃·알약·원·반원)
+              장면(카드만 → 투표 → 한마디)마다 각자 자리와 각도를 옮김 */}
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-            <div
-              className="absolute size-[min(340px,88vw)] -translate-x-1/2 -translate-y-1/2"
-              style={{ left: `${shape.x}%`, top: `${shape.y}%`, rotate: `${shape.r}deg` }}
-            >
-              <div className="absolute inset-0 animate-breathe">
-                {SHAPES.map((g, i) => (
-                  <span
-                    key={g.color}
-                    className="absolute inset-0"
-                    style={{
-                      backgroundColor: `var(${g.color})`,
-                      opacity: shape.w[i],
-                      maskImage: "url(/images/card-mask.svg)",
-                      WebkitMaskImage: "url(/images/card-mask.svg)",
-                      maskSize: "100% 100%",
-                      WebkitMaskSize: "100% 100%",
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
+            {DECOR.map((d, i) => {
+              const pose = (k: 0 | 1 | 2) => d.poses.reduce((sum, ps, j) => sum + ps[k] * w[j], 0);
+              return (
+                <div
+                  key={i}
+                  className="absolute -translate-x-1/2 -translate-y-1/2"
+                  style={{ left: `${pose(0)}%`, top: `${pose(1)}%`, rotate: `${pose(2)}deg`, width: d.size, height: d.size }}
+                >
+                  <div className="size-full animate-float" style={{ animationDelay: `${i * -700}ms` }}>
+                    <Shape kind={d.kind} color={d.color} />
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           {/* 제목 — 스크롤 단계마다 바뀜 (첫 화면은 서비스 한 줄 소개) */}
@@ -563,5 +562,47 @@ function Bubble({
       <span className="break-keep text-[15px] font-bold leading-[1.35] tracking-[-0.3px]">{r.ko}</span>
       {lang === "en" && <span className="text-[11px] font-semibold leading-[1.3] opacity-60">{r.en}</span>}
     </div>
+  );
+}
+
+/** 배경 도형 하나 (단색) */
+function Shape({ kind, color }: { kind: ShapeKind; color: string }) {
+  const fill = `var(${color})`;
+  if (kind === "scallop")
+    return (
+      <span
+        className="block size-full"
+        style={{
+          backgroundColor: fill,
+          maskImage: "url(/images/card-mask.svg)",
+          WebkitMaskImage: "url(/images/card-mask.svg)",
+          maskSize: "100% 100%",
+          WebkitMaskSize: "100% 100%",
+        }}
+      />
+    );
+  if (kind === "capsule") return <span className="absolute inset-x-0 top-1/2 block h-[38%] -translate-y-1/2 rounded-full" style={{ backgroundColor: fill }} />;
+  if (kind === "circle") return <span className="block size-full rounded-full" style={{ backgroundColor: fill }} />;
+  if (kind === "half") return <span className="block h-1/2 w-full rounded-t-full" style={{ backgroundColor: fill }} />;
+  return (
+    <svg viewBox="0 0 100 100" className="block size-full" fill={fill}>
+      {kind === "clover" ? (
+        <>
+          <circle cx="30" cy="30" r="27" />
+          <circle cx="70" cy="30" r="27" />
+          <circle cx="30" cy="70" r="27" />
+          <circle cx="70" cy="70" r="27" />
+          <rect x="30" y="30" width="40" height="40" />
+        </>
+      ) : (
+        <>
+          <circle cx="50" cy="50" r="30" />
+          {Array.from({ length: 8 }, (_, i) => {
+            const a = (i / 8) * Math.PI * 2;
+            return <circle key={i} cx={50 + Math.cos(a) * 32} cy={50 + Math.sin(a) * 32} r="17" />;
+          })}
+        </>
+      )}
+    </svg>
   );
 }
