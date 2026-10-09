@@ -50,21 +50,24 @@ export function LoginSheet({
   return (
     <BottomSheet open={open} onClose={onClose} label={t.label}>
       {children}
-      <div className="flex w-full flex-col gap-2 px-6 break-keep">
+      <div className="flex w-full flex-col gap-2 px-6 pt-2 break-keep">
         <h2 className="font-display text-[22px] leading-[1.25]">
           {title ?? t.title}
         </h2>
         <p className="text-[15px] leading-[1.5] text-muted">{body ?? t.body}</p>
       </div>
-      <button
-        type="button"
-        onClick={onLoggedIn}
-        className="flex h-16 w-full items-center justify-center gap-3 rounded-full bg-white font-display text-[20px] leading-none text-on-light transition active:scale-[0.99]"
-      >
-        <Image src="/logos/google.svg" alt="" width={20} height={20} />
-        {t.google}
-      </button>
-      <p className="w-full break-keep px-6 text-center text-[12px] font-medium leading-[1.4] text-muted">{t.terms}</p>
+      {/* 버튼과 약관은 한 묶음 */}
+      <div className="flex w-full flex-col gap-3">
+        <button
+          type="button"
+          onClick={onLoggedIn}
+          className="flex h-16 w-full items-center justify-center gap-3 rounded-full bg-white font-display text-[20px] leading-none text-on-light transition active:scale-[0.99]"
+        >
+          <Image src="/logos/google.svg" alt="" width={20} height={20} />
+          {t.google}
+        </button>
+        <p className="w-full break-keep px-6 text-center text-[12px] font-medium leading-[1.4] text-muted">{t.terms}</p>
+      </div>
     </BottomSheet>
   );
 }

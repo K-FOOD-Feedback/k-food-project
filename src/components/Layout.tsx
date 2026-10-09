@@ -76,7 +76,11 @@ export function StickyBottom({
   );
 }
 
-/** 흰 바텀시트 + 딤 */
+/**
+ * 바텀시트 + 딤
+ * 간격 기준: 손잡이 → 내용 24px, 큰 덩어리(그림 · 제목+설명 · 버튼 묶음) 사이 24px.
+ * 한 덩어리 안(제목↔설명 8px, 버튼↔약관 12px)은 각 시트에서 묶어서 씁니다.
+ */
 export function BottomSheet({
   open,
   onClose,
@@ -120,7 +124,7 @@ export function BottomSheet({
         aria-modal="true"
         aria-label={label}
         tabIndex={-1}
-        className="absolute inset-x-0 bottom-0 mx-auto flex w-full max-w-[430px] animate-sheet-up flex-col items-center gap-4 rounded-t-[32px] bg-surface px-2 text-on-dark pt-3 pb-[calc(24px+env(safe-area-inset-bottom))] outline-none"
+        className="absolute inset-x-0 bottom-0 mx-auto flex w-full max-w-[430px] animate-sheet-up flex-col items-center gap-6 rounded-t-[32px] bg-surface px-2 pt-3 pb-[calc(28px+env(safe-area-inset-bottom))] text-on-dark outline-none"
       >
         <div className="h-1 w-10 shrink-0 rounded-full bg-white/20" aria-hidden="true" />
         {children}

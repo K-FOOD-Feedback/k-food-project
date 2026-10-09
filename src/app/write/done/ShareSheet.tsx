@@ -88,11 +88,13 @@ export function ShareSheet({
         </span>
       </div>
 
-      <div className="flex w-full flex-col gap-1.5 px-6 text-center">
+      <div className="flex w-full flex-col gap-2 px-6 text-center">
         <h2 className="font-display text-[24px] leading-[1.15] [text-wrap:balance]">Get your friends to judge it</h2>
         <p className="text-[15px] leading-[1.5] text-muted">Know any Koreans? The more votes, the sooner your verdict.</p>
       </div>
 
+      {/* 공유 방법 묶음: 링크 복사 + 채널 */}
+      <div className="flex w-full flex-col gap-5">
       {/* 링크 복사 */}
       <div className="flex h-14 w-full items-center gap-2 rounded-full bg-surface-2 pl-5 pr-1.5">
         <Icon name="link" size={18} className="shrink-0 text-neutral-400" />
@@ -135,6 +137,7 @@ export function ShareSheet({
         <Channel label="More" onClick={more} className="bg-surface-2 text-on-dark">
           <Icon name="share" size={24} />
         </Channel>
+      </div>
       </div>
     </BottomSheet>
   );
