@@ -20,6 +20,14 @@ export function DetailScreen({ post }: { post: HomePost }) {
   const voteRef = useRef<HTMLDivElement>(null);
   // 투표 영역을 한 번이라도 봤으면(스크롤 또는 버튼) 플로팅 버튼을 다시 띄우지 않습니다.
   const [seenVote, setSeenVote] = useState(false);
+  // 상단 바: 조금이라도 내리면 바탕 + 제목 (송희)
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   // ── 분석: 투표·댓글 영역을 봤는지, 얼마나 머물렀는지 (Mixpanel)
   const commentRef = useRef<HTMLDivElement | null>(null);
@@ -190,11 +198,21 @@ export function DetailScreen({ post }: { post: HomePost }) {
         ref={(el) => {
           fadeIns.current[0] = el;
         }}
-        // 스크롤해도 상단 고정 (송희) — 아래 내용이 비쳐 지나가게 위에서 아래로 옅어지는 바탕
-        className="sticky top-0 z-30 flex items-center justify-between bg-gradient-to-b from-background via-background/90 to-background/0 px-2 pt-[calc(16px+env(safe-area-inset-top))] pb-4">
+        // 스크롤해도 상단 고정 (송희) — 맨 위에선 투명, 내리면 바탕이 생기고 가운데 글 제목이 나타남
+        className={`sticky top-0 z-30 flex items-center justify-between px-2 pt-[calc(16px+env(safe-area-inset-top))] pb-4 transition-[background-color,box-shadow] duration-300 ${
+          scrolled ? "bg-background/85 shadow-[0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl" : ""
+        }`}>
         <Link href="/home" className={circle} aria-label="뒤로 가기">
           <ChevronLeftIcon />
         </Link>
+        <p
+          aria-hidden={!scrolled}
+          className={`pointer-events-none absolute left-[84px] right-[146px] bottom-4 top-[calc(16px+env(safe-area-inset-top))] flex items-center truncate font-(family-name:--font-paperlogy) text-[17px] transition-[opacity,translate] duration-300 ${
+            scrolled ? "translate-y-0 opacity-100" : "translate-y-1 opacity-0"
+          }`}
+        >
+          <span className="truncate">{post.title}</span>
+        </p>
         <div className="flex items-center gap-1">
           <TrackedLink href="/" event="language_clicked" props={{ from: "detail" }} className={circle} aria-label="언어 선택">
             {/* eslint-disable-next-line @next/next/no-img-element -- 작은 SVG 아이콘 */}
