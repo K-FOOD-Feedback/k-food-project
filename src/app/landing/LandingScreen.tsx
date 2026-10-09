@@ -47,18 +47,18 @@ function fly(p: number, a: number, b: number, from: { x?: number; y?: number; r?
 
 const subscribeNone = () => () => {};
 /**
- * 배경 도형들. poses = 장면별 [가로 %, 세로 %, 각도] — 카드만 · 투표 · 한마디
+ * 배경 도형들. at = [가로 %, 세로 %, 각도] — 스크롤해도 자리는 그대로, 천천히 둥둥만
  * 화면 가장자리에 걸쳐 잘리게 두고, 카드에 반쯤 가려지는 자리에 둡니다.
  */
 type ShapeKind = "scallop" | "clover" | "flower" | "capsule" | "circle" | "arch";
-const DECOR: { kind: ShapeKind; color: string; size: number; poses: [number, number, number][] }[] = [
+const DECOR: { kind: ShapeKind; color: string; size: number; at: [number, number, number] }[] = [
   // 크기를 크게·중간·작게 섞어서, 전체적으로 화면 위쪽~가운데에 모이게
-  { kind: "scallop", color: "--color-content", size: 124, poses: [[6, 30, -10], [4, 50, 30], [8, 24, 60]] },
-  { kind: "clover", color: "--color-primary", size: 56, poses: [[94, 22, 0], [92, 64, 45], [95, 44, 90]] },
-  { kind: "capsule", color: "--color-secondary", size: 100, poses: [[90, 56, -35], [8, 70, 15], [90, 20, -60]] },
-  { kind: "flower", color: "--color-lilac", size: 44, poses: [[12, 64, 0], [94, 32, 40], [6, 56, 80]] },
-  { kind: "circle", color: "--color-primary", size: 26, poses: [[82, 72, 0], [18, 18, 0], [26, 74, 0]] },
-  { kind: "arch", color: "--color-content", size: 84, poses: [[44, 86, 0], [72, 84, 15], [70, 82, -10]] },
+  { kind: "scallop", color: "--color-content", size: 124, at: [6, 30, -10] },
+  { kind: "clover", color: "--color-primary", size: 56, at: [94, 22, 0] },
+  { kind: "capsule", color: "--color-secondary", size: 100, at: [90, 56, -35] },
+  { kind: "flower", color: "--color-lilac", size: 44, at: [12, 64, 0] },
+  { kind: "circle", color: "--color-primary", size: 26, at: [82, 72, 0] },
+  { kind: "arch", color: "--color-content", size: 84, at: [44, 86, 0] },
 ];
 
 /** 글쓴이 답글 말풍선 기울기 (작성자 표시도 들어가면서 같이 기울어짐) */
@@ -209,10 +209,6 @@ export function LandingScreen() {
   // 제목: 0 소개(=글 올리기) · 1 투표 · 2 한마디 · 3 답글 · 4 마지막
   const scene = done ? 4 : step;
   const shrink = seg(p, 0.84, 0.94);
-  // 배경 도형: 카드만 → 투표 → 한마디, 세 장면 사이를 스크롤에 맞춰 옮겨 감
-  const toVote = seg(p, 0.06, 0.22);
-  const toComments = seg(p, 0.36, 0.5);
-  const w = [1 - toVote, toVote * (1 - toComments), toComments];
 
   // 처음엔 게시물이 조금 아래, 투표가 붙을수록 위로 올라감 (마지막엔 제목 바로 아래)
   // 한 번에 하나만: 투표는 다음 단계(한마디)가 오면 내려가며 사라짐
@@ -272,15 +268,15 @@ export function LandingScreen() {
         ))}
         <div className="sticky top-0 flex h-[100svh] flex-col overflow-hidden px-5 pt-[calc(100px+env(safe-area-inset-top))]">
           {/* 카드 뒤에 흩어진 작은 도형 6개 (구글 랩스 레퍼런스: 물결 원·클로버·꽃·알약·원·아치) — 35% 투명도로 은은하게, 천천히 둥둥
-              장면(카드만 → 투표 → 한마디)마다 각자 자리와 각도를 옮김 */}
+              스크롤해도 자리는 고정, 제자리에서 천천히 둥둥 */}
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
             {DECOR.map((d, i) => {
-              const pose = (k: 0 | 1 | 2) => d.poses.reduce((sum, ps, j) => sum + ps[k] * w[j], 0);
+              const [x, y, r] = d.at;
               return (
                 <div
                   key={i}
                   className="absolute -translate-x-1/2 -translate-y-1/2"
-                  style={{ left: `${pose(0)}%`, top: `${pose(1)}%`, rotate: `${pose(2)}deg`, width: d.size, height: d.size }}
+                  style={{ left: `${x}%`, top: `${y}%`, rotate: `${r}deg`, width: d.size, height: d.size }}
                 >
                   <div className="size-full animate-drift opacity-35" style={{ animationDelay: `${i * -1.7}s`, animationDuration: `${7 + i}s` }}>
                     <Shape kind={d.kind} color={d.color} />
