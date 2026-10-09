@@ -52,13 +52,13 @@ const subscribeNone = () => () => {};
  */
 type ShapeKind = "scallop" | "clover" | "flower" | "capsule" | "circle" | "stack";
 const DECOR: { kind: ShapeKind; color: string; size: number; at: [number, number, number] }[] = [
-  // 크기를 크게·중간·작게 섞어서, 전체적으로 화면 위쪽~가운데에 모이게
-  { kind: "scallop", color: "--color-content", size: 124, at: [6, 30, -10] },
-  { kind: "clover", color: "--color-primary", size: 56, at: [94, 22, 0] },
-  { kind: "capsule", color: "--color-secondary", size: 100, at: [90, 56, -35] },
-  { kind: "flower", color: "--color-lilac", size: 44, at: [12, 64, 0] },
-  { kind: "circle", color: "--color-primary", size: 26, at: [82, 72, 0] },
-  { kind: "stack", color: "--color-content", size: 84, at: [44, 86, 0] },
+  // 시각적 균형: 큰 도형은 대각선(왼쪽 위 ↔ 오른쪽 가운데)으로, 아래쪽은 작은 것만 두어 가볍게
+  { kind: "scallop", color: "--color-content", size: 112, at: [8, 31, -10] }, // 왼쪽 위 · 큼
+  { kind: "clover", color: "--color-primary", size: 52, at: [93, 27, 0] }, // 오른쪽 위 · 중간
+  { kind: "capsule", color: "--color-secondary", size: 92, at: [95, 50, -35] }, // 오른쪽 가운데 · 큼
+  { kind: "flower", color: "--color-lilac", size: 42, at: [5, 57, 0] }, // 왼쪽 가운데 · 작음
+  { kind: "circle", color: "--color-primary", size: 22, at: [16, 80, 0] }, // 왼쪽 아래 · 아주 작음
+  { kind: "stack", color: "--color-content", size: 50, at: [85, 79, -8] }, // 오른쪽 아래 · 작음
 ];
 
 /** 글쓴이 답글 말풍선 기울기 (작성자 표시도 들어가면서 같이 기울어짐) */
@@ -311,7 +311,7 @@ export function LandingScreen() {
             <div ref={postRef} className="relative isolate rounded-[32px] px-5 pt-7 pb-6 text-on-dark">
               <span
                 aria-hidden="true"
-                className="absolute inset-0 -z-10 animate-[fade-in_500ms_ease-out_1300ms_both] rounded-[32px] bg-surface"
+                className="absolute inset-0 -z-10 animate-[fade-in_500ms_ease-out_1300ms_both] rounded-[32px] bg-surface/70 backdrop-blur-xl"
               />
               <div
                 className="relative mx-auto animate-photo-frame overflow-hidden [animation-delay:250ms]"
@@ -385,7 +385,7 @@ export function LandingScreen() {
                 style={{ top: box.author.y - 2, rotate: `${REPLY_TILT}deg`, transformOrigin: "16px 19px" }}
               >
                 <span
-                  className="flex max-w-[240px] flex-col gap-1 rounded-[24px] bg-surface-2 px-4 pt-2.5 pb-3 text-on-dark"
+                  className="flex max-w-[240px] flex-col gap-1 rounded-[24px] bg-surface-2/80 px-4 pt-2.5 pb-3 text-on-dark backdrop-blur-xl"
                   style={fly(p, 0.72, 0.79, { y: 40, s: 0.6 })}
                 >
                   <span ref={slotRef} className="invisible flex items-center gap-[5px] whitespace-nowrap text-[13px] font-semibold" aria-hidden="true">
@@ -399,7 +399,7 @@ export function LandingScreen() {
 
             {/* 투표 (앱 상세와 같은 모양: 세로 칸이 아래에서 차오름) */}
             <div className="mt-3" style={{ opacity: 1 - voteOut, translate: `0 ${voteOut * 60}px` }} aria-hidden={voteOut >= 1}>
-            <div className="relative rounded-[32px] bg-surface-2 px-4 pt-5 pb-4" style={fly(p, 0.1, 0.17, { y: 260, r: -6 })}>
+            <div className="relative rounded-[32px] bg-surface-2/75 px-4 pt-5 pb-4 backdrop-blur-xl" style={fly(p, 0.1, 0.17, { y: 260, r: -6 })}>
               <p className="text-center font-display text-[18px] leading-[1.3]">{t.voteTitle}</p>
               <div className="mt-3 flex h-[min(128px,15svh)] gap-1.5">
                 {t.options.map((opt, i) => {
