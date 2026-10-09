@@ -33,13 +33,18 @@ export function TextField({
   }, [value]);
 
   return (
-    <div className="flex w-full flex-col gap-2 px-5 py-3">
+    <div className="group flex w-full flex-col gap-2 px-5 py-3">
       <div className="flex items-start text-[13px] leading-[1.3]">
         <label htmlFor={id} className="flex-1 font-semibold">
           {label}
         </label>
+        {/* 글자 수는 쓰는 중이거나 한도에 가까울 때만 (평소엔 숨겨서 덜 복잡하게) */}
         {maxLength && !locked && (
-          <span className="font-medium tabular-nums text-neutral-400">
+          <span
+            className={`font-medium tabular-nums text-neutral-400 transition-opacity ${
+              value.length >= maxLength * 0.9 ? "" : "opacity-0 group-focus-within:opacity-100"
+            }`}
+          >
             {value.length}/{maxLength}
           </span>
         )}

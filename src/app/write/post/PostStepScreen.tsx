@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowCta, IconButton } from "@/components/Buttons";
 import { TextField } from "@/components/Field";
 import { Icon } from "@/components/Icon";
-import { Chip, Screen, StepProgress, StickyBottom, Tile, Toast, TopBar } from "@/components/Layout";
+import { Screen, StepProgress, StickyBottom, Tile, Toast, TopBar } from "@/components/Layout";
 import { PhotoGrid } from "@/components/PhotoGrid";
 import { usePhotoPicker } from "@/components/PhotoPicker";
 import { MAX_PHOTOS, STORY_MAX, TITLE_MAX } from "@/lib/write-data";
@@ -72,15 +72,12 @@ export function PostStepScreen() {
       <StepProgress step={3} />
 
       <div className="stagger flex flex-col gap-1 px-2">
-        {/* AI가 알아본 음식 — 틀렸으면 여기서 바로잡기 */}
+        {/* 글 — 맨 위. AI가 알아본 음식은 카드 첫 줄에 작게, 틀렸으면 여기서 바로잡기 */}
         <Tile>
-          <div className="flex items-center gap-3 px-5 py-4">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-content text-on-light">
-              <Icon name="sparkle" size={18} />
-            </span>
+          <div className="flex flex-col gap-3 px-5 pt-5 pb-1">
             {editingDish ? (
               <form
-                className="flex min-w-0 flex-1 items-center gap-2"
+                className="flex items-center gap-2"
                 onSubmit={(e) => {
                   e.preventDefault();
                   rewrite();
@@ -103,13 +100,12 @@ export function PostStepScreen() {
                 </button>
               </form>
             ) : (
-              <>
-                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <p className="text-[13px] leading-[1.3] text-muted">AI thinks this is</p>
-                  <p key={draft.dish} className="animate-fade-in truncate text-[17px] font-bold leading-[1.3]">
-                    {draft.dish || "…"}
-                  </p>
-                </div>
+              <p className="flex flex-wrap items-center gap-x-1.5 text-[14px] leading-[1.4] text-muted">
+                <Icon name="sparkle" size={14} className="text-content" />
+                <span>AI thinks this is</span>
+                <span key={draft.dish} className="animate-fade-in font-bold text-on-dark">
+                  {draft.dish || "…"}
+                </span>
                 <button
                   type="button"
                   onClick={() => {
@@ -117,19 +113,30 @@ export function PostStepScreen() {
                     setDishInput(draft.dish);
                     setEditingDish(true);
                   }}
-                  className="flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-surface-2 px-3 text-[13px] font-semibold transition active:scale-95"
+                  className="font-semibold text-on-dark underline underline-offset-4"
                 >
-                  <Icon name="pencil" size={14} />
                   Not right?
                 </button>
-              </>
+              </p>
             )}
           </div>
+          <div key={rewriteKey} className={rewriteKey ? "animate-fade-in" : ""}>
+            <TextField label="Title" value={draft.title} maxLength={TITLE_MAX} onChange={(title) => updateDraft({ title })} />
+            <TextField
+              label="Story"
+              value={draft.story}
+              maxLength={STORY_MAX}
+              rows={3}
+              onChange={(story) => updateDraft({ story })}
+            />
+          </div>
+          <div className="pb-2" />
         </Tile>
 
         {/* 사진 — 맨 왼쪽이 대표(Cover) */}
         <Tile>
-          <div className="px-5 pt-4 pb-3">
+          <div className="flex flex-col gap-3 px-5 pt-4 pb-5">
+            <p className="text-[13px] font-semibold leading-[1.3]">Photos</p>
             <PhotoGrid
               photos={draft.photos}
               coverId={draft.coverId}
@@ -144,39 +151,13 @@ export function PostStepScreen() {
                 } else picker.open();
               }}
             />
+            <p className="text-[13px] leading-[1.4] text-muted">Tap to set the cover · Hold to reorder</p>
           </div>
-          <p className="px-5 pt-1 pb-5 text-[13px] leading-[1.4] text-muted">
-            Tap a photo to make it the cover · Hold &amp; drag to reorder
-          </p>
-        </Tile>
-
-        <Tile>
-          <div className="flex items-center justify-between px-5 pt-5 pb-2">
-            <h2 className="text-[18px] font-bold leading-[1.3]">Your post</h2>
-            <Chip tone="yellow">
-              <Icon name="sparkle" size={14} />
-              Written by AI
-            </Chip>
-          </div>
-          <div key={rewriteKey} className={rewriteKey ? "animate-fade-in" : ""}>
-            <TextField label="Title" value={draft.title} maxLength={TITLE_MAX} onChange={(title) => updateDraft({ title })} />
-            <TextField
-              label="Story"
-              value={draft.story}
-              maxLength={STORY_MAX}
-              rows={3}
-              onChange={(story) => updateDraft({ story })}
-            />
-          </div>
-          <p className="flex items-center gap-1.5 px-5 pt-1 pb-5 text-[13px] font-medium leading-[1.3] text-muted">
-            <Icon name="globe" size={14} />
-            Koreans will see this in Korean (auto-translated).
-          </p>
         </Tile>
 
         <p className="flex items-center gap-1.5 px-6 pt-3 text-[13px] font-medium leading-[1.3] text-muted">
           <Icon name="info" size={14} />
-          AI can make mistakes. Please check before moving on.
+          Written by AI. Please check it before moving on.
         </p>
       </div>
 

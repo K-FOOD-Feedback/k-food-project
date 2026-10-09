@@ -86,6 +86,7 @@ export function PhotoGrid({
         if (!press.current) return;
         press.current.active = true;
         el.setPointerCapture(pointerId);
+        navigator.vibrate?.(10); // 들렸다는 느낌 (지원하는 폰만)
         setDrag({ from: index, over: index, dx: 0, dy: 0 });
       }, LONG_PRESS_MS),
     };
@@ -98,7 +99,7 @@ export function PhotoGrid({
     const dy = e.clientY - p.y;
     if (!p.active) {
       // 길게 누르기 전에 움직이면 스크롤로 보고 취소
-      if (Math.hypot(dx, dy) > 8) clearPress();
+      if (Math.hypot(dx, dy) > 12) clearPress();
       return;
     }
     const hit = document
@@ -160,7 +161,7 @@ export function PhotoGrid({
                   ? { transform: `translate(${drag.dx}px, ${drag.dy}px) scale(1.06)`, zIndex: 10 }
                   : undefined
               }
-              className={`absolute inset-0 touch-pan-y select-none overflow-hidden rounded-[20px] bg-surface-2 [-webkit-touch-callout:none] ${
+              className={`absolute inset-0 touch-none select-none overflow-hidden rounded-[20px] bg-surface-2 [-webkit-touch-callout:none] ${
                 dragging ? "shadow-[0_12px_24px_rgba(0,0,0,0.2)]" : "transition-transform"
               } ${isCover ? "border-[3px] border-on-dark" : ""}`}
             >

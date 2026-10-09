@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowCta, IconButton } from "@/components/Buttons";
 import { TextField } from "@/components/Field";
 import { Icon } from "@/components/Icon";
-import { Chip, Screen, StepProgress, StickyBottom, Tile, TopBar } from "@/components/Layout";
+import { Screen, StepProgress, StickyBottom, Tile, TopBar } from "@/components/Layout";
 import { getQuestion, VOTE_TITLE_MAX, voteBasisOf } from "@/lib/write-data";
 import { keptRatio, track } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
@@ -102,24 +102,18 @@ export function VoteStepScreen() {
         )}
 
         <Tile>
-          <div className="flex items-center gap-1.5 px-5 pt-5 pb-2">
-            <h2 className="text-[18px] font-bold leading-[1.3]">Vote</h2>
-            <span title="Koreans vote on this. You'll see the results as they come in.">
-              <Icon name="info" size={18} />
-            </span>
-          </div>
-          <div className="flex items-center gap-2 px-5 pb-1">
-            <Chip tone="soft">
-              <Icon name={question.icon} size={14} />
-              {question.label}
-            </Chip>
+          {/* 질문 주제 — 칩 하나 (누르면 주제 다시 고르기) */}
+          <div className="flex flex-col gap-2 px-5 pt-5 pb-1">
+            <p className="text-[13px] font-semibold leading-[1.3]">Question</p>
             <Link
               href="/write/question"
               onClick={() => track("topic_change_clicked", { from: "vote", topic: draft.questionId })}
-              aria-label="Change topic"
-              className="-m-2 flex size-8 items-center justify-center transition active:scale-90"
+              aria-label={`Question: ${question.label}. Change`}
+              className="flex h-10 w-fit items-center gap-2 rounded-full bg-surface-2 pl-3 pr-3.5 text-[14px] font-semibold transition active:scale-95"
             >
-              <Icon name="pencil" size={16} />
+              <Icon name={question.icon} size={16} />
+              {question.label}
+              <Icon name="pencil" size={14} className="text-muted" />
             </Link>
           </div>
 
@@ -156,10 +150,6 @@ export function VoteStepScreen() {
               </div>
             </div>
           )}
-          <p className="flex items-center gap-1.5 px-5 pb-5 text-[13px] font-medium leading-[1.3] text-muted">
-            <Icon name="globe" size={14} />
-            Koreans will see the vote in Korean.
-          </p>
         </Tile>
 
         <p className="flex items-center gap-1.5 px-6 pt-3 text-[13px] font-medium leading-[1.3] text-muted">

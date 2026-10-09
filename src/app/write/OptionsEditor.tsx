@@ -39,7 +39,7 @@ export function OptionsEditor({
         {options.map((opt, i) => (
           <li
             key={i}
-            className="flex h-14 animate-pop items-center gap-3 rounded-full bg-surface-2 pl-4 pr-2 focus-within:ring-2 focus-within:ring-on-dark"
+            className="group flex h-14 animate-pop items-center gap-3 rounded-full bg-surface-2 pl-4 pr-2 focus-within:ring-2 focus-within:ring-on-dark"
           >
             <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-white/10 text-[12px] font-bold tabular-nums">
               {i + 1}
@@ -64,7 +64,8 @@ export function OptionsEditor({
               <Icon name="lock" size={18} className="mr-2 shrink-0" />
             ) : (
               <>
-                <span className="shrink-0 text-[12px] font-medium tabular-nums text-neutral-400">
+                {/* 글자 수는 고치는 중에만 */}
+                <span className="hidden shrink-0 text-[12px] font-medium tabular-nums text-neutral-400 group-focus-within:inline">
                   {opt.length}/{OPTION_MAX}
                 </span>
                 <button
