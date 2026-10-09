@@ -89,7 +89,7 @@
 | `post_edit_started` | Edit post | `locked` |
 | `post_delete_sheet_opened` · `post_delete_cancelled` · `post_deleted` | 삭제 | `votes`, `comments` |
 | `locked_item_tapped` | 투표 후 잠긴 항목 | `item`(add_photo/topic), `votes` |
-| `edit_topic_changed` | 수정에서 주제 변경 | `from_topic`, `to_topic` |
+| `edit_topic_changed` | 수정에서 주제 변경 (주제 휠) | `from_topic`, `to_topic`, `method` (drag·scroll·tap·keyboard) |
 | `post_edit_discarded` | X로 나감 | `had_changes`, `locked` |
 | `post_edit_saved` | Save changes | 바뀐 항목들(`*_changed`), `locked`, `votes` |
 

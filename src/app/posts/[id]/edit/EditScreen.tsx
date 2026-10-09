@@ -8,9 +8,10 @@ import { Icon } from "@/components/Icon";
 import { Screen, StickyBottom, Tile, Toast, TopBar } from "@/components/Layout";
 import { PhotoGrid } from "@/components/PhotoGrid";
 import { usePhotoPicker } from "@/components/PhotoPicker";
-import { aiVoteFor, getQuestion, MAX_PHOTOS, QUESTIONS, STORY_MAX, TITLE_MAX, VOTE_TITLE_MAX, type Photo } from "@/lib/write-data";
+import { aiVoteFor, getQuestion, MAX_PHOTOS, rankQuestions, STORY_MAX, TITLE_MAX, VOTE_TITLE_MAX, type Photo } from "@/lib/write-data";
 import { SAMPLE_MY_POST, useFlow, type MyPost, MY_POST_ID } from "@/lib/write-store";
 import { OptionsEditor } from "@/app/write/OptionsEditor";
+import { QuestionWheel } from "@/app/write/vote/QuestionWheel";
 import { track } from "@/lib/analytics";
 
 let editSeq = 0;
@@ -29,6 +30,9 @@ export function EditScreen() {
   const closeLockToast = useCallback(() => setLockToast(false), []);
   const canSave = form.title.trim().length > 0 && form.options.filter((o) => o.trim()).length >= 2;
   const set = (patch: Partial<MyPost>) => setForm((f) => ({ ...f, ...patch }));
+  const question = getQuestion(form.questionId);
+  // 주제 휠 순서 — 처음 글 기준 AI 추천 순서로 고정 (본문을 고치는 동안 휠 순서가 바뀌지 않게)
+  const [ranked] = useState(() => rankQuestions(initial));
 
   const picker = usePhotoPicker((files) => {
     const room = MAX_PHOTOS - form.photos.length;
@@ -100,6 +104,19 @@ export function EditScreen() {
         )}
 
         <Tile>
+          <h2 className="px-5 pt-5 pb-2 text-[18px] font-bold leading-[1.3]">Your post</h2>
+          <TextField label="Title" value={form.title} maxLength={TITLE_MAX} onChange={(title) => set({ title })} />
+          <TextField
+            label="Story"
+            value={form.story}
+            maxLength={STORY_MAX}
+            rows={3}
+            onChange={(story) => set({ story })}
+          />
+          <div className="h-2" />
+        </Tile>
+
+        <Tile>
           <div className="flex items-center px-5 pt-5 pb-2">
             <h2 className="flex-1 text-[18px] font-bold leading-[1.3]">Photos</h2>
             <span className="text-[15px] font-bold leading-[1.3] text-neutral-400 tabular-nums">
@@ -127,98 +144,58 @@ export function EditScreen() {
           </p>
         </Tile>
 
-        <Tile>
-          <h2 className="px-5 pt-5 pb-2 text-[18px] font-bold leading-[1.3]">What Koreans will tell you</h2>
-          {locked ? (
-            <div className="px-5 pt-3 pb-5">
-              <button
-                key={lockShake}
-                type="button"
-                onClick={() => {
-                  track("locked_item_tapped", { item: "topic", votes: initial.votes });
-                  setLockShake((k) => k + 1);
-                  setLockToast(true);
-                }}
-                className={`flex h-14 w-full items-center gap-3 rounded-full bg-surface-2 px-4 text-left text-muted ${
-                  lockShake ? "animate-shake" : ""
-                }`}
-              >
-                <Icon name={getQuestion(form.questionId).icon} size={20} className="text-on-dark" />
-                <span className="flex-1 text-[15px] font-semibold leading-[1.3]">
-                  {getQuestion(form.questionId).label}
-                </span>
-                <Icon name="lock" size={18} className="text-on-dark" />
-              </button>
-            </div>
-          ) : (
-            <>
-              <div role="radiogroup" aria-label="Question type" className="flex flex-col gap-1 px-5 pt-3 pb-2">
-                {QUESTIONS.map((q) => {
-                  const on = q.id === form.questionId;
-                  return (
-                    <button
-                      key={q.id}
-                      type="button"
-                      role="radio"
-                      aria-checked={on}
-                      onClick={() => {
-                        if (q.id === form.questionId) return;
-                        track("edit_topic_changed", { from_topic: form.questionId, to_topic: q.id });
-                        set({ questionId: q.id, ...aiVoteFor(q.id, form.dish, form) });
-                      }}
-                      className={`flex h-14 items-center gap-3 rounded-full bg-surface-2 pl-4 pr-3 text-left ${
-                        on ? "border-2 border-on-dark" : "border-2 border-transparent"
-                      }`}
-                    >
-                      <Icon name={q.icon} size={20} />
-                      <span className="flex-1 text-[15px] font-semibold leading-[1.3]">{q.label}</span>
-                      {on ? (
-                        <span className="flex size-6 animate-pop items-center justify-center rounded-full bg-on-dark text-on-light">
-                          <Icon name="check" size={12} strokeWidth={3} />
-                        </span>
-                      ) : (
-                        <span className="size-6 rounded-full border-2 border-disabled" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="flex items-center gap-1.5 px-5 pt-1 pb-5 text-[13px] font-medium leading-[1.3] text-muted">
-                <Icon name="info" size={14} />
-                Changing this will remake the vote.
-              </p>
-            </>
-          )}
-        </Tile>
-
-        <Tile>
-          <h2 className="px-5 pt-5 pb-2 text-[18px] font-bold leading-[1.3]">Your post</h2>
-          <TextField label="Title" value={form.title} maxLength={TITLE_MAX} onChange={(title) => set({ title })} />
-          <TextField
-            label="Story"
-            value={form.story}
-            maxLength={STORY_MAX}
-            rows={3}
-            onChange={(story) => set({ story })}
-          />
-          <div className="h-2" />
-        </Tile>
-
+        {/* 작성 ③과 같은 구조: 주제 휠 → 투표 제목 → 선택지. 투표가 시작되면 모두 잠김 */}
         <Tile>
           <h2 className="px-5 pt-5 pb-2 text-[18px] font-bold leading-[1.3]">
-            {locked ? "Vote (locked)" : "Vote"}
+            {locked ? "Ask Koreans (locked)" : "Ask Koreans"}
           </h2>
-          <TextField
-            label="Vote title"
-            value={form.voteQuestion}
-            maxLength={VOTE_TITLE_MAX}
-            rows={2}
-            locked={locked}
-            onChange={(voteQuestion) => set({ voteQuestion })}
-          />
-          <div className="flex flex-col gap-2 px-5 pt-3 pb-5">
-            <p className="text-[13px] font-semibold leading-[1.3]">Choices Koreans can pick</p>
-            <OptionsEditor source="edit" options={form.options} locked={locked} onChange={(options) => set({ options })} />
+          <div className="flex flex-col gap-2 pt-1 pb-1">
+            {locked ? (
+              <div className="px-5 pt-1">
+                <button
+                  key={lockShake}
+                  type="button"
+                  onClick={() => {
+                    track("locked_item_tapped", { item: "topic", votes: initial.votes });
+                    setLockShake((k) => k + 1);
+                    setLockToast(true);
+                  }}
+                  className={`flex h-12 w-full items-center justify-center gap-2 rounded-[16px] bg-surface-2 px-4 text-muted ${
+                    lockShake ? "animate-shake" : ""
+                  }`}
+                >
+                  <Icon name={question.icon} size={18} className="text-on-dark" />
+                  <span className="text-[17px] font-bold text-on-dark">{question.label}</span>
+                  <Icon name="lock" size={16} className="text-on-dark" />
+                </button>
+              </div>
+            ) : (
+              <div className="px-3">
+                <QuestionWheel
+                  items={ranked}
+                  value={form.questionId}
+                  onChange={(id, method) => {
+                    track("edit_topic_changed", { from_topic: form.questionId, to_topic: id, method });
+                    // 주제를 바꾸면 투표 제목·선택지를 그 주제에 맞게 다시 만듦
+                    set({ questionId: id, ...aiVoteFor(id, form.dish, form) });
+                  }}
+                />
+              </div>
+            )}
+            <p className="px-5 text-center text-[13px] leading-[1.4] text-muted">{question.hint}</p>
+          </div>
+          <div key={form.questionId} className="animate-fade-in">
+            <TextField
+              label="Vote title"
+              value={form.voteQuestion}
+              maxLength={VOTE_TITLE_MAX}
+              locked={locked}
+              onChange={(voteQuestion) => set({ voteQuestion })}
+            />
+            <div className="flex flex-col gap-2 px-5 pt-3 pb-5">
+              <p className="text-[13px] font-semibold leading-[1.3]">Choices Koreans can pick</p>
+              <OptionsEditor source="edit" options={form.options} locked={locked} onChange={(options) => set({ options })} />
+            </div>
           </div>
         </Tile>
       </div>
