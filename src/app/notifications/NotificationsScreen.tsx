@@ -235,7 +235,6 @@ function Badge({ type }: { type: Notif["type"] }) {
     comment: "bg-secondary text-on-light",
     reply: "bg-lilac text-on-light",
     milestone: "bg-content text-[20px]",
-    quiet: "bg-surface-2 text-on-dark",
     draft: "bg-surface-2 text-on-dark",
   }[type];
   const icon = {
@@ -243,7 +242,6 @@ function Badge({ type }: { type: Notif["type"] }) {
     milestone: "🔥",
     comment: <Icon name="message" size={20} />,
     reply: <Icon name="message" size={20} />,
-    quiet: <Icon name="share" size={20} />,
     draft: <Icon name="pencil" size={20} />,
   }[type];
   return (
@@ -356,8 +354,6 @@ function titleOf(n: Notif, lang: Lang, count = 1) {
       return count > 1 ? `${count} new comments` : `${n.actor} commented`;
     case "reply":
       return count > 1 ? `${count} replies to your comment` : `${n.actor} replied to your comment`;
-    case "quiet":
-      return "It's quiet so far";
     case "draft":
       return "You have an unfinished post";
   }
@@ -374,8 +370,6 @@ function bodyOf(n: Notif, lang: Lang, count = 1) {
       return count > 1 ? `${n.actor}: “${n.detail}”` : `“${n.detail}”`;
     case "reply":
       return `${n.postTitle} · “${n.detail}”`;
-    case "quiet":
-      return "Share your post with friends to get more votes.";
     case "draft":
       return "Pick up where you left off.";
   }
@@ -383,12 +377,12 @@ function bodyOf(n: Notif, lang: Lang, count = 1) {
 
 /**
  * 알림을 누르면 가는 곳. ?from= 을 붙여서, 그 화면의 뒤로가기 버튼이 알림함으로 돌아오게 함
- * - 외국인: 내 글 / 남의 글 대댓글은 그 글의 댓글 화면 / 쓰다 만 글은 작성 화면
+ * - 외국인: 내 글 / 남의 글 대댓글은 그 글의 댓글 화면 / 쓰다 만 글은 작성 화면(뒤로 → 알림함)
  * - 한국인: 대댓글이 달린 글의 댓글 화면
  */
 function hrefOf(n: Notif, lang: Lang) {
   const from = lang === "en" ? "notifications-en" : "notifications";
-  if (n.type === "draft") return "/write";
+  if (n.type === "draft") return `/write?from=${from}`;
   if (n.type === "reply" && (lang === "ko" || n.postId !== "mine")) return `/posts/${n.postId}/comments?from=${from}`;
   return `/my/posts/${n.postId}?from=${from}`;
 }

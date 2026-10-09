@@ -12,7 +12,7 @@ import { track } from "@/lib/analytics";
 import { coverOf, useFlow } from "@/lib/write-store";
 import { usePhotoActions } from "./usePhotoActions";
 
-export function PhotosScreen() {
+export function PhotosScreen({ backHref = "/home/en" }: { backHref?: string }) {
   const router = useRouter();
   // 로그인은 외국인 메인의 Share 버튼(ShareKfoodButton)에서 사진 선택 전에 끝냅니다.
   const { draft, saveDraftForLater } = useFlow();
@@ -36,7 +36,7 @@ export function PhotosScreen() {
   const leave = () => {
     saveDraftForLater("photos");
     track("draft_saved", { step: "photos", photos: draft.photos.length });
-    router.push("/home/en");
+    router.push(backHref);
   };
 
   const cover = draft.photos.length ? coverOf(draft) : null;

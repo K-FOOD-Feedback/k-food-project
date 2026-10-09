@@ -9,14 +9,13 @@
     · comment   내 글에 댓글이 달렸을 때
     · milestone 투표가 10 · 20 · 30 … 10표 단위로 쌓일 때마다
     · reply     내 댓글에 대댓글이 달렸을 때
-    · quiet     올리고 24시간 동안 반응이 없을 때 → 공유 유도
     · draft     쓰다 만 글(나중에 하기)이 있을 때
   - 한국인
     · reply     내 댓글에 대댓글이 달렸을 때
 */
 
 export type Lang = "en" | "ko";
-export type NotifType = "first" | "comment" | "milestone" | "reply" | "quiet" | "draft";
+export type NotifType = "first" | "comment" | "milestone" | "reply" | "draft";
 /** 탭(외국인만): 투표 쪽 / 댓글 쪽. 한국인은 대댓글 하나뿐이라 탭 없음 */
 export type FilterId = "all" | "vote" | "comment";
 
@@ -48,7 +47,6 @@ const SIDE: Record<NotifType, FilterId> = {
   milestone: "vote",
   comment: "comment",
   reply: "comment",
-  quiet: "all",
   draft: "all",
 };
 export const matchesFilter = (n: Notif, f: FilterId) => f === "all" || SIDE[n.type] === f;
@@ -76,7 +74,6 @@ const EN: Notif[] = [
   { ...MINE, id: "en5", type: "milestone", detail: "10", day: "Yesterday", time: "18:40", read: true },
   { ...MINE, id: "en6", type: "draft", detail: "", day: "Yesterday", time: "12:05", read: true },
   { ...MINE, id: "en7", type: "first", actor: "민지", detail: "", day: "Oct 6", time: "09:12", read: true },
-  { ...MINE, id: "en8", type: "quiet", detail: "", day: "Oct 5", time: "20:30", read: true },
 ];
 
 // ── 한국인 (대댓글만)
