@@ -126,7 +126,12 @@ export function ShareSheet({
     });
     try {
       // 스토리는 화면을 꽉 채우므로 둥근 모서리 없이 찍음
-      const blob = await toBlob(card, { pixelRatio: 1080 / CARD_W, cacheBust: true, style: { borderRadius: "0" } });
+      const blob = await toBlob(card, {
+        pixelRatio: 1080 / CARD_W,
+        cacheBust: true,
+        style: { borderRadius: "0" },
+        fontEmbedCSS: await ownFontCSS(),
+      });
       return blob ? new File([blob], `k-food-${style}.png`, { type: "image/png" }) : null;
     } catch {
       return null;
@@ -360,6 +365,52 @@ function usePhotoThemes(src: string): CardTheme[] {
     img.src = src;
   }, [src]);
   return themes.src === src ? themes.list : [];
+}
+
+/**
+ * 이미지에 넣을 글꼴 — 우리 사이트에서 내려주는 글꼴(@font-face)만 골라 data URL로 묶음
+ * html-to-image에 맡기면 외부 CSS(Pretendard CDN)까지 읽으려다 보안 오류를 콘솔에 남김.
+ * (Pretendard는 외부라 이미지에선 기기 기본 글꼴로 대체됨)
+ */
+let fontCSS: Promise<string> | null = null;
+function ownFontCSS() {
+  fontCSS ??= (async () => {
+    const rules: { css: string; base: string }[] = [];
+    for (const sheet of Array.from(document.styleSheets)) {
+      if (sheet.href && new URL(sheet.href).origin !== location.origin) continue; // 외부 CSS는 건너뜀
+      let list: CSSRuleList;
+      try {
+        list = sheet.cssRules;
+      } catch {
+        continue;
+      }
+      for (const rule of Array.from(list)) {
+        if (rule instanceof CSSFontFaceRule) rules.push({ css: rule.cssText, base: sheet.href ?? location.href });
+      }
+    }
+    const inlined = await Promise.all(
+      rules.map(async ({ css, base }) => {
+        const urls = [...css.matchAll(/url\(["']?([^"')]+)["']?\)/g)].map((m) => m[1]);
+        for (const u of urls) {
+          if (u.startsWith("data:")) continue;
+          try {
+            const blob = await (await fetch(new URL(u, base))).blob();
+            const data = await new Promise<string>((done) => {
+              const r = new FileReader();
+              r.onload = () => done(String(r.result));
+              r.readAsDataURL(blob);
+            });
+            css = css.replace(u, data);
+          } catch {
+            // 못 받은 글꼴은 그냥 둠
+          }
+        }
+        return css;
+      }),
+    );
+    return inlined.join("\n");
+  })();
+  return fontCSS;
 }
 
 function hueOf(r: number, g: number, b: number) {
