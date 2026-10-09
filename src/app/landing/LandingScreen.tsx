@@ -17,7 +17,8 @@ import { COPY, REACTIONS, SAMPLE_PCTS, type LandingLang } from "./copy";
 // 스크롤 이야기 구간 (0~1)
 const STEP_AT = [0, 0.1, 0.42, 0.74];
 // 스크롤이 멈추는 자리 (진행도). 섹션 높이 400svh - 화면 100svh = 300svh 기준
-const SNAP_AT = [0, 0.345, 0.66, 0.83, 1];
+// 한마디는 스크롤 한 번에 하나씩 (0.5 · 0.58 · 0.66)
+const SNAP_AT = [0, 0.345, 0.5, 0.58, 0.66, 0.83, 1];
 
 const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 /** p가 a→b 사이에서 0→1 */
@@ -410,19 +411,19 @@ export function LandingScreen() {
               lang={lang}
               r={REACTIONS[0]}
               className="-left-2 top-[5%] bg-primary"
-              style={fly(p, 0.42, 0.49, { x: -300, y: -40, r: -30 }, -6)}
+              style={fly(p, 0.44, 0.5, { x: -300, y: -40, r: -30 }, -6)}
             />
             <Bubble
               lang={lang}
               r={REACTIONS[1]}
               className="-right-2 top-[17%] max-w-[200px] bg-content"
-              style={fly(p, 0.48, 0.55, { x: 300, y: 20, r: 25 }, 5)}
+              style={fly(p, 0.52, 0.58, { x: 300, y: 20, r: 25 }, 5)}
             />
             <Bubble
               lang={lang}
               r={REACTIONS[2]}
               className="-left-1 top-[30%] bg-lilac"
-              style={fly(p, 0.54, 0.61, { x: -300, y: 60, r: -20 }, 3)}
+              style={fly(p, 0.6, 0.66, { x: -300, y: 60, r: -20 }, 3)}
             />
           </div>
           </div>
