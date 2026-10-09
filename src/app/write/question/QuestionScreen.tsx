@@ -6,6 +6,7 @@ import { ArrowCta, IconButton } from "@/components/Buttons";
 import { Icon } from "@/components/Icon";
 import { Chip, Screen, StepProgress, StickyBottom, TopBar } from "@/components/Layout";
 import { QUESTIONS } from "@/lib/write-data";
+import { WriteExit } from "../WriteExit";
 import { track } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
 
@@ -147,6 +148,7 @@ export function QuestionScreen() {
           />
         }
         title="Pick a question"
+        right={<WriteExit step="question" />}
       />
       <StepProgress step={2} />
 

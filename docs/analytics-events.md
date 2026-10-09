@@ -59,6 +59,8 @@
 | `photo_limit_hit` | 10장 초과 | `from` |
 | `photos_completed` | ① Next | `count` |
 | `draft_saved` | 중간에 나감 | `step` |
+| `write_exit_opened` | 작성 중 오른쪽 위 × (나가기 시트) | `step` |
+| `draft_discarded` | 나가기 시트 → Delete and leave | `step`, `from` |
 | `topic_changed` | ② 휠 | `from_topic`, `to_topic`, `method`(drag/scroll/tap/keyboard) |
 | `topic_selected` | ② Write with AI | `topic`, `is_ai_top_pick`, `changes` |
 | `topic_reselected` | 투표에서 주제만 바꾸고 복귀 | `from_topic`, `to_topic`, `changed` |
@@ -101,4 +103,4 @@
 투표 로그인: `login_sheet_opened` / `login_cancelled` / `login_completed` 에 `from: "vote"` (한국인이 로그인 없이 투표하려 할 때).
 
 ## 아직 없음 (기능 생기면 추가)
-푸시 알림 허용(`notify_prompt_shown`, `notify_enabled`), 임시 저장 이어 쓰기/버리기(`draft_resumed`, `draft_discarded`), 로그인 후 사용자 연결(`identify` — Supabase 사용자 ID).
+푸시 알림 허용(`notify_prompt_shown`, `notify_enabled`), 임시 저장 이어 쓰기(`draft_resumed`), 로그인 후 사용자 연결(`identify` — Supabase 사용자 ID).

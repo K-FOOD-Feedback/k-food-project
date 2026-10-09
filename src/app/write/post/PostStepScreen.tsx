@@ -12,6 +12,7 @@ import { MAX_PHOTOS, STORY_MAX, TITLE_MAX } from "@/lib/write-data";
 import { keptRatio, track } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
 import { usePhotoActions } from "../usePhotoActions";
+import { WriteExit } from "../WriteExit";
 
 /*
   ③ Your post
@@ -67,6 +68,8 @@ export function PostStepScreen() {
             }}
           />
         }
+        title="Your post"
+        right={<WriteExit step="post" />}
       />
       <StepProgress step={3} />
 
@@ -138,7 +141,6 @@ export function PostStepScreen() {
             <p className="text-[13px] font-semibold leading-[1.3]">Photos</p>
             <PhotoGrid
               photos={draft.photos}
-              coverChip
               onRemove={photo.remove}
               onMove={photo.move}
               onAdd={() => {

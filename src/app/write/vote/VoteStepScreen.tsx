@@ -11,6 +11,7 @@ import { getQuestion, VOTE_TITLE_MAX, voteBasisOf } from "@/lib/write-data";
 import { keptRatio, track } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
 import { OptionsEditor } from "../OptionsEditor";
+import { WriteExit } from "../WriteExit";
 
 const MAKING_MS = 1400;
 
@@ -74,6 +75,7 @@ export function VoteStepScreen() {
           />
         }
         title="Your vote"
+        right={<WriteExit step="vote" />}
       />
       <StepProgress step={4} />
 

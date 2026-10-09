@@ -11,6 +11,7 @@ import { MAX_PHOTOS } from "@/lib/write-data";
 import { track } from "@/lib/analytics";
 import { coverOf, useFlow } from "@/lib/write-store";
 import { usePhotoActions } from "./usePhotoActions";
+import { WriteExit } from "./WriteExit";
 
 export function PhotosScreen({ backHref = "/home/en" }: { backHref?: string }) {
   const router = useRouter();
@@ -46,11 +47,7 @@ export function PhotosScreen({ backHref = "/home/en" }: { backHref?: string }) {
       <TopBar
         left={<IconButton icon="chevron-left" label="Back" onClick={leave} />}
         title="Your photos"
-        right={
-          <span className="pr-2 font-display text-[20px] leading-none text-muted tabular-nums">
-            {draft.photos.length}/{MAX_PHOTOS}
-          </span>
-        }
+        right={<WriteExit step="photos" exitHref={backHref} />}
       />
       <StepProgress step={1} />
 
@@ -91,7 +88,7 @@ export function PhotosScreen({ backHref = "/home/en" }: { backHref?: string }) {
               />
             </div>
             <p className="px-5 pt-1 pb-5 text-[13px] leading-[1.4] text-muted">
-              Drag to reorder · The first photo is the cover
+              Drag to reorder · The first photo is the cover · {draft.photos.length}/{MAX_PHOTOS}
             </p>
           </Tile>
         )}

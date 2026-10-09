@@ -55,6 +55,8 @@ export type EventName =
   | "photo_limit_hit"
   | "photos_completed"
   | "draft_saved"
+  | "draft_discarded"
+  | "write_exit_opened"
   | "topic_changed"
   | "topic_selected"
   | "topic_reselected"

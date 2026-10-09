@@ -46,7 +46,6 @@ export function PhotoGrid({
   onAdd,
   addLocked = false,
   canRemove = true,
-  coverChip = false,
   onLockedTap,
 }: {
   photos: Photo[];
@@ -55,8 +54,6 @@ export function PhotoGrid({
   onAdd?: () => void;
   addLocked?: boolean;
   canRemove?: boolean;
-  /** 대표 사진 썸네일 위에 "Cover" 칩 표시 (07 Review) */
-  coverChip?: boolean;
   /** 잠긴 Add 타일을 눌렀을 때 */
   onLockedTap?: () => void;
 }) {
@@ -137,13 +134,13 @@ export function PhotoGrid({
               } ${isCover ? "border-[3px] border-on-dark" : ""}`}
             >
               <PhotoImage src={photo.src} sizes="72px" className="pointer-events-none object-cover" />
+              {/* 대표 사진 표시 — 썸네일 아래쪽 안에 꽉 찬 띠 */}
+              {isCover && (
+                <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-black/80 py-1 text-center text-[11px] font-bold leading-[1.3] text-white">
+                  Cover
+                </span>
+              )}
             </button>
-            {coverChip && isCover && !dragging && (
-              <span className="pointer-events-none absolute -left-px top-[21px] z-[5] flex items-center gap-1.5 rounded-full bg-surface px-3 py-[7px] text-[13px] font-semibold leading-[1.3]">
-                <Icon name="check" size={14} strokeWidth={2.5} />
-                Cover
-              </span>
-            )}
             {!dragging && (
               <button
                 type="button"

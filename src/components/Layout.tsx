@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Icon } from "./Icon";
 
 /** 모바일 한 화면. 375 기준으로 그렸고 430까지 늘어납니다. */
@@ -109,7 +110,8 @@ export function BottomSheet({
 
   if (!open) return null;
 
-  return (
+  // 페이지 맨 바깥(body)에 그려서, 시트를 연 버튼이 어디(상단바·움직이는 패널 등) 안에 있든 화면 전체를 덮음
+  return createPortal(
     <div className="fixed inset-0 z-50">
       <button
         type="button"
@@ -129,7 +131,8 @@ export function BottomSheet({
         <div className="h-1 w-10 shrink-0 rounded-full bg-white/20" aria-hidden="true" />
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
