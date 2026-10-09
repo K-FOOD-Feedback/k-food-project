@@ -11,6 +11,7 @@ import { keptRatio, track } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
 import { OptionsEditor } from "../OptionsEditor";
 import { WriteExit } from "../WriteExit";
+import { QuestionWheel } from "./QuestionWheel";
 
 const MAKING_MS = 1400;
 
@@ -52,9 +53,9 @@ export function VoteStepScreen() {
     return () => window.clearTimeout(t);
   }, [making, variant, makeVote, draft.questionId]);
 
-  const chooseQuestion = (id: QuestionId) => {
+  const chooseQuestion = (id: QuestionId, method: string) => {
     if (id === draft.questionId || making) return;
-    track("topic_changed", { from_topic: draft.questionId, to_topic: id, method: "chip", ai_rank: ranked.indexOf(id) });
+    track("topic_changed", { from_topic: draft.questionId, to_topic: id, method, ai_rank: ranked.indexOf(id) });
     updateDraft({ questionId: id });
     reason.current = "question";
     setVariant(0);
@@ -122,41 +123,18 @@ export function VoteStepScreen() {
         )}
 
         <Tile>
-          {/* 한국인에게 물어볼 질문 — 가로로 넘겨 고르기. 맨 앞이 AI 추천 */}
+          {/* 한국인에게 물어볼 질문 — iOS 알람처럼 위아래로 굴려서 고르기. 가운데 띠가 선택, 처음엔 AI 추천 1순위 */}
           <div className="flex flex-col gap-2 pt-5 pb-1">
             <p className="px-5 text-[13px] font-semibold leading-[1.3]">What do you want to ask?</p>
-            <div
-              role="radiogroup"
-              aria-label="Question"
-              className="flex snap-x gap-1.5 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            >
-              {ranked.map((id, i) => {
-                const q = getQuestion(id);
-                const on = id === draft.questionId;
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    role="radio"
-                    aria-checked={on}
-                    onClick={() => chooseQuestion(id)}
-                    className={`relative flex h-11 shrink-0 snap-start items-center gap-2 rounded-full pl-3.5 pr-4 text-[14px] font-semibold transition active:scale-95 ${
-                      on ? "bg-on-dark text-on-light" : "bg-surface-2 text-on-dark"
-                    }`}
-                  >
-                    <Icon name={q.icon} size={16} />
-                    {q.label}
-                    {i === 0 && (
-                      <span className={`flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${on ? "bg-content text-on-light" : "bg-content/20 text-content"}`}>
-                        <Icon name="sparkle" size={10} />
-                        AI
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+            <div className="px-3">
+              <QuestionWheel
+                items={ranked}
+                value={draft.questionId}
+                disabled={making}
+                onChange={(id, method) => chooseQuestion(id, method)}
+              />
             </div>
-            <p className="px-5 text-[13px] leading-[1.4] text-muted">{question.hint}</p>
+            <p className="px-5 text-center text-[13px] leading-[1.4] text-muted">{question.hint}</p>
           </div>
 
           {making ? (

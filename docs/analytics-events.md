@@ -61,7 +61,7 @@
 | `draft_saved` | 중간에 나감 | `step` |
 | `write_exit_opened` | 작성 중 오른쪽 위 × (나가기 시트) | `step` |
 | `draft_discarded` | 나가기 시트 → Delete and leave | `step`, `from` |
-| `topic_changed` | 질문+투표 화면에서 질문 칩 바꿈 | `from_topic`, `to_topic`, `method`(chip), `ai_rank`(AI 추천 순위, 0=1순위) |
+| `topic_changed` | 질문+투표 화면에서 질문 휠 바꿈 | `from_topic`, `to_topic`, `method`(drag/scroll/tap/keyboard), `ai_rank`(AI 추천 순위, 0=1순위) |
 | `topic_selected` | ② Write with AI | `topic`, `is_ai_top_pick`, `changes` |
 | `topic_reselected` | 투표에서 주제만 바꾸고 복귀 | `from_topic`, `to_topic`, `changed` |
 | `ai_draft_completed` / `ai_draft_stopped` | AI 작성 화면 | `duration_ms`, `topic` / `step_done` |
