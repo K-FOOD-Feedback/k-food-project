@@ -46,6 +46,13 @@ function fly(p: number, a: number, b: number, from: { x?: number; y?: number; r?
 }
 
 const subscribeNone = () => () => {};
+/** 배경 빛 세 장면: 자리(화면 %)와 색 토큰 */
+const GLOWS = [
+  { x: 28, y: 42, color: "--color-content" }, // 카드만 — 노랑, 왼쪽 위
+  { x: 74, y: 80, color: "--color-primary" }, // 투표 — 핑크, 오른쪽 아래
+  { x: 70, y: 36, color: "--color-secondary" }, // 한마디 — 보라, 오른쪽 위
+];
+
 /** 글쓴이 답글 말풍선 기울기 (작성자 표시도 들어가면서 같이 기울어짐) */
 const REPLY_TILT = -3;
 
@@ -194,9 +201,15 @@ export function LandingScreen() {
   // 제목: 0 소개(=글 올리기) · 1 투표 · 2 한마디 · 3 답글 · 4 마지막
   const scene = done ? 4 : step;
   const shrink = seg(p, 0.84, 0.94);
-  // 배경 빛 세기 (0~1)
-  const glowYellow = clamp(1 - 0.75 * seg(p, 0.06, 0.2) + 0.6 * seg(p, 0.72, 0.85));
-  const glowPink = clamp(seg(p, 0.06, 0.2) * (1 - 0.35 * seg(p, 0.72, 0.85)) + 0.5 * shrink);
+  // 배경 빛: 카드만 → 투표 → 한마디, 세 장면 사이를 스크롤에 맞춰 옮겨 감
+  const toVote = seg(p, 0.06, 0.22);
+  const toComments = seg(p, 0.36, 0.5);
+  const w = [1 - toVote, toVote * (1 - toComments), toComments];
+  const glow = {
+    w,
+    x: GLOWS.reduce((sum, g, i) => sum + g.x * w[i], 0),
+    y: GLOWS.reduce((sum, g, i) => sum + g.y * w[i], 0),
+  };
   // 처음엔 게시물이 조금 아래, 투표가 붙을수록 위로 올라감 (마지막엔 제목 바로 아래)
   // 한 번에 하나만: 투표는 다음 단계(한마디)가 오면 내려가며 사라짐
   const voteOut = seg(p, 0.36, 0.43);
@@ -254,25 +267,25 @@ export function LandingScreen() {
           />
         ))}
         <div className="sticky top-0 flex h-[100svh] flex-col overflow-hidden px-5 pt-[calc(100px+env(safe-area-inset-top))]">
-          {/* 카드 뒤 은은한 빛 — 글·답글(외국인)은 노랑, 투표·한마디(한국인)는 핑크, 마지막엔 둘 다 */}
+          {/* 카드 뒤 은은한 빛 — 장면마다 자리와 색이 바뀜
+              1) 카드만: 노랑, 왼쪽 위  2) 투표: 핑크, 오른쪽 아래  3) 한마디: 보라, 오른쪽 위 */}
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-            <div className="absolute left-1/2 top-[58%] size-[min(620px,150vw)] -translate-x-1/2 -translate-y-1/2 animate-breathe">
-              <span
-                className="absolute inset-0 rounded-full blur-[70px] transition-opacity duration-700"
-                style={{
-                  background: "radial-gradient(circle, color-mix(in oklab, var(--color-content) 62%, transparent) 0%, transparent 68%)",
-                  opacity: glowYellow,
-                  translate: "-12% 6%",
-                }}
-              />
-              <span
-                className="absolute inset-0 rounded-full blur-[70px] transition-opacity duration-700"
-                style={{
-                  background: "radial-gradient(circle, color-mix(in oklab, var(--color-primary) 62%, transparent) 0%, transparent 68%)",
-                  opacity: glowPink,
-                  translate: "12% -6%",
-                }}
-              />
+            <div
+              className="absolute size-[min(560px,140vw)] -translate-x-1/2 -translate-y-1/2"
+              style={{ left: `${glow.x}%`, top: `${glow.y}%` }}
+            >
+              <div className="absolute inset-0 animate-breathe">
+                {GLOWS.map((g, i) => (
+                  <span
+                    key={g.color}
+                    className="absolute inset-0 rounded-full blur-[70px]"
+                    style={{
+                      background: `radial-gradient(circle, color-mix(in oklab, var(${g.color}) 62%, transparent) 0%, transparent 68%)`,
+                      opacity: glow.w[i],
+                    }}
+                  />
+                ))}
+              </div>
             </div>
           </div>
 
@@ -301,7 +314,7 @@ export function LandingScreen() {
             <div ref={postRef} className="relative isolate rounded-[32px] px-5 pt-7 pb-6 text-on-dark">
               <span
                 aria-hidden="true"
-                className="absolute inset-0 -z-10 animate-[fade-in_500ms_ease-out_1300ms_both] rounded-[32px] bg-surface"
+                className="absolute inset-0 -z-10 animate-[fade-in_500ms_ease-out_1300ms_both] rounded-[32px] bg-surface/55 ring-1 ring-white/10 backdrop-blur-2xl"
               />
               <div
                 className="relative mx-auto animate-photo-frame overflow-hidden [animation-delay:250ms]"
@@ -375,7 +388,7 @@ export function LandingScreen() {
                 style={{ top: box.author.y - 2, rotate: `${REPLY_TILT}deg`, transformOrigin: "16px 19px" }}
               >
                 <span
-                  className="flex max-w-[240px] flex-col gap-1 rounded-[24px] bg-surface-2 px-4 pt-2.5 pb-3 text-on-dark ring-1 ring-white/10"
+                  className="flex max-w-[240px] flex-col gap-1 rounded-[24px] bg-surface-2/70 px-4 pt-2.5 pb-3 text-on-dark ring-1 ring-white/10 backdrop-blur-xl"
                   style={fly(p, 0.72, 0.79, { y: 40, s: 0.6 })}
                 >
                   <span ref={slotRef} className="invisible flex items-center gap-[5px] whitespace-nowrap text-[13px] font-semibold" aria-hidden="true">
@@ -389,7 +402,7 @@ export function LandingScreen() {
 
             {/* 투표 (앱 상세와 같은 모양: 세로 칸이 아래에서 차오름) */}
             <div className="mt-3" style={{ opacity: 1 - voteOut, translate: `0 ${voteOut * 60}px` }} aria-hidden={voteOut >= 1}>
-            <div className="relative rounded-[32px] bg-surface-2 px-4 pt-5 pb-4" style={fly(p, 0.1, 0.17, { y: 260, r: -6 })}>
+            <div className="relative rounded-[32px] bg-surface/55 px-4 pt-5 pb-4 ring-1 ring-white/10 backdrop-blur-2xl" style={fly(p, 0.1, 0.17, { y: 260, r: -6 })}>
               <p className="text-center font-display text-[18px] leading-[1.3]">{t.voteTitle}</p>
               <div className="mt-3 flex h-[min(128px,15svh)] gap-1.5">
                 {t.options.map((opt, i) => {
@@ -398,7 +411,7 @@ export function LandingScreen() {
                   return (
                     <div
                       key={opt}
-                      className="relative min-w-0 flex-1 rounded-[20px] bg-surface"
+                      className="relative min-w-0 flex-1 rounded-[20px] bg-black/25"
                       style={fly(p, 0.14 + i * 0.03, 0.21 + i * 0.03, { y: 120 })}
                     >
                       <span
