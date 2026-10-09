@@ -66,11 +66,12 @@ const STICKER_COLORS = ["var(--color-primary)", "var(--color-content)", "var(--c
 // 카드 스타일마다 스티커가 붙을 만한 자리 — 모두 카드 안쪽(가장자리에서 8 이상)에 둬서 잘리지 않게
 // 두 장은 (0,2) 또는 (1,3) 짝으로 붙으므로 짝끼리 겹치지 않는 자리로
 const SPOTS: Record<CardStyle, CSSProperties[]> = {
+  // 사진 카드는 대각선으로 — 위 한 장 + 사진 아래쪽 한 장
   photo: [
     { top: 14, right: 8 },
-    { top: 150, left: 8 },
-    { top: 30, left: 8 },
-    { top: 116, right: 8 },
+    { top: 18, left: 8 },
+    { top: 156, left: 8 },
+    { top: 152, right: 8 },
   ],
   // 투표 카드는 한 장은 왼쪽, 한 장은 오른쪽 (사진 양옆)
   vote: [
@@ -242,9 +243,9 @@ function VerdictCard({ post, theme }: { post: ShareCardPost; theme: CardTheme })
           </div>
         </div>
       </div>
-      {/* 판결 대기 도장 */}
+      {/* 판결 대기 도장 — 기울이면 영수증 끝에 아슬아슬하게 닿아 불안해 보여서 똑바로 */}
       <span
-        className="pointer-events-none mx-auto mt-3 rotate-[-7deg] rounded-[8px] border-[2.5px] px-2.5 py-1 font-display text-[15px] leading-none tracking-wide"
+        className="pointer-events-none mx-auto mt-4 rounded-[8px] border-[2.5px] px-2.5 py-1 font-display text-[15px] leading-none tracking-wide"
         style={{ borderColor: theme.fg, color: theme.fg }}
       >
         VERDICT PENDING
