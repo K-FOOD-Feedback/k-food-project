@@ -72,11 +72,12 @@ const SPOTS: Record<CardStyle, CSSProperties[]> = {
     { top: 30, left: 8 },
     { top: 116, right: 8 },
   ],
+  // 투표 카드는 한 장은 왼쪽, 한 장은 오른쪽 (사진 양옆)
   vote: [
     { top: 16, right: 8 },
+    { top: 20, left: 8 },
     { top: 112, left: 8 },
     { top: 116, right: 8 },
-    { top: 22, left: 8 },
   ],
   // 영수증은 글이 빽빽하고 도장도 있어서 스티커 1장만, 증거 사진 위에
   verdict: [
@@ -139,12 +140,12 @@ export function ShareCard({
   - 맨 아래 출처 줄은 얇은 선으로 떼어 냄
 */
 
-/** 카드 맨 아래 — 어디서 투표하는지 */
-function Footer({ text }: { text: string }) {
+/** 카드 맨 아래 — 어디서 투표하는지 (세 카드 모두 같은 문구) */
+function Footer() {
   return (
     <div className="mt-auto flex items-center justify-between border-t border-current/15 pt-2.5 text-[8px] font-bold leading-none">
       <span className="font-display text-[10px]">오늘의 참견</span>
-      <span className="opacity-70">{text}</span>
+      <span className="opacity-70">Koreans, vote 👉 link</span>
     </div>
   );
 }
@@ -158,7 +159,7 @@ function PhotoCard({ post }: { post: ShareCardPost }) {
         <p className="line-clamp-2 font-display text-[19px] leading-[1.08] [text-wrap:balance]">{post.title}</p>
         <p className="text-[9px] font-semibold opacity-70">{post.author}</p>
       </div>
-      <Footer text="Koreans, vote 👉 link" />
+      <Footer />
     </div>
   );
 }
@@ -182,7 +183,7 @@ function VoteCard({ post }: { post: ShareCardPost }) {
         </div>
       </div>
       <div className="mt-auto w-full pt-4">
-        <Footer text="Tap the link to vote" />
+        <Footer />
       </div>
     </div>
   );
@@ -249,7 +250,7 @@ function VerdictCard({ post, theme }: { post: ShareCardPost; theme: CardTheme })
         VERDICT PENDING
       </span>
       <div className="mt-auto pt-3">
-        <Footer text="Be the judge 👉 link" />
+        <Footer />
       </div>
     </div>
   );

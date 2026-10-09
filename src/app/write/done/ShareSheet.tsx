@@ -93,7 +93,8 @@ export function ShareSheet({
     const sheet = rail.current?.closest<HTMLElement>("[role=dialog]");
     const from = origin?.current?.getBoundingClientRect();
     if (!card || !sheet) return;
-    const timing = { duration: 620, easing: "cubic-bezier(0.32, 0.72, 0, 1)" };
+    // 너무 빠르면 뭐가 지나갔는지 모름 → 1.1초 동안 천천히
+    const timing = { duration: 1100, easing: "cubic-bezier(0.4, 0, 0.15, 1)" };
     // 공용 시트의 기본 올라오기 효과는 끄고 여기서 직접 움직임
     for (const a of sheet.getAnimations()) a.finish();
     const lift = sheet.offsetHeight;
@@ -130,16 +131,17 @@ export function ShareSheet({
       });
       card.appendChild(ghost);
       const face = card.firstElementChild as HTMLElement;
-      const swap = [{ opacity: 1 }, { opacity: 1, offset: 0.25 }, { opacity: 0, offset: 0.75 }, { opacity: 0 }];
+      // 처음 40%는 완료 카드 그대로 내려오고, 그 뒤 40% 동안 공유 카드로 바뀜
+      const swap = [{ opacity: 1 }, { opacity: 1, offset: 0.4 }, { opacity: 0, offset: 0.8 }, { opacity: 0 }];
       ghost.animate(swap, timing).finished.finally(() => ghost.remove());
-      face.animate([{ opacity: 0 }, { opacity: 0, offset: 0.25 }, { opacity: 1, offset: 0.75 }, { opacity: 1 }], timing);
+      face.animate([{ opacity: 0 }, { opacity: 0, offset: 0.4 }, { opacity: 1, offset: 0.8 }, { opacity: 1 }], timing);
     }
     // 나머지(옆 카드 · 탭 · 색 · 채널)는 카드가 거의 도착할 즈음 차례로
     const rest = [...Array.from(rail.current?.children ?? []).slice(1), ...Array.from(controls.current?.children ?? [])];
     rest.forEach((el, i) =>
       (el as HTMLElement).animate([{ opacity: 0, translate: "0 12px" }, { opacity: 1, translate: "0 0" }], {
-        duration: 360,
-        delay: 320 + i * 60,
+        duration: 420,
+        delay: 750 + i * 80,
         easing: "ease-out",
         fill: "backwards",
       }),
