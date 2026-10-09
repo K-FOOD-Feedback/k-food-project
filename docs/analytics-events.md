@@ -76,7 +76,7 @@
 | `post_published` | ④ Post | `topic`, `photos`, `options_count`, `options_edited`, `vote_title_kept`, `title_kept`, `story_kept`, `dish_corrected`, `time_to_publish_sec` |
 | `posted_card_tapped` | 완료 카드 탭 | `taps`, `tilted` |
 | `posted_next_action` | 완료 화면 버튼 | `action`(share/home/my_post/close) |
-| `share_sheet_opened` | 공유 시트 열림 | `from`(posted/my_post) |
+| `share_sheet_opened` | 공유 시트 열림 | `from`(posted/detail_menu), 상세에선 `post_id`·`mine` |
 | `post_shared` | 공유 채널 누름 | `channel`(save_image/story/copy_link/sms/whatsapp/x/native), `from`, `style`(photo/vote/verdict), `color`(색 번호) |
 | `share_card_style_changed` | 공유 카드 디자인 바꿈 | `style`, `method`(swipe/tab) |
 | `share_card_color_changed` | 공유 카드 색 바꿈 | `color`(번호: 핑크·노랑·보라·라일락·다크), `style` |

@@ -3,16 +3,20 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { getHomePost } from "@/app/home/mockPosts";
+import { ShareSheet } from "@/app/write/done/ShareSheet";
+import type { ShareCardPost } from "@/app/write/done/ShareCard";
 import { track } from "@/lib/analytics";
-import { useFlow } from "@/lib/write-store";
+import { coverOf, SAMPLE_MY_POST, useFlow } from "@/lib/write-store";
 import { PillButton } from "./Buttons";
 import { Icon } from "./Icon";
 import { BottomSheet } from "./Layout";
 
 /**
  * 게시글 "더보기(⋯)" 메뉴 (담당 송희 — 상세 화면 등에 끼워 씀)
- * - 내 글: 수정하기 · 삭제하기(확인 시트)
- * - 남의 글: 링크 복사 · 신고하기(이유 고르는 시트)
+ * - 내 글: 공유하기 · 수정하기 · 삭제하기(확인 시트)
+ * - 남의 글: 공유하기 · 링크 복사 · 신고하기(이유 고르는 시트)
+ * - 공유하기 → 글 올린 뒤와 같은 공유 시트 (스토리 카드 꾸미기)
  * 메뉴·시트는 화면 맨 바깥(body)에 띄워서, 버튼이 어디에 있든 화면 전체를 덮습니다.
  */
 const REPORT_REASONS = ["스팸·광고예요", "욕설이나 혐오 표현이 있어요", "음식과 관계없는 사진이에요", "기타"];
@@ -33,7 +37,8 @@ export function PostMenu({
   children: ReactNode;
 }) {
   const router = useRouter();
-  const { deleteMyPost } = useFlow();
+  const { deleteMyPost, myPost } = useFlow();
+  const [shareOpen, setShareOpen] = useState(false);
   const [open, setOpen] = useState(false);
   const [sheet, setSheet] = useState<"delete" | "report" | null>(null);
   const [reason, setReason] = useState<string | null>(null);
@@ -65,8 +70,45 @@ export function PostMenu({
     }
   };
 
+  // 공유 카드에 넣을 글 — 내 글은 브라우저 메모리에서, 남의 글은 목업 목록에서 (서버 전까지)
+  const sharePost = (): ShareCardPost | null => {
+    if (isMine) {
+      const p = myPost ?? SAMPLE_MY_POST;
+      return {
+        title: p.title,
+        dish: p.dish,
+        photo: coverOf(p).src,
+        voteQuestion: p.voteQuestion,
+        options: p.options.filter((o) => o.trim()),
+        author: "Sam · Canada",
+      };
+    }
+    const p = getHomePost(postId);
+    if (!p) return null;
+    return {
+      title: p.title,
+      dish: p.en.title,
+      photo: p.cardPhoto,
+      voteQuestion: p.question.text,
+      options: p.question.options.map((o) => o.replace(/\n/g, " ")),
+      author: `${p.author.name} · ${p.en.country}`,
+    };
+  };
+  const card = sharePost();
+  const share = {
+    icon: "share" as const,
+    label: "공유하기",
+    danger: false,
+    onClick: () => {
+      setOpen(false);
+      track("share_sheet_opened", { from: "detail_menu", post_id: postId, mine: isMine });
+      setShareOpen(true);
+    },
+  };
+
   const items = isMine
     ? [
+        ...(card ? [share] : []),
         {
           icon: "pencil" as const,
           label: "수정하기",
@@ -87,6 +129,7 @@ export function PostMenu({
         },
       ]
     : [
+        ...(card ? [share] : []),
         { icon: "link" as const, label: "링크 복사", danger: false, onClick: copyLink },
         {
           icon: "alert" as const,
@@ -255,6 +298,9 @@ export function PostMenu({
           </>,
           document.body,
         )}
+      {card && (
+        <ShareSheet open={shareOpen} onClose={() => setShareOpen(false)} postId={postId} post={card} from="detail_menu" />
+      )}
     </>
   );
 }

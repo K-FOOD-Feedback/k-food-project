@@ -44,7 +44,7 @@ export function ShareSheet({
   /** 시트가 열릴 때 카드가 출발할 자리 (완료 화면의 카드) */
   origin?: RefObject<HTMLElement | null>;
   /** 분석용: 어디서 열었는지 */
-  from: "posted" | "my_post";
+  from: "posted" | "detail_menu";
 }) {
   // 시트는 버튼을 누른 뒤(브라우저에서만) 열리므로 여기서 주소를 읽어도 됩니다
   const url = open ? `${window.location.origin}/posts/${postId}` : "";
