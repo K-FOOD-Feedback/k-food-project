@@ -51,7 +51,7 @@ export function LoginSheet({
     <BottomSheet open={open} onClose={onClose} label={t.label}>
       {children}
       <div className="flex w-full flex-col gap-2 px-6 break-keep">
-        <h2 className={`text-[22px] leading-[1.25] ${lang === "ko" ? "font-extrabold" : "font-display"}`}>
+        <h2 className="font-display text-[22px] leading-[1.25]">
           {title ?? t.title}
         </h2>
         <p className="text-[15px] leading-[1.5] text-muted">{body ?? t.body}</p>
