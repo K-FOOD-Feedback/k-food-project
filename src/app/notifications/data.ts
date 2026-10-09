@@ -82,7 +82,7 @@ const KO_INCOMING: Notif = {
   ...BULDAK,
   id: "ko-live",
   type: "reply",
-  actor: "Sam 🇨🇦",
+  actor: "Sam",
   byAuthor: true,
   detail: "고마워요! 다음엔 참치마요 삼김이랑 먹어 볼게요",
   day: "오늘",
@@ -93,7 +93,7 @@ const KO_INCOMING: Notif = {
 const KO: Notif[] = [
   { ...BULDAK, id: "ko1", type: "reply", detail: "삼김 조합 진짜 인정이요", day: "오늘", time: "21:50", read: false },
   { ...BULDAK, id: "ko2", type: "reply", detail: "저도 그렇게 먹어요 ㅋㅋ", day: "오늘", time: "21:38", read: false },
-  { ...TTEOK, id: "ko4", type: "reply", actor: "Mia 🇺🇸", byAuthor: true, detail: "Wow I didn't know that! Thank you", day: "어제", time: "22:04", read: true },
+  { ...TTEOK, id: "ko4", type: "reply", actor: "Mia", byAuthor: true, detail: "Wow I didn't know that! Thank you", day: "어제", time: "22:04", read: true },
   { ...TTEOK, id: "ko5", type: "reply", detail: "치즈 떡볶이엔 라면사리죠", day: "10월 5일", time: "18:20", read: true },
 ];
 

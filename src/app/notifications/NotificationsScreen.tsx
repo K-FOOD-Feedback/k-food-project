@@ -6,12 +6,14 @@ import { IconButton } from "@/components/Buttons";
 import { Icon } from "@/components/Icon";
 import { Screen, TopBar } from "@/components/Layout";
 import { track, useTrackOnce } from "@/lib/analytics";
+import { markNotificationsSeen } from "@/lib/notifications-seen";
 import { DATA, FILTERS, groupByDay, matchesFilter, type FilterId, type Lang, type Notif } from "./data";
 
 /**
  * 인앱 알림함 (4. 알림, 담당 송희) — 외국인 /notifications/en · 한국인 /notifications
  * - 투표·댓글·답글이 달리는 즉시 쌓임 (지금은 화면을 열고 2.5초 뒤 하나 도착하는 연출)
  * - 날짜별로 나누고, 위 탭으로 투표/댓글만 골라 보기
+ * - 알림함을 열면 다 읽은 것 (안 읽음 표시·모두 읽음 없음)
  * - 알림이 많지 않아서 묶지 않고 하나씩 (댓글은 내용이 핵심이라 다 보이게)
  */
 export function NotificationsScreen({ lang }: { lang: Lang }) {
@@ -19,9 +21,11 @@ export function NotificationsScreen({ lang }: { lang: Lang }) {
   const { incoming: INCOMING, list: NOTIFS } = DATA[lang];
   const [filter, setFilter] = useState<FilterId>("all");
   const [live, setLive] = useState(false);
-  const [readIds, setReadIds] = useState<Set<string>>(() => new Set());
 
-  useTrackOnce("notifications_viewed", { unread: NOTIFS.filter((n) => !n.read).length, viewer: VIEWER[lang] });
+  useTrackOnce("notifications_viewed", { count: NOTIFS.length, viewer: VIEWER[lang] });
+
+  // 알림함을 열면 다 읽은 것 — 상단 🔔의 점을 끔 (서버 연결 전에는 이 브라우저에만 기록)
+  useEffect(() => markNotificationsSeen(lang), [lang]);
 
   // 실시간 도착 연출 — 서버 연결 후 Supabase Realtime 구독으로 교체
   useEffect(() => {
@@ -29,31 +33,14 @@ export function NotificationsScreen({ lang }: { lang: Lang }) {
     return () => window.clearTimeout(t);
   }, []);
 
-  const all = useMemo(
-    () => (live ? [INCOMING, ...NOTIFS] : NOTIFS).map((n) => (readIds.has(n.id) ? { ...n, read: true } : n)),
-    [live, readIds, INCOMING, NOTIFS],
-  );
+  const all = useMemo(() => (live ? [INCOMING, ...NOTIFS] : NOTIFS), [live, INCOMING, NOTIFS]);
   const days = useMemo(() => groupByDay(all.filter((n) => matchesFilter(n, filter))), [all, filter]);
-  const unreadOf = (f: FilterId) => all.filter((n) => !n.read && matchesFilter(n, f)).length;
-
-  const markRead = (list: Notif[]) => setReadIds((prev) => new Set([...prev, ...list.map((n) => n.id)]));
 
   return (
     <Screen className="pb-16">
       <TopBar
         title={t.title}
         left={<IconButton icon="chevron-left" label={t.back} href={lang === "en" ? "/home/en" : "/home"} />}
-        right={
-          unreadOf("all") > 0 ? (
-            <button
-              type="button"
-              onClick={() => markRead(all)}
-              className="h-12 rounded-full px-4 text-[14px] font-semibold text-neutral-400 transition active:scale-95"
-            >
-              {t.readAll}
-            </button>
-          ) : null
-        }
       />
 
       {/* 종류 탭 (외국인만 — 한국인은 대댓글 하나뿐) */}
@@ -65,7 +52,6 @@ export function NotificationsScreen({ lang }: { lang: Lang }) {
       >
         {FILTERS.map((f) => {
           const on = f.id === filter;
-          const unread = unreadOf(f.id);
           return (
             <button
               key={f.id}
@@ -81,15 +67,6 @@ export function NotificationsScreen({ lang }: { lang: Lang }) {
               }`}
             >
               {f.label}
-              {unread > 0 && (
-                <span
-                  className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-bold tabular-nums ${
-                    on ? "bg-primary text-on-light" : "bg-primary/20 text-primary"
-                  }`}
-                >
-                  {unread}
-                </span>
-              )}
             </button>
           );
         })}
@@ -114,12 +91,11 @@ export function NotificationsScreen({ lang }: { lang: Lang }) {
                 key={n.id}
                 href={hrefOf(n, lang)}
                 onClick={() => {
-                  markRead([n]);
                   track("notification_clicked", { type: n.type, viewer: VIEWER[lang] });
                 }}
                 className="block transition active:scale-[0.99]"
               >
-                <Card lang={lang} n={n} unread={!n.read} className={n.id === INCOMING.id ? "animate-arrive" : ""} />
+                <Card lang={lang} n={n} className={n.id === INCOMING.id ? "animate-arrive" : ""} />
               </Link>
             ))}
           </section>
@@ -129,38 +105,18 @@ export function NotificationsScreen({ lang }: { lang: Lang }) {
   );
 }
 
-function Card({
-  lang,
-  n,
-  unread,
-  className = "",
-}: {
-  lang: Lang;
-  n: Notif;
-  unread: boolean;
-  className?: string;
-}) {
+function Card({ lang, n, className = "" }: { lang: Lang; n: Notif; className?: string }) {
   return (
-    <span
-      className={`flex items-start gap-3.5 rounded-[24px] bg-surface py-4 pl-4 pr-3 ${
-        unread ? "ring-1 ring-white/10" : ""
-      } ${className}`}
-    >
+    <span className={`flex items-start gap-3.5 rounded-[24px] bg-surface py-4 pl-4 pr-3 ${className}`}>
       <Badge type={n.type} />
       <span className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="flex items-baseline gap-2">
-          <span className={`min-w-0 flex-1 truncate text-[15px] font-semibold leading-[1.4] ${unread ? "text-on-dark" : "text-neutral-400"}`}>
-            {titleOf(n, lang)}
-          </span>
-          <span className="shrink-0 text-[12px] font-medium tabular-nums text-muted">{n.time}</span>
+        <span className="flex items-start gap-2">
+          <span className="line-clamp-2 min-w-0 flex-1 break-keep text-[15px] font-semibold leading-[1.4]">{titleOf(n, lang)}</span>
+          <span className="shrink-0 pt-0.5 text-[12px] font-medium tabular-nums text-muted">{n.time}</span>
         </span>
         <span className="flex items-center gap-2">
           <span className="line-clamp-1 min-w-0 flex-1 text-[13px] leading-[1.45] text-muted">{bodyOf(n, lang)}</span>
-          {unread ? (
-            <span className="size-2 shrink-0 rounded-full bg-primary" aria-label={COPY[lang].unread} />
-          ) : (
-            <Icon name="chevron-right" size={16} className="shrink-0 text-muted" />
-          )}
+          <Icon name="chevron-right" size={16} className="shrink-0 text-muted" />
         </span>
       </span>
     </span>
@@ -195,40 +151,37 @@ const COPY = {
   en: {
     title: "Notifications",
     back: "Back",
-    readAll: "Mark all read",
     filterLabel: "Filter notifications",
     emptyTitle: "No notifications yet",
     emptyBody: "We'll let you know as soon as Koreans vote or comment.",
-    unread: "Unread",
     close: "Close",
   },
   ko: {
     title: "알림",
     back: "뒤로",
-    readAll: "모두 읽음",
     filterLabel: "알림 종류",
     emptyTitle: "아직 알림이 없어요",
     emptyBody: "내 댓글에 답글이 달리면 바로 알려 드릴게요.",
-    unread: "안 읽음",
     close: "닫기",
   },
 };
 
+/** 제목은 모두 문장형 */
 function titleOf(n: Notif, lang: Lang) {
   if (lang === "ko") {
-    return n.byAuthor ? `글쓴이 ${n.actor}님의 답글` : "내 댓글에 답글이 달렸어요";
+    return n.byAuthor ? `글쓴이 ${n.actor}님이 내 댓글에 답글을 달았어요` : "내 댓글에 답글이 달렸어요";
   }
   switch (n.type) {
     case "first":
-      return "Your first Korean reaction 🎉";
+      return "A Korean reacted to your post for the first time.";
     case "milestone":
-      return `${n.detail} Koreans have voted`;
+      return `Your post got ${n.detail} votes.`;
     case "comment":
-      return `${n.actor} commented`;
+      return `${n.actor} commented on your post.`;
     case "reply":
-      return `${n.actor} replied to your comment`;
+      return `${n.actor} replied to your comment.`;
     case "draft":
-      return "You have an unfinished post";
+      return "You have an unfinished post.";
   }
 }
 
