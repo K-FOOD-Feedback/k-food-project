@@ -22,14 +22,13 @@ export type FilterId = "all" | "vote" | "comment";
 export type Notif = {
   id: string;
   type: NotifType;
-  /** 같은 날 · 같은 글 · 같은 종류가 이어지면 한 묶음(카드 더미)으로 보여 줍니다 */
   postId: string;
   postTitle: string;
   /** 남긴 사람. 한국인 댓글은 익명이라 비워 둠 */
   actor?: string;
   /** 댓글·대댓글: 내용 · milestone: 표 수 */
   detail: string;
-  /** 한국인 reply: 대댓글을 단 사람이 그 글의 글쓴이(외국인)인지 — 따로 눈에 띄게 */
+  /** 한국인 reply: 대댓글을 단 사람이 그 글의 글쓴이(외국인)인지 */
   byAuthor?: boolean;
   day: string;
   time: string;
@@ -103,20 +102,13 @@ export const DATA: Record<Lang, { incoming: Notif; list: Notif[] }> = {
   ko: { incoming: KO_INCOMING, list: KO },
 };
 
-/** 같은 날 안에서 이어지는 같은 글·같은 종류의 댓글·대댓글을 묶습니다 (글쓴이 답글은 따로) */
+/** 날짜별로 나눕니다 (알림이 많지 않아서 묶지 않고 하나씩 보여 줌) */
 export function groupByDay(list: Notif[]) {
-  const days: { day: string; stacks: Notif[][] }[] = [];
+  const days: { day: string; items: Notif[] }[] = [];
   for (const n of list) {
-    let day = days.at(-1);
-    if (!day || day.day !== n.day) {
-      day = { day: n.day, stacks: [] };
-      days.push(day);
-    }
-    const last = day.stacks.at(-1);
-    // 글쓴이(외국인)의 답글은 따로 눈에 띄게 — 묶지 않음
-    const stackable = (x: Notif) => (x.type === "comment" || x.type === "reply") && !x.byAuthor;
-    if (last && stackable(n) && stackable(last[0]) && last[0].type === n.type && last[0].postId === n.postId) last.push(n);
-    else day.stacks.push([n]);
+    const last = days.at(-1);
+    if (last && last.day === n.day) last.items.push(n);
+    else days.push({ day: n.day, items: [n] });
   }
   return days;
 }

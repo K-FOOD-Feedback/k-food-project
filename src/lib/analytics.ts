@@ -80,7 +80,6 @@ export type EventName =
   | "notifications_clicked"
   | "notifications_viewed"
   | "notification_filter_changed"
-  | "notification_stack_opened"
   | "notification_clicked"
   // ── 내 글 관리 (송희)
   | "my_post_viewed"

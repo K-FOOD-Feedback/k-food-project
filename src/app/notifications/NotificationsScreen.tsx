@@ -12,7 +12,7 @@ import { DATA, FILTERS, groupByDay, matchesFilter, type FilterId, type Lang, typ
  * 인앱 알림함 (4. 알림, 담당 송희) — 외국인 /notifications/en · 한국인 /notifications
  * - 투표·댓글·답글이 달리는 즉시 쌓임 (지금은 화면을 열고 2.5초 뒤 하나 도착하는 연출)
  * - 날짜별로 나누고, 위 탭으로 투표/댓글만 골라 보기
- * - 같은 날 같은 글에 같은 종류가 이어지면 카드 더미로 묶고, 누르면 펼쳐 보기
+ * - 알림이 많지 않아서 묶지 않고 하나씩 (댓글은 내용이 핵심이라 다 보이게)
  */
 export function NotificationsScreen({ lang }: { lang: Lang }) {
   const t = COPY[lang];
@@ -20,7 +20,6 @@ export function NotificationsScreen({ lang }: { lang: Lang }) {
   const [filter, setFilter] = useState<FilterId>("all");
   const [live, setLive] = useState(false);
   const [readIds, setReadIds] = useState<Set<string>>(() => new Set());
-  const [openStack, setOpenStack] = useState<Notif[] | null>(null);
 
   useTrackOnce("notifications_viewed", { unread: NOTIFS.filter((n) => !n.read).length, viewer: VIEWER[lang] });
 
@@ -107,98 +106,37 @@ export function NotificationsScreen({ lang }: { lang: Lang }) {
             <p className="text-[14px] text-muted">{t.emptyBody}</p>
           </div>
         )}
-        {days.map(({ day, stacks }) => (
+        {days.map(({ day, items }) => (
           <section key={day} className="flex flex-col gap-3">
             <h2 className="px-1 text-[13px] font-semibold text-muted">{day}</h2>
-            {stacks.map((stack) => (
-              <Stack
-                key={stack[0].id}
-                lang={lang}
-                stack={stack}
-                fresh={stack[0].id === INCOMING.id}
-                onOpen={() => {
-                  track("notification_stack_opened", { type: stack[0].type, count: stack.length });
-                  setOpenStack(stack);
+            {items.map((n) => (
+              <Link
+                key={n.id}
+                href={hrefOf(n, lang)}
+                onClick={() => {
+                  markRead([n]);
+                  track("notification_clicked", { type: n.type, viewer: VIEWER[lang] });
                 }}
-                onRead={() => markRead(stack)}
-              />
+                className="block transition active:scale-[0.99]"
+              >
+                <Card lang={lang} n={n} unread={!n.read} className={n.id === INCOMING.id ? "animate-arrive" : ""} />
+              </Link>
             ))}
           </section>
         ))}
       </div>
-
-      {openStack && (
-        <StackOverlay
-          lang={lang}
-          stack={openStack}
-          onClose={() => setOpenStack(null)}
-          onRead={(n) => markRead([n])}
-        />
-      )}
     </Screen>
-  );
-}
-
-/** 한 장이면 카드, 여러 장이면 카드 더미 */
-function Stack({
-  lang,
-  stack,
-  fresh,
-  onOpen,
-  onRead,
-}: {
-  lang: Lang;
-  stack: Notif[];
-  fresh: boolean;
-  onOpen: () => void;
-  onRead: () => void;
-}) {
-  const n = stack[0];
-  const count = stack.length;
-  const unread = stack.some((s) => !s.read);
-  const card = (
-    <Card lang={lang} n={n} count={count} unread={unread} className={fresh ? "animate-arrive" : ""} />
-  );
-
-  if (count === 1)
-    return (
-      <Link
-        href={hrefOf(n, lang)}
-        onClick={() => {
-          onRead();
-          track("notification_clicked", { type: n.type, grouped: false, viewer: VIEWER[lang] });
-        }}
-        className="block transition active:scale-[0.99]"
-      >
-        {card}
-      </Link>
-    );
-
-  return (
-    <button
-      type="button"
-      onClick={onOpen}
-      aria-label={`${titleOf(n, lang, count)} — ${COPY[lang].showAll}`}
-      className="relative block w-full pb-3 text-left transition active:scale-[0.99]"
-    >
-      {/* 뒤에 깔린 카드들 */}
-      {count > 2 && <span className="absolute inset-x-6 bottom-0 h-10 rounded-[22px] bg-surface-2/40" aria-hidden="true" />}
-      <span className="absolute inset-x-3 bottom-1.5 h-10 rounded-[22px] bg-surface-2/80" aria-hidden="true" />
-      <span className="relative block">{card}</span>
-    </button>
   );
 }
 
 function Card({
   lang,
   n,
-  count = 1,
   unread,
   className = "",
 }: {
   lang: Lang;
   n: Notif;
-  count?: number;
   unread: boolean;
   className?: string;
 }) {
@@ -212,12 +150,12 @@ function Card({
       <span className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="flex items-baseline gap-2">
           <span className={`min-w-0 flex-1 truncate text-[15px] font-semibold leading-[1.4] ${unread ? "text-on-dark" : "text-neutral-400"}`}>
-            {titleOf(n, lang, count)}
+            {titleOf(n, lang)}
           </span>
           <span className="shrink-0 text-[12px] font-medium tabular-nums text-muted">{n.time}</span>
         </span>
         <span className="flex items-center gap-2">
-          <span className="line-clamp-1 min-w-0 flex-1 text-[13px] leading-[1.45] text-muted">{bodyOf(n, lang, count)}</span>
+          <span className="line-clamp-1 min-w-0 flex-1 text-[13px] leading-[1.45] text-muted">{bodyOf(n, lang)}</span>
           {unread ? (
             <span className="size-2 shrink-0 rounded-full bg-primary" aria-label={COPY[lang].unread} />
           ) : (
@@ -251,68 +189,6 @@ function Badge({ type }: { type: Notif["type"] }) {
   );
 }
 
-/** 카드 더미를 눌렀을 때 — 뒤는 흐리게, 묶인 알림을 한 장에 펼쳐서 */
-function StackOverlay({
-  lang,
-  stack,
-  onClose,
-  onRead,
-}: {
-  lang: Lang;
-  stack: Notif[];
-  onClose: () => void;
-  onRead: (n: Notif) => void;
-}) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    document.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
-    };
-  }, [onClose]);
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4" role="dialog" aria-modal="true" aria-label={titleOf(stack[0], lang, stack.length)}>
-      <button
-        type="button"
-        aria-label={COPY[lang].close}
-        tabIndex={-1}
-        onClick={onClose}
-        className="absolute inset-0 animate-fade-in bg-black/55 backdrop-blur-md"
-      />
-      <div className="relative flex w-full max-w-[398px] animate-menu flex-col overflow-hidden rounded-[28px] bg-surface shadow-[0_24px_60px_rgba(0,0,0,0.6)]">
-        <div className="flex items-center justify-between px-5 pt-4 pb-2">
-          <p className="text-[13px] font-semibold text-muted">
-            {titleOf(stack[0], lang, stack.length)} · {stack[0].day}
-          </p>
-          <button type="button" onClick={onClose} aria-label={COPY[lang].close} className="-mr-2 flex size-9 items-center justify-center rounded-full text-muted">
-            <Icon name="x" size={18} />
-          </button>
-        </div>
-        <ul className="stagger flex max-h-[60dvh] flex-col overflow-y-auto pb-2">
-          {stack.map((n) => (
-            <li key={n.id} className="animate-rise">
-              <Link
-                href={hrefOf(n, lang)}
-                onClick={() => {
-                  onRead(n);
-                  track("notification_clicked", { type: n.type, grouped: true, viewer: VIEWER[lang] });
-                }}
-                className="block px-1 transition active:bg-white/5"
-              >
-                <Card lang={lang} n={n} unread={!n.read} className="!ring-0 bg-transparent" />
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  );
-}
-
 const VIEWER = { en: "foreigner", ko: "korean" } as const;
 
 const COPY = {
@@ -323,7 +199,6 @@ const COPY = {
     filterLabel: "Filter notifications",
     emptyTitle: "No notifications yet",
     emptyBody: "We'll let you know as soon as Koreans vote or comment.",
-    showAll: "see all",
     unread: "Unread",
     close: "Close",
   },
@@ -334,15 +209,13 @@ const COPY = {
     filterLabel: "알림 종류",
     emptyTitle: "아직 알림이 없어요",
     emptyBody: "내 댓글에 답글이 달리면 바로 알려 드릴게요.",
-    showAll: "모두 보기",
     unread: "안 읽음",
     close: "닫기",
   },
 };
 
-function titleOf(n: Notif, lang: Lang, count = 1) {
+function titleOf(n: Notif, lang: Lang) {
   if (lang === "ko") {
-    if (count > 1) return `내 댓글에 답글 ${count}개`;
     return n.byAuthor ? `글쓴이 ${n.actor}님의 답글` : "내 댓글에 답글이 달렸어요";
   }
   switch (n.type) {
@@ -351,15 +224,15 @@ function titleOf(n: Notif, lang: Lang, count = 1) {
     case "milestone":
       return `${n.detail} Koreans have voted`;
     case "comment":
-      return count > 1 ? `${count} new comments` : `${n.actor} commented`;
+      return `${n.actor} commented`;
     case "reply":
-      return count > 1 ? `${count} replies to your comment` : `${n.actor} replied to your comment`;
+      return `${n.actor} replied to your comment`;
     case "draft":
       return "You have an unfinished post";
   }
 }
 
-function bodyOf(n: Notif, lang: Lang, count = 1) {
+function bodyOf(n: Notif, lang: Lang) {
   if (lang === "ko") return `${n.postTitle} · “${n.detail}”`;
   switch (n.type) {
     case "first":
@@ -367,7 +240,7 @@ function bodyOf(n: Notif, lang: Lang, count = 1) {
     case "milestone":
       return "See what they think of your dish.";
     case "comment":
-      return count > 1 ? `${n.actor}: “${n.detail}”` : `“${n.detail}”`;
+      return `“${n.detail}”`;
     case "reply":
       return `${n.postTitle} · “${n.detail}”`;
     case "draft":

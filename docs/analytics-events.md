@@ -96,8 +96,7 @@
 | `notifications_clicked` | 외국인 메인 🔔 | `from` |
 | `notifications_viewed` | 알림함 열림 | `unread` |
 | `notification_filter_changed` | All/Votes/Comments 탭 | `filter` |
-| `notification_stack_opened` | 묶인 카드 더미 펼침 | `type`, `count` |
-| `notification_clicked` | 알림 누름 | `type`, `grouped` |
+| `notification_clicked` | 알림 누름 | `type`, `viewer` |
 
 투표 로그인: `login_sheet_opened` / `login_cancelled` / `login_completed` 에 `from: "vote"` (한국인이 로그인 없이 투표하려 할 때).
 
