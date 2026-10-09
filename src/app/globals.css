@@ -58,6 +58,7 @@
   --animate-arrive: arrive 900ms cubic-bezier(0.3, 1.3, 0.5, 1) both; /* 새 알림 도착 */
   --animate-photo-in: photo-in 1100ms cubic-bezier(0.2, 0.8, 0.2, 1) both; /* 사진이 살짝 당겨지며 자리 잡음 */
   --animate-photo-frame: photo-frame 1300ms cubic-bezier(0.65, 0, 0.25, 1.12) both; /* 크게 올라온 사진이 물결 모양으로 오므라듦 */
+  --animate-breathe: breathe 7s ease-in-out infinite; /* 배경 빛이 천천히 숨 쉬듯 */
   --animate-menu: menu 180ms cubic-bezier(0.2, 0.8, 0.2, 1) both; /* 메뉴 펼침 */
 }
 
@@ -218,6 +219,12 @@
     border-radius: 0;
     mask-size: 100% 100%;
     -webkit-mask-size: 100% 100%;
+  }
+}
+
+@keyframes breathe {
+  50% {
+    scale: 1.12;
   }
 }
 

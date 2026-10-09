@@ -194,6 +194,9 @@ export function LandingScreen() {
   // 제목: 0 소개(=글 올리기) · 1 투표 · 2 한마디 · 3 답글 · 4 마지막
   const scene = done ? 4 : step;
   const shrink = seg(p, 0.84, 0.94);
+  // 배경 빛 세기 (0~1)
+  const glowYellow = clamp(1 - 0.75 * seg(p, 0.06, 0.2) + 0.6 * seg(p, 0.72, 0.85));
+  const glowPink = clamp(seg(p, 0.06, 0.2) * (1 - 0.35 * seg(p, 0.72, 0.85)) + 0.5 * shrink);
   // 처음엔 게시물이 조금 아래, 투표가 붙을수록 위로 올라감 (마지막엔 제목 바로 아래)
   // 한 번에 하나만: 투표는 다음 단계(한마디)가 오면 내려가며 사라짐
   const voteOut = seg(p, 0.36, 0.43);
@@ -251,11 +254,33 @@ export function LandingScreen() {
           />
         ))}
         <div className="sticky top-0 flex h-[100svh] flex-col overflow-hidden px-5 pt-[calc(100px+env(safe-area-inset-top))]">
+          {/* 카드 뒤 은은한 빛 — 글·답글(외국인)은 노랑, 투표·한마디(한국인)는 핑크, 마지막엔 둘 다 */}
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+            <div className="absolute left-1/2 top-[58%] size-[min(620px,150vw)] -translate-x-1/2 -translate-y-1/2 animate-breathe">
+              <span
+                className="absolute inset-0 rounded-full blur-[70px] transition-opacity duration-700"
+                style={{
+                  background: "radial-gradient(circle, color-mix(in oklab, var(--color-content) 62%, transparent) 0%, transparent 68%)",
+                  opacity: glowYellow,
+                  translate: "-12% 6%",
+                }}
+              />
+              <span
+                className="absolute inset-0 rounded-full blur-[70px] transition-opacity duration-700"
+                style={{
+                  background: "radial-gradient(circle, color-mix(in oklab, var(--color-primary) 62%, transparent) 0%, transparent 68%)",
+                  opacity: glowPink,
+                  translate: "12% -6%",
+                }}
+              />
+            </div>
+          </div>
+
           {/* 제목 — 스크롤 단계마다 바뀜 (첫 화면은 서비스 한 줄 소개) */}
           <h1
             key={`${lang}-${scene}`}
             aria-live="polite"
-            className="min-h-[2.4em] break-keep text-center font-display text-[32px] leading-[1.2]"
+            className="relative min-h-[2.4em] break-keep text-center font-display text-[32px] leading-[1.2]"
           >
             {t.titles[scene].map((line, i) => (
               <span key={line} className="block animate-rise" style={{ animationDelay: `${i * 80}ms` }}>
@@ -267,7 +292,7 @@ export function LandingScreen() {
           {/* 게시물 — 마지막에 버튼이 올라오면 작아지며 위로 */}
           <div
             ref={cardRef}
-            className="mt-6 origin-top"
+            className="relative mt-6 origin-top"
             style={{ scale: `${stepScale + (endScale - stepScale) * shrink}`, translate: `0 ${centerOffset}px` }}
           >
           <div className="relative mx-auto w-full" style={{ maxWidth: `calc(300px + (100% - 300px) * ${voteShown})` }}>
