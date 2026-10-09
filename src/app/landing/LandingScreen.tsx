@@ -140,19 +140,15 @@ export function LandingScreen() {
 
   // 마지막에 버튼이 올라오면, 게시물은 버튼 위에 딱 들어갈 만큼만 작아짐 (최대 85%)
   const cardRef = useRef<HTMLDivElement>(null);
-  const ctaRef = useRef<HTMLDivElement>(null);
   const postRef = useRef<HTMLDivElement>(null);
   const authorRef = useRef<HTMLSpanElement>(null);
   const replyRef = useRef<HTMLDivElement>(null);
   const slotRef = useRef<HTMLSpanElement>(null);
-  const [endScale, setEndScale] = useState(0.85);
   // 가운데 정렬용: 제목 아래 남는 높이, 게시물만의 높이, 투표·답글까지 붙은 높이
   const [box, setBox] = useState({
     room: 0,
     post: 0,
     full: 0,
-    last: 0,
-    endRoom: 0,
     overhang: 0,
     fit: 1,
     // 작성자 표시: 카드 안 자리 → 답글 위 자리 (게시물 카드 기준 좌표)
@@ -162,26 +158,20 @@ export function LandingScreen() {
   useEffect(() => {
     const measure = () => {
       const card = cardRef.current;
-      const cta = ctaRef.current;
       const post = postRef.current;
       const stage = card?.parentElement;
-      if (!card || !cta || !post || !stage) return;
+      if (!card || !post || !stage) return;
       const top = card.offsetTop;
-      const room = cta.offsetTop - 8 - top; // 버튼과 40px 정도 띄움 (버튼 영역 위쪽 32px은 그라데이션)
       const full = card.offsetHeight; // 게시물 + 투표
-      // 마지막 장면: 게시물 + 아래로 삐져나온 글쓴이 답글
+      // 아래로 삐져나온 글쓴이 답글 높이
       const overhang = Math.max(0, (authorRef.current?.offsetTop ?? 0) - 2 + (replyRef.current?.offsetHeight ?? 0) - post.offsetHeight + 6);
-      const last = post.offsetHeight + overhang;
       const author = authorRef.current;
       const reply = replyRef.current;
       const slot = slotRef.current;
-      setEndScale(clamp(room / last, 0.6, 0.9));
       setBox({
         room: stage.clientHeight - top - 64,
         post: post.offsetHeight,
         full,
-        last,
-        endRoom: room,
         // 투표가 붙어 있을 때 화면 안에 다 들어오게 하는 크기
         overhang,
         fit: clamp((stage.clientHeight - top - 40) / full, 0.6, 1),
@@ -223,9 +213,6 @@ export function LandingScreen() {
   // 수학적 가운데는 눈에 낮아 보여서, 남는 공간의 35% 지점(최대 120px)에 둡니다
   const stepScale = 1 - (1 - box.fit) * voteShown;
   const startOffset = Math.min(120, Math.max(0, (box.room - shown * stepScale) * 0.35));
-  // 마지막: 제목과 버튼 사이에서도 같은 방식으로 (작아진 크기 기준)
-  const endOffset = Math.max(0, (box.endRoom - box.last * endScale) * 0.4);
-  const centerOffset = startOffset + (endOffset - startOffset) * shrink;
   // 사연은 들어오자마자 저절로 타이핑 (첫 화면이 비어 보이지 않게)
   const [clock, setClock] = useState(0);
   useEffect(() => {
@@ -305,7 +292,7 @@ export function LandingScreen() {
           <div
             ref={cardRef}
             className="relative mt-6 origin-top"
-            style={{ scale: `${stepScale + (endScale - stepScale) * shrink}`, translate: `0 ${centerOffset}px` }}
+            style={{ scale: `${stepScale * (1 - 0.12 * shrink)}`, translate: `0 ${startOffset - 40 * shrink}px`, opacity: 1 - shrink, pointerEvents: done ? "none" : undefined }}
           >
           <div className="relative mx-auto w-full" style={{ maxWidth: `calc(300px + (100% - 300px) * ${voteShown})` }}>
             {/* 피드 카드 (앱 메인과 같은 모양: 물결 사진 + 질문 칩 + 제목 + 작성자)
@@ -476,9 +463,8 @@ export function LandingScreen() {
 
           {/* 장면이 다 끝나면 역할 버튼 */}
           <div
-            ref={ctaRef}
             inert={!done}
-            className="absolute inset-x-0 bottom-0 bg-gradient-to-b from-background/0 via-background via-25% to-background px-5 pt-8 pb-[calc(20px+env(safe-area-inset-bottom))]"
+            className="absolute inset-x-0 bottom-0 top-[calc(204px+env(safe-area-inset-top))] flex flex-col justify-center px-5 pb-[calc(20px+env(safe-area-inset-bottom))]"
             style={fly(p, 0.86, 0.94, { y: 260 })}
           >
             <RolePicker lang={lang} />
@@ -528,15 +514,15 @@ function RolePicker({ lang }: { lang: LandingLang }) {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="relative rounded-[32px] bg-surface-2 px-4 pt-4 pb-4">
-        <p className="text-center font-display text-[20px] leading-[1.3]">{t.pickTitle}</p>
-        <p className="mt-0.5 text-center text-[12px] font-medium text-neutral-400">{t.pickHint}</p>
+      <div className="relative rounded-[32px] bg-surface-2 px-5 pt-7 pb-5">
+        <p className="text-center font-display text-[24px] leading-[1.3]">{t.pickTitle}</p>
+        <p className="mt-1.5 text-center text-[13px] font-medium text-neutral-400">{t.pickHint}</p>
 
         {/* 토큰 */}
-        <div className="mt-3 flex h-12 items-center justify-center">
+        <div className="mt-6 flex h-14 items-center justify-center">
           {picked === null && (
             <div
-              className={`relative z-20 flex size-12 touch-none select-none items-center justify-center rounded-full bg-on-dark text-[22px] ${
+              className={`relative z-20 flex size-14 touch-none select-none items-center justify-center rounded-full bg-on-dark text-[26px] ${
                 drag ? "cursor-grabbing" : "animate-float cursor-grab"
               }`}
               style={{ transform: drag ? `translate(${drag.x}px, ${drag.y}px) scale(1.12)` : undefined }}
@@ -569,7 +555,7 @@ function RolePicker({ lang }: { lang: LandingLang }) {
         </div>
 
         {/* 두 칸 */}
-        <div className="mt-2 flex h-[min(112px,14svh)] gap-1.5">
+        <div className="mt-5 flex h-[min(200px,26svh)] gap-2">
           {ROLES.map((role, i) => {
             const mine = picked === i;
             const near = hover === i;
@@ -582,7 +568,7 @@ function RolePicker({ lang }: { lang: LandingLang }) {
                 type="button"
                 onClick={() => pick(i, "tap")}
                 disabled={picked !== null && !mine}
-                className={`relative min-w-0 flex-1 overflow-hidden rounded-[20px] text-left transition-[background-color,scale] duration-200 ${
+                className={`relative min-w-0 flex-1 overflow-hidden rounded-[24px] text-left transition-[background-color,scale] duration-200 ${
                   near ? "scale-[1.03] bg-white/10" : "bg-surface"
                 } ${picked !== null && !mine ? "opacity-40" : ""}`}
               >
@@ -591,10 +577,10 @@ function RolePicker({ lang }: { lang: LandingLang }) {
                   className={`absolute inset-x-0 bottom-0 ${role.fill} transition-[height] duration-500 ease-[cubic-bezier(0.3,1.3,0.5,1)]`}
                   style={{ height: mine ? "100%" : near ? "18%" : "0%" }}
                 />
-                <span className={`relative flex h-full flex-col justify-between p-3.5 ${mine ? "text-on-light" : ""}`}>
-                  <span className="font-display text-[18px] leading-[1.2]">{label(i).role}</span>
+                <span className={`relative flex h-full flex-col justify-between p-4 ${mine ? "text-on-light" : ""}`}>
+                  <span className="font-display text-[20px] leading-[1.2]">{label(i).role}</span>
                   <span className="flex items-end justify-between gap-1">
-                    <span className={`text-[12px] font-semibold leading-[1.3] ${mine ? "opacity-70" : "text-neutral-400"}`}>
+                    <span className={`text-[13px] font-semibold leading-[1.35] ${mine ? "opacity-70" : "text-neutral-400"}`}>
                       {label(i).action}
                     </span>
                     {mine && (
