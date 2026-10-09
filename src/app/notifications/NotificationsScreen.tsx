@@ -57,13 +57,14 @@ export function NotificationsScreen({ lang }: { lang: Lang }) {
         }
       />
 
-      {/* 종류 탭 */}
+      {/* 종류 탭 (외국인만 — 한국인은 대댓글 하나뿐) */}
+      {lang === "en" && (
       <div
         role="tablist"
         aria-label={t.filterLabel}
         className="sticky top-[calc(80px+env(safe-area-inset-top))] z-20 flex gap-1.5 bg-background px-4 pb-3"
       >
-        {FILTERS[lang].map((f) => {
+        {FILTERS.map((f) => {
           const on = f.id === filter;
           const unread = unreadOf(f.id);
           return (
@@ -94,6 +95,7 @@ export function NotificationsScreen({ lang }: { lang: Lang }) {
           );
         })}
       </div>
+      )}
 
       <div className="flex flex-col gap-7 px-4 pt-3">
         {days.length === 0 && (
@@ -229,15 +231,24 @@ function Card({
 
 function Badge({ type }: { type: Notif["type"] }) {
   const tone = {
-    vote: "bg-on-dark text-[20px]",
+    first: "bg-primary text-[20px]",
     comment: "bg-secondary text-on-light",
     reply: "bg-lilac text-on-light",
     milestone: "bg-content text-[20px]",
-    result: "bg-primary text-[20px]",
+    quiet: "bg-surface-2 text-on-dark",
+    draft: "bg-surface-2 text-on-dark",
+  }[type];
+  const icon = {
+    first: "🎉",
+    milestone: "🔥",
+    comment: <Icon name="message" size={20} />,
+    reply: <Icon name="message" size={20} />,
+    quiet: <Icon name="share" size={20} />,
+    draft: <Icon name="pencil" size={20} />,
   }[type];
   return (
     <span className={`flex size-11 shrink-0 items-center justify-center rounded-full ${tone}`} aria-hidden="true">
-      {type === "vote" ? "🇰🇷" : type === "milestone" ? "🔥" : type === "result" ? "📊" : <Icon name="message" size={20} />}
+      {icon}
     </span>
   );
 }
@@ -333,24 +344,51 @@ const COPY = {
 
 function titleOf(n: Notif, lang: Lang, count = 1) {
   if (lang === "ko") {
-    if (n.type === "result") return "투표 결과가 나왔어요";
     if (count > 1) return `내 댓글에 답글 ${count}개`;
-    return n.actor ? `글쓴이 ${n.actor}님의 답글` : "내 댓글에 답글이 달렸어요";
+    return n.byAuthor ? `글쓴이 ${n.actor}님의 답글` : "내 댓글에 답글이 달렸어요";
   }
-  if (n.type === "milestone") return `${n.detail} Koreans have voted 🎉`;
-  if (count > 1) return n.type === "vote" ? `${count} new votes` : `${count} new comments`;
-  return n.type === "vote" ? `${n.actor} voted` : `${n.actor} commented`;
+  switch (n.type) {
+    case "first":
+      return "Your first Korean reaction 🎉";
+    case "milestone":
+      return `${n.detail} Koreans have voted`;
+    case "comment":
+      return count > 1 ? `${count} new comments` : `${n.actor} commented`;
+    case "reply":
+      return count > 1 ? `${count} replies to your comment` : `${n.actor} replied to your comment`;
+    case "quiet":
+      return "It's quiet so far";
+    case "draft":
+      return "You have an unfinished post";
+  }
 }
 
 function bodyOf(n: Notif, lang: Lang, count = 1) {
-  if (n.type === "result") return `${n.postTitle} · ${n.detail}%가 나와 같은 선택`;
-  if (n.type === "milestone") return "See what they think of your dish.";
-  if (n.type === "reply") return `${n.postTitle} · “${n.detail}”`;
-  if (n.type === "comment") return count > 1 ? `${n.actor}: “${n.detail}”` : `“${n.detail}”`;
-  // 투표
-  return count > 1 ? `Latest: “${n.detail}”` : `Picked “${n.detail}” · ${n.postTitle}`;
+  if (lang === "ko") return `${n.postTitle} · “${n.detail}”`;
+  switch (n.type) {
+    case "first":
+      return `${n.actor} reacted to ${n.postTitle}.`;
+    case "milestone":
+      return "See what they think of your dish.";
+    case "comment":
+      return count > 1 ? `${n.actor}: “${n.detail}”` : `“${n.detail}”`;
+    case "reply":
+      return `${n.postTitle} · “${n.detail}”`;
+    case "quiet":
+      return "Share your post with friends to get more votes.";
+    case "draft":
+      return "Pick up where you left off.";
+  }
 }
 
-// 외국인: 내 글 / 한국인: 답글은 댓글 화면, 결과는 투표 영역
-const hrefOf = (n: Notif, lang: Lang) =>
-  lang === "en" ? `/my/posts/${n.postId}` : n.type === "reply" ? `/posts/${n.postId}/comments` : `/posts/${n.postId}#vote`;
+/**
+ * 알림을 누르면 가는 곳. ?from= 을 붙여서, 그 화면의 뒤로가기 버튼이 알림함으로 돌아오게 함
+ * - 외국인: 내 글 / 남의 글 대댓글은 그 글의 댓글 화면 / 쓰다 만 글은 작성 화면
+ * - 한국인: 대댓글이 달린 글의 댓글 화면
+ */
+function hrefOf(n: Notif, lang: Lang) {
+  const from = lang === "en" ? "notifications-en" : "notifications";
+  if (n.type === "draft") return "/write";
+  if (n.type === "reply" && (lang === "ko" || n.postId !== "mine")) return `/posts/${n.postId}/comments?from=${from}`;
+  return `/my/posts/${n.postId}?from=${from}`;
+}

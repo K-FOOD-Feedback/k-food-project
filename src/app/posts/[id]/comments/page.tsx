@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getHomePost } from "@/app/home/mockPosts";
+import { backHrefFrom } from "@/lib/back";
 import { TrackedLink } from "@/components/Track";
 import { CommentPile } from "../CommentPile";
 import { paperlogy } from "../font";
@@ -14,6 +15,8 @@ import { VoteGate } from "./VoteGate";
 */
 export default async function Page(props: PageProps<"/posts/[id]/comments">) {
   const { id } = await props.params;
+  // 알림함에서 들어왔으면 뒤로가기는 알림함으로 (송희) — 그 외에는 원래대로 상세로
+  const backHref = backHrefFrom((await props.searchParams).from, `/posts/${id}`);
   const post = getHomePost(id);
   if (!post) notFound();
 
@@ -25,7 +28,7 @@ export default async function Page(props: PageProps<"/posts/[id]/comments">) {
         className={`${paperlogy.variable} mx-auto flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-background text-on-dark`}
       >
         <header className="flex shrink-0 items-center justify-between px-2 pt-[calc(16px+env(safe-area-inset-top))] pb-4">
-          <Link href={`/posts/${id}`} aria-label="상세로 돌아가기" className={circle}>
+          <Link href={backHref} aria-label={backHref === `/posts/${id}` ? "상세로 돌아가기" : "알림으로 돌아가기"} className={circle}>
             <ChevronLeftIcon />
           </Link>
           <TrackedLink href="/" event="language_clicked" props={{ from: "comments" }} className={circle} aria-label="언어 선택">

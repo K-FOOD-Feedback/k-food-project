@@ -10,7 +10,7 @@ import { track, useTrackOnce } from "@/lib/analytics";
 import { getQuestion } from "@/lib/write-data";
 import { SAMPLE_MY_POST, useFlow, MY_POST_ID } from "@/lib/write-store";
 
-export function MyPostScreen({ demoVotes }: { demoVotes?: number }) {
+export function MyPostScreen({ demoVotes, backHref = "/home/en" }: { demoVotes?: number; backHref?: string }) {
   const router = useRouter();
   const { myPost, updateMyPost, deleteMyPost } = useFlow();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -35,7 +35,7 @@ export function MyPostScreen({ demoVotes }: { demoVotes?: number }) {
   return (
     <Screen className="pb-10">
       <TopBar
-        left={<IconButton icon="chevron-left" label="Back" href="/home/en" />}
+        left={<IconButton icon="chevron-left" label="Back" href={backHref} />}
         right={
           <IconButton
             icon="more"

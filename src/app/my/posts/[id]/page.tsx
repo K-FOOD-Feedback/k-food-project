@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { backHrefFrom } from "@/lib/back";
 import { MY_POST_ID } from "@/lib/write-data";
 import { MyPostScreen } from "./MyPostScreen";
 
@@ -12,7 +13,8 @@ export const metadata: Metadata = { title: "My post · 오늘의 참견" };
 export default async function Page(props: PageProps<"/my/posts/[id]">) {
   const { id } = await props.params;
   if (id !== MY_POST_ID) notFound();
-  const { votes } = await props.searchParams;
+  const { votes, from } = await props.searchParams;
   const demoVotes = Number(Array.isArray(votes) ? votes[0] : votes) || undefined;
-  return <MyPostScreen demoVotes={demoVotes} />;
+  // 알림함에서 왔으면 뒤로가기는 알림함으로
+  return <MyPostScreen demoVotes={demoVotes} backHref={backHrefFrom(from, "/home/en")} />;
 }
