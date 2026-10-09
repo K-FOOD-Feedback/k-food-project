@@ -50,7 +50,7 @@ const subscribeNone = () => () => {};
  * 배경 도형들. at = [가로 %, 세로 %, 각도] — 스크롤해도 자리는 그대로, 천천히 둥둥만
  * 화면 가장자리에 걸쳐 잘리게 두고, 카드에 반쯤 가려지는 자리에 둡니다.
  */
-type ShapeKind = "scallop" | "clover" | "flower" | "capsule" | "circle" | "arch";
+type ShapeKind = "scallop" | "clover" | "flower" | "capsule" | "circle" | "stack";
 const DECOR: { kind: ShapeKind; color: string; size: number; at: [number, number, number] }[] = [
   // 크기를 크게·중간·작게 섞어서, 전체적으로 화면 위쪽~가운데에 모이게
   { kind: "scallop", color: "--color-content", size: 124, at: [6, 30, -10] },
@@ -58,7 +58,7 @@ const DECOR: { kind: ShapeKind; color: string; size: number; at: [number, number
   { kind: "capsule", color: "--color-secondary", size: 100, at: [90, 56, -35] },
   { kind: "flower", color: "--color-lilac", size: 44, at: [12, 64, 0] },
   { kind: "circle", color: "--color-primary", size: 26, at: [82, 72, 0] },
-  { kind: "arch", color: "--color-content", size: 84, at: [44, 86, 0] },
+  { kind: "stack", color: "--color-content", size: 84, at: [44, 86, 0] },
 ];
 
 /** 글쓴이 답글 말풍선 기울기 (작성자 표시도 들어가면서 같이 기울어짐) */
@@ -267,7 +267,7 @@ export function LandingScreen() {
           />
         ))}
         <div className="sticky top-0 flex h-[100svh] flex-col overflow-hidden px-5 pt-[calc(100px+env(safe-area-inset-top))]">
-          {/* 카드 뒤에 흩어진 작은 도형 6개 (구글 랩스 레퍼런스: 물결 원·클로버·꽃·알약·원·아치) — 35% 투명도로 은은하게, 천천히 둥둥
+          {/* 카드 뒤에 흩어진 작은 도형 6개 (구글 랩스 레퍼런스: 물결 원·클로버·꽃·알약·원·겹친 알약) — 35% 투명도로 은은하게, 천천히 둥둥
               스크롤해도 자리는 고정, 제자리에서 천천히 둥둥 */}
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
             {DECOR.map((d, i) => {
@@ -579,13 +579,18 @@ function Shape({ kind, color }: { kind: ShapeKind; color: string }) {
       />
     );
   if (kind === "circle") return <span className="block size-full rounded-full" style={{ backgroundColor: fill }} />;
-  // 아치: 위는 둥글고 아래는 평평 (반원은 화면 가운데서 잘린 것처럼 보여서 바꿈)
-  if (kind === "arch")
-    return <span className="mx-auto block h-full w-[72%] rounded-t-full" style={{ backgroundColor: fill }} />;
   if (kind === "capsule") return <span className="absolute inset-x-0 top-1/2 block h-[38%] -translate-y-1/2 rounded-full" style={{ backgroundColor: fill }} />;
   return (
     <svg viewBox="0 0 100 100" className="block size-full" fill={fill}>
-      {kind === "clover" ? (
+      {kind === "stack" ? (
+        // 겹친 알약: 둥근 막대 3개를 쌓아 양옆이 울퉁불퉁한 네모
+        <>
+          <rect x="0" y="0" width="100" height="36" rx="18" />
+          <rect x="0" y="32" width="100" height="36" rx="18" />
+          <rect x="0" y="64" width="100" height="36" rx="18" />
+          <rect x="12" y="12" width="76" height="76" />
+        </>
+      ) : kind === "clover" ? (
         <>
           <circle cx="30" cy="30" r="27" />
           <circle cx="70" cy="30" r="27" />
