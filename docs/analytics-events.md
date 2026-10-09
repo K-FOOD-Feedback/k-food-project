@@ -89,8 +89,8 @@
 |---|---|---|
 | `my_post_viewed` | 내 글 | `votes`, `comments`, `views` |
 | `post_menu_opened` | ⋯ | `votes`, `comments` |
-| `post_edit_started` | Edit post | `locked` |
-| `post_delete_sheet_opened` · `post_delete_cancelled` · `post_deleted` | 삭제 | `votes`, `comments` |
+| `post_edit_started` | 상세 ⋯ → 수정하기 (내 글) | `post_id`, `from` |
+| `post_delete_sheet_opened` · `post_delete_cancelled` · `post_deleted` | 상세 ⋯ → 삭제 (내 글) | `post_id`, `from` |
 | `locked_item_tapped` | 수정에서 잠긴 투표를 누름 (투표는 올린 뒤 못 바꿈) | `item`(topic), `votes` |
 | `post_edit_discarded` | X로 나감 | `had_changes`, `locked` |
 | `post_edit_saved` | Save changes | 바뀐 항목들(`*_changed`), `locked`, `votes` |

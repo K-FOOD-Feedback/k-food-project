@@ -74,7 +74,7 @@ export function EditScreen() {
           <IconButton
             icon="x"
             label="Discard changes"
-            href={`/my/posts/${MY_POST_ID}`}
+            href={`/posts/${MY_POST_ID}`}
             onClick={() => {
               const changed = Object.values(changedFields()).some(Boolean);
               track("post_edit_discarded", { had_changes: changed, locked });
@@ -160,7 +160,7 @@ export function EditScreen() {
             onClick={() => {
               track("post_edit_saved", { ...changedFields(), locked, votes: initial.votes });
               updateMyPost(form);
-              router.push(`/my/posts/${MY_POST_ID}`);
+              router.push(`/posts/${MY_POST_ID}`);
             }}
           >
             Save changes

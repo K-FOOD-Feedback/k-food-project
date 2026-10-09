@@ -67,8 +67,24 @@ export function PostMenu({
 
   const items = isMine
     ? [
-        { icon: "pencil" as const, label: "수정하기", danger: false, onClick: () => router.push(`/posts/${postId}/edit`) },
-        { icon: "trash" as const, label: "삭제하기", danger: true, onClick: () => setSheet("delete") },
+        {
+          icon: "pencil" as const,
+          label: "수정하기",
+          danger: false,
+          onClick: () => {
+            track("post_edit_started", { post_id: postId, from: "detail_menu" });
+            router.push(`/posts/${postId}/edit`);
+          },
+        },
+        {
+          icon: "trash" as const,
+          label: "삭제하기",
+          danger: true,
+          onClick: () => {
+            track("post_delete_sheet_opened", { post_id: postId, from: "detail_menu" });
+            setSheet("delete");
+          },
+        },
       ]
     : [
         { icon: "link" as const, label: "링크 복사", danger: false, onClick: copyLink },
@@ -150,7 +166,13 @@ export function PostMenu({
                 <p className="text-[15px] leading-[1.5] text-muted">받은 투표와 한마디도 함께 사라지고, 되돌릴 수 없어요.</p>
               </div>
               <div className="flex w-full gap-1">
-                <PillButton tone="soft" onClick={() => setSheet(null)}>
+                <PillButton
+                  tone="soft"
+                  onClick={() => {
+                    track("post_delete_cancelled", { post_id: postId, from: "detail_menu" });
+                    setSheet(null);
+                  }}
+                >
                   취소
                 </PillButton>
                 <PillButton

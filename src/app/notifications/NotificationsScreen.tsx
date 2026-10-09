@@ -159,5 +159,5 @@ function hrefOf(n: Notif, lang: Lang) {
   const from = lang === "en" ? "notifications-en" : "notifications";
   if (n.type === "draft") return `/write?from=${from}`;
   if (n.type === "reply" && (lang === "ko" || n.postId !== "mine")) return `/posts/${n.postId}/comments?from=${from}`;
-  return `/my/posts/${n.postId}?from=${from}`;
+  return `/posts/${n.postId}?from=${from}`;
 }
