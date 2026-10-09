@@ -52,12 +52,13 @@ const subscribeNone = () => () => {};
  */
 type ShapeKind = "scallop" | "clover" | "flower" | "capsule" | "circle" | "half";
 const DECOR: { kind: ShapeKind; color: string; size: number; poses: [number, number, number][] }[] = [
-  { kind: "scallop", color: "--color-content", size: 96, poses: [[6, 40, -10], [4, 64, 30], [8, 34, 60]] },
-  { kind: "clover", color: "--color-primary", size: 72, poses: [[94, 30, 0], [92, 86, 45], [95, 58, 90]] },
-  { kind: "capsule", color: "--color-secondary", size: 84, poses: [[90, 74, -35], [8, 88, 15], [90, 30, -60]] },
-  { kind: "flower", color: "--color-lilac", size: 64, poses: [[10, 84, 0], [94, 44, 40], [6, 76, 80]] },
-  { kind: "circle", color: "--color-primary", size: 40, poses: [[78, 92, 0], [16, 24, 0], [24, 92, 0]] },
-  { kind: "half", color: "--color-content", size: 70, poses: [[50, 99, 0], [70, 99, 15], [72, 98, -10]] },
+  // 크기를 크게·중간·작게 섞어서, 전체적으로 화면 위쪽~가운데에 모이게
+  { kind: "scallop", color: "--color-content", size: 124, poses: [[6, 30, -10], [4, 50, 30], [8, 24, 60]] },
+  { kind: "clover", color: "--color-primary", size: 56, poses: [[94, 22, 0], [92, 64, 45], [95, 44, 90]] },
+  { kind: "capsule", color: "--color-secondary", size: 100, poses: [[90, 56, -35], [8, 70, 15], [90, 20, -60]] },
+  { kind: "flower", color: "--color-lilac", size: 44, poses: [[12, 64, 0], [94, 32, 40], [6, 56, 80]] },
+  { kind: "circle", color: "--color-primary", size: 26, poses: [[82, 72, 0], [18, 18, 0], [26, 74, 0]] },
+  { kind: "half", color: "--color-content", size: 84, poses: [[44, 86, 0], [72, 84, 15], [70, 82, -10]] },
 ];
 
 /** 글쓴이 답글 말풍선 기울기 (작성자 표시도 들어가면서 같이 기울어짐) */
