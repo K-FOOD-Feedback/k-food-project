@@ -77,7 +77,10 @@
 | `posted_card_tapped` | 완료 카드 탭 | `taps`, `tilted` |
 | `posted_next_action` | 완료 화면 버튼 | `action`(share/home/my_post/close) |
 | `share_sheet_opened` | 공유 시트 열림 | `from`(posted/my_post) |
-| `post_shared` | 공유 채널 누름 | `channel`(copy_link/sms/whatsapp/x/native), `from` |
+| `post_shared` | 공유 채널 누름 | `channel`(save_image/story/copy_link/sms/whatsapp/x/native), `from`, `style`(photo/vote/verdict), `color`(색 번호) |
+| `share_card_style_changed` | 공유 카드 디자인 바꿈 | `style`, `method`(swipe/tab) |
+| `share_card_color_changed` | 공유 카드 색 바꿈 | `color`(번호), `from_photo`(사진에서 뽑은 색인지), `style` |
+| `share_card_shuffled` | 카드를 탭해 스티커 다시 붙임 | `style`, `taps` |
 
 `*_kept` 는 AI가 쓴 글을 얼마나 그대로 썼는지 (0~1, 단어 기준).
 

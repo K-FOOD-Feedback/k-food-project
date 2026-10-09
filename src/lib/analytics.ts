@@ -80,6 +80,9 @@ export type EventName =
   // ── 공유 · 알림 (송희)
   | "share_sheet_opened"
   | "post_shared"
+  | "share_card_style_changed"
+  | "share_card_color_changed"
+  | "share_card_shuffled"
   | "notifications_clicked"
   | "notifications_viewed"
   | "notification_clicked"

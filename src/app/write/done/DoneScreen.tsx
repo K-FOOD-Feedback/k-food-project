@@ -152,9 +152,14 @@ export function DoneScreen() {
         open={shareOpen}
         onClose={() => setShareOpen(false)}
         postId={MY_POST_ID}
-        title={post.title}
-        photo={coverOf(post).src}
-        topic={getQuestion(post.questionId).label}
+        post={{
+          title: post.title,
+          dish: post.dish,
+          photo: coverOf(post).src,
+          voteQuestion: post.voteQuestion,
+          options: post.options.filter((o) => o.trim()),
+          author: "Sam · Canada",
+        }}
         from="posted"
       />
     </Screen>
