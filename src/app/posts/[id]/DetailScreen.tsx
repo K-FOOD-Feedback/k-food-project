@@ -190,8 +190,8 @@ export function DetailScreen({ post }: { post: HomePost }) {
         ref={(el) => {
           fadeIns.current[0] = el;
         }}
-        // 스크롤해도 상단 고정 (송희) — 바탕 없이 버튼만 떠 있음. 빈 곳은 터치가 아래 내용으로 통과
-        className="pointer-events-none sticky top-0 z-30 flex items-center justify-between px-2 pt-[calc(16px+env(safe-area-inset-top))] pb-4 [&_a]:pointer-events-auto [&_a]:backdrop-blur-md [&_button]:pointer-events-auto [&_button]:backdrop-blur-md">
+        // 스크롤해도 상단 고정 (송희) — 바탕 없이 버튼만 떠 있음(내용 위에서도 보이게 어두운 유리 버튼). 빈 곳은 터치가 아래 내용으로 통과
+        className="pointer-events-none sticky top-0 z-30 flex items-center justify-between px-2 pt-[calc(16px+env(safe-area-inset-top))] pb-4 [&>*]:pointer-events-auto [&_a]:bg-surface/85 [&_a]:ring-1 [&_a]:ring-white/10 [&_a]:backdrop-blur-xl [&_button]:bg-surface/85 [&_button]:ring-1 [&_button]:ring-white/10 [&_button]:backdrop-blur-xl">
         <Link href="/home" className={circle} aria-label="뒤로 가기">
           <ChevronLeftIcon />
         </Link>
