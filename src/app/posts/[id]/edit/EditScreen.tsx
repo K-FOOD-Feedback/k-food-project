@@ -86,7 +86,7 @@ export function EditScreen() {
 
       <div className="stagger flex flex-col gap-1 px-2">
         <Tile>
-          <h2 className="px-5 pt-5 pb-2 text-[18px] font-bold leading-[1.3]">Your post</h2>
+          <h2 className="px-5 pt-5 pb-2 font-display text-[20px] leading-[1.2]">Your post</h2>
           <TextField label="Title" value={form.title} maxLength={TITLE_MAX} onChange={(title) => set({ title })} />
           <TextField
             label="Story"
@@ -100,7 +100,7 @@ export function EditScreen() {
 
         <Tile>
           <div className="flex items-center px-5 pt-5 pb-2">
-            <h2 className="flex-1 text-[18px] font-bold leading-[1.3]">Photos</h2>
+            <h2 className="flex-1 font-display text-[20px] leading-[1.2]">Photos</h2>
             <span className="text-[15px] font-bold leading-[1.3] text-neutral-400 tabular-nums">
               {form.photos.length}/{MAX_PHOTOS}
             </span>
@@ -121,7 +121,7 @@ export function EditScreen() {
 
         {/* 투표 — 읽기 전용 (작성 ③과 같은 순서: 주제 → 투표 제목 → 선택지) */}
         <Tile>
-          <h2 className="px-5 pt-5 pb-2 text-[18px] font-bold leading-[1.3]">Ask Koreans</h2>
+          <h2 className="px-5 pt-5 pb-2 font-display text-[20px] leading-[1.2]">Ask Koreans</h2>
           <div className="px-5 pt-1 pb-1">
             <button
               key={lockShake}

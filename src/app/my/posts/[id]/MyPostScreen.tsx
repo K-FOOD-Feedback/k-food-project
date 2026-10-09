@@ -54,7 +54,7 @@ export function MyPostScreen({ demoVotes, backHref = "/home/en" }: { demoVotes?:
         <PhotoCarousel photos={post.photos.map((p) => p.src)} height={300} indicator="none" />
 
         <Tile>
-          <h1 className="px-5 pt-5 pb-4 text-[22px] font-extrabold leading-[1.3]">{post.title}</h1>
+          <h1 className="px-5 pt-5 pb-4 font-display text-[22px] leading-[1.25]">{post.title}</h1>
           <dl className="flex items-center rounded-[24px] bg-surface-2 px-2 py-3">
             {(
               [

@@ -126,7 +126,7 @@ export function VoteStepScreen() {
         <Tile>
           {/* 한국인에게 물어볼 질문 — 투표 주제 — iOS 알람처럼 위아래로 굴려서 고르기. 가운데 띠가 선택, 처음엔 AI 추천 1순위 */}
           <div className="flex flex-col gap-2 pt-5 pb-1">
-            <p className="px-5 text-[13px] font-semibold leading-[1.3]">What do you want to ask?</p>
+            <h2 className="px-5 font-display text-[20px] leading-[1.2]">What do you want to ask?</h2>
             <div className="px-3">
               <QuestionWheel
                 items={ranked}
@@ -174,7 +174,7 @@ export function VoteStepScreen() {
 
         <p className="flex items-center gap-1.5 px-6 pt-3 text-[13px] font-medium leading-[1.3] text-muted">
           <Icon name="info" size={14} />
-          You can&apos;t change the vote after people start voting.
+          You can&apos;t change the vote after posting.
         </p>
       </div>
 

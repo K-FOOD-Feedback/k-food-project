@@ -138,7 +138,7 @@ export function PostStepScreen() {
         {/* 사진 — 맨 왼쪽이 대표(Cover) */}
         <Tile>
           <div className="flex flex-col gap-3 px-5 pt-4 pb-5">
-            <p className="text-[13px] font-semibold leading-[1.3]">Photos</p>
+            <h2 className="font-display text-[20px] leading-[1.2]">Photos</h2>
             <PhotoGrid
               photos={draft.photos}
               onRemove={photo.remove}
