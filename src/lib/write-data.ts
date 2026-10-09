@@ -5,7 +5,8 @@ export const MAX_PHOTOS = 10;
 export const MY_POST_ID = "mine";
 export const TITLE_MAX = 60;
 export const STORY_MAX = 500;
-export const VOTE_TITLE_MAX = 80;
+/** 질문 휠 한 줄(가운데는 두 줄까지)에 들어가게 */
+export const VOTE_TITLE_MAX = 50;
 /** 상세 화면 투표 칸에 들어가야 해서 짧게 (대략 2줄) */
 export const OPTION_MAX = 28;
 export const OPTIONS_MIN = 2;
@@ -94,7 +95,13 @@ function concernsIn(text: string) {
   return found;
 }
 
-/** ③ 투표 제목 + 선택지 */
+/*
+  ③ 투표 질문 + 선택지
+  - 질문 문장은 이 글에 맞춘 구체적인 한 문장 ("Too much?" → "Too much cheese?")
+    질문 휠에 그대로 보이고, 고른 문장이 상세 화면 투표 제목이 됨 (휠에서 ✎로 고칠 수 있음)
+  - 휠 한 줄에 들어가게 짧게 (대략 30자 안쪽)
+  - Remake는 선택지만 바꿈 (질문 문장은 그대로)
+*/
 export function aiVoteFor(
   questionId: QuestionId,
   dish: string,
@@ -104,43 +111,38 @@ export function aiVoteFor(
   const c = concernsIn(`${post.title} ${post.story}`);
   const main = c[0] ?? "sauce";
   const second = c[1] ?? "toppings";
-  const sets: Record<QuestionId, { voteQuestion: string; options: string[] }[]> = {
-    line: [
-      { voteQuestion: `Did this ${dish} cross the line?`, options: [`Crossed it 🚫`, `Close call 😬`, `Respect 👍`] },
-      { voteQuestion: `Where's the line with this ${dish}?`, options: [`The ${main} 🚫`, `Still okay 😬`, `No line crossed 👍`] },
-    ],
-    crime: [
-      { voteQuestion: `Is this ${dish} a crime against K-food?`, options: [`Guilty 🚨`, `Suspicious 🤨`, `Innocent 😇`] },
-      { voteQuestion: `What's the verdict on this ${dish}?`, options: [`Lock it up 🚨`, `Let it go with a warning`, `Free to go 😇`] },
-    ],
-    messup: [
-      { voteQuestion: `Where did this ${dish} go wrong?`, options: [`Too much ${main}`, `The cooking`, `The plating`, `Nowhere, it's good`] },
-      { voteQuestion: `One thing to fix in this ${dish}?`, options: [`Less ${main}`, `More heat 🌶️`, `Cut the ${second}`, `Nothing!`] },
-    ],
-    eating: [
-      { voteQuestion: `Am I eating this ${dish} right?`, options: [`Yes, exactly`, `Mix it more!`, `Wrong tools 🥢`, `Add rice 🍚`] },
-    ],
-    laugh: [
-      { voteQuestion: `Would a Korean friend laugh at this ${dish}?`, options: [`LOL yes 😂`, `A little 🤭`, `No, they'd be impressed`] },
-    ],
-    still: [
-      { voteQuestion: `Is this ${dish} still Korean food?`, options: [`100% Korean`, `Korean-ish`, `Something new now`] },
-    ],
-    name: [
-      { voteQuestion: `What should I call this ${dish}?`, options: [`Keep the name`, `"${main} bomb" 💣`, `Name it after yourself 😂`] },
-    ],
-    toomuch: [
-      { voteQuestion: `Too much ${main} in this ${dish}?`, options: [`Way too much 🙈`, `Just right 👌`, `Need more!`] },
-    ],
-    nailed: [
-      { voteQuestion: `Did I nail this ${dish}?`, options: [`Nailed it 🎯`, `Almost 🤏`, `Not yet 😅`] },
-    ],
-    better: [
-      { voteQuestion: `Is this ${dish} better than a Korean's?`, options: [`Yes, honestly 🏆`, `Same level`, `Nice try 😂`] },
-    ],
+  const sets: Record<QuestionId, { q: string; options: string[][] }> = {
+    line: {
+      q: `Did the ${main} cross the line?`,
+      options: [
+        [`Crossed it 🚫`, `Close call 😬`, `Respect 👍`],
+        [`Way over 🚫`, `Just on it 😬`, `No line crossed 👍`],
+      ],
+    },
+    crime: {
+      q: `Is this a crime against K-food?`,
+      options: [
+        [`Guilty 🚨`, `Suspicious 🤨`, `Innocent 😇`],
+        [`Lock it up 🚨`, `Let it go with a warning`, `Free to go 😇`],
+      ],
+    },
+    messup: {
+      q: `Where did this go wrong?`,
+      options: [
+        [`Too much ${main}`, `The cooking`, `The plating`, `Nowhere, it's good`],
+        [`Less ${main}`, `More heat 🌶️`, `Cut the ${second}`, `Nothing!`],
+      ],
+    },
+    eating: { q: `Am I eating this right?`, options: [[`Yes, exactly`, `Mix it more!`, `Wrong tools 🥢`, `Add rice 🍚`]] },
+    laugh: { q: `Would a Korean friend laugh?`, options: [[`LOL yes 😂`, `A little 🤭`, `No, they'd be impressed`]] },
+    still: { q: `Is this still Korean food?`, options: [[`100% Korean`, `Korean-ish`, `Something new now`]] },
+    name: { q: `What should I call this?`, options: [[`Keep the name`, `"${main} bomb" 💣`, `Name it after yourself 😂`]] },
+    toomuch: { q: `Too much ${main}?`, options: [[`Way too much 🙈`, `Just right 👌`, `Need more!`]] },
+    nailed: { q: `Did I nail this ${dish}?`, options: [[`Nailed it 🎯`, `Almost 🤏`, `Not yet 😅`]] },
+    better: { q: `Better than a Korean made it?`, options: [[`Yes, honestly 🏆`, `Same level`, `Nice try 😂`]] },
   };
-  const list = sets[questionId] ?? sets.line; // 예전 질문 id로 저장된 글도 깨지지 않게
-  return list[variant % list.length];
+  const set = sets[questionId] ?? sets.line; // 예전 질문 id로 저장된 글도 깨지지 않게
+  return { voteQuestion: set.q, options: set.options[variant % set.options.length] };
 }
 
 /**

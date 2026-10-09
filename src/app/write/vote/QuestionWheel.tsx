@@ -2,15 +2,17 @@
 
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { Icon } from "@/components/Icon";
-import { getQuestion, type QuestionId } from "@/lib/write-data";
+import { VOTE_TITLE_MAX, type QuestionId } from "@/lib/write-data";
 
 /*
   질문 고르기 휠 (iOS 알람 시간 고르기처럼 위아래로 굴림) — 담당 송희
   - 가운데 줄(회색 띠)에 온 질문이 선택됨. 처음엔 AI 추천 1순위가 가운데 (끝없이 돎)
+  - 줄마다 이 글에 맞춘 구체적인 질문 문장 (labelOf). 고른 문장이 그대로 투표 제목
+  - 가운데 줄 오른쪽 ✎ → 그 자리에서 문장 고치기 (onEdit)
   - 끌기 · 던지기 · 마우스 휠 · 탭 · ↑↓ 키보드
   - 멈춰서 칸에 착 붙을 때만 onChange (굴리는 중엔 투표를 다시 만들지 않음)
 */
-const ROW = 44; // 한 줄 높이
+const ROW = 48; // 한 줄 높이 (가운데 줄은 두 줄까지 들어감)
 const VISIBLE = 5; // 보이는 줄 수 (가운데 1 + 위아래 2씩)
 
 type Method = "drag" | "scroll" | "tap" | "keyboard";
@@ -18,12 +20,18 @@ type Method = "drag" | "scroll" | "tap" | "keyboard";
 export function QuestionWheel({
   items,
   value,
+  labelOf,
   onChange,
+  onEdit,
   disabled = false,
 }: {
   items: QuestionId[];
   value: QuestionId;
+  /** 줄마다 보일 질문 문장 */
+  labelOf: (id: QuestionId) => string;
   onChange: (id: QuestionId, method: Method) => void;
+  /** 가운데 문장을 고쳤을 때 */
+  onEdit: (text: string) => void;
   disabled?: boolean;
 }) {
   const n = items.length;
@@ -65,8 +73,9 @@ export function QuestionWheel({
 
   // 끌기 · 던지기
   const drag = useRef<{ y: number; pos: number; lastY: number; lastT: number; v: number; moved: boolean } | null>(null);
+  const [editing, setEditing] = useState(false);
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
-    if (disabled) return;
+    if (disabled || editing) return;
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {
@@ -77,6 +86,12 @@ export function QuestionWheel({
   const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
     const d = drag.current;
     if (!d) return;
+    // 마우스 버튼을 휠 밖에서 놓쳤으면 끌기를 끝내고 칸에 붙임 (끌기 상태로 남지 않게)
+    if (e.pointerType === "mouse" && e.buttons === 0) {
+      drag.current = null;
+      snap(posRef.current, "drag");
+      return;
+    }
     const dy = e.clientY - d.y;
     if (Math.abs(dy) > 4) d.moved = true;
     const dt = Math.max(1, e.timeStamp - d.lastT);
@@ -105,7 +120,7 @@ export function QuestionWheel({
   const box = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = box.current;
-    if (!el || disabled) return;
+    if (!el || disabled || editing) return;
     let timer = 0;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
@@ -121,9 +136,10 @@ export function QuestionWheel({
       el.removeEventListener("wheel", onWheel);
       window.clearTimeout(timer);
     };
-  }, [snap, disabled]);
+  }, [snap, disabled, editing]);
 
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (editing) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();
       snap(Math.round(posRef.current) + 1, "keyboard");
@@ -136,63 +152,111 @@ export function QuestionWheel({
 
   const height = ROW * VISIBLE;
   const selected = mod(pos);
+  const center = (height - ROW) / 2;
 
   return (
-    <div
-      ref={box}
-      role="listbox"
-      aria-label="Question"
-      aria-activedescendant={`qw-${items[selected]}`}
-      tabIndex={0}
-      onKeyDown={onKeyDown}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={() => {
-        drag.current = null;
-        snap(posRef.current, "drag");
-      }}
-      className={`relative touch-none select-none overflow-hidden outline-none [perspective:600px] ${disabled ? "opacity-60" : "cursor-grab"}`}
-      style={{ height, maskImage: "linear-gradient(transparent, black 30%, black 70%, transparent)" }}
-    >
-      {/* 가운데 선택 띠 */}
-      <div className="pointer-events-none absolute inset-x-0 rounded-[16px] bg-surface-2" style={{ top: (height - ROW) / 2, height: ROW }} />
+    <div className="relative">
+      <div
+        ref={box}
+        role="listbox"
+        aria-label="Question"
+        aria-activedescendant={`qw-${items[selected]}`}
+        tabIndex={0}
+        onKeyDown={onKeyDown}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={() => {
+          if (!drag.current) return;
+          drag.current = null;
+          snap(posRef.current, "drag");
+        }}
+        onLostPointerCapture={(e) => onPointerUp(e)}
+        className={`relative touch-none select-none overflow-hidden outline-none [perspective:600px] ${disabled ? "opacity-60" : "cursor-grab"}`}
+        style={{ height, maskImage: "linear-gradient(transparent, black 30%, black 70%, transparent)" }}
+      >
+        {/* 가운데 선택 띠 */}
+        <div className="pointer-events-none absolute inset-x-0 rounded-[16px] bg-surface-2" style={{ top: center, height: ROW }} />
 
-      {items.map((id, i) => {
-        const off = offsetOf(i, pos);
-        if (Math.abs(off) > VISIBLE / 2 + 1) return null;
-        const q = getQuestion(id);
-        const on = i === selected;
-        return (
-          <div
-            key={id}
-            id={`qw-${id}`}
-            role="option"
-            aria-selected={on}
-            data-qi={i}
-            className={`absolute inset-x-0 flex items-center justify-center gap-2 px-4 ${moving ? "" : "transition-[transform,opacity] duration-300 ease-out"}`}
-            style={{
-              top: (height - ROW) / 2,
-              height: ROW,
-              transform: `translateY(${off * ROW}px) rotateX(${-off * 18}deg)`,
-              opacity: Math.max(0, 1 - Math.abs(off) * 0.32),
-            }}
-          >
-            <Icon name={q.icon} size={on ? 18 : 16} className={on ? "" : "text-neutral-400"} />
-            <span
-              className={`truncate ${on ? "text-[17px] font-bold text-on-dark" : "text-[15px] font-medium text-neutral-400"}`}
+        {items.map((id, i) => {
+          const off = offsetOf(i, pos);
+          if (Math.abs(off) > VISIBLE / 2 + 1) return null;
+          const on = i === selected;
+          return (
+            <div
+              key={id}
+              id={`qw-${id}`}
+              role="option"
+              aria-selected={on}
+              data-qi={i}
+              className={`absolute inset-x-0 flex items-center justify-center gap-1.5 px-11 ${moving ? "" : "transition-[transform,opacity] duration-300 ease-out"} ${on && editing ? "invisible" : ""}`}
+              style={{
+                top: center,
+                height: ROW,
+                transform: `translateY(${off * ROW}px) rotateX(${-off * 18}deg)`,
+                opacity: Math.max(0, 1 - Math.abs(off) * 0.32),
+              }}
             >
-              {q.label}
-            </span>
-            {i === 0 && (
-              <span className="flex shrink-0 items-center gap-0.5 rounded-full bg-content px-1.5 py-0.5 text-[10px] font-bold text-on-light">
-                <Icon name="sparkle" size={10} />
-                AI
+              {i === 0 && <Icon name="sparkle" size={14} className="shrink-0 text-content" />}
+              <span
+                className={
+                  on
+                    ? "line-clamp-2 text-center text-[16px] font-bold leading-[1.2] text-on-dark"
+                    : "truncate text-[15px] font-medium text-neutral-400"
+                }
+              >
+                {labelOf(id)}
               </span>
-            )}
-          </div>
-        );
-      })}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* 가운데 문장 고치기 — 휠 밖(돌지 않는 층)에 둬서 끌기와 섞이지 않게 */}
+      {editing ? (
+        <form
+          className="absolute inset-x-0 flex items-center gap-1 rounded-[16px] bg-surface-2 pl-4 pr-1 ring-2 ring-on-dark"
+          style={{ top: center, height: ROW }}
+          onSubmit={(e) => {
+            e.preventDefault();
+            (e.currentTarget.elements.namedItem("q") as HTMLInputElement).blur();
+          }}
+        >
+          <input
+            name="q"
+            autoFocus
+            defaultValue={labelOf(value)}
+            maxLength={VOTE_TITLE_MAX}
+            aria-label="Your question"
+            onBlur={(e) => {
+              const text = e.target.value.trim();
+              if (text && text !== labelOf(value)) onEdit(text);
+              setEditing(false);
+            }}
+            className="min-w-0 flex-1 bg-transparent text-[16px] font-bold outline-none"
+          />
+          <button
+            type="submit"
+            aria-label="Done"
+            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-on-dark text-on-light"
+          >
+            <Icon name="check" size={16} strokeWidth={3} />
+          </button>
+        </form>
+      ) : (
+        !disabled &&
+        !moving && (
+          <button
+            type="button"
+            aria-label="Edit question"
+            onClick={() => setEditing(true)}
+            className="absolute right-1 flex size-9 items-center justify-center rounded-full text-neutral-400 transition hover:text-on-dark active:scale-90"
+            style={{ top: center + (ROW - 36) / 2 }}
+          >
+            <Icon name="pencil" size={16} />
+          </button>
+        )
+      )}
     </div>
   );
 }
