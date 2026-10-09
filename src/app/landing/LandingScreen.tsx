@@ -200,7 +200,8 @@ export function LandingScreen() {
   const done = p >= 0.86;
   // 제목: 0 소개(=글 올리기) · 1 투표 · 2 한마디 · 3 답글 · 4 마지막
   const scene = done ? 4 : step;
-  const shrink = seg(p, 0.84, 0.94);
+  const shrink = seg(p, 0.84, 0.91);
+  const pickerIn = 1 - (1 - seg(p, 0.88, 0.97)) ** 3; // 부드럽게 감속 (튀는 효과 없음)
 
   // 처음엔 게시물이 조금 아래, 투표가 붙을수록 위로 올라감 (마지막엔 제목 바로 아래)
   // 한 번에 하나만: 투표는 다음 단계(한마디)가 오면 내려가며 사라짐
@@ -465,7 +466,11 @@ export function LandingScreen() {
           <div
             inert={!done}
             className="absolute inset-x-0 bottom-0 top-[calc(204px+env(safe-area-inset-top))] flex flex-col justify-center px-5 pb-[calc(20px+env(safe-area-inset-bottom))]"
-            style={fly(p, 0.86, 0.94, { y: 260 })}
+            style={{
+              // 통통 튀지 않게: 카드가 사라진 뒤 아래에서 살짝 올라오며 서서히 나타남
+              opacity: pickerIn,
+              translate: `0 ${(1 - pickerIn) * 36}px`,
+            }}
           >
             <RolePicker lang={lang} />
           </div>
