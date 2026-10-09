@@ -615,7 +615,7 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
                 {/* 아래에서 물결치며 차오르는 색 (끌어다 대면 살짝, 고르면 가득) */}
                 <span
                   className={`wave-fill absolute inset-x-0 bottom-0 overflow-hidden ${role.fill} transition-[height] duration-700 ease-[cubic-bezier(0.3,1.15,0.5,1)]`}
-                  style={{ height: mine ? "100%" : near ? "18%" : "0%" }}
+                  style={{ height: mine ? "100%" : near ? "38%" : "0%" }}
                 >
                   <ColumnText role={label(i).role} action={label(i).action} dark picked={mine} />
                 </span>
