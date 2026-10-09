@@ -235,7 +235,7 @@ export function LandingScreen() {
   return (
     <main className="mx-auto w-full max-w-[430px] bg-background text-on-dark">
       {/* 상단: 로고 · 언어 */}
-      <header className="fixed inset-x-0 top-0 z-40 mx-auto flex h-[calc(56px+env(safe-area-inset-top))] w-full max-w-[430px] items-center justify-between bg-background px-5 pt-[env(safe-area-inset-top)]">
+      <header className="fixed inset-x-0 top-0 z-40 mx-auto flex h-[calc(56px+env(safe-area-inset-top))] w-full max-w-[430px] items-center justify-between px-5 pt-[env(safe-area-inset-top)]">
         <span className="font-display text-[19px] leading-none">{t.brand}</span>
         <div className="flex rounded-full bg-surface p-1 text-[13px] font-bold" role="group" aria-label="Language">
           {(["ko", "en"] as const).map((l) => (
