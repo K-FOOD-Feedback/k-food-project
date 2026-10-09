@@ -80,16 +80,13 @@ const SPOTS: Record<CardStyle, CSSProperties[]> = {
     { top: 112, left: 8 },
     { top: 116, right: 8 },
   ],
-  // 영수증은 글이 빽빽하고 도장도 있어서 스티커 1장만, 증거 사진 위에
-  verdict: [
-    { top: 70, left: 16 },
-    { top: 98, left: 14 },
-  ],
+  // 영수증은 글이 빽빽하고 도장도 있어서 스티커 없음 (도장 아래 VOTE NOW!가 대신)
+  verdict: [],
 };
 
 function stickersFor(style: CardStyle, seed: number, bg: string) {
   const colors = STICKER_COLORS.filter((c) => c !== bg);
-  const count = style === "verdict" ? 1 : 2;
+  const count = style === "verdict" ? 0 : 2;
   return Array.from({ length: count }, (_, n) => {
     const k = seed * 7 + n * 3 + style.length;
     return {
@@ -250,6 +247,7 @@ function VerdictCard({ post, theme }: { post: ShareCardPost; theme: CardTheme })
       >
         VERDICT PENDING
       </span>
+      <p className="mt-2 text-center font-display text-[11px] leading-none tracking-[0.12em]">VOTE NOW!</p>
       <div className="mt-auto pt-3">
         <Footer />
       </div>
