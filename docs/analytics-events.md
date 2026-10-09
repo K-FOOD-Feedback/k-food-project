@@ -16,7 +16,7 @@
 | 이벤트 | 어디서 | 속성 |
 |---|---|---|
 | `landing_viewed` | 랜딩 | |
-| `role_selected` | 랜딩 I'm Korean / I'm not Korean | `role` |
+| `role_selected` | 랜딩 마지막 "당신은 누구인가요?"에서 칸 고름 | `role`(korean/foreigner), `method`(drag/tap) |
 | `landing_login_clicked` | 랜딩 Already joined? Log in | |
 | `landing_scrolled` | 랜딩 스크롤 이야기 단계 도달 | `step`(1~4) |
 | `language_clicked` | 🌐 (메인·상세) | `from`, `viewer` |

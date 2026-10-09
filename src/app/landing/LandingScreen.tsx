@@ -3,7 +3,8 @@
 import Image from "next/image";
 import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { TrackedLink } from "@/components/Track";
-import { track, useTrackOnce } from "@/lib/analytics";
+import { useRouter } from "next/navigation";
+import { setSuperProps, track, useTrackOnce } from "@/lib/analytics";
 import { COPY, REACTIONS, SAMPLE_PCTS, type LandingLang } from "./copy";
 
 /*
@@ -480,7 +481,7 @@ export function LandingScreen() {
             className="absolute inset-x-0 bottom-0 bg-gradient-to-b from-background/0 via-background via-25% to-background px-5 pt-8 pb-[calc(20px+env(safe-area-inset-bottom))]"
             style={fly(p, 0.86, 0.94, { y: 260 })}
           >
-            <RoleButtons lang={lang} />
+            <RolePicker lang={lang} />
           </div>
         </div>
       </section>
@@ -489,12 +490,125 @@ export function LandingScreen() {
   );
 }
 
-function RoleButtons({ lang }: { lang: LandingLang }) {
+/**
+ * 마지막 장면: "당신은 누구인가요?" — 앱의 투표처럼 토큰을 칸에 넣어 역할을 고름
+ * - 👋 토큰을 끌어다 칸에 놓거나, 칸을 누르면 됨 (누르기만 해도 바로)
+ * - 고르면 칸이 아래에서 차오르고 토큰이 들어간 뒤 그 화면으로 이동
+ */
+const ROLES = [
+  { kind: "korean", href: "/home", fill: "bg-primary" },
+  { kind: "foreigner", href: "/home/en", fill: "bg-content" },
+] as const;
+
+function RolePicker({ lang }: { lang: LandingLang }) {
   const t = COPY[lang];
+  const router = useRouter();
+  const columns = useRef<(HTMLButtonElement | null)[]>([]);
+  const [drag, setDrag] = useState<{ x: number; y: number; sx: number; sy: number } | null>(null);
+  const [hover, setHover] = useState<number | null>(null);
+  const [picked, setPicked] = useState<number | null>(null);
+
+  const pick = (i: number, method: "drag" | "tap") => {
+    if (picked !== null) return;
+    const role = ROLES[i];
+    setPicked(i);
+    setSuperProps({ user_type: role.kind });
+    track("role_selected", { role: role.kind, method });
+    // 칸이 차오르는 걸 보여 준 뒤 이동
+    window.setTimeout(() => router.push(role.href), 750);
+  };
+
+  const columnAt = (x: number, y: number) =>
+    columns.current.findIndex((el) => {
+      const r = el?.getBoundingClientRect();
+      return !!r && x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+    });
+
+  const label = (i: number) => (i === 0 ? t.korean : t.foreigner);
+
   return (
     <div className="flex flex-col gap-2">
-      <RoleButton href="/home" tone="bg-primary" role={t.korean.role} action={t.korean.action} kind="korean" />
-      <RoleButton href="/home/en" tone="bg-content" role={t.foreigner.role} action={t.foreigner.action} kind="foreigner" />
+      <div className="relative rounded-[32px] bg-surface-2 px-4 pt-4 pb-4">
+        <p className="text-center font-display text-[20px] leading-[1.3]">{t.pickTitle}</p>
+        <p className="mt-0.5 text-center text-[12px] font-medium text-neutral-400">{t.pickHint}</p>
+
+        {/* 토큰 */}
+        <div className="mt-3 flex h-12 items-center justify-center">
+          {picked === null && (
+            <div
+              className={`relative z-20 flex size-12 touch-none select-none items-center justify-center rounded-full bg-on-dark text-[22px] ${
+                drag ? "cursor-grabbing" : "animate-float cursor-grab"
+              }`}
+              style={{ transform: drag ? `translate(${drag.x}px, ${drag.y}px) scale(1.12)` : undefined }}
+              onPointerDown={(e) => {
+                e.currentTarget.setPointerCapture(e.pointerId);
+                setDrag({ x: 0, y: 0, sx: e.clientX, sy: e.clientY });
+              }}
+              onPointerMove={(e) => {
+                if (!drag) return;
+                setDrag({ ...drag, x: e.clientX - drag.sx, y: e.clientY - drag.sy });
+                const i = columnAt(e.clientX, e.clientY);
+                setHover(i < 0 ? null : i);
+              }}
+              onPointerUp={(e) => {
+                const i = columnAt(e.clientX, e.clientY);
+                setDrag(null);
+                setHover(null);
+                if (i >= 0) pick(i, "drag");
+              }}
+              onPointerCancel={() => {
+                setDrag(null);
+                setHover(null);
+              }}
+              role="img"
+              aria-label={t.pickHint}
+            >
+              👋
+            </div>
+          )}
+        </div>
+
+        {/* 두 칸 */}
+        <div className="mt-2 flex h-[min(112px,14svh)] gap-1.5">
+          {ROLES.map((role, i) => {
+            const mine = picked === i;
+            const near = hover === i;
+            return (
+              <button
+                key={role.kind}
+                ref={(el) => {
+                  columns.current[i] = el;
+                }}
+                type="button"
+                onClick={() => pick(i, "tap")}
+                disabled={picked !== null && !mine}
+                className={`relative min-w-0 flex-1 overflow-hidden rounded-[20px] text-left transition-[background-color,scale] duration-200 ${
+                  near ? "scale-[1.03] bg-white/10" : "bg-surface"
+                } ${picked !== null && !mine ? "opacity-40" : ""}`}
+              >
+                {/* 아래에서 차오르는 색 (끌어다 대면 살짝, 고르면 가득) */}
+                <span
+                  className={`absolute inset-x-0 bottom-0 ${role.fill} transition-[height] duration-500 ease-[cubic-bezier(0.3,1.3,0.5,1)]`}
+                  style={{ height: mine ? "100%" : near ? "18%" : "0%" }}
+                />
+                <span className={`relative flex h-full flex-col justify-between p-3.5 ${mine ? "text-on-light" : ""}`}>
+                  <span className="font-display text-[18px] leading-[1.2]">{label(i).role}</span>
+                  <span className="flex items-end justify-between gap-1">
+                    <span className={`text-[12px] font-semibold leading-[1.3] ${mine ? "opacity-70" : "text-neutral-400"}`}>
+                      {label(i).action}
+                    </span>
+                    {mine && (
+                      <span className="flex size-9 shrink-0 animate-pop items-center justify-center rounded-full bg-on-dark text-[18px]">
+                        👋
+                      </span>
+                    )}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
       <TrackedLink
         href="/home"
         event="landing_login_clicked"
@@ -503,41 +617,6 @@ function RoleButtons({ lang }: { lang: LandingLang }) {
         {t.login}
       </TrackedLink>
     </div>
-  );
-}
-
-function RoleButton({
-  href,
-  tone,
-  role,
-  action,
-  kind,
-}: {
-  href: string;
-  tone: string;
-  role: string;
-  action: string;
-  kind: "korean" | "foreigner";
-}) {
-  return (
-    <TrackedLink
-      href={href}
-      event="role_selected"
-      props={{ role: kind }}
-      superProps={{ user_type: kind }}
-      className={`flex h-[72px] items-center gap-3 rounded-full py-2 pl-7 pr-2 text-on-light transition active:scale-[0.99] ${tone}`}
-    >
-      <span className="flex min-w-0 flex-1 flex-col">
-        <span className="font-display text-[20px] leading-[1.15]">{role}</span>
-        <span className="text-[13px] font-semibold opacity-70">{action}</span>
-      </span>
-      <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-background text-on-dark" aria-hidden="true">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M5 12h14" />
-          <path d="m12 5 7 7-7 7" />
-        </svg>
-      </span>
-    </TrackedLink>
   );
 }
 
