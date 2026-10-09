@@ -82,10 +82,10 @@ const emptyDraft = (): Draft => ({
 export const SAMPLE_MY_POST: MyPost = {
   photos: SAMPLE_PHOTOS,
   coverId: SAMPLE_PHOTOS[0].id,
-  questionId: "eat",
+  questionId: "line",
   dish: AI_DISH,
   ...aiPostFor(AI_DISH),
-  ...aiVoteFor("eat", AI_DISH, aiPostFor(AI_DISH)),
+  ...aiVoteFor("line", AI_DISH, aiPostFor(AI_DISH)),
   voteBasis: "",
   votes: 0,
   comments: 0,
