@@ -59,6 +59,7 @@
   --animate-photo-in: photo-in 1100ms cubic-bezier(0.2, 0.8, 0.2, 1) both; /* 사진이 살짝 당겨지며 자리 잡음 */
   --animate-photo-frame: photo-frame 1300ms cubic-bezier(0.65, 0, 0.25, 1.12) both; /* 크게 올라온 사진이 물결 모양으로 오므라듦 */
   --animate-breathe: breathe 7s ease-in-out infinite; /* 배경 빛이 천천히 숨 쉬듯 */
+  --animate-drift: drift 8s ease-in-out infinite; /* 천천히 둥둥 떠다님 (배경 도형) */
   --animate-menu: menu 180ms cubic-bezier(0.2, 0.8, 0.2, 1) both; /* 메뉴 펼침 */
 }
 
@@ -225,6 +226,17 @@
 @keyframes breathe {
   50% {
     scale: 1.12;
+  }
+}
+
+@keyframes drift {
+  33% {
+    translate: 6px -10px;
+    rotate: 6deg;
+  }
+  66% {
+    translate: -5px 6px;
+    rotate: -4deg;
   }
 }
 

@@ -268,7 +268,7 @@ export function LandingScreen() {
           />
         ))}
         <div className="sticky top-0 flex h-[100svh] flex-col overflow-hidden px-5 pt-[calc(100px+env(safe-area-inset-top))]">
-          {/* 카드 뒤에 흩어진 작은 도형 4개 (구글 랩스 레퍼런스: 물결 원·클로버·꽃·알약) — 35% 투명도로 은은하게, 떠다니지 않음
+          {/* 카드 뒤에 흩어진 작은 도형 4개 (구글 랩스 레퍼런스: 물결 원·클로버·꽃·알약) — 35% 투명도로 은은하게, 천천히 둥둥
               장면(카드만 → 투표 → 한마디)마다 각자 자리와 각도를 옮김 */}
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
             {DECOR.map((d, i) => {
@@ -279,7 +279,7 @@ export function LandingScreen() {
                   className="absolute -translate-x-1/2 -translate-y-1/2"
                   style={{ left: `${pose(0)}%`, top: `${pose(1)}%`, rotate: `${pose(2)}deg`, width: d.size, height: d.size }}
                 >
-                  <div className="size-full opacity-35">
+                  <div className="size-full animate-drift opacity-35" style={{ animationDelay: `${i * -1.7}s`, animationDuration: `${7 + i}s` }}>
                     <Shape kind={d.kind} color={d.color} />
                   </div>
                 </div>
