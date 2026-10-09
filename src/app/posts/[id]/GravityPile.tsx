@@ -1,7 +1,7 @@
 "use client";
 
 import Matter from "matter-js";
-import { useImperativeHandle, useLayoutEffect, useRef, type Ref } from "react";
+import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type KeyboardEvent, type Ref } from "react";
 import type { Comment } from "./comments";
 
 const { Engine, Bodies, Body, Composite, Events, Sleeping } = Matter;
@@ -13,11 +13,14 @@ const { Engine, Bodies, Body, Composite, Events, Sleeping } = Matter;
   - 글 댓글은 돌지 않고 떨어져, 부딪힐 때만 살짝(최대 20°) 기울어진 채 차분히 쌓입니다.
   - 이모지는 동그라미라 떨어진 뒤 굴러갑니다.
   - 댓글끼리는 약 1mm(4px) 띄워서 쌓입니다.
-  - 더미가 칸 높이의 2/3를 넘으면 맨 위를 2/3 높이에 두고, 넘친 아래쪽은 그라데이션 뒤로 내립니다.
+  - 더미가 칸 높이의 3/4를 넘으면 맨 위를 그 높이에 두고, 넘친 아래쪽은 그라데이션 뒤로 내립니다.
     댓글 전체 화면(scrollable)에서는 칸을 아래로 스크롤해서 묻힌 댓글도 볼 수 있습니다.
+    그 높이를 넘지 않으면 스크롤도 없고, 바닥부터 다 보입니다 (넘쳤는지는 onOverflowChange로 알려 줌).
 */
 
-const FILL_LIMIT = 2 / 3;
+// 더미가 칸을 이만큼 채우면 그 뒤로는 화면이 따라 내려갑니다.
+// 2/3면 화면이 너무 비어 보여서 3/4 (상세 화면 칸·댓글 전체 화면 같음).
+const FILL_LIMIT = 3 / 4;
 // 바닥은 칸 아래 경계보다 살짝 아래 (Figma처럼 맨 아래 줄이 그라데이션에 반쯤 걸치게).
 // 스크롤 가능한 칸에서는 맨 아래까지 내려 봤을 때 다 보이도록 칸 아래 경계에 맞춥니다.
 const FLOOR_BELOW = 12;
@@ -26,11 +29,12 @@ const STEP_MS = 1000 / 60;
 // 이모지는 제한 없이 굴러갑니다.
 const MAX_TILT = 0.52;
 const PRESETTLE_STEPS = 60;
-// 댓글 전체 화면을 열 때 "와르르" 쏟아지는 연출: 최신 댓글 최대 이만큼을 0.7초 안에 떨어뜨립니다.
-// 그보다 오래된 댓글은 이미 쌓인 상태(그라데이션 아래쪽)로 시작합니다.
-const RAIN_MAX = 14;
+// 열 때 "와르르" 쏟아지는 연출: 최신 댓글 몇 개(rainOnOpen, 맨 위에 쌓일 댓글들)를 0.7초 안에 떨어뜨립니다.
+// 그보다 오래된 댓글은 이미 쌓인 상태(아래쪽)로 시작합니다. 댓글이 많아도 오래 걸리지 않도록.
 const RAIN_TOTAL_MS = 700;
 const RAIN_GAP_MAX_MS = 70;
+// 투표를 마치고 다시 쏟아질 때, 잠금 레이어가 걷히길 기다리는 시간
+const REPLAY_DELAY_MS = 250;
 // 더미가 높아질 때 화면이 따라 내려가는 움직임 (스프링: 부드럽게 출발하고 부드럽게 멈춤)
 // 약간 과감쇠(넘치지 않음)로, 연달아 오는 작은 목표 이동을 하나의 매끄러운 내려감으로 이어 줍니다.
 const FOLLOW_STIFFNESS = 0.008;
@@ -58,9 +62,20 @@ export type PileHandle = {
   setNextDrop: (hint: DropHint) => void;
   /** (스크롤 가능한 칸) 맨 위로 스크롤 — 새 댓글이 떨어지는 모습이 보이도록 */
   scrollToTop: () => void;
+  /** 맨 위 최신 댓글들을 다시 쏟아지게 (칸이 화면에 보일 때 시작) */
+  replayRain: () => void;
 };
 
-type Tracked = { body: Matter.Body; el: HTMLElement; w: number; h: number; ox: number; oy: number; landed: boolean };
+type Tracked = {
+  comment: Comment;
+  body: Matter.Body;
+  el: HTMLElement;
+  w: number;
+  h: number;
+  ox: number;
+  oy: number;
+  landed: boolean;
+};
 
 /** matter-js 세계. 바닥 윗면이 y = 0이고 더미는 위쪽(음수 y)으로 쌓입니다. */
 class PileWorld {
@@ -90,12 +105,16 @@ class PileWorld {
   /** 열 때 쏟아지기로 예약된 댓글 (아직 떨어지기 전) */
   private pendingRain = new Set<string>();
   private timers: number[] = [];
+  /** 더미가 채움 한도를 넘어 아래쪽이 묻혔는지 (바뀔 때만 알림) */
+  private overflowing = false;
+  onOverflowChange: ((overflowing: boolean) => void) | null = null;
 
   constructor(
     width: number,
     height: number,
     scroller: { box: HTMLElement; content: HTMLElement } | null,
-    private rainOnOpen = false,
+    /** 열 때 쏟아질 최신 댓글 수 (0이면 쏟아지지 않음) */
+    private rainCount = 0,
   ) {
     this.width = width;
     this.height = height;
@@ -177,7 +196,7 @@ class PileWorld {
     if (!this.started) {
       this.started = true;
       // 쏟아지는 연출이면 최신 댓글 몇 개는 남겨 두었다가 눈앞에서 떨어뜨립니다.
-      const rain = this.rainOnOpen ? fresh.slice(-RAIN_MAX) : [];
+      const rain = this.rainCount > 0 ? fresh.slice(-this.rainCount) : [];
       const settled = fresh.slice(0, fresh.length - rain.length);
       // 나머지(처음 열 때 기본)는 오래된 순서대로 같은 규칙으로 떨어뜨려 미리 쌓아 둡니다.
       for (const c of settled) {
@@ -190,18 +209,7 @@ class PileWorld {
       this.followTarget = this.targetTop(false);
       this.viewTop = this.followTarget;
       this.render(false);
-      // 오래된 것부터 차례로, 전체가 1초 안에 끝나도록 간격을 둡니다.
-      const gap = Math.min(RAIN_GAP_MAX_MS, RAIN_TOTAL_MS / Math.max(rain.length, 1));
-      rain.forEach((c, i) => {
-        this.pendingRain.add(c.id);
-        this.timers.push(
-          window.setTimeout(() => {
-            this.pendingRain.delete(c.id);
-            const el = nodes.get(c.id);
-            if (el && !this.tracked.has(c.id)) this.add(c, el, null, true);
-          }, i * gap),
-        );
-      });
+      this.rainDown(rain, nodes);
       return;
     }
     // 여러 개가 한꺼번에 들어오면(다른 탭에서 쓴 댓글 등) 한꺼번에 겹쳐 떨어뜨리지 않고 조용히 쌓아 둡니다.
@@ -217,6 +225,39 @@ class PileWorld {
       this.nextDrop = null;
       this.add(c, nodes.get(c.id)!, hint);
     }
+  }
+
+  /** 이 댓글들을 칸 위에서 차례로 떨어뜨립니다. 오래된 것부터, 전체가 0.7초 안에 끝나도록 간격을 둡니다. */
+  private rainDown(rain: Comment[], nodes: Map<string, HTMLElement>) {
+    const gap = Math.min(RAIN_GAP_MAX_MS, RAIN_TOTAL_MS / Math.max(rain.length, 1));
+    rain.forEach((c, i) => {
+      this.pendingRain.add(c.id);
+      this.timers.push(
+        window.setTimeout(() => {
+          this.pendingRain.delete(c.id);
+          const el = nodes.get(c.id);
+          if (el && !this.tracked.has(c.id)) this.add(c, el, null, true);
+        }, i * gap),
+      );
+    });
+  }
+
+  /**
+    다시 쏟아지기 (투표를 마친 뒤 등): 맨 위에 쌓인 최신 댓글들을 빼서 칸 위에서 다시 떨어뜨립니다.
+    화면 높이는 그대로 두어(따라 내려가지 않게) 빈자리로 그대로 떨어져 채워집니다.
+  */
+  replayRain(nodes: Map<string, HTMLElement>) {
+    if (!this.started || this.rainCount === 0) return;
+    const latest = [...this.tracked.values()].slice(-this.rainCount);
+    for (const t of latest) {
+      Composite.remove(this.engine.world, t.body);
+      this.tracked.delete(t.comment.id);
+      t.el.style.visibility = "hidden";
+    }
+    this.rainDown(
+      latest.map((t) => t.comment),
+      nodes,
+    );
   }
 
   planDrop(width: number) {
@@ -240,7 +281,7 @@ class PileWorld {
       : rain
         ? this.viewTop + scrolled - h / 2 - 8
         : Math.min(this.viewTop, this.highest()) - h / 2 - 8;
-    const body = comment.kind === "emoji" ? this.circleBody(x, y, w) : this.bubbleBody(el, x, y, w, h);
+    const body = comment.kind === "emoji" ? this.emojiBody(el, x, y, w, h) : this.bubbleBody(el, x, y, w, h);
     // 기울이거나 옆으로 밀지 않고 곧게 떨어집니다 (부딪힌 뒤 기울고 구르는 건 물리에 맡김).
     // 회전 관성은 약간만 키워 빙글빙글 돌지는 않게.
     if (comment.kind === "text") Body.setInertia(body, body.inertia * 1.5);
@@ -249,7 +290,7 @@ class PileWorld {
     // 쏟아질 때는 처음부터 조금 빠르게 (1초 안에 시원하게 떨어지도록)
     if (rain) Body.setVelocity(body, { x: 0, y: 6 });
     Composite.add(this.engine.world, body);
-    this.tracked.set(comment.id, { body, el, w, h, ox: x - body.position.x, oy: y - body.position.y, landed: false });
+    this.tracked.set(comment.id, { comment, body, el, w, h, ox: x - body.position.x, oy: y - body.position.y, landed: false });
     el.style.visibility = "visible";
     // 작은 원 → 본래 크기 말풍선: 잘라서 가리지 않고, 말풍선 전체가 원 크기에서 본래 크기로 커집니다.
     // (가운데만 보이게 잘라 두고 펼치면, 떨어지는 동안 양옆이 가려진 것처럼 보였습니다)
@@ -262,20 +303,39 @@ class PileWorld {
     }
   }
 
-  private circleBody(x: number, y: number, w: number) {
+  /**
+    이모지 몸체. 태그(작성자·나)가 없으면 굴러가는 원,
+    태그가 있으면 '원 + 위로 튀어나온 태그' 두 조각을 합치고 돌지 않게 해서 태그가 늘 위에 있게 합니다.
+  */
+  private emojiBody(el: HTMLElement, x: number, y: number, w: number, h: number) {
     // 마찰이 있어야 미끄러지지 않고 굴러갑니다.
-    return Bodies.circle(x, y, (w + GAP) / 2, {
-      restitution: 0.15,
-      friction: 0.5,
-      frictionStatic: 0.8,
-      frictionAir: 0.006,
-      density: 0.002,
+    const options = { restitution: 0.15, friction: 0.5, frictionStatic: 0.8, frictionAir: 0.006, density: 0.002 };
+    const circle = el.querySelector<HTMLElement>("[data-part=bubble]");
+    const tag = el.querySelector<HTMLElement>("[data-part=tag]");
+    if (!circle || !tag) return Bodies.circle(x, y, (w + GAP) / 2, options);
+    const left = x - w / 2;
+    const top = y - h / 2;
+    const d = circle.offsetWidth;
+    const round = Bodies.circle(left + circle.offsetLeft + d / 2, top + circle.offsetTop + d / 2, (d + GAP) / 2);
+    const body = Body.create({ ...options, parts: [round, this.rectPart(tag, left, top)] });
+    Body.setInertia(body, Infinity);
+    return body;
+  }
+
+  /** 요소 하나 크기의 둥근 사각형 조각 (left·top: 댓글 요소 왼쪽 위의 세계 좌표) */
+  private rectPart(p: HTMLElement, left: number, top: number, extra: object = {}) {
+    // offset* 값은 회전·이동(transform)의 영향을 받지 않아서, 화면에 어떻게 그려져 있든 원래 크기를 잽니다.
+    const pw = p.offsetWidth + GAP;
+    const ph = p.offsetHeight + GAP;
+    return Bodies.rectangle(left + p.offsetLeft + p.offsetWidth / 2, top + p.offsetTop + p.offsetHeight / 2, pw, ph, {
+      ...extra,
+      chamfer: { radius: Math.min(ph / 2 - 1, 32) },
     });
   }
 
   /**
     말풍선 몸체. 요소 중심이 (x, y)에 오도록 만듭니다.
-    작성자 말풍선은 '말풍선 + 위로 튀어나온 태그' 두 조각을 합쳐서,
+    태그(작성자·나·답글)가 붙은 말풍선은 '말풍선 + 위로 튀어나온 태그 줄' 두 조각을 합쳐서,
     태그 자리만 막고 나머지 윗부분은 다른 댓글처럼 GAP만큼만 띄웁니다.
   */
   private bubbleBody(el: HTMLElement, x: number, y: number, w: number, h: number) {
@@ -283,15 +343,7 @@ class PileWorld {
     const options = { restitution: 0.05, friction: 0.12, frictionStatic: 0.3, frictionAir: 0.01, density: 0.002 };
     const left = x - w / 2;
     const top = y - h / 2;
-    // offset* 값은 회전·이동(transform)의 영향을 받지 않아서, 화면에 어떻게 그려져 있든 원래 크기를 잽니다.
-    const part = (p: HTMLElement, extra: object = {}) => {
-      const pw = p.offsetWidth + GAP;
-      const ph = p.offsetHeight + GAP;
-      return Bodies.rectangle(left + p.offsetLeft + p.offsetWidth / 2, top + p.offsetTop + p.offsetHeight / 2, pw, ph, {
-        ...extra,
-        chamfer: { radius: Math.min(ph / 2 - 1, 32) },
-      });
-    };
+    const part = (p: HTMLElement, extra: object = {}) => this.rectPart(p, left, top, extra);
     const bubble = el.querySelector<HTMLElement>("[data-part=bubble]");
     const tag = el.querySelector<HTMLElement>("[data-part=tag]");
     if (!bubble) return Bodies.rectangle(x, y, w + GAP, h + GAP, { ...options, chamfer: { radius: Math.min((h + GAP) / 2 - 1, 32) } });
@@ -356,7 +408,7 @@ class PileWorld {
     }
   }
 
-  /** 더미 맨 위가 칸의 2/3 높이를 넘지 않도록 하는 칸 맨 위 y좌표 */
+  /** 더미 맨 위가 칸의 채움 한도(3/4)를 넘지 않도록 하는 칸 맨 위 y좌표 */
   /** settledOnly: 닿아서 거의 멈춘 댓글만 봅니다 (떨어지거나 통통 튀는 중인 댓글까지 보면 목표가 들쭉날쭉해짐) */
   private targetTop(settledOnly = true) {
     let pileTop = 0;
@@ -379,8 +431,15 @@ class PileWorld {
     }
     // 스크롤 가능한 칸: 바닥까지 다 보이도록 안쪽 높이를 늘립니다.
     // 40px 단위로만 바꿔서, 더미가 움직이는 동안 매 프레임 칸 전체를 다시 그리지 않게 합니다.
+    // 더미가 채움 한도를 넘지 않았으면 칸 높이 그대로 (스크롤 없음).
+    const overflowing = target < this.defaultTop - 1;
+    if (overflowing !== this.overflowing) {
+      this.overflowing = overflowing;
+      this.onOverflowChange?.(overflowing);
+    }
     if (this.scroller) {
-      const height = Math.max(this.height, Math.ceil(-this.viewTop / 40) * 40);
+      const below = -this.viewTop - this.height;
+      const height = below < 1 ? this.height : this.height + Math.ceil(below / 40) * 40;
       if (height !== this.contentHeight) {
         this.contentHeight = height;
         this.scroller.content.style.height = `${height}px`;
@@ -409,22 +468,39 @@ export function GravityPile({
   ref,
   className = "h-[286px]",
   scrollable = false,
-  rainOnOpen = false,
+  rainOnOpen = 0,
   ready = true,
+  onOverflowChange,
+  onSelect,
 }: {
   comments: Comment[];
   ref?: Ref<PileHandle>;
   className?: string;
   scrollable?: boolean;
-  /** 열 때 최신 댓글들이 위에서 와르르 쏟아지는 연출 (0.7초 이내) */
-  rainOnOpen?: boolean;
+  /**
+    열 때 최신 댓글 이만큼이 위에서 와르르 쏟아지는 연출 (0.7초 이내, 0이면 없음).
+    칸이 화면에 보일 때 시작합니다 (상세 화면처럼 칸이 아래쪽에 있으면 스크롤해서 보일 때).
+  */
+  rainOnOpen?: number;
   /** 저장된 댓글까지 다 읽어 왔는지. 그 전에 쌓기 시작하면 나중에 들어온 댓글이 한꺼번에 떨어집니다. */
   ready?: boolean;
+  /** 더미가 칸의 채움 한도를 넘어 아래쪽이 그라데이션 아래로 묻히기 시작했는지 / 다시 다 보이는지 */
+  onOverflowChange?: (overflowing: boolean) => void;
+  /** 말풍선을 누르면 (없으면 누를 수 없는 그냥 말풍선) */
+  onSelect?: (comment: Comment) => void;
 }) {
   const zone = useRef<HTMLDivElement>(null);
   const content = useRef<HTMLDivElement>(null);
   const nodes = useRef(new Map<string, HTMLElement>());
   const world = useRef<PileWorld | null>(null);
+  // 쏟아지는 연출은 칸이 화면에 보인 뒤에 시작 (그 전엔 쌓지 않고 비워 둠)
+  const [seen, setSeen] = useState(rainOnOpen === 0);
+  /** 다시 쏟아지기를 기다리는 중인 관찰자 (칸이 보이면 시작) */
+  const replayWatch = useRef<IntersectionObserver | null>(null);
+  const overflowCallback = useRef(onOverflowChange);
+  useLayoutEffect(() => {
+    overflowCallback.current = onOverflowChange;
+  });
 
   useImperativeHandle(
     ref,
@@ -432,9 +508,26 @@ export function GravityPile({
       planDrop: (width) => world.current?.planDrop(width) ?? (zone.current?.clientWidth ?? 0) / 2,
       setNextDrop: (hint) => world.current?.setNextDrop(hint),
       scrollToTop: () => zone.current?.scrollTo({ top: 0, behavior: "smooth" }),
+      replayRain: () => {
+        replayWatch.current?.disconnect();
+        // 칸이 화면에 보일 때 시작합니다 (투표 영역에 있다가 스크롤해 내려오면 그때).
+        const observer = new IntersectionObserver(
+          ([entry]) => {
+            if (!entry.isIntersecting) return;
+            observer.disconnect();
+            replayWatch.current = null;
+            // 투표 전 잠금 레이어가 걷히는 동안 잠깐 기다렸다가
+            window.setTimeout(() => world.current?.replayRain(nodes.current), REPLAY_DELAY_MS);
+          },
+          { threshold: 0.4 },
+        );
+        observer.observe(zone.current!);
+        replayWatch.current = observer;
+      },
     }),
     [],
   );
+  useEffect(() => () => replayWatch.current?.disconnect(), []);
 
   useLayoutEffect(() => {
     const box = zone.current!;
@@ -445,6 +538,7 @@ export function GravityPile({
       rainOnOpen,
     );
     world.current = pile;
+    pile.onOverflowChange = (v) => overflowCallback.current?.(v);
     pile.start();
     const observer = new ResizeObserver(() => pile.resize(box.clientWidth, box.clientHeight));
     observer.observe(box);
@@ -455,9 +549,26 @@ export function GravityPile({
     };
   }, [scrollable, rainOnOpen]);
 
+  useEffect(() => {
+    if (seen) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) setSeen(true);
+      },
+      { threshold: 0.4 },
+    );
+    observer.observe(zone.current!);
+    return () => observer.disconnect();
+  }, [seen]);
+
   useLayoutEffect(() => {
-    if (ready) world.current?.sync(comments, nodes.current);
-  }, [comments, ready]);
+    if (ready && seen) world.current?.sync(comments, nodes.current);
+  }, [comments, ready, seen]);
+
+  // 태그용: 답글의 원글 찾기, 한마디별 답글 수
+  const byId = new Map(comments.map((c) => [c.id, c]));
+  const replyCounts = new Map<string, number>();
+  for (const c of comments) if (c.replyTo) replyCounts.set(c.replyTo, (replyCounts.get(c.replyTo) ?? 0) + 1);
 
   return (
     <div
@@ -467,7 +578,9 @@ export function GravityPile({
       }`}
       aria-label="최근 댓글"
     >
-      <div ref={content} className="relative h-full w-full">
+      {/* 스크롤 칸: 기울어진 이모지 원의 모서리가 아래로 삐져나와 스크롤이 생기지 않도록 잘라 냅니다.
+          (상세 화면 칸은 제목 줄에서 떨어지는 말풍선이 보여야 해서 자르지 않음) */}
+      <div ref={content} className={`relative h-full w-full ${scrollable ? "overflow-clip" : ""}`}>
         {comments.map((c) => (
           <div
             key={c.id}
@@ -475,9 +588,21 @@ export function GravityPile({
               if (el) nodes.current.set(c.id, el);
               else nodes.current.delete(c.id);
             }}
-            className="invisible absolute top-0 left-0 will-change-transform"
+            className={`invisible absolute top-0 left-0 will-change-transform ${onSelect ? "cursor-pointer" : ""}`}
+            {...(onSelect && {
+              role: "button",
+              tabIndex: 0,
+              "aria-label": `한마디 보기: ${c.text.replace(/\n/g, " ")}`,
+              onClick: () => onSelect(c),
+              onKeyDown: (e: KeyboardEvent<HTMLDivElement>) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onSelect(c);
+                }
+              },
+            })}
           >
-            <Bubble comment={c} />
+            <Bubble comment={c} tags={tagsOf(c, byId, replyCounts)} />
           </div>
         ))}
       </div>
@@ -485,21 +610,53 @@ export function GravityPile({
   );
 }
 
-function Bubble({ comment }: { comment: Comment }) {
+/** 말풍선 위 태그 줄에 들어갈 내용 */
+type Tags = {
+  /** 내가 쓴 한마디면 "나", 게시글 작성자가 쓴 한마디면 "작성자" */
+  who: "나" | "작성자" | null;
+  /** 답글이면 원글 내용 (태그에는 앞부분만 보임) */
+  replyToText: string | null;
+  /** 이 한마디에 달린 답글 수 */
+  replies: number;
+};
+
+function tagsOf(comment: Comment, byId: Map<string, Comment>, replyCounts: Map<string, number>): Tags {
+  const parent = comment.replyTo ? byId.get(comment.replyTo) : undefined;
+  return {
+    who: comment.mine ? "나" : comment.author.kind === "author" ? "작성자" : null,
+    replyToText: parent ? parent.text.replace(/\n/g, " ") : null,
+    replies: replyCounts.get(comment.id) ?? 0,
+  };
+}
+
+const TAG = "flex h-[18px] shrink-0 items-center gap-0.5 rounded-full bg-black text-[10px] leading-none font-bold tracking-[-0.2px] whitespace-nowrap text-white";
+// PC에서 마우스를 올리면 흰 테두리 + 은은한 빛 (Figma 344:3248). outline이라 크기는 그대로입니다.
+const HOVER =
+  "outline-2 outline-transparent transition-[outline-color,box-shadow] duration-150 hover:shadow-[0_2px_12px_rgba(255,255,255,0.3)] hover:outline-white";
+
+/**
+  한마디 말풍선 (Figma 344:3209 한마디 상태)
+  - 태그: 작성자 / 나, 답글이면 "↩ 원글", 답글이 달렸으면 "↪ 답글 수"
+  - 태그가 있으면 말풍선 위로 튀어나온 만큼 위쪽 여백을 둡니다.
+    물리 몸체는 말풍선 + 태그 줄 두 조각이라, 태그 자리만 막히고 나머지 윗부분은 다른 댓글과 같은 간격입니다.
+*/
+function Bubble({ comment, tags }: { comment: Comment; tags: Tags }) {
   const { author } = comment;
-  if (comment.kind === "emoji") {
-    return (
-      <span className="flex size-[54px] items-center justify-center rounded-full text-[16px]" style={{ background: comment.color }}>
-        {comment.text}
-      </span>
-    );
-  }
-  const bubble = (
+  const emoji = comment.kind === "emoji";
+  const bubble = emoji ? (
     <span
       data-part="bubble"
-      className={`flex items-center justify-center gap-2 rounded-[32px] text-center text-[16px] leading-[1.4] font-bold tracking-[-0.32px] whitespace-pre text-black ${
-        author.kind === "korean" ? "px-5 py-4" : "py-2.5 pr-5 pl-2.5"
-      }`}
+      className={`flex size-[54px] items-center justify-center rounded-full text-[16px] ${HOVER}`}
+      style={{ background: comment.color }}
+    >
+      {comment.text}
+    </span>
+  ) : (
+    <span
+      data-part="bubble"
+      className={`flex items-center justify-center gap-2 rounded-[32px] py-4 text-center text-[16px] leading-[1.4] font-bold tracking-[-0.32px] whitespace-pre text-black ${
+        author.kind === "korean" ? "px-5" : "pr-5 pl-2.5"
+      } ${HOVER}`}
       style={{ background: comment.color }}
     >
       {author.kind !== "korean" && (
@@ -510,16 +667,45 @@ function Bubble({ comment }: { comment: Comment }) {
       {splitLines(comment.text).join("\n")}
     </span>
   );
-  if (author.kind !== "author") return bubble;
-  // "작성자" 태그가 말풍선 위로 튀어나온 만큼 위쪽 여백을 둡니다.
-  // 물리 몸체는 말풍선 + 태그 두 조각이라, 태그 자리만 막히고 나머지 윗부분은 다른 댓글과 같은 간격입니다.
+  if (!tags.who && !tags.replyToText && !tags.replies) return bubble;
   return (
     <span className="relative block pt-2.5">
       {bubble}
-      <span data-part="tag" className="absolute top-0 left-[30px] rounded-full bg-black px-1.5 py-1 text-[10px] leading-none font-bold text-white">
-        작성자
+      {/* 이모지는 태그를 가운데에. transform으로 옮기면 물리 몸체 위치(offsetLeft)가 어긋나서 flex로 가운데 맞춤 */}
+      <span data-part="tag" className={`absolute top-0 flex gap-0.5 ${emoji ? "inset-x-0 justify-center" : "left-6"}`}>
+        {tags.who && <span className={`${TAG} px-1.5`}>{tags.who}</span>}
+        {tags.replyToText && (
+          <span className={`${TAG} pr-1.5 pl-1`} aria-label={`답글: ${tags.replyToText}`}>
+            <ReplyToIcon />
+            <span className="max-w-[42px] overflow-hidden text-ellipsis">{tags.replyToText}</span>
+          </span>
+        )}
+        {tags.replies > 0 && (
+          <span className={`${TAG} pr-1.5 pl-1`} aria-label={`답글 ${tags.replies}개`}>
+            <RepliesIcon />
+            {tags.replies}
+          </span>
+        )}
       </span>
     </span>
+  );
+}
+
+// 답글 태그 아이콘 (Figma ic_reply): ↩ 원글에 답함
+function ReplyToIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="white" aria-hidden="true" className="shrink-0">
+      <path d="M4.85339 3.34736C4.94447 3.25305 4.99487 3.12675 4.99373 2.99566C4.99259 2.86456 4.94001 2.73915 4.8473 2.64645C4.7546 2.55374 4.62919 2.50116 4.49809 2.50002C4.367 2.49888 4.24069 2.54928 4.14639 2.64036L1.64639 5.14036C1.55266 5.23412 1.5 5.36127 1.5 5.49386C1.5 5.62644 1.55266 5.75359 1.64639 5.84736L4.14639 8.34736C4.24069 8.43844 4.367 8.48883 4.49809 8.48769C4.62919 8.48655 4.7546 8.43397 4.8473 8.34126C4.94001 8.24856 4.99259 8.12315 4.99373 7.99206C4.99487 7.86096 4.94447 7.73466 4.85339 7.64036L3.20689 5.99386H6.49989C7.29554 5.99386 8.0586 6.30993 8.62121 6.87254C9.18382 7.43514 9.49989 8.19821 9.49989 8.99386C9.49989 9.12646 9.55257 9.25364 9.64634 9.34741C9.74011 9.44118 9.86728 9.49386 9.99989 9.49386C10.1325 9.49386 10.2597 9.44118 10.3534 9.34741C10.4472 9.25364 10.4999 9.12646 10.4999 8.99386C10.4999 7.93299 10.0785 6.91557 9.32832 6.16543C8.57818 5.41528 7.56076 4.99386 6.49989 4.99386H3.20689L4.85339 3.34736Z" />
+    </svg>
+  );
+}
+
+// 답글 수 태그 아이콘 (Figma ic_reply): ↪ 답글이 달림
+function RepliesIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="white" aria-hidden="true" className="shrink-0">
+      <path d="M7.14661 9.1465C7.05553 9.2408 7.00513 9.3671 7.00627 9.4982C7.00741 9.6293 7.05999 9.7547 7.1527 9.84741C7.2454 9.94011 7.37081 9.9927 7.50191 9.99384C7.633 9.99498 7.75931 9.94458 7.85361 9.8535L10.3536 7.3535C10.4473 7.25974 10.5 7.13258 10.5 7C10.5 6.86742 10.4473 6.74026 10.3536 6.6465L7.85361 4.1465C7.75931 4.05542 7.633 4.00502 7.50191 4.00616C7.37081 4.0073 7.2454 4.05989 7.1527 4.15259C7.05999 4.24529 7.00741 4.3707 7.00627 4.5018C7.00513 4.6329 7.05553 4.7592 7.14661 4.8535L8.79311 6.5H5.50011C4.70446 6.5 3.9414 6.18393 3.37879 5.62132C2.81618 5.05871 2.50011 4.29565 2.50011 3.5C2.50011 3.36739 2.44743 3.24021 2.35366 3.14645C2.25989 3.05268 2.13272 3 2.00011 3C1.8675 3 1.74032 3.05268 1.64655 3.14645C1.55278 3.24021 1.50011 3.36739 1.50011 3.5C1.50011 4.56087 1.92153 5.57828 2.67168 6.32843C3.42182 7.07857 4.43924 7.5 5.50011 7.5H8.79311L7.14661 9.1465Z" />
+    </svg>
   );
 }
 

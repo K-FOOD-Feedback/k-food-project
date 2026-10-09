@@ -30,7 +30,7 @@
 |---|---|---|
 | `feed_viewed` | 메인 진입 | `viewer`, `posts` |
 | `card_swiped` | 카드 넘김 | `direction`(next/prev), `post_id`, `position`, `viewer` |
-| `post_opened` | 카드 탭 / 하단 CTA | `post_id`, `from`(card/cta), `viewer`, `position`, `already_voted` |
+| `post_opened` | 카드 탭 / 하단 CTA / 상세 맨 아래 "다음 훈수 거리" | `post_id`, `from`(card/cta/next), `viewer`, `position`, `already_voted` · next일 때는 `post_id`(다음 글), `from_post_id`(보던 글)만 |
 | `feed_cta_clicked` | 투표하러 가기 / 투표 결과 보기 | `post_id`, `voted` |
 | `share_clicked` | Share your K-food | `logged_in` |
 
@@ -38,10 +38,10 @@
 | 이벤트 | 어디서 | 속성 |
 |---|---|---|
 | `photo_swiped` | 상세 사진 넘김 (처음 보는 사진만) | `post_id`, `index`, `total` |
-| `vote_cta_clicked` | 플로팅 투표하기 | `post_id` |
-| `vote_section_viewed` | 투표 카드가 보임 | `post_id`, `via`(scroll/cta) |
+| `vote_cta_clicked` | 플로팅 투표하기 / 한마디 잠금 레이어의 투표하기 | `post_id` |
+| `vote_section_viewed` | 투표 카드가 보임 (스크롤, 투표하기 버튼, `#vote` 주소로 열림) | `post_id`, `via`(scroll/cta) |
 | `vote_cast` | 첫 투표 | `post_id`, `choice`, `options_count`, `method`(drag/tap), `seconds_to_vote`, `total_votes_before` |
-| `vote_changed` | 다시 투표하기 후 투표 | 위와 같음 + `previous` |
+| `vote_changed` | 투표한 뒤 다른 칸을 눌러 선택을 바꿈 | 위와 같음 + `previous`(바꾸기 전 선택) |
 | `vote_drag_missed` | 토큰을 칸 밖에 놓음 | `post_id` |
 | `comment_section_viewed` | 댓글 영역이 보임 | `post_id`, `voted` |
 | `comment_sent` | 한마디 / 이모지 | `post_id`, `type`(text/emoji), `length`, `emoji`, `lines`, `screen` |

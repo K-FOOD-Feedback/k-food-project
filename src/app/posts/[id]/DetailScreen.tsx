@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { clearCardTransition, peekCardTransition, type Box } from "@/app/home/cardTransition";
-import { participantsOf, type HomePost } from "@/app/home/mockPosts";
+import { HOME_POSTS, participantsOf, type HomePost } from "@/app/home/mockPosts";
+import { ArrowCta } from "@/components/Buttons";
 import { useMyVote } from "@/app/home/votes";
 import { TrackedLink } from "@/components/Track";
 import { track } from "@/lib/analytics";
@@ -92,6 +93,10 @@ export function DetailScreen({ post }: { post: HomePost }) {
 
   const showCta = !voted && !seenVote;
 
+
+  // 다음 훈수 거리: 메인 카드 순서상 다음 게시글 (마지막이면 처음으로)
+  const next = HOME_POSTS[(HOME_POSTS.findIndex((p) => p.id === post.id) + 1) % HOME_POSTS.length];
+
   // 메인 카드에서 넘어왔으면: 카드 속 사진은 위쪽 사진 영역으로, 카드는 아래쪽 본문 카드로 이어지게 움직입니다.
   const [intro] = useState(() => peekCardTransition(post.id));
   const [introDone, setIntroDone] = useState(!intro);
@@ -149,6 +154,32 @@ export function DetailScreen({ post }: { post: HomePost }) {
     }
   }, [intro, introDone]);
 
+  // 주소가 #vote로 열리면(예: 투표 안 하고 한마디 전체 화면에 들어왔다가 돌려보내진 경우) 투표 영역을 가운데로.
+  // 메인 카드 전환이 있으면 끝난 뒤에 스크롤합니다.
+  const hashHandled = useRef(false);
+  useEffect(() => {
+    if (hashHandled.current || !introDone) return;
+    // 다른 화면에서 router로 넘어오면 주소(#vote)가 화면보다 조금 늦게 바뀌고,
+    // Next.js도 #vote 위치로 한 번 스크롤(맨 위에 붙임)하므로, 잠시 뒤에 주소를 보고 가운데로 맞춥니다.
+    // 주소창에 #vote를 넣고 새로 열면 브라우저가 페이지를 다 불러온 뒤 한 번 더 스크롤하므로, 그 뒤에 맞춥니다.
+    let timer = 0;
+    const center = () => {
+      timer = window.setTimeout(() => {
+        hashHandled.current = true;
+        if (window.location.hash !== "#vote") return;
+        voteRef.current?.scrollIntoView({ block: "center" });
+        markVoteSeen("scroll");
+        setSeenVote(true);
+      }, 150);
+    };
+    if (document.readyState === "complete") center();
+    else window.addEventListener("load", center, { once: true });
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("load", center);
+    };
+  }, [introDone, markVoteSeen]);
+
   const hiddenUntilIntro = intro && !introDone ? "invisible" : "";
 
   return (
@@ -180,7 +211,7 @@ export function DetailScreen({ post }: { post: HomePost }) {
         </div>
       </header>
 
-      <div className="flex flex-col gap-1 px-2 pb-[calc(48px+env(safe-area-inset-bottom))]">
+      <div className="flex flex-col gap-1 px-2 pb-[calc(40px+env(safe-area-inset-bottom))]">
         <div ref={tileRef} className={hiddenUntilIntro}>
           <PhotoTile postId={post.id} photos={post.photos} participants={participantsOf(post)} title={post.title} />
         </div>
@@ -207,14 +238,40 @@ export function DetailScreen({ post }: { post: HomePost }) {
         </div>
 
         <div
+          className="relative"
           ref={(el) => {
             fadeIns.current[2] = el;
             commentRef.current = el;
           }}
         >
-          <CommentPile postId={post.id} commentCount={post.commentCount} authorFlag={post.author.flag} />
+          {/*
+            투표 전에는 이모지·한마디 입력 카드를 숨기고(투표하면 나타남), 한마디 칸은 잠금 레이어로 덮어 누를 수 없게(inert) 합니다.
+            (CommentPile은 한마디 세션 담당이라 안을 고치지 않고 바깥에서 감쌉니다 — 칸(section) 아래 요소들만 숨김)
+          */}
+          <div
+            inert={!voted}
+            className={
+              voted
+                ? "[&>div>*:not(section)]:transition-opacity [&>div>*:not(section)]:duration-500 [&>div>*:not(section)]:starting:opacity-0"
+                : "[&>div>*:not(section)]:hidden"
+            }
+          >
+            <CommentPile postId={post.id} commentCount={post.commentCount} authorFlag={post.author.flag} />
+          </div>
+          <CommentLock locked={!voted} onVote={goToVote} />
+        </div>
+
+        {/* 화면 맨 아래 "다음 훈수 거리" (Figma 332:3426 Question CTA) — 떠 있지 않고 내용 끝에 놓임 */}
+        <div className="mt-[46px]">
+          <ArrowCta
+            href={`/posts/${next.id}`}
+            caption="다음 훈수 거리"
+            title={next.title}
+            onClick={() => track("post_opened", { post_id: next.id, from: "next", from_post_id: post.id })}
+          />
         </div>
       </div>
+
 
       {/* 메인 카드 → 상세 전환용 (끝나면 사라지고 진짜 사진·본문 카드가 보임) */}
       {intro && !introDone && (
@@ -252,6 +309,43 @@ export function DetailScreen({ post }: { post: HomePost }) {
         투표하기
       </button>
     </main>
+  );
+}
+
+/**
+  투표 전에는 한마디 칸(위쪽 362px) 위에 잠금 레이어를 덮습니다 (Figma 333:4130 layer_lock).
+  한마디 칸 자체는 한마디 세션 담당(CommentPile)이라, 상세 화면에서 위에 겹쳐 올립니다.
+*/
+function CommentLock({ locked, onVote }: { locked: boolean; onVote: () => void }) {
+  return (
+    <div
+      aria-hidden={!locked}
+      className={`absolute inset-x-0 top-0 z-10 flex h-[362px] items-center justify-center overflow-hidden rounded-[32px] bg-background/50 backdrop-blur-[8px] transition-opacity duration-500 ${
+        locked ? "opacity-100" : "pointer-events-none opacity-0"
+      }`}
+    >
+      <div className="flex w-[178px] flex-col items-center gap-[30px]">
+        <div className="flex flex-col items-center gap-5">
+          <span className="flex size-[60px] items-center justify-center rounded-full bg-[#292929]">
+            {/* eslint-disable-next-line @next/next/no-img-element -- 작은 SVG 아이콘 */}
+            <img src="/images/icon-lock.svg" width={32} height={32} alt="" />
+          </span>
+          <p className="text-center text-[20px] leading-[1.45] font-extrabold tracking-[-0.4px] whitespace-nowrap text-white">
+            투표하고 다른 사람들과
+            <br />
+            한마디를 나눠보세요!
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onVote}
+          tabIndex={locked ? 0 : -1}
+          className="rounded-full bg-primary px-5 py-3.5 text-[18px] leading-[1.45] font-extrabold tracking-[-0.36px] text-white transition-transform active:scale-95"
+        >
+          투표하기
+        </button>
+      </div>
+    </div>
   );
 }
 
