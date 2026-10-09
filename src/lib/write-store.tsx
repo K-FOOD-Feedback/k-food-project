@@ -26,7 +26,7 @@ import {
   아직 서버가 없어서 메모리에만 저장합니다 (새로고침하면 초기화).
 */
 
-export type DraftStep = "photos" | "question" | "post" | "vote";
+export type DraftStep = "photos" | "post" | "vote";
 
 export type PostContent = {
   photos: Photo[];

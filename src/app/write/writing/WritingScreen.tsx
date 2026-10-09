@@ -49,7 +49,7 @@ export function WritingScreen() {
             icon="x"
             label="Stop and save draft"
             onClick={() => {
-              saveDraftForLater("question");
+              saveDraftForLater("photos");
               track("ai_draft_stopped", { step_done: done });
               track("draft_saved", { step: "ai_writing" });
               router.push("/home/en");

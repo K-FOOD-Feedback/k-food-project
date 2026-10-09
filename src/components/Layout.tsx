@@ -193,8 +193,8 @@ export function Tile({
   return <Tag className={`flex w-full flex-col gap-1 overflow-hidden rounded-[32px] bg-surface p-1 ${className}`}>{children}</Tag>;
 }
 
-/** 작성 단계 진행 바 (Photos · Topic · Post · Vote) */
-export function StepProgress({ step, total = 4 }: { step: number; total?: number }) {
+/** 작성 단계 진행 바 (Photos · Post · Question+Vote) */
+export function StepProgress({ step, total = 3 }: { step: number; total?: number }) {
   return (
     <div
       className="flex gap-1 px-2 pb-3"

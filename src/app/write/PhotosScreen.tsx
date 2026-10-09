@@ -99,7 +99,7 @@ export function PhotosScreen({ backHref = "/home/en" }: { backHref?: string }) {
           title="Next"
           compact
           {...(draft.photos.length
-            ? { href: "/write/question", onClick: () => track("photos_completed", { count: draft.photos.length }) }
+            ? { href: "/write/writing", onClick: () => track("photos_completed", { count: draft.photos.length }) }
             : { disabled: true })}
         />
       </StickyBottom>

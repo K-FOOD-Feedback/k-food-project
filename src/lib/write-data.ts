@@ -139,8 +139,22 @@ export function aiVoteFor(
       { voteQuestion: `Is this ${dish} better than a Korean's?`, options: [`Yes, honestly 🏆`, `Same level`, `Nice try 😂`] },
     ],
   };
-  const list = sets[questionId];
+  const list = sets[questionId] ?? sets.line; // 예전 질문 id로 저장된 글도 깨지지 않게
   return list[variant % list.length];
+}
+
+/**
+ * 글 내용을 보고 질문 순서를 매김 (AI 목업) — 맨 앞이 추천 1순위, 처음에 미리 선택됨
+ * 실제 AI가 붙으면 사진 + 제목·본문을 보고 이 목록 안에서 순서만 다시 매깁니다.
+ */
+export function rankQuestions(post: { title: string; story: string }): QuestionId[] {
+  const t = `${post.title} ${post.story}`.toLowerCase();
+  const first: QuestionId[] = [];
+  if (/too |a lot|extra|lots of|chees|mozzarella/.test(t)) first.push("toomuch");
+  if (/first time|my first|tried/.test(t)) first.push("nailed");
+  if (/added|instead|mix|with /.test(t)) first.push("line");
+  const rest = QUESTIONS.map((q) => q.id).filter((id) => !first.includes(id));
+  return [...first, ...rest];
 }
 
 /** 투표가 만들어질 때 쓴 재료 — 이게 바뀌면 "선택지 다시 맞출까요?" */

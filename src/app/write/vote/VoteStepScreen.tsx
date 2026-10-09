@@ -1,13 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowCta, IconButton } from "@/components/Buttons";
 import { TextField } from "@/components/Field";
 import { Icon } from "@/components/Icon";
 import { Screen, StepProgress, StickyBottom, Tile, TopBar } from "@/components/Layout";
-import { getQuestion, VOTE_TITLE_MAX, voteBasisOf } from "@/lib/write-data";
+import { getQuestion, rankQuestions, VOTE_TITLE_MAX, voteBasisOf, type QuestionId } from "@/lib/write-data";
 import { keptRatio, track } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
 import { OptionsEditor } from "../OptionsEditor";
@@ -16,8 +15,10 @@ import { WriteExit } from "../WriteExit";
 const MAKING_MS = 1400;
 
 /*
-  ④ Your vote
-  - AI가 사진 + 주제 + 제목·본문을 보고 투표 제목과 선택지를 만듦
+  ③ 질문 + 투표 (마지막 단계)
+  - 위: 한국인에게 물어볼 질문 고르기 — AI가 글을 보고 순서를 매기고 1순위를 미리 골라 둠
+  - 질문을 바꾸면 아래 투표가 그 질문에 맞게 바로 다시 만들어짐
+  - AI가 사진 + 질문 + 제목·본문을 보고 투표 제목과 선택지를 만듦
   - 투표 제목·선택지 모두 고칠 수 있음 (선택지 2~4개)
   - ③에서 글을 고치고 오면 "선택지도 다시 맞출까요?" 안내 (자동으로 덮어쓰지 않음)
 */
@@ -25,12 +26,20 @@ export function VoteStepScreen() {
   const router = useRouter();
   const { draft, updateDraft, makeVote, saveDraftForLater, publish } = useFlow();
   const question = getQuestion(draft.questionId);
+  // 처음 들어오면(아직 투표 없음) AI 추천 1순위 질문을 골라 둠
+  const ranked = useMemo(() => rankQuestions(draft), [draft]);
   const [making, setMaking] = useState(draft.options.length === 0);
+  const picked = useRef(draft.options.length > 0);
+  useEffect(() => {
+    if (picked.current) return;
+    picked.current = true;
+    updateDraft({ questionId: ranked[0] });
+  }, [ranked, updateDraft]);
   const [variant, setVariant] = useState(0);
   const [posting, setPosting] = useState(false);
 
   // 분석용: 왜 투표를 (다시) 만들었는지
-  const reason = useRef<"first" | "remake" | "update">("first");
+  const reason = useRef<"first" | "remake" | "update" | "question">("first");
 
   // making이 켜지면 잠시 "만드는 중"을 보여 준 뒤 투표를 채움 (처음 진입 · Remake · Update 공통)
   useEffect(() => {
@@ -42,6 +51,15 @@ export function VoteStepScreen() {
     }, MAKING_MS);
     return () => window.clearTimeout(t);
   }, [making, variant, makeVote, draft.questionId]);
+
+  const chooseQuestion = (id: QuestionId) => {
+    if (id === draft.questionId || making) return;
+    track("topic_changed", { from_topic: draft.questionId, to_topic: id, method: "chip", ai_rank: ranked.indexOf(id) });
+    updateDraft({ questionId: id });
+    reason.current = "question";
+    setVariant(0);
+    setMaking(true);
+  };
 
   const remake = (nextVariant: number, why: "remake" | "update") => {
     reason.current = why;
@@ -74,10 +92,10 @@ export function VoteStepScreen() {
             }}
           />
         }
-        title="Your vote"
+        title="Ask Koreans"
         right={<WriteExit step="vote" />}
       />
-      <StepProgress step={4} />
+      <StepProgress step={3} />
 
       <div className="stagger flex flex-col gap-1 px-2">
         {stale && (
@@ -104,19 +122,41 @@ export function VoteStepScreen() {
         )}
 
         <Tile>
-          {/* 질문 주제 — 칩 하나 (누르면 주제 다시 고르기) */}
-          <div className="flex flex-col gap-2 px-5 pt-5 pb-1">
-            <p className="text-[13px] font-semibold leading-[1.3]">Question</p>
-            <Link
-              href="/write/question"
-              onClick={() => track("topic_change_clicked", { from: "vote", topic: draft.questionId })}
-              aria-label={`Question: ${question.label}. Change`}
-              className="flex h-10 w-fit items-center gap-2 rounded-full bg-surface-2 pl-3 pr-3.5 text-[14px] font-semibold transition active:scale-95"
+          {/* 한국인에게 물어볼 질문 — 가로로 넘겨 고르기. 맨 앞이 AI 추천 */}
+          <div className="flex flex-col gap-2 pt-5 pb-1">
+            <p className="px-5 text-[13px] font-semibold leading-[1.3]">What do you want to ask?</p>
+            <div
+              role="radiogroup"
+              aria-label="Question"
+              className="flex snap-x gap-1.5 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
-              <Icon name={question.icon} size={16} />
-              {question.label}
-              <Icon name="pencil" size={14} className="text-muted" />
-            </Link>
+              {ranked.map((id, i) => {
+                const q = getQuestion(id);
+                const on = id === draft.questionId;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    onClick={() => chooseQuestion(id)}
+                    className={`relative flex h-11 shrink-0 snap-start items-center gap-2 rounded-full pl-3.5 pr-4 text-[14px] font-semibold transition active:scale-95 ${
+                      on ? "bg-on-dark text-on-light" : "bg-surface-2 text-on-dark"
+                    }`}
+                  >
+                    <Icon name={q.icon} size={16} />
+                    {q.label}
+                    {i === 0 && (
+                      <span className={`flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${on ? "bg-content text-on-light" : "bg-content/20 text-content"}`}>
+                        <Icon name="sparkle" size={10} />
+                        AI
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="px-5 text-[13px] leading-[1.4] text-muted">{question.hint}</p>
           </div>
 
           {making ? (

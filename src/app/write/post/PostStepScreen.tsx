@@ -64,14 +64,14 @@ export function PostStepScreen() {
             onClick={() => {
               saveDraftForLater("post");
               track("draft_saved", { step: "post" });
-              router.push("/write/question");
+              router.push("/write");
             }}
           />
         }
         title="Your post"
         right={<WriteExit step="post" />}
       />
-      <StepProgress step={3} />
+      <StepProgress step={2} />
 
       <div className="stagger flex flex-col gap-1 px-2">
         {/* 글 — 맨 위. AI가 알아본 음식은 카드 첫 줄에 작게, 틀렸으면 여기서 바로잡기 */}
@@ -162,8 +162,8 @@ export function PostStepScreen() {
 
       <StickyBottom>
         <ArrowCta
-          caption="AI makes a vote from your post"
-          title="Make the vote"
+          caption="Pick what to ask Koreans"
+          title="Next"
           {...(canNext
             ? {
                 href: "/write/vote",
