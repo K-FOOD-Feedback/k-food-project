@@ -98,8 +98,8 @@ export function LandingScreen() {
         frame = 0;
         return;
       }
-      // 한 프레임에 남은 거리의 12%씩 (휙 내려도 0.5초쯤에 걸쳐 따라감)
-      shown += gap * (noMotion() ? 1 : 0.12);
+      // 천천히 따라감: 남은 거리의 6%씩, 한 프레임 최대 0.005 (한 단계 ≈ 1초)
+      shown += noMotion() ? gap : clamp(gap * 0.06, -0.005, 0.005);
       setP(shown);
       frame = requestAnimationFrame(tick);
     };
