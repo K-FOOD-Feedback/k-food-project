@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { IconButton } from "@/components/Buttons";
@@ -7,19 +8,18 @@ import { Icon } from "@/components/Icon";
 import { Screen, TopBar } from "@/components/Layout";
 import { track, useTrackOnce } from "@/lib/analytics";
 import { markNotificationsSeen } from "@/lib/notifications-seen";
-import { DATA, FILTERS, groupByDay, matchesFilter, type FilterId, type Lang, type Notif } from "./data";
+import { DATA, groupByDay, photoOf, type Lang, type Notif } from "./data";
 
 /**
  * 인앱 알림함 (4. 알림, 담당 송희) — 외국인 /notifications/en · 한국인 /notifications
  * - 투표·댓글·답글이 달리는 즉시 쌓임 (지금은 화면을 열고 2.5초 뒤 하나 도착하는 연출)
- * - 날짜별로 나누고, 위 탭으로 투표/댓글만 골라 보기
+ * - 날짜별로 나눔 (종류가 적어서 탭 없음), 왼쪽은 그 글의 음식 사진
  * - 알림함을 열면 다 읽은 것 (안 읽음 표시·모두 읽음 없음)
  * - 알림이 많지 않아서 묶지 않고 하나씩 (댓글은 내용이 핵심이라 다 보이게)
  */
 export function NotificationsScreen({ lang }: { lang: Lang }) {
   const t = COPY[lang];
   const { incoming: INCOMING, list: NOTIFS } = DATA[lang];
-  const [filter, setFilter] = useState<FilterId>("all");
   const [live, setLive] = useState(false);
 
   useTrackOnce("notifications_viewed", { count: NOTIFS.length, viewer: VIEWER[lang] });
@@ -34,7 +34,7 @@ export function NotificationsScreen({ lang }: { lang: Lang }) {
   }, []);
 
   const all = useMemo(() => (live ? [INCOMING, ...NOTIFS] : NOTIFS), [live, INCOMING, NOTIFS]);
-  const days = useMemo(() => groupByDay(all.filter((n) => matchesFilter(n, filter))), [all, filter]);
+  const days = useMemo(() => groupByDay(all), [all]);
 
   return (
     <Screen className="pb-16">
@@ -43,37 +43,7 @@ export function NotificationsScreen({ lang }: { lang: Lang }) {
         left={<IconButton icon="chevron-left" label={t.back} href={lang === "en" ? "/home/en" : "/home"} />}
       />
 
-      {/* 종류 탭 (외국인만 — 한국인은 대댓글 하나뿐) */}
-      {lang === "en" && (
-      <div
-        role="tablist"
-        aria-label={t.filterLabel}
-        className="sticky top-[calc(80px+env(safe-area-inset-top))] z-20 flex gap-1.5 bg-background px-4 pb-3"
-      >
-        {FILTERS.map((f) => {
-          const on = f.id === filter;
-          return (
-            <button
-              key={f.id}
-              type="button"
-              role="tab"
-              aria-selected={on}
-              onClick={() => {
-                setFilter(f.id);
-                track("notification_filter_changed", { filter: f.id, viewer: VIEWER[lang] });
-              }}
-              className={`flex h-10 items-center gap-1.5 rounded-full px-4 text-[14px] font-semibold transition active:scale-95 ${
-                on ? "bg-on-dark text-on-light" : "bg-surface text-neutral-400"
-              }`}
-            >
-              {f.label}
-            </button>
-          );
-        })}
-      </div>
-      )}
-
-      <div className="flex flex-col gap-7 px-4 pt-3">
+      <div className="flex flex-col gap-7 px-4 pt-2">
         {days.length === 0 && (
           <div className="flex flex-col items-center gap-2 py-24 text-center">
             <span className="text-[40px]" aria-hidden="true">
@@ -108,7 +78,19 @@ export function NotificationsScreen({ lang }: { lang: Lang }) {
 function Card({ lang, n, className = "" }: { lang: Lang; n: Notif; className?: string }) {
   return (
     <span className={`flex items-start gap-3.5 rounded-[24px] bg-surface py-4 pl-4 pr-3 ${className}`}>
-      <Badge type={n.type} />
+      {/* 그 글의 음식 사진 (앱의 물결 모양) */}
+      <span
+        className="relative size-12 shrink-0"
+        style={{
+          maskImage: "url(/images/card-mask.svg)",
+          WebkitMaskImage: "url(/images/card-mask.svg)",
+          maskSize: "100% 100%",
+          WebkitMaskSize: "100% 100%",
+        }}
+        aria-hidden="true"
+      >
+        <Image src={photoOf(n)} alt="" fill sizes="48px" className="object-cover" />
+      </span>
       <span className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="flex items-start gap-2">
           <span className="line-clamp-2 min-w-0 flex-1 break-keep text-[15px] font-semibold leading-[1.4]">{titleOf(n, lang)}</span>
@@ -123,35 +105,12 @@ function Card({ lang, n, className = "" }: { lang: Lang; n: Notif; className?: s
   );
 }
 
-function Badge({ type }: { type: Notif["type"] }) {
-  const tone = {
-    first: "bg-primary text-[20px]",
-    comment: "bg-secondary text-on-light",
-    reply: "bg-lilac text-on-light",
-    milestone: "bg-content text-[20px]",
-    draft: "bg-surface-2 text-on-dark",
-  }[type];
-  const icon = {
-    first: "🎉",
-    milestone: "🔥",
-    comment: <Icon name="message" size={20} />,
-    reply: <Icon name="message" size={20} />,
-    draft: <Icon name="pencil" size={20} />,
-  }[type];
-  return (
-    <span className={`flex size-11 shrink-0 items-center justify-center rounded-full ${tone}`} aria-hidden="true">
-      {icon}
-    </span>
-  );
-}
-
 const VIEWER = { en: "foreigner", ko: "korean" } as const;
 
 const COPY = {
   en: {
     title: "Notifications",
     back: "Back",
-    filterLabel: "Filter notifications",
     emptyTitle: "No notifications yet",
     emptyBody: "We'll let you know as soon as Koreans vote or comment.",
     close: "Close",
@@ -159,7 +118,6 @@ const COPY = {
   ko: {
     title: "알림",
     back: "뒤로",
-    filterLabel: "알림 종류",
     emptyTitle: "아직 알림이 없어요",
     emptyBody: "내 댓글에 답글이 달리면 바로 알려 드릴게요.",
     close: "닫기",
@@ -185,20 +143,11 @@ function titleOf(n: Notif, lang: Lang) {
   }
 }
 
+/** 아래 줄: 댓글·답글은 내용, 나머지는 어느 글인지 (어느 글인지는 왼쪽 사진으로도 보임) */
 function bodyOf(n: Notif, lang: Lang) {
-  if (lang === "ko") return `${n.postTitle} · “${n.detail}”`;
-  switch (n.type) {
-    case "first":
-      return `${n.actor} reacted to ${n.postTitle}.`;
-    case "milestone":
-      return "See what they think of your dish.";
-    case "comment":
-      return `“${n.detail}”`;
-    case "reply":
-      return `${n.postTitle} · “${n.detail}”`;
-    case "draft":
-      return "Pick up where you left off.";
-  }
+  if (n.type === "comment" || n.type === "reply") return `“${n.detail}”`;
+  if (n.type === "draft") return lang === "ko" ? "이어서 써 보세요" : "Pick up where you left off.";
+  return n.postTitle;
 }
 
 /**

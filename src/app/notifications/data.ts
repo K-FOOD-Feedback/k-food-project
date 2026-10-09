@@ -14,10 +14,10 @@
     · reply     내 댓글에 대댓글이 달렸을 때
 */
 
+import { getHomePost } from "@/app/home/mockPosts";
+
 export type Lang = "en" | "ko";
 export type NotifType = "first" | "comment" | "milestone" | "reply" | "draft";
-/** 탭(외국인만): 투표 쪽 / 댓글 쪽. 한국인은 대댓글 하나뿐이라 탭 없음 */
-export type FilterId = "all" | "vote" | "comment";
 
 export type Notif = {
   id: string;
@@ -35,20 +35,13 @@ export type Notif = {
   read: boolean;
 };
 
-export const FILTERS: { id: FilterId; label: string }[] = [
-  { id: "all", label: "All" },
-  { id: "vote", label: "Votes" },
-  { id: "comment", label: "Comments" },
-];
 
-const SIDE: Record<NotifType, FilterId> = {
-  first: "all",
-  milestone: "vote",
-  comment: "comment",
-  reply: "comment",
-  draft: "all",
-};
-export const matchesFilter = (n: Notif, f: FilterId) => f === "all" || SIDE[n.type] === f;
+/** 알림 왼쪽에 보여 줄 그 글의 음식 사진 */
+export function photoOf(n: Notif) {
+  if (n.type === "draft") return "/images/draft-thumb.png"; // 쓰다 만 글의 첫 사진
+  if (n.postId === "mine") return "/images/buldak-skillet.jpg"; // 내 글 (서버 연결 전 예시)
+  return getHomePost(n.postId)?.cardPhoto ?? "/images/card-buldak.png";
+}
 
 // ── 외국인
 const MINE = { postId: "mine", postTitle: "Buldak Carbonara with extra cheese" };

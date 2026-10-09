@@ -79,7 +79,6 @@ export type EventName =
   | "post_shared"
   | "notifications_clicked"
   | "notifications_viewed"
-  | "notification_filter_changed"
   | "notification_clicked"
   // ── 내 글 관리 (송희)
   | "my_post_viewed"
