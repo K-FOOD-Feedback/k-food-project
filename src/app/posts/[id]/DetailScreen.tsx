@@ -6,7 +6,9 @@ import { clearCardTransition, peekCardTransition, type Box } from "@/app/home/ca
 import { HOME_POSTS, participantsOf, type HomePost } from "@/app/home/mockPosts";
 import { ArrowCta } from "@/components/Buttons";
 import { useMyVote } from "@/app/home/votes";
+import { PostMenu } from "@/components/PostMenu";
 import { TrackedLink } from "@/components/Track";
+import { MY_POST_ID } from "@/lib/write-data";
 import { track } from "@/lib/analytics";
 import { CommentPile } from "./CommentPile";
 import { paperlogy } from "./font";
@@ -200,15 +202,15 @@ export function DetailScreen({ post }: { post: HomePost }) {
             {/* eslint-disable-next-line @next/next/no-img-element -- 작은 SVG 아이콘 */}
             <img src="/images/icon-world.svg" width={24} height={24} alt="" />
           </TrackedLink>
-          {/* TODO: 더보기 메뉴 (내 글이면 수정·삭제 — 송희 파트와 연결) */}
-          <button
-            type="button"
+          {/* 더보기 메뉴 (송희 PostMenu) — 내 글이면 수정·삭제, 남의 글이면 링크 복사·신고 */}
+          <PostMenu
+            postId={post.id}
+            isMine={post.id === MY_POST_ID}
             className={circle}
-            aria-label="더보기"
-            onClick={() => track("post_more_clicked", { post_id: post.id })}
+            onOpen={() => track("post_more_clicked", { post_id: post.id })}
           >
             <MoreIcon />
-          </button>
+          </PostMenu>
         </div>
       </header>
 

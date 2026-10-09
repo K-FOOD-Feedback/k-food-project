@@ -46,6 +46,7 @@ export type EventName =
   | "old_comments_scrolled"
   | "post_closed"
   | "post_more_clicked"
+  | "post_reported"
   // ── 외국인 글쓰기 (송희)
   | "photos_added"
   | "photo_removed"

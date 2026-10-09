@@ -48,7 +48,8 @@
 | `comments_opened` | 댓글 전체 보기 | `post_id`, `comment_count` |
 | `old_comments_scrolled` | 전체 화면에서 스크롤 | `post_id` |
 | `post_closed` | 상세를 떠날 때 | `post_id`, `seconds`, `voted`, `saw_vote`, `saw_comments` |
-| `post_more_clicked` | ⋯ (아직 기능 없음) | `post_id` |
+| `post_more_clicked` | 상세 ⋯ 메뉴 열림 | `post_id` |
+| `post_reported` | 상세 ⋯ → 신고하기 → 이유 고르고 신고 | `post_id`, `reason`(0~3) |
 
 ## 외국인 글쓰기 (송희)
 | 이벤트 | 어디서 | 속성 |
