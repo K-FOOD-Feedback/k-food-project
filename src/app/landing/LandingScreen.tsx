@@ -472,7 +472,7 @@ export function LandingScreen() {
               translate: `0 ${(1 - pickerIn) * 36}px`,
             }}
           >
-            <RolePicker lang={lang} />
+            <RolePicker lang={lang} active={done} />
           </div>
         </div>
       </section>
@@ -491,13 +491,16 @@ const ROLES = [
   { kind: "foreigner", href: "/home/en", fill: "bg-content" },
 ] as const;
 
-function RolePicker({ lang }: { lang: LandingLang }) {
+function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
   const t = COPY[lang];
   const router = useRouter();
   const columns = useRef<(HTMLButtonElement | null)[]>([]);
   const [drag, setDrag] = useState<{ x: number; y: number; sx: number; sy: number } | null>(null);
   const [hover, setHover] = useState<number | null>(null);
   const [picked, setPicked] = useState<number | null>(null);
+  // 사용자가 토큰을 만지면 "이렇게 해 보세요" 힌트 움직임을 멈춤
+  const [touched, setTouched] = useState(false);
+  const hinting = active && !touched && picked === null;
 
   const pick = (i: number, method: "drag" | "tap") => {
     if (picked !== null) return;
@@ -519,19 +522,35 @@ function RolePicker({ lang }: { lang: LandingLang }) {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="relative rounded-[32px] bg-surface-2 px-5 pt-7 pb-5">
-        <p className="text-center font-display text-[24px] leading-[1.3]">{t.pickTitle}</p>
-        <p className="mt-1.5 text-center text-[13px] font-medium text-neutral-400">{t.pickHint}</p>
+      {/* 나타날 때마다 연출을 처음부터 (active 바뀌면 새로 그림)
+          제목·안내 → 두 칸이 차례로 올라옴 → 👋 토큰이 위에서 톡 떨어져 손 흔들기
+          → 토큰이 왼쪽 칸, 오른쪽 칸을 번갈아 살짝 들어갔다 나오며 "넣어 보세요" 힌트 */}
+      <div key={active ? "on" : "off"} className="relative rounded-[32px] bg-surface-2 px-5 pt-7 pb-5">
+        <p className="animate-rise text-center font-display text-[24px] leading-[1.3] [animation-delay:150ms]">{t.pickTitle}</p>
+        <p className="mt-1.5 animate-rise text-center text-[13px] font-medium text-neutral-400 [animation-delay:250ms]">
+          {t.pickHint}
+        </p>
 
         {/* 토큰 */}
         <div className="mt-6 flex h-14 items-center justify-center">
           {picked === null && (
             <div
-              className={`relative z-20 flex size-14 touch-none select-none items-center justify-center rounded-full bg-on-dark text-[26px] ${
-                drag ? "cursor-grabbing" : "animate-float cursor-grab"
+              className="relative z-20"
+              style={{
+                animation: hinting
+                  ? "token-drop 700ms cubic-bezier(0.3, 1.4, 0.5, 1) 650ms both, token-hint 3.6s ease-in-out 2200ms infinite"
+                  : active && !touched
+                    ? "token-drop 700ms cubic-bezier(0.3, 1.4, 0.5, 1) 650ms both"
+                    : undefined,
+              }}
+            >
+            <div
+              className={`flex size-14 touch-none select-none items-center justify-center rounded-full bg-on-dark text-[26px] ${
+                drag ? "cursor-grabbing" : "cursor-grab"
               }`}
               style={{ transform: drag ? `translate(${drag.x}px, ${drag.y}px) scale(1.12)` : undefined }}
               onPointerDown={(e) => {
+                setTouched(true);
                 e.currentTarget.setPointerCapture(e.pointerId);
                 setDrag({ x: 0, y: 0, sx: e.clientX, sy: e.clientY });
               }}
@@ -554,7 +573,8 @@ function RolePicker({ lang }: { lang: LandingLang }) {
               role="img"
               aria-label={t.pickHint}
             >
-              👋
+              <span className="inline-block origin-[70%_80%] animate-[wave_1s_ease-in-out_1300ms_both]">👋</span>
+            </div>
             </div>
           )}
         </div>
@@ -573,10 +593,18 @@ function RolePicker({ lang }: { lang: LandingLang }) {
                 type="button"
                 onClick={() => pick(i, "tap")}
                 disabled={picked !== null && !mine}
-                className={`relative min-w-0 flex-1 overflow-hidden rounded-[24px] text-left transition-[background-color,scale] duration-200 ${
+                style={{ animationDelay: `${350 + i * 120}ms` }}
+                className={`relative min-w-0 flex-1 animate-rise overflow-hidden rounded-[24px] text-left transition-[background-color,scale] duration-200 ${
                   near ? "scale-[1.03] bg-white/10" : "bg-surface"
                 } ${picked !== null && !mine ? "opacity-40" : ""}`}
               >
+                {/* 힌트: 토큰이 들어갔다 나올 때 칸도 살짝 차오름 */}
+                {hinting && (
+                  <span
+                    className={`absolute inset-x-0 bottom-0 ${role.fill} opacity-60`}
+                    style={{ animation: `${i === 0 ? "col-peek-l" : "col-peek-r"} 3.6s ease-in-out 2200ms infinite`, height: 0 }}
+                  />
+                )}
                 {/* 아래에서 차오르는 색 (끌어다 대면 살짝, 고르면 가득) */}
                 <span
                   className={`absolute inset-x-0 bottom-0 ${role.fill} transition-[height] duration-500 ease-[cubic-bezier(0.3,1.3,0.5,1)]`}

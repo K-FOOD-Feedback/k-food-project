@@ -240,6 +240,76 @@
   }
 }
 
+/* 랜딩 마지막 "당신은 누구인가요?" — 토큰이 떨어지고, 손 흔들고, 칸을 번갈아 넣어 보는 힌트 */
+@keyframes token-drop {
+  from {
+    opacity: 0;
+    translate: 0 -70px;
+    scale: 0.4;
+  }
+}
+
+@keyframes wave {
+  15% {
+    rotate: 20deg;
+  }
+  30% {
+    rotate: -12deg;
+  }
+  45% {
+    rotate: 16deg;
+  }
+  60% {
+    rotate: -6deg;
+  }
+  75% {
+    rotate: 0deg;
+  }
+}
+
+@keyframes token-hint {
+  0%,
+  25%,
+  50%,
+  75%,
+  100% {
+    translate: 0 0;
+    rotate: 0deg;
+  }
+  38% {
+    translate: -72px 52px;
+    rotate: -10deg;
+  }
+  63% {
+    translate: 72px 52px;
+    rotate: 10deg;
+  }
+}
+
+@keyframes col-peek-l {
+  0%,
+  28%,
+  48%,
+  100% {
+    height: 0;
+  }
+  38% {
+    height: 16%;
+  }
+}
+
+@keyframes col-peek-r {
+  0%,
+  53%,
+  73%,
+  100% {
+    height: 0;
+  }
+  63% {
+    height: 16%;
+  }
+}
+
 @keyframes menu {
   from {
     opacity: 0;
