@@ -1,7 +1,7 @@
 "use client";
 
 import { toBlob } from "html-to-image";
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Icon, type IconName } from "@/components/Icon";
 import { BottomSheet } from "@/components/Layout";
 import { track } from "@/lib/analytics";
@@ -13,17 +13,20 @@ import { CARD_H, CARD_STYLES, CARD_W, ShareCard, type CardTheme, type ShareCardP
  * - 열릴 때: 완료 화면의 카드가 아래로 내려오며 작아져 시트 안 카드 자리로 들어감 (origin)
  * - 위: 인스타 스토리용 세로 카드. 옆으로 넘겨 디자인 고르기 (Photo · Vote · Verdict)
  *   카드를 탭하면 스티커가 다시 붙음 / 마우스로 문지르면 3D로 기울어짐
- * - 가운데: 디자인 탭 + 색 고르기 (사진에서 뽑은 색 2 + 브랜드 색 3) → 아래에서 차오르듯 바뀜
+ * - 가운데: 디자인 탭 + 색 고르기 (브랜드 색 5) → 아래에서 차오르듯 바뀜
  * - 아래: 이미지 저장 · 스토리 · 링크 복사 · 메시지 · WhatsApp · X · 더보기
  * TODO: 서버 연결 후 링크가 실제 글 주소로 열리게 / 카카오톡은 Kakao SDK 앱 키 받으면 추가
  */
 const GAP = 14; // 카드 사이 간격
 const STEP = CARD_W + GAP;
 
-const BRAND: CardTheme[] = [
+// 카드 색 — 브랜드 색만 (사진에서 뽑은 색은 칙칙해서 뺌)
+const THEMES: CardTheme[] = [
   { bg: "var(--color-primary)", fg: "var(--color-on-light)" },
   { bg: "var(--color-content)", fg: "var(--color-on-light)" },
   { bg: "var(--color-secondary)", fg: "var(--color-on-light)" },
+  { bg: "var(--color-lilac)", fg: "var(--color-on-light)" },
+  { bg: "var(--color-surface)", fg: "var(--color-on-dark)" },
 ];
 
 export function ShareSheet({
@@ -47,10 +50,8 @@ export function ShareSheet({
   const url = open ? `${window.location.origin}/posts/${postId}` : "";
   const text = `Is this real K-food? 🇰🇷 Koreans, judge my "${post.title}"`;
 
-  const photoThemes = usePhotoThemes(open ? post.photo : "");
-  const themes = [...photoThemes, ...BRAND];
   const [themeIndex, setThemeIndex] = useState(0);
-  const theme = themes[Math.min(themeIndex, themes.length - 1)];
+  const theme = THEMES[themeIndex];
   const [prevBg, setPrevBg] = useState<string | null>(null);
 
   const [active, setActive] = useState(0); // 가운데 카드
@@ -59,6 +60,18 @@ export function ShareSheet({
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [toast, setToast] = useState("");
   const style = CARD_STYLES[active].id;
+
+  // 다시 열 때는 항상 첫 카드(Photo)부터 — 지난번 고른 카드 번호가 남아 있으면
+  // 새로 그린 줄은 맨 앞인데 두 번째 카드가 가운데처럼 커 보이는 문제가 있었음
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setActive(0);
+      setScroll(0);
+      setTilt({ x: 0, y: 0 });
+    }
+  }
 
   const rail = useRef<HTMLDivElement>(null);
   const cards = useRef<(HTMLDivElement | null)[]>([]);
@@ -70,8 +83,9 @@ export function ShareSheet({
     window.setTimeout(() => setToast(""), 1800);
   };
 
-  // 시트가 열릴 때: 화면의 카드가 아래로 내려오며 작아져 시트 속 카드 자리로 (Eimi 레퍼런스)
-  // 시트와 카드를 같은 시간·같은 곡선으로 움직여서, 시트가 올라오는 만큼 카드 위치를 빼 줌 → 카드는 곧게 내려가 보임
+  // 시트가 열릴 때: 완료 화면의 카드가 그대로 아래로 내려오며 작아지고, 내려오는 동안 공유 카드로 바뀜 (Eimi 레퍼런스)
+  // - 시트와 카드를 같은 시간·같은 곡선으로 움직여서, 시트가 올라오는 만큼 카드 위치를 빼 줌 → 카드는 곧게 내려가 보임
+  // - 완료 화면 카드의 복사본(ghost)을 공유 카드 위에 겹쳐 두고, 날아오는 중간부터 복사본은 사라지고 공유 카드가 나타남
   const controls = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     if (!open) return;
@@ -98,6 +112,27 @@ export function ShareSheet({
           timing,
         )
         .finished.finally(() => (railEl.style.overflow = ""));
+
+      // 완료 화면 카드 복사본 — 움직이는 효과는 다 끄고, "Posted!" 도장은 빼고
+      const ghost = origin!.current!.cloneNode(true) as HTMLElement;
+      for (const el of [ghost, ...Array.from(ghost.querySelectorAll<HTMLElement>("*"))]) el.style.animation = "none";
+      ghost.querySelectorAll('[class*="animate-stamp"]').forEach((el) => el.remove());
+      Object.assign(ghost.style, {
+        position: "absolute",
+        left: `${(to.width - from.width) / 2}px`,
+        top: `${(to.height - from.height) / 2}px`,
+        width: `${from.width}px`,
+        height: `${from.height}px`,
+        transform: `scale(${1 / k})`, // 카드가 k배로 커져 있으니 되돌려서 처음엔 원래 크기 그대로
+        opacity: "1",
+        pointerEvents: "none",
+        zIndex: "2",
+      });
+      card.appendChild(ghost);
+      const face = card.firstElementChild as HTMLElement;
+      const swap = [{ opacity: 1 }, { opacity: 1, offset: 0.25 }, { opacity: 0, offset: 0.75 }, { opacity: 0 }];
+      ghost.animate(swap, timing).finished.finally(() => ghost.remove());
+      face.animate([{ opacity: 0 }, { opacity: 0, offset: 0.25 }, { opacity: 1, offset: 0.75 }, { opacity: 1 }], timing);
     }
     // 나머지(옆 카드 · 탭 · 색 · 채널)는 카드가 거의 도착할 즈음 차례로
     const rest = [...Array.from(rail.current?.children ?? []).slice(1), ...Array.from(controls.current?.children ?? [])];
@@ -134,7 +169,7 @@ export function ShareSheet({
   // ── 색 바꾸기: 새 색이 아래에서 차오름 (이전 색은 뒤에 깔아 둠)
   const pickTheme = (i: number) => {
     if (i === themeIndex) return;
-    track("share_card_color_changed", { color: i, from_photo: i < photoThemes.length, style });
+    track("share_card_color_changed", { color: i, style });
     setPrevBg(theme.bg);
     setThemeIndex(i);
     for (const el of cards.current) {
@@ -308,16 +343,17 @@ export function ShareSheet({
           ))}
         </div>
         <div role="radiogroup" aria-label="Card color" className="flex items-center gap-3">
-          {themes.map((t, i) => (
+          {THEMES.map((t, i) => (
             <button
               key={`${t.bg}-${i}`}
               type="button"
               role="radio"
               aria-checked={i === themeIndex}
-              aria-label={i < photoThemes.length ? `Color from your photo ${i + 1}` : `Color ${i + 1}`}
+              aria-label={`Color ${i + 1}`}
               onClick={() => pickTheme(i)}
               className={`size-9 rounded-full transition active:scale-90 ${
-                i === themeIndex ? "scale-110 ring-2 ring-on-dark ring-offset-2 ring-offset-surface" : ""
+                // 다크 색은 시트 배경과 같아서 얇은 테두리로 보이게
+                i === themeIndex ? "scale-110 ring-2 ring-on-dark ring-offset-2 ring-offset-surface" : "ring-1 ring-white/20"
               }`}
               style={{ background: t.bg }}
             />
@@ -348,54 +384,6 @@ export function ShareSheet({
       </div>
     </BottomSheet>
   );
-}
-
-/**
- * 사진에서 카드 색 2개 뽑기 — 가장 많이 보이는 선명한 색 + 그 색을 어둡게
- * (사진을 32×32로 줄여 색 무리를 셈. 실패하면 빈 배열 → 브랜드 색만)
- */
-function usePhotoThemes(src: string): CardTheme[] {
-  const [themes, setThemes] = useState<{ src: string; list: CardTheme[] }>({ src: "", list: [] });
-  useEffect(() => {
-    if (!src) return;
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      try {
-        const c = document.createElement("canvas");
-        c.width = c.height = 32;
-        const ctx = c.getContext("2d");
-        if (!ctx) return;
-        ctx.drawImage(img, 0, 0, 32, 32);
-        const data = ctx.getImageData(0, 0, 32, 32).data;
-        // 색상(hue) 12칸으로 나눠 선명할수록 무게를 줌
-        const bins = Array.from({ length: 12 }, () => ({ w: 0, r: 0, g: 0, b: 0 }));
-        for (let i = 0; i < data.length; i += 4) {
-          const [r, g, b] = [data[i], data[i + 1], data[i + 2]];
-          const max = Math.max(r, g, b);
-          const min = Math.min(r, g, b);
-          const sat = max === 0 ? 0 : (max - min) / max;
-          if (sat < 0.25 || max < 50) continue;
-          const h = hueOf(r, g, b);
-          const bin = bins[Math.floor(h / 30) % 12];
-          const w = sat * sat;
-          bin.w += w;
-          bin.r += r * w;
-          bin.g += g * w;
-          bin.b += b * w;
-        }
-        const top = bins.filter((x) => x.w > 0).sort((a, b) => b.w - a.w)[0];
-        if (!top) return;
-        const vivid = [top.r / top.w, top.g / top.w, top.b / top.w];
-        const deep = vivid.map((v) => v * 0.38);
-        setThemes({ src, list: [toTheme(vivid), toTheme(deep)] });
-      } catch {
-        // 다른 출처 이미지라 픽셀을 못 읽음 → 브랜드 색만
-      }
-    };
-    img.src = src;
-  }, [src]);
-  return themes.src === src ? themes.list : [];
 }
 
 /**
@@ -442,19 +430,6 @@ function ownFontCSS() {
     return inlined.join("\n");
   })();
   return fontCSS;
-}
-
-function hueOf(r: number, g: number, b: number) {
-  const max = Math.max(r, g, b);
-  const d = max - Math.min(r, g, b) || 1;
-  const h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
-  return (h * 60 + 360) % 360;
-}
-
-function toTheme([r, g, b]: number[]): CardTheme {
-  const light = 0.299 * r + 0.587 * g + 0.114 * b > 150;
-  const hex = `#${[r, g, b].map((v) => Math.round(v).toString(16).padStart(2, "0")).join("")}`;
-  return { bg: hex, fg: light ? "var(--color-on-light)" : "var(--color-on-dark)" };
 }
 
 function Channel({

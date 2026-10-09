@@ -42,7 +42,7 @@ export function DoneScreen() {
   const stampDelay = burst ? 0 : T.stamp;
 
   return (
-    <Screen className="pb-[210px]">
+    <Screen className="pb-[140px]">
       <TopBar right={<IconButton
             icon="x"
             label="Close"
@@ -122,29 +122,22 @@ export function DoneScreen() {
       </div>
 
       <StickyBottom className="animate-rise [animation-delay:1750ms]">
-        {/* 공유 유도: 메인 CTA는 공유, 나머지는 작게 */}
-        <PillButton
-          tone="primary"
-          className="flex-none gap-2"
-          onClick={() => {
-            track("posted_next_action", { action: "share", taps: burst, tilted: tilted.current });
-            track("share_sheet_opened", { from: "posted" });
-            setShareOpen(true);
-          }}
-        >
-          <Icon name="share" size={20} />
-          Share with friends
-        </PillButton>
+        {/* 왼쪽 공유 · 오른쪽 내 글 확인(강조). 홈으로는 오른쪽 위 × */}
         <div className="flex gap-1">
           <PillButton
-            tone="white"
-            href="/home/en"
-            onClick={() => track("posted_next_action", { action: "home", taps: burst, tilted: tilted.current })}
+            tone="soft"
+            className="gap-2"
+            onClick={() => {
+              track("posted_next_action", { action: "share", taps: burst, tilted: tilted.current });
+              track("share_sheet_opened", { from: "posted" });
+              setShareOpen(true);
+            }}
           >
-            Back to home
+            <Icon name="share" size={20} />
+            Share
           </PillButton>
           <PillButton
-            tone="white"
+            tone="primary"
             href={`/my/posts/${MY_POST_ID}`}
             onClick={() => track("posted_next_action", { action: "my_post", taps: burst, tilted: tilted.current })}
           >
