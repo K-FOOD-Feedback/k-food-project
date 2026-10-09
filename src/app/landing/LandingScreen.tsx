@@ -2,9 +2,11 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
-import { TrackedLink } from "@/components/Track";
+import { createPortal } from "react-dom";
+import { LoginSheet } from "@/components/LoginSheet";
 import { useRouter } from "next/navigation";
 import { setSuperProps, track, useTrackOnce } from "@/lib/analytics";
+import { useFlow } from "@/lib/write-store";
 import { COPY, REACTIONS, SAMPLE_PCTS, type LandingLang } from "./copy";
 
 /*
@@ -500,6 +502,8 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
   const [picked, setPicked] = useState<number | null>(null);
   // 사용자가 토큰을 만지면 "이렇게 해 보세요" 힌트 움직임을 멈춤
   const [touched, setTouched] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
+  const { logIn } = useFlow();
   const hinting = active && !touched && picked === null;
 
   const pick = (i: number, method: "drag" | "tap") => {
@@ -624,13 +628,39 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
           })}
         </div>
       </div>
-      <TrackedLink
-        href="/home"
-        event="landing_login_clicked"
+      {/* 이미 가입한 사람: 구글 로그인 바텀시트 → 로그인하면 지금 보고 있는 언어의 메인으로 */}
+      <button
+        type="button"
+        onClick={() => {
+          track("landing_login_clicked");
+          track("login_sheet_opened", { from: "landing" });
+          setLoginOpen(true);
+        }}
         className="py-1 text-center text-[14px] font-bold leading-[1.3] text-neutral-400"
       >
         {t.login}
-      </TrackedLink>
+      </button>
+      {/* 움직이는 패널 안에 두면 화면 전체를 못 덮어서, 페이지 맨 바깥(body)에 띄움 */}
+      {loginOpen &&
+        createPortal(
+          <LoginSheet
+            lang={lang}
+            open
+            title={t.loginTitle}
+            body={t.loginBody}
+            onClose={() => {
+              track("login_cancelled", { from: "landing", stage: "sheet" });
+              setLoginOpen(false);
+            }}
+            onLoggedIn={() => {
+              track("login_completed", { from: "landing", method: "google" });
+              logIn();
+              setLoginOpen(false);
+              router.push(lang === "ko" ? "/home" : "/home/en");
+            }}
+          />,
+          document.body,
+        )}
     </div>
   );
 }
