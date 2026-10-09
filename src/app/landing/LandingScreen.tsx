@@ -52,13 +52,14 @@ const subscribeNone = () => () => {};
  */
 type ShapeKind = "scallop" | "clover" | "flower" | "capsule" | "circle" | "stack";
 const DECOR: { kind: ShapeKind; color: string; size: number; at: [number, number, number] }[] = [
-  // 지그재그: 왼쪽·오른쪽을 번갈아 내려가며 높이를 엇갈리게 (나란히 마주 보지 않게)
-  { kind: "scallop", color: "--color-content", size: 112, at: [8, 27, -10] }, // 왼 · 큼
-  { kind: "clover", color: "--color-primary", size: 52, at: [92, 38, 0] }, // 오 · 중간
-  { kind: "flower", color: "--color-lilac", size: 42, at: [6, 50, 0] }, // 왼 · 작음
-  { kind: "capsule", color: "--color-secondary", size: 92, at: [95, 62, -35] }, // 오 · 큼
-  { kind: "stack", color: "--color-content", size: 50, at: [90, 75, -8] }, // 오 · 작음
-  { kind: "circle", color: "--color-primary", size: 22, at: [20, 87, 0] }, // 왼 · 아주 작음 (맨 아래)
+  // 지그재그: 헤더 옆부터 맨 아래까지 왼·오를 번갈아, 화면 밖으로 살짝 잘리게 큼직하게
+  { kind: "clover", color: "--color-primary", size: 96, at: [95, 8, 15] }, // 오 · 헤더 옆
+  { kind: "scallop", color: "--color-content", size: 150, at: [3, 21, -10] }, // 왼 · 제목 옆 · 가장 큼
+  { kind: "capsule", color: "--color-secondary", size: 124, at: [97, 37, -35] }, // 오
+  { kind: "flower", color: "--color-lilac", size: 84, at: [3, 53, 0] }, // 왼
+  { kind: "stack", color: "--color-content", size: 88, at: [97, 68, -8] }, // 오
+  { kind: "circle", color: "--color-primary", size: 48, at: [9, 82, 0] }, // 왼
+  { kind: "clover", color: "--color-lilac", size: 64, at: [86, 93, 30] }, // 오 · 맨 아래
 ];
 
 /** 글쓴이 답글 말풍선 기울기 (작성자 표시도 들어가면서 같이 기울어짐) */
