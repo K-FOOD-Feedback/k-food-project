@@ -91,7 +91,6 @@ export type EventName =
   | "post_delete_cancelled"
   | "post_deleted"
   | "locked_item_tapped"
-  | "edit_topic_changed"
   | "post_edit_discarded"
   | "post_edit_saved";
 
