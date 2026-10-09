@@ -5,7 +5,7 @@ export const MAX_PHOTOS = 10;
 export const MY_POST_ID = "mine";
 export const TITLE_MAX = 60;
 export const STORY_MAX = 500;
-/** 질문 휠 한 줄(가운데는 두 줄까지)에 들어가게 */
+/** 투표 제목 — 상세 화면 투표 카드에서 두 줄 안쪽 */
 export const VOTE_TITLE_MAX = 50;
 /** 상세 화면 투표 칸에 들어가야 해서 짧게 (대략 2줄) */
 export const OPTION_MAX = 28;
@@ -49,7 +49,7 @@ export const QUESTIONS: Question[] = [
   { id: "laugh", label: "Would my Korean friend laugh?", hint: "Funny, cute, or shocking?", icon: "sparkle" }, // 한국 친구가 보면 웃을까요?
   { id: "still", label: "Is this still Korean food?", hint: "Or did it become something new?", icon: "badge-check" }, // 이거 아직 한식이에요?
   { id: "name", label: "What do I call this?", hint: "Every dish deserves a name.", icon: "tag" }, // 이걸 뭐라고 불러야 해요?
-  { id: "toomuch", label: "Too much?", hint: "Cheese, sauce, toppings… too much?", icon: "layers" }, // 너무 많이 넣었어요?
+  { id: "toomuch", label: "Did I add too much?", hint: "Cheese, sauce, toppings… too much?", icon: "layers" }, // 너무 많이 넣었어요?
   { id: "nailed", label: "Did I nail it?", hint: "Tell me I got it right.", icon: "star" }, // 저 해냈어요?
   { id: "better", label: "Better than a Korean made it?", hint: "Bold question. Let them judge.", icon: "chef-hat" }, // 한국인이 만든 것보다 나아요?
 ];
@@ -97,9 +97,8 @@ function concernsIn(text: string) {
 
 /*
   ③ 투표 질문 + 선택지
-  - 질문 문장은 이 글에 맞춘 구체적인 한 문장 ("Too much?" → "Too much cheese?")
-    질문 휠에 그대로 보이고, 고른 문장이 상세 화면 투표 제목이 됨 (휠에서 ✎로 고칠 수 있음)
-  - 휠 한 줄에 들어가게 짧게 (대략 30자 안쪽)
+  - 투표 제목 = 주제를 이 글에 맞춘 구체적인 한 문장 ("Did I add too much?" → "Too much cheese?")
+    상세 화면 투표 카드 맨 위에 보임. 작성자가 고칠 수 있음
   - Remake는 선택지만 바꿈 (질문 문장은 그대로)
 */
 export function aiVoteFor(
