@@ -603,15 +603,18 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
                 {/* 차오르는 색 안에는 같은 글자를 어두운 색으로 겹쳐서, 색이 덮은 부분만 글자가 어두워짐 */}
                 {hinting && (
                   <span
-                    className={`absolute inset-x-0 bottom-0 overflow-hidden ${role.fill}`}
-                    style={{ animation: `${i === 0 ? "col-peek-l" : "col-peek-r"} 3.6s ease-in-out 2200ms infinite`, height: 0 }}
+                    className={`wave-fill absolute inset-x-0 bottom-0 overflow-hidden ${role.fill}`}
+                    style={{
+                      animation: `${i === 0 ? "col-peek-l" : "col-peek-r"} 3.6s ease-in-out 2200ms infinite, wave-flow 1.4s linear infinite`,
+                      height: 0,
+                    }}
                   >
                     <ColumnText role={label(i).role} action={label(i).action} dark />
                   </span>
                 )}
-                {/* 아래에서 차오르는 색 (끌어다 대면 살짝, 고르면 가득) */}
+                {/* 아래에서 물결치며 차오르는 색 (끌어다 대면 살짝, 고르면 가득) */}
                 <span
-                  className={`absolute inset-x-0 bottom-0 overflow-hidden ${role.fill} transition-[height] duration-500 ease-[cubic-bezier(0.3,1.3,0.5,1)]`}
+                  className={`wave-fill absolute inset-x-0 bottom-0 overflow-hidden ${role.fill} transition-[height] duration-700 ease-[cubic-bezier(0.3,1.15,0.5,1)]`}
                   style={{ height: mine ? "100%" : near ? "18%" : "0%" }}
                 >
                   <ColumnText role={label(i).role} action={label(i).action} dark picked={mine} />

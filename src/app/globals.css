@@ -310,6 +310,27 @@
   }
 }
 
+/* 물결치며 차오르는 색 (랜딩 역할 칸) — 윗변을 물결 모양으로 잘라 옆으로 흐르게 */
+@utility wave-fill {
+  --wave: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='10' viewBox='0 0 48 10'%3E%3Cpath d='M0 5 Q12 0 24 5 T48 5 V10 H0 Z'/%3E%3C/svg%3E");
+  mask-image: var(--wave), linear-gradient(#000, #000);
+  -webkit-mask-image: var(--wave), linear-gradient(#000, #000);
+  mask-size: 48px 10px, 100% calc(100% - 9px);
+  -webkit-mask-size: 48px 10px, 100% calc(100% - 9px);
+  mask-position: 0 0, bottom;
+  -webkit-mask-position: 0 0, bottom;
+  mask-repeat: repeat-x, no-repeat;
+  -webkit-mask-repeat: repeat-x, no-repeat;
+  animation: wave-flow 1.4s linear infinite;
+}
+
+@keyframes wave-flow {
+  to {
+    mask-position: 48px 0, bottom;
+    -webkit-mask-position: 48px 0, bottom;
+  }
+}
+
 @keyframes menu {
   from {
     opacity: 0;
