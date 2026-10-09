@@ -50,7 +50,7 @@ const subscribeNone = () => () => {};
  * 배경 도형들. poses = 장면별 [가로 %, 세로 %, 각도] — 카드만 · 투표 · 한마디
  * 화면 가장자리에 걸쳐 잘리게 두고, 카드에 반쯤 가려지는 자리에 둡니다.
  */
-type ShapeKind = "scallop" | "clover" | "flower" | "capsule" | "circle" | "half";
+type ShapeKind = "scallop" | "clover" | "flower" | "capsule" | "circle" | "arch";
 const DECOR: { kind: ShapeKind; color: string; size: number; poses: [number, number, number][] }[] = [
   // 크기를 크게·중간·작게 섞어서, 전체적으로 화면 위쪽~가운데에 모이게
   { kind: "scallop", color: "--color-content", size: 124, poses: [[6, 30, -10], [4, 50, 30], [8, 24, 60]] },
@@ -58,7 +58,7 @@ const DECOR: { kind: ShapeKind; color: string; size: number; poses: [number, num
   { kind: "capsule", color: "--color-secondary", size: 100, poses: [[90, 56, -35], [8, 70, 15], [90, 20, -60]] },
   { kind: "flower", color: "--color-lilac", size: 44, poses: [[12, 64, 0], [94, 32, 40], [6, 56, 80]] },
   { kind: "circle", color: "--color-primary", size: 26, poses: [[82, 72, 0], [18, 18, 0], [26, 74, 0]] },
-  { kind: "half", color: "--color-content", size: 84, poses: [[44, 86, 0], [72, 84, 15], [70, 82, -10]] },
+  { kind: "arch", color: "--color-content", size: 84, poses: [[44, 86, 0], [72, 84, 15], [70, 82, -10]] },
 ];
 
 /** 글쓴이 답글 말풍선 기울기 (작성자 표시도 들어가면서 같이 기울어짐) */
@@ -271,7 +271,7 @@ export function LandingScreen() {
           />
         ))}
         <div className="sticky top-0 flex h-[100svh] flex-col overflow-hidden px-5 pt-[calc(100px+env(safe-area-inset-top))]">
-          {/* 카드 뒤에 흩어진 작은 도형 6개 (구글 랩스 레퍼런스: 물결 원·클로버·꽃·알약·원·반원) — 35% 투명도로 은은하게, 천천히 둥둥
+          {/* 카드 뒤에 흩어진 작은 도형 6개 (구글 랩스 레퍼런스: 물결 원·클로버·꽃·알약·원·아치) — 35% 투명도로 은은하게, 천천히 둥둥
               장면(카드만 → 투표 → 한마디)마다 각자 자리와 각도를 옮김 */}
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
             {DECOR.map((d, i) => {
@@ -583,7 +583,9 @@ function Shape({ kind, color }: { kind: ShapeKind; color: string }) {
       />
     );
   if (kind === "circle") return <span className="block size-full rounded-full" style={{ backgroundColor: fill }} />;
-  if (kind === "half") return <span className="block h-1/2 w-full rounded-t-full" style={{ backgroundColor: fill }} />;
+  // 아치: 위는 둥글고 아래는 평평 (반원은 화면 가운데서 잘린 것처럼 보여서 바꿈)
+  if (kind === "arch")
+    return <span className="mx-auto block h-full w-[72%] rounded-t-full" style={{ backgroundColor: fill }} />;
   if (kind === "capsule") return <span className="absolute inset-x-0 top-1/2 block h-[38%] -translate-y-1/2 rounded-full" style={{ backgroundColor: fill }} />;
   return (
     <svg viewBox="0 0 100 100" className="block size-full" fill={fill}>
