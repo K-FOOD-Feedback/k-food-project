@@ -5,6 +5,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type Ref } f
 import { clearCardTransition, peekCardTransition, setReturnTransition, type Box } from "@/app/home/cardTransition";
 import { HOME_POSTS, participantsOf, type HomePost } from "@/app/home/mockPosts";
 import { ArrowCta } from "@/components/Buttons";
+import { Icon } from "@/components/Icon";
 import { HEADER_BUTTON, PageHeader } from "@/components/PageHeader";
 import { useMyVote } from "@/app/home/votes";
 import { PostMenu } from "@/components/PostMenu";
@@ -478,6 +479,9 @@ export function DetailScreen({ post }: { post: HomePost }) {
           <VoteBowl post={post} />
         </div>
 
+        {/* 투표 완료 후: 투표 ↔ 한마디 사이 공유 카드 (누르면 휴대폰·브라우저 공유창) */}
+        {voted && <ShareVoteCard post={post} />}
+
         <div
           className="relative"
           ref={(el) => {
@@ -657,6 +661,68 @@ const AUTOPLAY_MS = 3500;
 const WIGGLE_MS = 2600;
 const BACK_STAGGER_MS = 70;
 const EASE = "cubic-bezier(0.2, 0.8, 0.2, 1)";
+
+/**
+  투표 공유 카드 — 카드 전체가 버튼.
+  휴대폰·공유를 지원하는 브라우저는 시스템 공유창(navigator.share)을 띄우고,
+  지원하지 않으면(일부 데스크톱 브라우저) 링크를 복사하고 알려 줍니다.
+*/
+function ShareVoteCard({ post }: { post: HomePost }) {
+  const [toast, setToast] = useState<string | null>(null);
+  useEffect(() => {
+    if (!toast) return;
+    const t = window.setTimeout(() => setToast(null), 2200);
+    return () => window.clearTimeout(t);
+  }, [toast]);
+
+  const share = async () => {
+    const url = `${window.location.origin}/posts/${post.id}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: post.title, text: `${post.question.text} — 투표해 주세요!`, url });
+        track("post_shared", { channel: "native", from: "detail_vote", post_id: post.id });
+      } catch {
+        // 사용자가 공유창을 닫음
+      }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      track("post_shared", { channel: "copy_link", from: "detail_vote", post_id: post.id });
+      setToast("링크를 복사했어요");
+    } catch {
+      setToast("링크를 복사하지 못했어요");
+    }
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={share}
+        className="flex w-full items-center gap-4 rounded-[32px] bg-[#292929] py-4 pr-4 pl-7 text-left transition-[scale,opacity,translate] duration-500 active:scale-[0.98] starting:translate-y-3 starting:opacity-0"
+      >
+        <span className="flex min-w-0 flex-1 flex-col gap-1">
+          <span className="font-(family-name:--font-paperlogy) text-[20px] leading-[1.3] tracking-[-0.4px] text-on-dark">
+            친구는 어떻게 생각할까요?
+          </span>
+          <span className="text-[14px] leading-[1.4] font-medium text-neutral-400">투표를 공유하고 의견을 물어보세요</span>
+        </span>
+        <span className="flex size-16 shrink-0 items-center justify-center rounded-full bg-on-dark text-on-light">
+          <Icon name="share" />
+        </span>
+      </button>
+      {toast && (
+        <p
+          role="status"
+          className="fixed bottom-[calc(24px+env(safe-area-inset-bottom))] left-1/2 z-40 -translate-x-1/2 rounded-full bg-on-dark px-5 py-3 text-[15px] font-semibold whitespace-nowrap text-on-light"
+        >
+          {toast}
+        </p>
+      )}
+    </>
+  );
+}
 
 /** 본문 카드 안 글 (진짜 카드와 전환용 카드가 같은 모양을 쓰도록) */
 function ArticleBody({ post }: { post: HomePost }) {
