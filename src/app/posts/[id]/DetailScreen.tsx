@@ -310,13 +310,14 @@ export function DetailScreen({ post }: { post: HomePost }) {
     if (!nextIn || !content) return;
     window.scrollTo(0, 0);
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    // 아래에서 살짝 떠올라 자리 잡음 (처음엔 조금 작고 흐릿하다가 부드럽게 감속)
     const anims = [...content.children].map((el, i) =>
       el.animate(
         [
-          { opacity: 0, transform: "translateY(24px)" },
-          { opacity: 1, transform: "none" },
+          { opacity: 0, transform: "translateY(48px) scale(0.97)", filter: "blur(4px)" },
+          { opacity: 1, transform: "none", filter: "blur(0)" },
         ],
-        { duration: NEXT_MS, delay: i * NEXT_STAGGER_MS, easing: EASE, fill: "backwards" },
+        { duration: NEXT_MS, delay: 80 + i * NEXT_STAGGER_MS, easing: NEXT_EASE, fill: "backwards" },
       ),
     );
     // 탭이 가려져 애니메이션이 멈춰도 정해진 시간 뒤에는 모두 보이게
@@ -607,8 +608,9 @@ const INTRO_MS = 420;
 let commentsTrip: { postId: string; scrollY: number; at: number } | null = null;
 // "다음 훈수 거리" 버튼으로 넘어가는 중 (다음 글 상세가 그려질 때 씀)
 let nextTrip: { postId: string; at: number } | null = null;
-const NEXT_MS = 420;
-const NEXT_STAGGER_MS = 90;
+const NEXT_MS = 700;
+const NEXT_STAGGER_MS = 130;
+const NEXT_EASE = "cubic-bezier(0.22, 1, 0.36, 1)"; // 빠르게 출발해 길게 감속
 const TRIP_TTL_MS = 30 * 60_000;
 const BACK_CARD_MS = 320;
 // 사진 자동 넘김 간격 (가만히 있은 지 이만큼 지나면 다음 사진)
