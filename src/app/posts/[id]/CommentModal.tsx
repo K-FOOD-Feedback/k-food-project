@@ -22,6 +22,7 @@ import { splitLines } from "./GravityPile";
   - 말풍선 위 뱃지: 나 / 글쓴이, 답글이 달렸으면 ↪ 답글 수
   - 답글에 단 답글은 그 답글 바로 아래에 (오래된 순으로 이어지는 대화 순서)
   - 답글을 보내면 입력칸에서 목록 속 제자리로 톡 튀어 올라가 앉고, 그 자리가 가운데로 옵니다.
+  - 답글이 3개 이하면 휠 없이 모두 같은 크기로, 묶음째 칸 가운데에 (어느 답글이든 누르면 바로 버튼)
   - 첫 답글은 늘 원글 바로 아래에서 시작하고, 맨 위로 올려도 거기까지만 (원글과 사이가 벌어지지 않게).
     맨 위 근처에서는 휠 기준선이 첫 답글 자리에 있다가, 내리는 만큼 가운데로 내려와 보통 휠이 됩니다.
   - 수정 (Figma 375:8019, 내 원글·내 답글): 화면이 어두워지며 그 말풍선이 화면 가운데로 날아와 뒤집혀 수정 카드로
@@ -137,6 +138,27 @@ export function CommentModal({
     if (!items.length) return;
     const first = items[0].offsetHeight;
     const last = items[items.length - 1].offsetHeight;
+    // 답글이 몇 개 안 되면 휠 없이 다 같은 크기로, 묶음째 칸 가운데에
+    if (items.length <= COMPACT_MAX) {
+      el.dataset.compact = "1";
+      const lastEl = items[items.length - 1];
+      el.style.paddingTop = "0px";
+      el.style.paddingBottom = "0px";
+      const content = lastEl.offsetTop + lastEl.offsetHeight - items[0].offsetTop;
+      el.style.paddingTop = `${Math.max(TOP_GAP, (el.clientHeight - content) / 2)}px`;
+      el.style.scrollSnapType = "none";
+      el.style.setProperty("--fade-top", "56px");
+      setOverflowing(el.scrollHeight > el.clientHeight + 1);
+      for (const item of items) {
+        const inner = item.firstElementChild as HTMLElement;
+        inner.style.scale = "1";
+        inner.style.opacity = "1";
+        inner.style.translate = "0 0";
+      }
+      setCenterId(null);
+      return;
+    }
+    delete el.dataset.compact;
     // 위는 원글 바로 아래까지만, 아래는 끝 답글도 가운데까지 올 수 있게
     el.style.paddingTop = `${TOP_GAP}px`;
     el.style.paddingBottom = `${Math.max(0, el.clientHeight / 2 - last / 2)}px`;
@@ -214,7 +236,8 @@ export function CommentModal({
 
   /** 답글을 누르면: 흐린 답글은 가운데로, 가운데 답글은 버튼 펼치기/접기 (남의 답글이면 답글 달 대상으로) */
   const tapReply = (r: Comment, item: HTMLElement) => {
-    if (r.id !== centerId || hiddenIds.has(r.id)) {
+    // (답글이 몇 개 안 될 때는 휠이 없어서 어느 답글이든 바로 버튼)
+    if ((r.id !== centerId && replies.length > COMPACT_MAX) || hiddenIds.has(r.id)) {
       setActiveId(null);
       centerReply(item);
       return;
@@ -575,6 +598,9 @@ function threadOrder(rootId: string, replies: Comment[]): Comment[] {
   return out;
 }
 
+/** 답글이 이만큼 이하면 휠 없이 묶음째 가운데에 */
+const COMPACT_MAX = 3;
+
 /** 첫 답글 위 여백 — 말풍선 위 뱃지 자리(12px)와 합쳐 답글 사이 간격과 비슷하게 */
 const TOP_GAP = 2;
 
@@ -592,6 +618,7 @@ function wheelLine(el: HTMLElement, firstHeight: number) {
 
 /** 이 답글이 휠 기준선에 오는 스크롤 위치 (wheelLine의 반대 계산) */
 function scrollFor(el: HTMLElement, item: HTMLElement) {
+  if (el.dataset.compact) return el.scrollTop; // 휠 없는 짧은 목록은 그대로
   const first = el.firstElementChild as HTMLElement;
   const { top, range } = wheelLine(el, first.offsetHeight);
   const c = item.offsetTop + item.offsetHeight / 2;
