@@ -1,5 +1,6 @@
 "use client";
 
+import { PillButton } from "@/components/Buttons";
 import { Icon } from "@/components/Icon";
 import { HEADER_BUTTON, PageHeader } from "@/components/PageHeader";
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
@@ -15,7 +16,8 @@ import { splitLines } from "./GravityPile";
     답글 말풍선을 눌러 열면(focusId) 그 답글이 가운데로 와서 강조됩니다.
     흐린 답글을 누르면 가운데로, 가운데 답글을 누르면 오른쪽에 버튼 (Figma 377:10769 내 답글: 수정·삭제 /
     377:10770 남의 답글: 신고). 다시 누르거나 스크롤하면 버튼이 사라집니다.
-    남의 답글을 누르면 입력칸 위에 "↪ 그 답글"이 붙어 그 답글에 답글을 달 수 있습니다.
+    가운데 답글을 누르면 (내 답글이어도) 입력칸 위에 "↪ 그 답글"이 붙어 그 답글에 답글을 달 수 있습니다.
+    신고: 이유를 적는 확인 모달이 위에 하나 더 뜨고, 신고하면 그 답글은 내 화면에서 가려집니다.
   - 수정 (Figma 375:8019, 내 한마디만): 원글 카드가 뒤집히며 어두운 수정 카드로 → 체크로 저장하면 다시 뒤집혀
     원래대로, 고친 한마디는 카드에 "수정됨" 표시
   닫기: X, 배경 누르기, Esc (수정 중이면 X·Esc는 수정 취소)
@@ -30,6 +32,7 @@ export function CommentModal({
   onDelete,
   onEditReply,
   onDeleteReply,
+  onReport,
 }: {
   comment: Comment;
   /** 이 한마디 아래 모든 답글 — 답글에 단 답글 포함 (오래된 순) */
@@ -43,6 +46,8 @@ export function CommentModal({
   onDelete: () => void;
   onEditReply: (id: string, text: string) => void;
   onDeleteReply: (id: string) => void;
+  /** 신고 — 신고한 사람 화면에서 그 한마디를 가립니다. */
+  onReport: (id: string, reason: string) => void;
 }) {
   const closeButton = useRef<HTMLButtonElement>(null);
   const editField = useRef<HTMLTextAreaElement>(null);
@@ -58,6 +63,8 @@ export function CommentModal({
   const [target, setTarget] = useState<Comment | null>(null);
   const [editingReply, setEditingReply] = useState<Comment | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  // 신고 확인 모달을 띄운 답글
+  const [reporting, setReporting] = useState<Comment | null>(null);
   const activeScroll = useRef(0);
   const input = useRef<HTMLInputElement>(null);
   const byId = new Map([comment, ...replies].map((c) => [c.id, c]));
@@ -75,7 +82,7 @@ export function CommentModal({
     setEditing(false);
   };
   // X·Esc: 수정 중이면 수정만 취소, 아니면 레이어 닫기
-  const back = () => (editing ? setEditing(false) : onClose());
+  const back = () => (reporting ? setReporting(null) : editing ? setEditing(false) : onClose());
   const backRef = useRef(back);
   useLayoutEffect(() => {
     backRef.current = back;
@@ -172,10 +179,8 @@ export function CommentModal({
     }
     activeScroll.current = list.current?.scrollTop ?? 0;
     setActiveId(r.id);
-    if (!r.mine) {
-      setEditingReply(null);
-      setTarget(r);
-    }
+    setEditingReply(null);
+    setTarget(r);
   };
 
   const onListScroll = () => {
@@ -386,7 +391,7 @@ export function CommentModal({
                               tabIndex={active ? 0 : -1}
                               onClick={() => {
                                 setActiveId(null);
-                                setToast("신고가 접수됐어요");
+                                setReporting(r);
                               }}
                               aria-label="답글 신고"
                               className={REPLY_BUTTON}
@@ -460,8 +465,21 @@ export function CommentModal({
         </form>
       </div>
 
+      {reporting && (
+        <ReportDialog
+          reply={reporting}
+          onCancel={() => setReporting(null)}
+          onSubmit={(reason) => {
+            onReport(reporting.id, reason);
+            if (target?.id === reporting.id) setTarget(null);
+            setReporting(null);
+            setToast("신고가 접수됐어요");
+          }}
+        />
+      )}
+
       {toast && (
-        <div className="pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top)+96px)] z-10 flex justify-center px-4">
+        <div className="pointer-events-none absolute inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+104px)] z-10 flex justify-center px-4">
           <p
             role="status"
             className="flex animate-toast-in items-center gap-2 rounded-full bg-on-dark px-5 py-3 text-[14px] font-bold text-on-light shadow-[0_12px_32px_rgba(0,0,0,0.4)]"
@@ -505,6 +523,69 @@ function ReplyArrowIcon({ size }: { size: number }) {
     </svg>
   );
 }
+
+/**
+  답글 신고 확인 모달 — 답글 레이어 위에 한 겹 더 뜹니다.
+  이유를 적어야 신고할 수 있고, 신고하면 그 답글은 내 화면에서 가려진다고 알려 줍니다.
+*/
+function ReportDialog({ reply, onCancel, onSubmit }: { reply: Comment; onCancel: () => void; onSubmit: (reason: string) => void }) {
+  const [reason, setReason] = useState("");
+  const field = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => field.current?.focus(), []);
+  const ok = reason.trim().length > 0;
+
+  return (
+    <div role="alertdialog" aria-modal="true" aria-labelledby="report-title" className="absolute inset-0 z-20 flex items-center justify-center px-5">
+      <div
+        className="absolute inset-0 bg-background/60 transition-[background-color] duration-200 starting:bg-background/0"
+        onClick={onCancel}
+        aria-hidden
+      />
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (ok) onSubmit(reason.trim());
+        }}
+        className="relative flex w-full flex-col gap-5 rounded-[32px] bg-surface p-6 break-keep text-on-dark shadow-[0_12px_40px_rgba(0,0,0,0.5)] transition-[opacity,scale] duration-250 ease-out starting:scale-95 starting:opacity-0"
+      >
+        <div className="flex flex-col gap-2">
+          <h2 id="report-title" className="font-display text-[22px] leading-[1.25]">
+            이 답글을 신고할까요?
+          </h2>
+          <p className="truncate text-[15px] leading-[1.5] text-white/60">“{reply.text.replace(/\n/g, " ")}”</p>
+        </div>
+        <label className="flex flex-col gap-2">
+          <span className="text-[14px] font-semibold">왜 신고하려고 하나요?</span>
+          <textarea
+            ref={field}
+            value={reason}
+            onChange={(e) => setReason(e.target.value.slice(0, REPORT_MAX))}
+            rows={3}
+            placeholder="신고하는 이유를 적어주세요"
+            className="resize-none rounded-[20px] bg-surface-2 px-4 py-3 text-[15px] leading-[1.5] outline-none placeholder:text-white/40"
+          />
+          <span className="self-end text-[12px] text-white/40">
+            {reason.length}/{REPORT_MAX}
+          </span>
+        </label>
+        <p className="flex items-start gap-2 text-[14px] leading-[1.5] text-white/70">
+          <Icon name="info" size={18} className="mt-0.5 shrink-0" />
+          신고하면 이 답글은 내 화면에서 가려져요. 확인한 뒤 조치할게요.
+        </p>
+        <div className="flex gap-1">
+          <PillButton tone="soft" onClick={onCancel}>
+            취소
+          </PillButton>
+          <PillButton type="submit" tone={ok ? "error" : "disabled"} disabled={!ok}>
+            신고하기
+          </PillButton>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+const REPORT_MAX = 100;
 
 // mingcute report-line (Apache-2.0) — Figma 377:10788
 function ReportIcon() {
