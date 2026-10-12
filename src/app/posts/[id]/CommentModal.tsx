@@ -3,7 +3,7 @@
 import { PillButton } from "@/components/Buttons";
 import { Icon } from "@/components/Icon";
 import { HEADER_BUTTON, PageHeader } from "@/components/PageHeader";
-import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type FormEvent, type Ref } from "react";
 import { COMMENT_MAX, type Comment } from "./comments";
 import { HIDDEN_COLOR } from "./hidden";
 import { splitLines } from "./GravityPile";
@@ -23,8 +23,9 @@ import { splitLines } from "./GravityPile";
   - 답글에 단 답글은 그 답글 바로 아래에 (오래된 순으로 이어지는 대화 순서)
   - 답글을 보내면 입력칸에서 목록 속 제자리로 톡 튀어 올라가 앉고, 그 자리가 가운데로 옵니다.
   - 답글이 넘치면 처음 열 때 첫 답글이 원글 바로 아래에서 시작 (가운데가 아니라). 내리면 점점 가운데 휠로.
-  - 수정 (Figma 375:8019, 내 한마디만): 원글 카드가 뒤집히며 어두운 수정 카드로 → 체크로 저장하면 다시 뒤집혀
-    원래대로, 고친 한마디는 카드에 "수정됨" 표시
+  - 수정 (Figma 375:8019, 내 원글·내 답글): 화면이 어두워지며 그 말풍선이 화면 가운데로 날아와 뒤집혀 수정 카드로
+    → 체크로 저장하면 다시 뒤집혀 "수정됨"이 붙고 원래 자리로 돌아갑니다.
+  - 아래 답글은 늘 윗 답글 뒤에 깔립니다 (겹쳐도 윗 답글이 보이게).
   닫기: X, 배경 누르기, Esc (수정 중이면 X·Esc는 수정 취소)
 */
 export function CommentModal({
@@ -58,18 +59,21 @@ export function CommentModal({
   hiddenIds: Set<string>;
 }) {
   const closeButton = useRef<HTMLButtonElement>(null);
-  const editField = useRef<HTMLTextAreaElement>(null);
+  const root = useRef<HTMLDivElement>(null);
+  const rootCard = useRef<HTMLDivElement>(null);
+  const editCard = useRef<EditCardHandle>(null);
   const list = useRef<HTMLDivElement>(null);
-  const [editing, setEditing] = useState(false);
+  // 고치는 중인 한마디 (원글 또는 내 답글)
+  const [editTarget, setEditTarget] = useState<Comment | null>(null);
+  const editing = !!editTarget;
   const [editDraft, setEditDraft] = useState("");
   const [draft, setDraft] = useState("");
   // 답글 목록이 칸을 넘쳐 스크롤이 생겼는지 (그때만 위아래 그라데이션)
   const [overflowing, setOverflowing] = useState(false);
-  // 휠 가운데에 온 답글, 버튼을 펼친 답글(가운데 답글만), 답글을 다는 대상(남의 답글), 고치는 중인 내 답글
+  // 휠 가운데에 온 답글, 버튼을 펼친 답글(가운데 답글만), 답글을 다는 대상
   const [centerId, setCenterId] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [target, setTarget] = useState<Comment | null>(null);
-  const [editingReply, setEditingReply] = useState<Comment | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   // 신고 확인 모달을 띄운 답글
   const [reporting, setReporting] = useState<Comment | null>(null);
@@ -86,19 +90,32 @@ export function CommentModal({
   const topStart = useRef<number | null>(null);
   const canEdit = !!comment.mine;
 
-  const startEdit = () => {
-    setEditDraft(comment.text.replace(/\n/g, " "));
-    setEditing(true);
-    // 카드가 반쯤 뒤집혔을 때 입력칸에 커서를 둡니다.
-    window.setTimeout(() => editField.current?.focus(), 250);
+  const startEdit = (c: Comment) => {
+    setActiveId(null);
+    setTarget(null);
+    setEditDraft(c.text.replace(/\n/g, " "));
+    setEditTarget(c);
   };
   const finishEdit = () => {
+    if (!editTarget) return;
     const text = editDraft.trim();
-    if (text && text !== comment.text.replace(/\n/g, " ")) onEdit(text);
-    setEditing(false);
+    const changed = !!text && text !== editTarget.text.replace(/\n/g, " ");
+    if (changed) {
+      if (editTarget.id === comment.id) onEdit(text);
+      else onEditReply(editTarget.id, text);
+    }
+    editCard.current?.close(changed ? text : null);
   };
+  const cancelEdit = () => editCard.current?.close(null);
+  /** 수정 카드가 날아갔다 돌아올 원래 말풍선 */
+  const editSource = () =>
+    !editTarget
+      ? null
+      : editTarget.id === comment.id
+        ? rootCard.current
+        : (list.current?.querySelector<HTMLElement>(`[data-reply-id="${CSS.escape(editTarget.id)}"] [data-bubble]`) ?? null);
   // X·Esc: 수정 중이면 수정만 취소, 아니면 레이어 닫기
-  const back = () => (reporting ? setReporting(null) : editing ? setEditing(false) : onClose());
+  const back = () => (reporting ? setReporting(null) : editing ? cancelEdit() : onClose());
   const backRef = useRef(back);
   useLayoutEffect(() => {
     backRef.current = back;
@@ -141,23 +158,29 @@ export function CommentModal({
     el.style.setProperty("--fade-top", `${Math.round(56 * t)}px`);
     // 레이아웃 위치(변형 전)로 계산해야 당겨 놓은 위치 때문에 흔들리지 않습니다.
     const center = el.scrollTop + line;
-    let nearest: HTMLElement | null = null;
-    let nearestDist = Infinity;
-    for (const item of items) {
-      const dy = item.offsetTop + item.offsetHeight / 2 - center;
-      if (Math.abs(dy) < nearestDist) {
-        nearestDist = Math.abs(dy);
-        nearest = item;
-      }
-      // 답글 한 칸만큼 멀어질 때마다 한 단계씩 작고 흐리게
-      const d = Math.abs(dy) / WHEEL_STEP;
+    const dys = items.map((item) => item.offsetTop + item.offsetHeight / 2 - center);
+    const hs = items.map((item) => item.offsetHeight);
+    // 답글 한 칸만큼 멀어질 때마다 한 단계씩 작고 흐리게
+    const scales = dys.map((dy) => wheelScale(Math.abs(dy) / WHEEL_STEP));
+    let c = 0;
+    dys.forEach((dy, i) => {
+      if (Math.abs(dy) < Math.abs(dys[c])) c = i;
+    });
+    // 줄어든 만큼 가운데 쪽으로 당겨서 말풍선 사이 간격이 그대로 유지되게 (실제 높이로 — 두 줄 답글도 안 겹침).
+    // 가운데 답글부터 위아래로, 이웃끼리 줄어든 높이의 반씩을 더해 갑니다.
+    const shifts = new Array<number>(items.length);
+    shifts[c] = -dys[c] * (1 - scales[c]);
+    for (let i = c + 1; i < items.length; i++)
+      shifts[i] = shifts[i - 1] - (hs[i - 1] * (1 - scales[i - 1]) + hs[i] * (1 - scales[i])) / 2;
+    for (let i = c - 1; i >= 0; i--)
+      shifts[i] = shifts[i + 1] + (hs[i + 1] * (1 - scales[i + 1]) + hs[i] * (1 - scales[i])) / 2;
+    items.forEach((item, i) => {
       const inner = item.firstElementChild as HTMLElement;
-      inner.style.scale = String(wheelScale(d));
-      inner.style.opacity = String(Math.max(WHEEL_MIN_OPACITY, 1 - WHEEL_FADE * d));
-      // 줄어든 만큼 가운데 쪽으로 당겨서 말풍선 사이가 벌어지지 않게
-      inner.style.translate = `0 ${-Math.sign(dy) * WHEEL_STEP * shrunk(d) * WHEEL_PULL}px`;
-    }
-    const id = nearest?.dataset.replyId ?? null;
+      inner.style.scale = String(scales[i]);
+      inner.style.opacity = String(Math.max(WHEEL_MIN_OPACITY, 1 - (WHEEL_FADE * Math.abs(dys[i])) / WHEEL_STEP));
+      inner.style.translate = `0 ${shifts[i]}px`;
+    });
+    const id = items[c]?.dataset.replyId ?? null;
     setCenterId((prev) => (prev === id ? prev : id));
   };
   const opened = useRef(false);
@@ -220,22 +243,15 @@ export function CommentModal({
     }
     activeScroll.current = list.current?.scrollTop ?? 0;
     setActiveId(r.id);
-    setEditingReply(null);
     setTarget(r);
+    // 바로 답글을 쓸 수 있게 입력칸에 커서를 둡니다.
+    input.current?.focus({ preventScroll: true });
   };
 
   const onListScroll = () => {
     updateWheel();
     // 스크롤하면 펼친 버튼은 접습니다 (답글 달 대상은 그대로).
     if (activeId && Math.abs((list.current?.scrollTop ?? 0) - activeScroll.current) > 4) setActiveId(null);
-  };
-
-  const startEditReply = (r: Comment) => {
-    setActiveId(null);
-    setTarget(null);
-    setEditingReply(r);
-    setDraft(r.text.replace(/\n/g, " ").slice(0, COMMENT_MAX));
-    input.current?.focus();
   };
 
   useEffect(() => {
@@ -249,11 +265,6 @@ export function CommentModal({
     const text = draft.trim();
     if (!text) return;
     setDraft("");
-    if (editingReply) {
-      if (text !== editingReply.text.replace(/\n/g, " ")) onEditReply(editingReply.id, text);
-      setEditingReply(null);
-      return;
-    }
     sentRef.current = true;
     onReply(text, target?.id);
     setTarget(null);
@@ -294,11 +305,12 @@ export function CommentModal({
     // 목록이 바뀔 때마다 (답글 하나가 더해질 때)
   }, [replies]);
 
-  const banner = editingReply ?? target;
+  const banner = target;
   const lines = splitLines(comment.text.replace(/\n/g, " ")).join("\n");
 
   return (
     <div
+      ref={root}
       role="dialog"
       aria-modal="true"
       aria-label={`한마디: ${comment.text.replace(/\n/g, " ")}`}
@@ -314,6 +326,8 @@ export function CommentModal({
 
       {/* 내용: 빈 곳을 누르면 아래 배경이 눌려 닫히도록 통과시킵니다. */}
       <div className="pointer-events-none relative flex h-full flex-col transition-opacity duration-200 ease-out starting:opacity-0 [&>*]:pointer-events-auto">
+        {/* 수정 중에도 위 버튼(취소·완료)은 어두운 막 위에 */}
+        <div className="relative z-30">
         <PageHeader
           left={
             <button ref={closeButton} type="button" onClick={back} aria-label={editing ? "수정 취소" : "닫기"} className={HEADER_BUTTON}>
@@ -333,7 +347,7 @@ export function CommentModal({
             ) : (
               canEdit && (
                 <>
-                  <button type="button" onClick={startEdit} aria-label="한마디 수정" className={HEADER_BUTTON}>
+                  <button type="button" onClick={() => startEdit(comment)} aria-label="한마디 수정" className={HEADER_BUTTON}>
                     <Icon name="pencil" />
                   </button>
                   <button type="button" onClick={onDelete} aria-label="한마디 삭제" className={HEADER_BUTTON}>
@@ -344,53 +358,25 @@ export function CommentModal({
             )
           }
         />
+        </div>
 
-        {/* 원글 카드 — 수정을 누르면 Y축으로 뒤집혀 뒷면(수정 카드)이 보입니다. */}
-        <div className="mx-5 mt-4 h-[130px] shrink-0 perspective-[1200px] transition-[opacity,scale] duration-250 ease-out starting:scale-95 starting:opacity-0">
+        {/* 원글 카드 — 수정하면 이 카드가 화면 가운데로 날아가 뒤집힙니다 (EditCard). 그동안 제자리는 비워 둠 */}
+        <div className="mx-5 mt-4 h-[130px] shrink-0 transition-[opacity,scale] duration-250 ease-out starting:scale-95 starting:opacity-0">
           <div
-            className={`relative size-full transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] transform-3d ${
-              editing ? "rotate-y-180" : ""
+            ref={rootCard}
+            className={`relative flex size-full flex-col items-center justify-center rounded-[32px] px-10 py-[30px] ${
+              editTarget?.id === comment.id ? "invisible" : ""
             }`}
+            style={{ background: comment.color }}
           >
-            <div
-              className="absolute inset-0 flex flex-col items-center justify-center rounded-[32px] px-10 py-[30px] backface-hidden"
-              style={{ background: comment.color }}
-              aria-hidden={editing}
-            >
-              <p className="text-center text-[22px] leading-[1.45] font-bold tracking-[-0.44px] whitespace-pre-line text-black">{lines}</p>
-              <Badges comment={comment} replies={replyCounts.get(comment.id) ?? 0} card />
-              {comment.edited && (
-                <span className="absolute bottom-3 text-[12px] leading-none font-semibold text-black/50">수정됨</span>
-              )}
-            </div>
-            <div
-              className="absolute inset-0 flex rotate-y-180 items-center justify-center rounded-[32px] bg-surface-2 px-10 py-[30px] shadow-[0_4px_15px_rgba(0,0,0,0.25)] backface-hidden"
-              aria-hidden={!editing}
-            >
-              <label className="w-full">
-                <span className="sr-only">한마디 고치기</span>
-                <textarea
-                  ref={editField}
-                  value={editDraft}
-                  onChange={(e) => setEditDraft(e.target.value.replace(/\n/g, "").slice(0, COMMENT_MAX))}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      finishEdit();
-                    }
-                  }}
-                  rows={1}
-                  tabIndex={editing ? 0 : -1}
-                  // 글 길이만큼만 높아져서(최대 2줄) 카드 가운데에 옵니다.
-                  className="block max-h-[64px] w-full resize-none overflow-hidden bg-transparent text-center [field-sizing:content] text-[22px] leading-[1.45] font-bold tracking-[-0.44px] text-on-dark outline-none"
-                />
-              </label>
-            </div>
+            <p className="text-center text-[22px] leading-[1.45] font-bold tracking-[-0.44px] whitespace-pre-line text-black">{lines}</p>
+            <Badges comment={comment} replies={replyCounts.get(comment.id) ?? 0} card />
+            {comment.edited && <span className="absolute bottom-3 text-[12px] leading-none font-semibold text-black/50">수정됨</span>}
           </div>
         </div>
 
-        {/* 답글 목록 (수정 중에는 감춤) */}
-        <div className={`relative min-h-0 flex-1 transition-opacity duration-200 ${editing ? "pointer-events-none opacity-0" : ""}`}>
+        {/* 답글 목록 */}
+        <div className="relative min-h-0 flex-1">
           {replies.length === 0 ? (
             <p className="absolute inset-0 flex items-center justify-center text-center text-[20px] leading-[1.45] font-extrabold tracking-[-0.4px] whitespace-pre-line text-white/70">
               {"이 한마디에 대해\n어떻게 생각하나요?"}
@@ -405,8 +391,9 @@ export function CommentModal({
                   : ""
               }`}
             >
-              {thread.map((r) => {
+              {thread.map((r, i) => {
                 const active = activeId === r.id;
+                const hasBadge = !!r.mine || r.author.kind === "author" || replyCounts.has(r.id);
                 const isHidden = hiddenIds.has(r.id);
                 const parent = r.replyTo && r.replyTo !== comment.id ? byId.get(r.replyTo) : undefined;
                 return (
@@ -414,19 +401,23 @@ export function CommentModal({
                     key={r.id}
                     data-reply-id={r.id}
                     onClick={(e) => tapReply(r, e.currentTarget)}
-                    className="shrink-0 cursor-pointer snap-center transition-[opacity,translate] duration-300 ease-out starting:translate-y-2 starting:opacity-0"
+                    // 아래 답글일수록 뒤에 깔리게
+                    style={{ zIndex: thread.length - i }}
+                    className="relative shrink-0 cursor-pointer snap-center transition-[opacity,translate] duration-300 ease-out starting:translate-y-2 starting:opacity-0"
                   >
                     {/* 휠 크기·흐림·당김은 스크롤할 때 updateWheel이 직접 바꿉니다. */}
                     <div className="flex flex-col items-center gap-1 will-change-[scale,opacity,translate]">
                       {parent && (
-                        <span className="flex max-w-[220px] items-center gap-1 text-[12px] leading-none font-semibold text-white/50">
+                        <span className="flex max-w-[280px] items-center gap-1 text-[12px] leading-none font-semibold text-white/50">
                           <ReplyArrowIcon size={12} />
                           <span className="truncate">{parent.text.replace(/\n/g, " ")}</span>
                         </span>
                       )}
-                      <div data-row className="flex items-center">
+                      {/* 뱃지가 말풍선 위로 튀어나온 만큼 위 여백 (윗 답글과 겹치지 않게) */}
+                      <div data-row className={`flex items-center ${hasBadge ? "pt-3" : ""}`}>
                         <p
-                          className={`relative flex items-center gap-2 rounded-[32px] py-4 pr-6 pl-2.5 text-center text-[20px] leading-[1.45] font-bold tracking-[-0.4px] whitespace-pre-line ${
+                          data-bubble
+                          className={`relative flex items-center gap-2 ${editTarget?.id === r.id ? "invisible" : ""} rounded-[32px] py-4 pr-6 pl-2.5 text-center text-[20px] leading-[1.45] font-bold tracking-[-0.4px] whitespace-pre-line ${
                             isHidden ? "text-black/55" : "text-black"
                           }`}
                           style={{ background: isHidden ? HIDDEN_COLOR : r.color }}
@@ -438,6 +429,7 @@ export function CommentModal({
                             {r.author.kind === "korean" ? "🇰🇷" : r.author.flag}
                           </span>
                           {splitLines(r.text.replace(/\n/g, " ")).join("\n")}
+                          {r.edited && !isHidden && <span className="self-end pb-1 text-[11px] leading-none font-semibold text-black/45">수정됨</span>}
                           <Badges comment={r} replies={replyCounts.get(r.id) ?? 0} />
                         </p>
                         {/* 가운데 답글을 누르면 오른쪽에 펼쳐지는 버튼 (펼치는 동안 말풍선이 왼쪽으로 비켜남) */}
@@ -450,7 +442,7 @@ export function CommentModal({
                         >
                           {r.mine ? (
                             <>
-                              <button type="button" tabIndex={active ? 0 : -1} onClick={() => startEditReply(r)} aria-label="답글 수정" className={REPLY_BUTTON}>
+                              <button type="button" tabIndex={active ? 0 : -1} onClick={() => startEdit(r)} aria-label="답글 수정" className={REPLY_BUTTON}>
                                 <Icon name="pencil" />
                               </button>
                               <button
@@ -458,10 +450,7 @@ export function CommentModal({
                                 tabIndex={active ? 0 : -1}
                                 onClick={() => {
                                   setActiveId(null);
-                                  if (editingReply?.id === r.id) {
-                                    setEditingReply(null);
-                                    setDraft("");
-                                  }
+                                  if (target?.id === r.id) setTarget(null);
                                   onDeleteReply(r.id);
                                 }}
                                 aria-label="답글 삭제"
@@ -494,27 +483,18 @@ export function CommentModal({
           )}
         </div>
 
-        {/* 답글 입력 (수정 중에는 감춤) */}
-        <form
-          onSubmit={sendReply}
-          className={`flex shrink-0 items-end gap-0.5 px-2 pb-[calc(24px+env(safe-area-inset-bottom))] transition-opacity duration-200 ${
-            editing ? "pointer-events-none opacity-0" : ""
-          }`}
-        >
+        {/* 답글 입력 */}
+        <form onSubmit={sendReply} className="flex shrink-0 items-end gap-0.5 px-2 pb-[calc(24px+env(safe-area-inset-bottom))]">
           <div className={`flex min-w-0 flex-1 flex-col bg-surface-2 font-semibold ${banner ? "rounded-[32px]" : "rounded-full"}`}>
-            {/* 남의 답글에 답글을 달거나 내 답글을 고칠 때: 입력칸 위에 그 답글 (메시지 답장처럼) */}
+            {/* 답글에 답글을 달 때: 입력칸 위에 그 답글 (메시지 답장처럼) */}
             {banner && (
               <div className="flex animate-toast-in items-center gap-2 pt-3.5 pr-3 pl-5 text-[16px] text-white/60">
-                {editingReply ? <Icon name="pencil" size={18} /> : <ReplyArrowIcon size={20} />}
+                <ReplyArrowIcon size={20} />
                 <span className="min-w-0 flex-1 truncate font-bold text-white">{banner.text.replace(/\n/g, " ")}</span>
                 <button
                   type="button"
-                  onClick={() => {
-                    if (editingReply) setDraft("");
-                    setEditingReply(null);
-                    setTarget(null);
-                  }}
-                  aria-label={editingReply ? "답글 수정 취소" : "답글 대상 취소"}
+                  onClick={() => setTarget(null)}
+                  aria-label="답글 대상 취소"
                   className="flex size-7 shrink-0 items-center justify-center rounded-full text-white/60"
                 >
                   <Icon name="x" size={16} />
@@ -522,7 +502,7 @@ export function CommentModal({
               </div>
             )}
           <label className="flex h-16 min-w-0 items-center gap-2 px-5">
-            <span className="sr-only">{editingReply ? "답글 고치기" : "답글 남기기"}</span>
+            <span className="sr-only">답글 남기기</span>
             <input
               ref={input}
               value={draft}
@@ -540,7 +520,7 @@ export function CommentModal({
           <button
             type="submit"
             disabled={!draft.trim()}
-            aria-label={editingReply ? "답글 수정 완료" : "답글 보내기"}
+            aria-label="답글 보내기"
             tabIndex={editing ? -1 : 0}
             className="flex size-16 shrink-0 items-center justify-center rounded-full bg-white transition-transform active:scale-90"
           >
@@ -549,6 +529,19 @@ export function CommentModal({
           </button>
         </form>
       </div>
+
+      {editTarget && (
+        <EditCard
+          ref={editCard}
+          comment={editTarget}
+          draft={editDraft}
+          onDraft={setEditDraft}
+          onSubmit={finishEdit}
+          container={() => root.current}
+          source={editSource}
+          onClosed={() => setEditTarget(null)}
+        />
+      )}
 
       {reporting && (
         <ReportDialog
@@ -610,16 +603,8 @@ const WHEEL_SHRINK = 0.16;
 const WHEEL_MIN_SCALE = 0.72;
 const WHEEL_FADE = 0.45;
 const WHEEL_MIN_OPACITY = 0.15;
-/** 줄어든 만큼을 얼마나 가운데로 당길지 (0이면 안 당김 — 말풍선 사이가 벌어짐) */
-const WHEEL_PULL = 0.85;
 
 const wheelScale = (d: number) => Math.max(WHEEL_MIN_SCALE, 1 - WHEEL_SHRINK * d);
-/** 가운데부터 d칸까지 말풍선들이 줄어든 높이의 합 (칸 단위) — 그만큼 당겨 붙입니다. */
-function shrunk(d: number) {
-  const flat = (1 - WHEEL_MIN_SCALE) / WHEEL_SHRINK; // 이 거리부터는 더 안 작아짐
-  if (d <= flat) return (WHEEL_SHRINK * d * d) / 2;
-  return (WHEEL_SHRINK * flat * flat) / 2 + (1 - WHEEL_MIN_SCALE) * (d - flat);
-}
 
 // Figma 377:10769 버튼 (neutral/900 = surface)
 const REPLY_BUTTON = "flex size-12 shrink-0 items-center justify-center rounded-full bg-surface text-on-dark transition-transform active:scale-90";
@@ -633,6 +618,158 @@ function ReplyArrowIcon({ size }: { size: number }) {
     </svg>
   );
 }
+
+type EditCardHandle = {
+  /** 수정 끝: 새 글(바뀌었으면)로 앞면을 바꾸고 뒤집어 원래 자리로 돌아간 뒤 onClosed */
+  close: (newText: string | null) => void;
+};
+
+/**
+  수정 카드 (Figma 375:8019) — 화면이 어두워지며 원래 말풍선 자리에서 화면 가운데로 날아와 뒤집혀 수정 칸이 됩니다.
+  끝나면 다시 뒤집혀(고쳤으면 새 글 + "수정됨") 원래 자리로 날아가 돌아갑니다.
+*/
+function EditCard({
+  ref,
+  comment,
+  draft,
+  onDraft,
+  onSubmit,
+  container,
+  source,
+  onClosed,
+}: {
+  ref: Ref<EditCardHandle>;
+  comment: Comment;
+  draft: string;
+  onDraft: (text: string) => void;
+  onSubmit: () => void;
+  container: () => HTMLElement | null;
+  source: () => HTMLElement | null;
+  onClosed: () => void;
+}) {
+  const card = useRef<HTMLDivElement>(null);
+  const flipper = useRef<HTMLDivElement>(null);
+  const dim = useRef<HTMLDivElement>(null);
+  const field = useRef<HTMLTextAreaElement>(null);
+  const [front, setFront] = useState({ text: comment.text, edited: !!comment.edited });
+  const closing = useRef(false);
+
+  /** 원래 말풍선 자리 / 화면 가운데 자리 (레이어 기준) */
+  const rects = () => {
+    const box = container()?.getBoundingClientRect();
+    const src = source()?.getBoundingClientRect();
+    if (!box) return null;
+    const w = box.width - 40;
+    const center = { left: 20, top: Math.max(96, box.height / 2 - EDIT_H / 2 - 40), width: w, height: EDIT_H };
+    const from = src
+      ? { left: src.left - box.left, top: src.top - box.top, width: src.width, height: src.height }
+      : { ...center, top: center.top + 40 };
+    return { from, center };
+  };
+  const px = (r: { left: number; top: number; width: number; height: number }) => ({
+    left: `${r.left}px`,
+    top: `${r.top}px`,
+    width: `${r.width}px`,
+    height: `${r.height}px`,
+  });
+
+  useLayoutEffect(() => {
+    const r = rects();
+    if (!r || !card.current || !flipper.current || !dim.current) return;
+    Object.assign(card.current.style, px(r.center));
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const d = reduce ? 0 : 1;
+    dim.current.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 240 * d, easing: "ease-out" });
+    card.current.animate([px(r.from), px(r.center)], { duration: 340 * d, easing: "cubic-bezier(0.3, 0.9, 0.3, 1)" });
+    flipper.current.animate([{ transform: "rotateY(0deg)" }, { transform: "rotateY(180deg)" }], {
+      duration: 460 * d,
+      delay: 200 * d,
+      easing: "cubic-bezier(0.4, 0, 0.2, 1)",
+      fill: "both",
+    });
+    // 반쯤 뒤집혔을 때 입력칸에 커서
+    const t = window.setTimeout(() => field.current?.focus({ preventScroll: true }), 420 * d);
+    return () => window.clearTimeout(t);
+    // 열릴 때 한 번만
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useImperativeHandle(ref, () => ({
+    close: async (newText) => {
+      if (closing.current || !card.current || !flipper.current || !dim.current) return;
+      closing.current = true;
+      field.current?.blur();
+      if (newText) setFront({ text: newText, edited: true });
+      const d = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 1;
+      // 다시 뒤집어 앞면(새 글 + 수정됨)을 보여 주고
+      await flipper.current.animate([{ transform: "rotateY(180deg)" }, { transform: "rotateY(0deg)" }], {
+        duration: 420 * d,
+        easing: "cubic-bezier(0.4, 0, 0.2, 1)",
+        fill: "both",
+      }).finished;
+      // "수정됨"이 보이도록 잠깐 머문 뒤 원래 자리로 (고친 말풍선은 크기가 바뀌었을 수 있어 지금 다시 잼)
+      if (newText) await new Promise((r) => setTimeout(r, 380 * d));
+      const r = rects();
+      if (r) {
+        dim.current.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300 * d, easing: "ease-in", fill: "forwards" });
+        await card.current.animate([px(r.center), px(r.from)], {
+          duration: 320 * d,
+          easing: "cubic-bezier(0.5, 0, 0.3, 1)",
+          fill: "forwards",
+        }).finished;
+      }
+      onClosed();
+    },
+  }));
+
+  return (
+    <div className="absolute inset-0 z-20">
+      {/* 어두운 막 — 눌러도 닫히지 않음 (수정 취소는 위 X) */}
+      <div ref={dim} className="absolute inset-0 bg-background/75 [-webkit-backdrop-filter:blur(6px)] [backdrop-filter:blur(6px)]" />
+      <div ref={card} className="absolute perspective-[1200px]">
+        <div ref={flipper} className="relative size-full transform-3d">
+          {/* 앞면: 말풍선 모습 */}
+          <div
+            className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-[32px] px-6 backface-hidden"
+            style={{ background: comment.color }}
+            aria-hidden
+          >
+            <p className="text-center text-[22px] leading-[1.45] font-bold tracking-[-0.44px] whitespace-pre-line text-black">
+              {splitLines(front.text.replace(/\n/g, " ")).join("\n")}
+            </p>
+            {front.edited && <span className="absolute bottom-3 text-[12px] leading-none font-semibold text-black/50">수정됨</span>}
+          </div>
+          {/* 뒷면: 수정 칸 */}
+          <div className="absolute inset-0 flex rotate-y-180 items-center justify-center rounded-[32px] bg-surface-2 px-10 shadow-[0_4px_15px_rgba(0,0,0,0.25)] backface-hidden">
+            <label className="w-full">
+              <span className="sr-only">한마디 고치기</span>
+              <textarea
+                ref={field}
+                value={draft}
+                onChange={(e) => onDraft(e.target.value.replace(/\n/g, "").slice(0, COMMENT_MAX))}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    onSubmit();
+                  }
+                }}
+                rows={1}
+                // 글 길이만큼만 높아져서(최대 2줄) 카드 가운데에 옵니다.
+                className="block max-h-[64px] w-full resize-none overflow-hidden bg-transparent text-center [field-sizing:content] text-[22px] leading-[1.45] font-bold tracking-[-0.44px] text-on-dark outline-none"
+              />
+            </label>
+            <span className="absolute right-5 bottom-3 text-[12px] text-white/40">
+              {draft.length}/{COMMENT_MAX}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** 수정 카드 높이 (원글 카드와 같음) */
+const EDIT_H = 130;
 
 /**
   말풍선 위 뱃지 (더미 말풍선 태그와 같은 모양, 조금 크게): 나 / 글쓴이, 답글이 달렸으면 ↪ 답글 수
