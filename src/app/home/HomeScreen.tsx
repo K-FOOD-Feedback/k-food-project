@@ -4,9 +4,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ShareKfoodButton } from "@/components/ShareKfoodButton";
 import { track, useTrackOnce } from "@/lib/analytics";
-import { measureCard, setCardTransition } from "./cardTransition";
+import { measureCard, peekReturnTransition, setCardTransition } from "./cardTransition";
 import { CARD_MASK_BOX, CardStack, type Lang } from "./CardStack";
 import { MainHeader } from "./MainHeader";
+import { ReturnGhosts } from "./ReturnTransition";
 import { HOME_POSTS, type HomePost } from "./mockPosts";
 import { useVotedIds } from "./votes";
 
@@ -19,6 +20,11 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
   const [index, setIndex] = useState(() =>
     Math.min(lastIndex, posts.length - 1),
   );
+  // 상세에서 뒤로 돌아왔으면: 상세의 사진·본문 카드·참여 칩이 맨 앞 카드로 줄어들며 돌아옵니다.
+  const [returning, setReturning] = useState(() => {
+    const t = peekReturnTransition();
+    return t && t.postId === posts[Math.min(lastIndex, posts.length - 1)].id ? t : null;
+  });
   const votedIds = useVotedIds();
   const current = posts[index];
   const voted = votedIds.has(current.id);
@@ -72,6 +78,10 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
         </div>
       </div>
 
+      {returning && (
+        <ReturnGhosts transition={returning} cardPhoto={current.cardPhoto} onDone={() => setReturning(null)} />
+      )}
+
       {lang === "en" ? (
         // 외국인 메인 하단 CTA (Figma 259:7823): 로그인 시트 → 사진 선택 → /write (동작은 송희 담당 ShareKfoodButton)
         <ShareKfoodButton
@@ -83,6 +93,7 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
         // 하단 CTA (Figma: KF/CTA Pill — 투표 전 Primary, 투표 후 Done)
         <button
           type="button"
+          data-main-cta
           onClick={() => {
             track("feed_cta_clicked", { post_id: current.id, voted });
             openPost(current, document.querySelector("[data-front-card]"), "cta");

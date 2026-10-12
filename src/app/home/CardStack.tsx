@@ -270,7 +270,7 @@ function CardContent({ lang, post, voted }: { lang: Lang; post: Post; voted: boo
       )}
 
       {/* 참여 인원 스티커 */}
-      <span className="absolute top-[14px] right-[14px] flex size-[68px] rotate-12 flex-col items-center justify-center gap-0.5 rounded-full bg-background text-white shadow-[0_4px_12px_rgba(0,0,0,0.18)]">
+      <span data-card-sticker className="absolute top-[14px] right-[14px] flex size-[68px] rotate-12 flex-col items-center justify-center gap-0.5 rounded-full bg-background text-white shadow-[0_4px_12px_rgba(0,0,0,0.18)]">
         <span className="text-[20px] leading-none font-extrabold tracking-[-0.4px]">{participantsOf(post)}</span>
         <span className="text-[11px] leading-none font-semibold">{en ? "joined" : "명 참여"}</span>
       </span>
