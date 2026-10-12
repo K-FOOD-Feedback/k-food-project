@@ -30,15 +30,16 @@ export function CommentModal({ comment, onClose }: { comment: Comment; onClose: 
       role="dialog"
       aria-modal="true"
       aria-label={`한마디: ${comment.text.replace(/\n/g, " ")}`}
-      className="fixed inset-y-0 left-1/2 z-40 w-full max-w-[430px] -translate-x-1/2 transition-opacity duration-200 starting:opacity-0"
+      className="fixed inset-y-0 left-1/2 z-40 w-full max-w-[430px] -translate-x-1/2"
     >
-      {/* 흐린 배경 — 눌러도 닫힘 */}
-      <div className="absolute inset-0 bg-background/50 backdrop-blur-[8px]" onClick={onClose} aria-hidden />
+      {/* 흐린 배경 — 눌러도 닫힘. 어둡기와 흐림을 0부터 같이 올립니다
+          (부모를 opacity로 페이드하면 그동안 backdrop-filter가 꺼져 있다가 끝에 툭 켜져서) */}
+      <div className="absolute inset-0 bg-background/50 transition-[background-color,backdrop-filter,-webkit-backdrop-filter] duration-200 ease-out [-webkit-backdrop-filter:blur(8px)] [backdrop-filter:blur(8px)] starting:bg-background/0 starting:[-webkit-backdrop-filter:blur(0px)] starting:[backdrop-filter:blur(0px)]" onClick={onClose} aria-hidden />
 
       {/* 내용 카드 (아직 비어 있음) */}
-      <div className="absolute top-1/2 left-1/2 h-[509px] max-h-[calc(100%-200px)] w-[calc(100%-40px)] -translate-x-1/2 -translate-y-1/2 rounded-[32px] bg-white" />
+      <div className="absolute top-1/2 left-1/2 h-[509px] max-h-[calc(100%-200px)] w-[calc(100%-40px)] -translate-x-1/2 -translate-y-1/2 rounded-[32px] bg-white transition-[opacity,scale] duration-250 ease-out starting:scale-95 starting:opacity-0" />
 
-      <div className="absolute inset-x-0 top-0 flex justify-end px-2 pt-[calc(16px+env(safe-area-inset-top))] pb-4">
+      <div className="absolute inset-x-0 top-0 flex justify-end px-2 pt-[calc(16px+env(safe-area-inset-top))] pb-4 transition-opacity duration-200 ease-out starting:opacity-0">
         <button
           ref={closeButton}
           type="button"
