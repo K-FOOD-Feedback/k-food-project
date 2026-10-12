@@ -26,7 +26,9 @@ const FILL_STAGGER_MS = 80;
 // 투표 유도 힌트: 토큰이 떨어지고 나서 시작까지, 칸 하나 다녀오는 시간, 칸 안으로 들어가는 깊이(칸 윗변에서 토큰 가운데까지)
 const HINT_DELAY_MS = 1500;
 const HINT_STEP_MS = 1500;
-const HINT_DIP = 34;
+const HINT_DIP = -22; // 음수: 토큰 가운데는 칸 위에 있고 아랫부분만 칸에 살짝 걸침 (칸 이름을 가리지 않게)
+const HINT_LIFT = 28; // 곡선이 위로 떠오르는 정도
+const HINT_SAMPLES = 12; // 곡선을 나누는 점 개수 (많을수록 매끈)
 
 /**
   투표 카드 (Figma: VoteCard / Bowl)
@@ -167,8 +169,7 @@ export function VoteBowl({ post }: { post: HomePost }) {
       const seg = 1 / (n + 1); // 칸 하나에 한 구간 + 마지막은 쉬는 구간
       const duration = HINT_STEP_MS * (n + 1);
       const ease = "ease-in-out";
-      const rest = { translate: "0 0", rotate: "0deg", easing: ease };
-      const tokenFrames: Keyframe[] = [{ offset: 0, ...rest }];
+      const tokenFrames: Keyframe[] = [{ offset: 0, translate: "0 0", rotate: "0deg" }];
       columns.current.forEach((col, k) => {
         if (!col) return;
         const c = col.getBoundingClientRect();
@@ -177,10 +178,22 @@ export function VoteBowl({ post }: { post: HomePost }) {
         const a = k * seg;
         const mid = a + seg / 2;
         const b = a + seg;
-        tokenFrames.push(
-          { offset: mid, translate: `${dx}px ${dy}px`, rotate: `${Math.abs(dx) < 1 ? 0 : Math.sign(dx) * 10}deg`, easing: ease },
-          { offset: b, ...rest },
-        );
+        // 직선 대신 위로 살짝 떠올랐다 내려앉는 완만한 곡선(2차 베지어)을 따라 갔다가 같은 길로 돌아옴
+        const tilt = Math.abs(dx) < 1 ? 0 : Math.sign(dx) * 10;
+        const at = (u: number) => {
+          const s = u < 0.5 ? 2 * u * u : 1 - (-2 * u + 2) ** 2 / 2; // 천천히 출발·도착
+          const cx = dx / 2;
+          const cy = Math.min(0, dy) - HINT_LIFT;
+          const x = 2 * (1 - s) * s * cx + s * s * dx;
+          const y = 2 * (1 - s) * s * cy + s * s * dy;
+          return { translate: `${x}px ${y}px`, rotate: `${tilt * s}deg` };
+        };
+        for (let j = 1; j <= HINT_SAMPLES; j++) {
+          tokenFrames.push({ offset: a + (seg / 2) * (j / HINT_SAMPLES), ...at(j / HINT_SAMPLES) });
+        }
+        for (let j = HINT_SAMPLES - 1; j >= 0; j--) {
+          tokenFrames.push({ offset: b - (seg / 2) * (j / HINT_SAMPLES), ...at(j / HINT_SAMPLES) });
+        }
         const peek = peeks.current[k];
         if (peek) {
           anims.push(
@@ -197,7 +210,7 @@ export function VoteBowl({ post }: { post: HomePost }) {
           );
         }
       });
-      tokenFrames.push({ offset: 1, ...rest });
+      tokenFrames.push({ offset: 1, translate: "0 0", rotate: "0deg" });
       anims.push(el.animate(tokenFrames, { duration, iterations: Infinity }));
     }, HINT_DELAY_MS);
     return () => {
