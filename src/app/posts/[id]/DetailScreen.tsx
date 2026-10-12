@@ -705,7 +705,7 @@ function ShareVoteCard({ post }: { post: HomePost }) {
       <button
         type="button"
         onClick={share}
-        className="flex w-full items-center gap-4 rounded-[32px] bg-primary py-5 pr-4 pl-7 text-left text-on-light shadow-[0_10px_30px_-8px_rgba(255,135,197,0.55)] transition-[scale,opacity,translate] duration-500 active:scale-[0.98] starting:translate-y-3 starting:opacity-0"
+        className="flex w-full items-center gap-4 rounded-[32px] bg-secondary py-5 pr-4 pl-7 text-left text-on-light transition-[scale,opacity,translate] duration-500 active:scale-[0.98] starting:translate-y-3 starting:opacity-0"
       >
         <span className="flex min-w-0 flex-1 flex-col gap-1">
           <span className="font-(family-name:--font-paperlogy) text-[22px] leading-[1.25] tracking-[-0.44px] break-keep">
