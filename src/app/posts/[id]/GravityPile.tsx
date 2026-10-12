@@ -183,9 +183,10 @@ class PileWorld {
   sync(comments: Comment[], nodes: Map<string, HTMLElement>) {
     // 목록에서 사라진 댓글(삭제·저장소 초기화)은 물리 세계에서도 뺍니다.
     // 남겨 두면 보이지 않는 몸체가 남아 새 댓글이 허공에 걸립니다.
-    const ids = new Set(comments.map((c) => c.id));
-    for (const [id, { body }] of this.tracked) {
-      if (ids.has(id)) continue;
+    // 글이 바뀐 댓글(수정)도 빼서 새 크기로 다시 떨어뜨립니다 (몸체 크기가 말풍선과 어긋나지 않게).
+    const byId = new Map(comments.map((c) => [c.id, c]));
+    for (const [id, { body, comment }] of this.tracked) {
+      if (byId.get(id)?.text === comment.text) continue;
       Composite.remove(this.engine.world, body);
       this.tracked.delete(id);
       this.followTarget = null;
@@ -717,7 +718,7 @@ const widthOf = (text: string) => Array.from(text).reduce((sum, ch) => sum + cha
 const ONE_LINE_MAX = 10;
 
 /** 한 줄로 긴 한마디는 가운데쯤에서 두 줄로 나눕니다 (가능하면 띄어쓰기에서). 이미 줄을 나눴으면 그대로. */
-function splitLines(text: string): string[] {
+export function splitLines(text: string): string[] {
   if (text.includes("\n") || widthOf(text) <= ONE_LINE_MAX) return text.split("\n");
   const chars = Array.from(text);
   const half = widthOf(text) / 2;

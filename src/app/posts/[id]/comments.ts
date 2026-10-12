@@ -24,6 +24,8 @@ export type Comment = {
   replyTo?: string;
   /** 내가(이 브라우저에서) 남긴 한마디 — "나" 태그 */
   mine?: boolean;
+  /** 고친 적 있는 한마디 — 한마디 레이어에서 "수정됨" 표시 */
+  edited?: boolean;
 };
 
 const KOREAN: CommentAuthor = { kind: "korean" };
@@ -92,23 +94,37 @@ export function useComments(postId: string, authorFlag: string) {
   // 앞으로 달 댓글의 색 (보내기 애니메이션이 미리 같은 색으로 날아가도록). ahead: 이미 날아가는 중인 개수
   const nextColor = (ahead = 0) => BUBBLE_COLORS[(added.length + ahead + 9) % BUBBLE_COLORS.length];
 
-  const add = (kind: Comment["kind"], text: string) => {
-    const list = readAdded(postId);
-    const comment: Comment = {
-      id: `${postId}-${Date.now()}`,
-      kind,
-      text,
-      color: BUBBLE_COLORS[(list.length + 9) % BUBBLE_COLORS.length],
-      author: KOREAN, // 지금은 한국인 화면만 있습니다.
-      mine: true,
-    };
+  /** 내가 남긴 한마디 목록을 바꿔 저장합니다 (목업 댓글은 바꿀 수 없음). */
+  const save = (change: (list: Comment[]) => Comment[]) => {
     try {
-      localStorage.setItem(storageKey(postId), JSON.stringify([...list, comment]));
+      localStorage.setItem(storageKey(postId), JSON.stringify(change(readAdded(postId))));
     } catch {
-      // 저장 못 하면 이번에는 추가되지 않습니다.
+      // 저장 못 하면 이번에는 바뀌지 않습니다.
     }
     window.dispatchEvent(new Event(CHANGE));
   };
 
-  return { comments, addedCount: added.length, add, nextColor, ready };
+  /** replyTo: 답글이면 원글 id */
+  const add = (kind: Comment["kind"], text: string, replyTo?: string) =>
+    save((list) => [
+      ...list,
+      {
+        id: `${postId}-${Date.now()}`,
+        kind,
+        text,
+        color: BUBBLE_COLORS[(list.length + 9) % BUBBLE_COLORS.length],
+        author: KOREAN, // 지금은 한국인 화면만 있습니다.
+        mine: true,
+        ...(replyTo && { replyTo }),
+      },
+    ]);
+
+  /** 내 한마디 고치기 — "수정됨" 표시가 붙습니다. */
+  const edit = (id: string, text: string) =>
+    save((list) => list.map((c) => (c.id === id ? { ...c, text, edited: true } : c)));
+
+  /** 내 한마디 지우기 (달린 답글은 남고 원글 표시만 사라짐) */
+  const remove = (id: string) => save((list) => list.filter((c) => c.id !== id));
+
+  return { comments, addedCount: added.length, add, edit, remove, nextColor, ready };
 }
