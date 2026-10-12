@@ -69,6 +69,19 @@ export function CommentPile({
   const opened = openedId ? comments.find((c) => c.id === openedId) : undefined;
   // 답글 말풍선을 눌러 원글 레이어를 열었으면, 레이어에서 가운데로 데려와 강조할 그 답글 id
   const [focusReplyId, setFocusReplyId] = useState<string | null>(null);
+  const byId = new Map(comments.map((c) => [c.id, c]));
+  /** 답글에 단 답글도 맨 위 원글까지 거슬러 올라갑니다 (부모가 지워져 끊기면 거기서 멈춤). */
+  const rootOf = (c: Comment) => {
+    let cur = c;
+    const seen = new Set<string>();
+    while (cur.replyTo && !seen.has(cur.id)) {
+      seen.add(cur.id);
+      const parent = byId.get(cur.replyTo);
+      if (!parent) break;
+      cur = parent;
+    }
+    return cur;
+  };
   // 전체 화면: 이모지 말풍선을 누르면 떠오르는 이모지 묶음들
   const [bursts, setBursts] = useState<Burst[]>([]);
 
@@ -78,8 +91,9 @@ export function CommentPile({
   */
   const select = (comment: Comment, el: HTMLElement) => {
     if (comment.kind !== "emoji") {
-      setOpenedId(comment.replyTo ?? comment.id);
-      setFocusReplyId(comment.replyTo ? comment.id : null);
+      const root = rootOf(comment);
+      setOpenedId(root.id);
+      setFocusReplyId(root.id === comment.id ? null : comment.id);
       return;
     }
     // 누른 이모지 원이 톡 하고 커졌다 돌아옵니다.
@@ -269,10 +283,12 @@ export function CommentPile({
         {opened && (
           <CommentModal
             comment={opened}
-            replies={comments.filter((c) => c.replyTo === opened.id)}
+            replies={comments.filter((c) => c.id !== opened.id && rootOf(c).id === opened.id)}
             focusId={focusReplyId}
             onClose={() => setOpenedId(null)}
-            onReply={(text) => add("text", text, opened.id)}
+            onReply={(text, replyTo) => add("text", text, replyTo ?? opened.id)}
+            onEditReply={edit}
+            onDeleteReply={remove}
             onEdit={(text) => edit(opened.id, text)}
             onDelete={() => {
               remove(opened.id);
