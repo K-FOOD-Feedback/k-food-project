@@ -24,6 +24,8 @@ const BACK_OUT =
 const TOKEN_MS = 600;
 const FILL_DELAY_MS = 300;
 const FILL_STAGGER_MS = 80;
+// 결과 % 글자 위 끝(칸 바닥에서) + 여백 — 토큰은 이보다 낮게 내려가지 않음
+const TOKEN_ABOVE_PCT = 52;
 // 투표 유도 힌트: 토큰이 떨어지고 나서 시작까지, 칸 하나 다녀오는 시간, 칸 안으로 들어가는 깊이(칸 윗변에서 토큰 가운데까지)
 const HINT_DELAY_MS = 1500;
 const HINT_STEP_MS = 1500;
@@ -375,7 +377,8 @@ export function VoteBowl({ post }: { post: HomePost }) {
                   ref={landed}
                   aria-hidden="true"
                   className="absolute left-[calc(50%-32px)] z-[2] flex size-16 items-center justify-center rounded-full bg-on-light text-[25px] leading-none shadow-[0_6px_16px_rgba(0,0,0,0.35)]"
-                  style={{ bottom: `min(calc(${pcts[i]}% + 8px), 110px)` }}
+                  // 색 바로 위에 앉되, 색이 낮으면 % 글자(아래 12px + 글자 높이)보다 위로 올려 가리지 않게
+                  style={{ bottom: `min(max(calc(${pcts[i]}% + 8px), ${TOKEN_ABOVE_PCT}px), 110px)` }}
                 >
                   {/* 칸에 들어가 앉으면 한 번 손 흔들기 */}
                   <span className="inline-block origin-[50%_85%] animate-[wave_1s_ease-in-out_450ms_both]">🇰🇷</span>
