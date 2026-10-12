@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { clearCardTransition, peekCardTransition, type Box } from "@/app/home/cardTransition";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type Ref } from "react";
+import { clearCardTransition, peekCardTransition, setReturnTransition, type Box } from "@/app/home/cardTransition";
 import { HOME_POSTS, participantsOf, type HomePost } from "@/app/home/mockPosts";
 import { ArrowCta } from "@/components/Buttons";
 import { useMyVote } from "@/app/home/votes";
@@ -99,22 +99,29 @@ export function DetailScreen({ post }: { post: HomePost }) {
   // 다음 훈수 거리: 메인 카드 순서상 다음 게시글 (마지막이면 처음으로)
   const next = HOME_POSTS[(HOME_POSTS.findIndex((p) => p.id === post.id) + 1) % HOME_POSTS.length];
 
-  // 메인 카드에서 넘어왔으면: 카드 속 사진은 위쪽 사진 영역으로, 카드는 아래쪽 본문 카드로 이어지게 움직입니다.
+  // 메인 카드에서 넘어왔으면: 카드 속 사진은 위쪽 사진 영역으로, 카드는 아래쪽 본문 카드로,
+  // "00명 참여" 스티커는 참여 칩으로, "투표하러 가기"는 플로팅 "투표하기"로 이어지게 움직입니다. 헤더는 그대로.
   const [intro] = useState(() => peekCardTransition(post.id));
   const [introDone, setIntroDone] = useState(!intro);
   const tileRef = useRef<HTMLDivElement>(null);
   const articleRef = useRef<HTMLElement>(null);
+  const chipRef = useRef<HTMLParagraphElement>(null);
+  const ctaRef = useRef<HTMLButtonElement>(null);
   const photoGhost = useRef<HTMLDivElement>(null);
   const detailPhoto = useRef<HTMLImageElement>(null);
   const cardGhost = useRef<HTMLDivElement>(null);
+  const cardGhostText = useRef<HTMLDivElement>(null);
+  const chipGhost = useRef<HTMLDivElement>(null);
+  const ctaGhost = useRef<HTMLDivElement>(null);
   const fadeIns = useRef<(HTMLElement | null)[]>([]);
+  // 전환을 시작할 때 투표 전이었는지 (그때만 "투표하러 가기" → 플로팅 "투표하기"로 이어짐)
+  const [ctaIntro] = useState(() => !!intro?.cta && !voted);
 
   useLayoutEffect(() => {
     if (!intro || !tileRef.current || !articleRef.current || !photoGhost.current || !cardGhost.current) return;
     clearCardTransition();
     window.scrollTo(0, 0);
-    const tile = tileRef.current.getBoundingClientRect();
-    const article = articleRef.current.getBoundingClientRect();
+    const box = (el: Element) => el.getBoundingClientRect();
     const place = (b: Box, radius: string) => ({
       left: `${b.left}px`,
       top: `${b.top}px`,
@@ -122,39 +129,73 @@ export function DetailScreen({ post }: { post: HomePost }) {
       height: `${b.height}px`,
       borderRadius: radius,
     });
-    const timing = { duration: INTRO_MS, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)", fill: "forwards" as const };
-    const animations = [
-      // 카드(색 배경)는 아래로 내려가며 본문 카드 크기로
-      cardGhost.current.animate([place(intro.card, "34.8px"), place(article, "32px")], timing),
+    const timing = { duration: INTRO_MS, easing: EASE, fill: "forwards" as const };
+    const animations: Animation[] = [
+      // 카드(색 배경 + 본문 글)는 아래로 내려가며 본문 카드 크기로 — 글이 처음부터 같이 움직여서 늦게 뜨지 않음
+      cardGhost.current.animate([place(intro.card, "34.8px"), place(box(articleRef.current), "32px")], timing),
       // 물결 사진은 위로 올라가며 상세 사진 영역으로 (둥근 모양 → 모서리 둥근 사각형)
-      photoGhost.current.animate([place(intro.photo, "45%"), place(tile, "32px")], timing),
-      // 메인 카드 사진에서 상세 첫 사진으로 자연스럽게 바뀜
-      ...(detailPhoto.current ? [detailPhoto.current.animate([{ opacity: 0 }, { opacity: 0, offset: 0.35 }, { opacity: 1 }], timing)] : []),
-      // 상단 버튼·투표·댓글은 뒤따라 살짝 올라오며 나타남
-      ...fadeIns.current.flatMap((el) =>
-        el
-          ? [
-              el.animate([{ opacity: 0, translate: "0 16px" }, { opacity: 1, translate: "0 0" }], {
-                duration: 380,
-                delay: INTRO_MS * 0.45,
-                easing: "ease-out",
-                fill: "backwards",
-              }),
-            ]
-          : [],
-      ),
+      photoGhost.current.animate([place(intro.photo, "45%"), place(box(tileRef.current), "32px")], timing),
     ];
-    animations[1].onfinish = () => setIntroDone(true);
-    return () => animations.forEach((a) => a.cancel());
-  }, [intro]);
-
-  // 전환이 끝나 진짜 본문 카드가 보이면, 글자만 살짝 나타나게 (배경색은 이미 같은 자리에 있었으므로)
-  useLayoutEffect(() => {
-    if (!intro || !introDone) return;
-    for (const child of Array.from(articleRef.current?.children ?? [])) {
-      child.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, easing: "ease-out" });
+    // 메인 카드 사진에서 상세 첫 사진으로 자연스럽게 바뀜
+    if (detailPhoto.current) animations.push(detailPhoto.current.animate([{ opacity: 0 }, { opacity: 1 }], timing));
+    if (cardGhostText.current)
+      animations.push(cardGhostText.current.animate([{ opacity: 0 }, { opacity: 1, offset: 0.35 }, { opacity: 1 }], timing));
+    // "00명 참여" 원형 스티커 → "00명 참여 중!" 알약 칩
+    if (intro.sticker && chipGhost.current && chipRef.current) {
+      const chip = box(chipRef.current);
+      animations.push(
+        chipGhost.current.animate(
+          [
+            { ...place(intro.sticker, "999px"), rotate: "12deg" },
+            { ...place(chip, "999px"), rotate: "0deg" },
+          ],
+          timing,
+        ),
+      );
     }
-  }, [intro, introDone]);
+    // "투표하러 가기" → 플로팅 "투표하기"
+    if (ctaIntro && intro.cta && ctaGhost.current && ctaRef.current) {
+      animations.push(ctaGhost.current.animate([place(intro.cta, "999px"), place(box(ctaRef.current), "999px")], timing));
+    }
+    // 투표·한마디는 뒤따라 살짝 올라오며 나타남 (헤더는 움직이지 않음)
+    for (const el of fadeIns.current) {
+      if (!el) continue;
+      animations.push(
+        el.animate([{ opacity: 0, translate: "0 16px" }, { opacity: 1, translate: "0 0" }], {
+          duration: 300,
+          delay: INTRO_MS * 0.3,
+          easing: "ease-out",
+          fill: "backwards",
+        }),
+      );
+    }
+    animations[1].onfinish = () => setIntroDone(true);
+    // 앱이 백그라운드여서 애니메이션 끝 알림이 늦게 와도 전환에 갇히지 않도록 시간으로도 마무리
+    const fallback = window.setTimeout(() => setIntroDone(true), INTRO_MS + 150);
+    return () => {
+      clearTimeout(fallback);
+      animations.forEach((a) => a.cancel());
+    };
+  }, [intro, ctaIntro]);
+
+  // 떠날 때(뒤로 가기 등) 사진·본문 카드·참여 칩 위치를 남겨, 메인 화면이 맨 앞 카드로 이어지게 움직일 수 있게 합니다.
+  useLayoutEffect(() => {
+    const tile = tileRef.current;
+    const article = articleRef.current;
+    const chip = chipRef.current;
+    return () => {
+      if (!tile || !article) return;
+      const toBox = (r: DOMRect): Box => ({ left: r.left, top: r.top, width: r.width, height: r.height });
+      setReturnTransition({
+        postId: post.id,
+        photo: toBox(tile.getBoundingClientRect()),
+        photoSrc: post.photos[0],
+        card: toBox(article.getBoundingClientRect()),
+        color: post.color,
+        ...(chip && { chip: toBox(chip.getBoundingClientRect()) }),
+      });
+    };
+  }, [post.id, post.photos, post.color]);
 
   // 주소가 #vote로 열리면(예: 투표 안 하고 한마디 전체 화면에 들어왔다가 돌려보내진 경우) 투표 영역을 가운데로.
   // 메인 카드 전환이 있으면 끝난 뒤에 스크롤합니다.
@@ -189,9 +230,6 @@ export function DetailScreen({ post }: { post: HomePost }) {
       className={`${paperlogy.variable} relative mx-auto min-h-dvh w-full max-w-[430px] overflow-x-clip bg-background text-on-dark`}
     >
       <header
-        ref={(el) => {
-          fadeIns.current[0] = el;
-        }}
         // 스크롤해도 상단 고정 (송희) — 바탕 없이 버튼만 떠 있음(내용 위에서도 보이게 어두운 유리 버튼). 빈 곳은 터치가 아래 내용으로 통과
         className="pointer-events-none sticky top-0 z-30 flex items-center justify-between px-2 pt-[calc(16px+env(safe-area-inset-top))] pb-4 [&>*]:pointer-events-auto [&_a]:bg-surface/85 [&_a]:ring-1 [&_a]:ring-white/10 [&_a]:backdrop-blur-xl [&_button]:bg-surface/85 [&_button]:ring-1 [&_button]:ring-white/10 [&_button]:backdrop-blur-xl">
         <Link href="/home" className={circle} aria-label="뒤로 가기">
@@ -216,7 +254,14 @@ export function DetailScreen({ post }: { post: HomePost }) {
 
       <div className="flex flex-col gap-1 px-2 pb-[calc(40px+env(safe-area-inset-bottom))]">
         <div ref={tileRef} className={hiddenUntilIntro}>
-          <PhotoTile postId={post.id} photos={post.photos} participants={participantsOf(post)} title={post.title} />
+          <PhotoTile
+            postId={post.id}
+            photos={post.photos}
+            participants={participantsOf(post)}
+            title={post.title}
+            chipRef={chipRef}
+            hideChip={!!intro?.sticker && !introDone}
+          />
         </div>
 
         <article
@@ -224,17 +269,13 @@ export function DetailScreen({ post }: { post: HomePost }) {
           className={`flex flex-col gap-5 rounded-[32px] px-7 py-[30px] text-on-light ${hiddenUntilIntro}`}
           style={{ background: post.color }}
         >
-          <p className="text-[14px] leading-none font-medium tracking-[-0.28px] text-[#696969]">from. {post.author.country}</p>
-          <h1 className="max-w-[204px] font-(family-name:--font-paperlogy) text-[31px] leading-[1.2] tracking-[-0.62px] break-keep">
-            {post.title}
-          </h1>
-          <p className="text-[16px] leading-[1.55] font-medium tracking-[-0.32px] whitespace-pre-line text-[#444]">{post.body}</p>
+          <ArticleBody post={post} />
         </article>
 
         <div
           ref={(el) => {
             voteRef.current = el;
-            fadeIns.current[1] = el;
+            fadeIns.current[0] = el;
           }}
         >
           <VoteBowl post={post} />
@@ -243,7 +284,7 @@ export function DetailScreen({ post }: { post: HomePost }) {
         <div
           className="relative"
           ref={(el) => {
-            fadeIns.current[2] = el;
+            fadeIns.current[1] = el;
             commentRef.current = el;
           }}
         >
@@ -282,9 +323,14 @@ export function DetailScreen({ post }: { post: HomePost }) {
           <div
             ref={cardGhost}
             aria-hidden
-            className="pointer-events-none fixed z-30"
+            className="pointer-events-none fixed z-30 overflow-hidden"
             style={{ ...boxStyle(intro.card), borderRadius: 34.8, background: intro.color }}
-          />
+          >
+            {/* 진짜 본문 카드와 같은 글을 같이 실어 나름 (도착하면 그대로 이어짐) */}
+            <div ref={cardGhostText} className="flex flex-col gap-5 px-7 py-[30px] text-on-light">
+              <ArticleBody post={post} />
+            </div>
+          </div>
           <div
             ref={photoGhost}
             aria-hidden
@@ -296,18 +342,39 @@ export function DetailScreen({ post }: { post: HomePost }) {
             {/* eslint-disable-next-line @next/next/no-img-element -- 전환용 사진 */}
             <img ref={detailPhoto} src={post.photos[0]} alt="" className="absolute inset-0 size-full object-cover opacity-0" />
           </div>
+          {intro.sticker && (
+            <div
+              ref={chipGhost}
+              aria-hidden
+              className="pointer-events-none fixed z-30 flex items-center justify-center overflow-hidden bg-black text-[16px] leading-[1.5] font-semibold whitespace-nowrap text-white"
+              style={{ ...boxStyle(intro.sticker), borderRadius: 999 }}
+            >
+              {participantsOf(post)}명 참여 중!
+            </div>
+          )}
+          {ctaIntro && intro.cta && (
+            <div
+              ref={ctaGhost}
+              aria-hidden
+              className="pointer-events-none fixed z-30 flex items-center justify-center overflow-hidden rounded-full bg-primary text-[20px] leading-none font-extrabold tracking-[-0.4px] whitespace-nowrap text-white"
+              style={boxStyle(intro.cta)}
+            >
+              투표하기
+            </div>
+          )}
         </>
       )}
 
       {/* 플로팅 "투표하기" (Figma: Floating CTA (viewport)) */}
       <button
+        ref={ctaRef}
         type="button"
         onClick={goToVote}
         tabIndex={showCta ? 0 : -1}
         aria-hidden={!showCta}
         className={`fixed bottom-[calc(40px+env(safe-area-inset-bottom))] left-1/2 z-20 -translate-x-1/2 rounded-full bg-primary px-8 py-6 text-[20px] leading-none font-extrabold tracking-[-0.4px] whitespace-nowrap text-white shadow-[0_18px_48px_4px_rgba(0,0,0,0.55),0_10px_24px_-6px_rgba(255,135,196,0.55)] transition-[opacity,translate,scale] duration-300 active:scale-95 ${
           showCta ? "opacity-100" : "pointer-events-none translate-y-6 opacity-0"
-        }`}
+        } ${ctaIntro && !introDone ? "invisible" : ""}`}
       >
         투표하기
       </button>
@@ -352,7 +419,21 @@ function CommentLock({ locked, onVote }: { locked: boolean; onVote: () => void }
   );
 }
 
-const INTRO_MS = 560;
+const INTRO_MS = 420;
+const EASE = "cubic-bezier(0.2, 0.8, 0.2, 1)";
+
+/** 본문 카드 안 글 (진짜 카드와 전환용 카드가 같은 모양을 쓰도록) */
+function ArticleBody({ post }: { post: HomePost }) {
+  return (
+    <>
+      <p className="text-[14px] leading-none font-medium tracking-[-0.28px] text-[#696969]">from. {post.author.country}</p>
+      <h1 className="max-w-[204px] font-(family-name:--font-paperlogy) text-[31px] leading-[1.2] tracking-[-0.62px] break-keep">
+        {post.title}
+      </h1>
+      <p className="text-[16px] leading-[1.55] font-medium tracking-[-0.32px] whitespace-pre-line text-[#444]">{post.body}</p>
+    </>
+  );
+}
 const boxStyle = (b: Box) => ({ left: b.left, top: b.top, width: b.width, height: b.height });
 
 /** 사진 넘겨 보기 + 참여 인원 칩 (Figma: Tile/Photo) */
@@ -361,11 +442,16 @@ function PhotoTile({
   photos,
   participants,
   title,
+  chipRef,
+  hideChip = false,
 }: {
   postId: string;
   photos: string[];
   participants: number;
   title: string;
+  chipRef?: Ref<HTMLParagraphElement>;
+  /** 메인 카드 스티커에서 이어지는 전환 중에는 숨김 */
+  hideChip?: boolean;
 }) {
   const [index, setIndex] = useState(0);
   const furthest = useRef(0); // 분석: 몇 번째 사진까지 봤는지
@@ -394,7 +480,12 @@ function PhotoTile({
           />
         ))}
       </div>
-      <p className="absolute top-[19px] left-[19px] rounded-full bg-black px-3 py-1.5 text-[16px] leading-[1.5] font-semibold text-white">
+      <p
+        ref={chipRef}
+        className={`absolute top-[19px] left-[19px] rounded-full bg-black px-3 py-1.5 text-[16px] leading-[1.5] font-semibold text-white ${
+          hideChip ? "invisible" : ""
+        }`}
+      >
         {participants}명 참여 중!
       </p>
       {photos.length > 1 && (
