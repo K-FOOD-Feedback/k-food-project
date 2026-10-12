@@ -17,6 +17,8 @@ export type CardTransition = {
   /** 카드 안 물결 사진이 보이는 영역 */
   photo: Box;
   cardPhoto: string;
+  /** 카드 사진 모양 (cardShapes의 mask-image 값) — 카드마다 다름 */
+  photoMask?: string;
   color: string;
   /** 카드의 "00명 참여" 스티커 (메인 CardStack에 data-card-sticker가 있으면) → 상세 "00명 참여 중!" 칩으로 이어짐 */
   sticker?: Box;

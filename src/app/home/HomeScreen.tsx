@@ -52,7 +52,7 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
       position: posts.indexOf(post),
       already_voted: votedIds.has(post.id),
     });
-    if (cardEl) setCardTransition({ postId: post.id, ...measureCard(cardEl, CARD_MASK_BOX), cardPhoto: post.cardPhoto, color: post.color });
+    if (cardEl) setCardTransition({ postId: post.id, ...measureCard(cardEl, CARD_MASK_BOX), cardPhoto: post.cardPhoto, photoMask: cardShapeAt(posts.indexOf(post)), color: post.color });
     router.push(`/posts/${post.id}`);
   };
 
