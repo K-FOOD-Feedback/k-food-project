@@ -11,6 +11,8 @@ import { splitLines } from "./GravityPile";
   - 무답글 (Figma 375:7772): 원글 카드 + "이 한마디에 대해 어떻게 생각하나요?"
   - 답글 있음 (Figma 343:326): 원글 카드 아래로 답글들이 가운데 정렬로 쌓임
   - 답글이 많아 넘치면 (Figma 373:7649): 답글 목록만 스크롤, 위아래가 그라데이션으로 흐려짐
+  - 답글 목록은 휠처럼: 가운데 온 답글이 가장 크고 진하고, 멀어질수록 작고 흐려집니다 (가운데에 착 붙음).
+    답글 말풍선을 눌러 열면(focusId) 그 답글이 가운데로 와서 강조됩니다.
   - 수정 (Figma 375:8019, 내 한마디만): 원글 카드가 뒤집히며 어두운 수정 카드로 → 체크로 저장하면 다시 뒤집혀
     원래대로, 고친 한마디는 카드에 "수정됨" 표시
   닫기: X, 배경 누르기, Esc (수정 중이면 X·Esc는 수정 취소)
@@ -18,6 +20,7 @@ import { splitLines } from "./GravityPile";
 export function CommentModal({
   comment,
   replies,
+  focusId,
   onClose,
   onReply,
   onEdit,
@@ -26,6 +29,8 @@ export function CommentModal({
   comment: Comment;
   /** 이 한마디에 달린 답글 (오래된 순) */
   replies: Comment[];
+  /** 가운데로 데려와 강조할 답글 id (더미에서 답글 말풍선을 눌러 열었을 때) */
+  focusId?: string | null;
   onClose: () => void;
   onReply: (text: string) => void;
   onEdit: (text: string) => void;
@@ -68,15 +73,63 @@ export function CommentModal({
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // 휠: 첫·끝 답글도 가운데까지 올 수 있게 위아래 여백을 두고, 스크롤할 때마다 가운데에서 먼 만큼 줄이고 흐리게
+  const updateWheel = () => {
+    const el = list.current;
+    if (!el) return;
+    const items = Array.from(el.children) as HTMLElement[];
+    if (!items.length) return;
+    const first = items[0].offsetHeight;
+    const last = items[items.length - 1].offsetHeight;
+    el.style.paddingTop = `${Math.max(0, el.clientHeight / 2 - first / 2)}px`;
+    el.style.paddingBottom = `${Math.max(0, el.clientHeight / 2 - last / 2)}px`;
+    setOverflowing(el.scrollHeight > el.clientHeight + 1);
+    const box = el.getBoundingClientRect();
+    const center = box.top + box.height / 2;
+    for (const item of items) {
+      const r = item.getBoundingClientRect();
+      // 답글 한 칸(약 72px)만큼 멀어질 때마다 한 단계씩
+      const d = Math.abs(r.top + r.height / 2 - center) / WHEEL_STEP;
+      const bubble = item.firstElementChild as HTMLElement;
+      bubble.style.scale = String(Math.max(0.7, 1 - 0.13 * d));
+      bubble.style.opacity = String(Math.max(0.2, 1 - 0.4 * d));
+    }
+  };
+  const updateRef = useRef(updateWheel);
+  useLayoutEffect(() => {
+    updateRef.current = updateWheel;
+  });
+
   useLayoutEffect(() => {
     const el = list.current;
     if (!el) return;
-    const check = () => setOverflowing(el.scrollHeight > el.clientHeight + 1);
-    check();
-    const observer = new ResizeObserver(check);
+    updateRef.current();
+    const observer = new ResizeObserver(() => updateRef.current());
     observer.observe(el);
     return () => observer.disconnect();
   }, [replies.length]);
+
+  // 답글 말풍선을 눌러 열었으면 그 답글을 가운데로 데려와 톡 강조합니다.
+  useLayoutEffect(() => {
+    const el = list.current;
+    const item = focusId ? el?.querySelector<HTMLElement>(`[data-reply-id="${CSS.escape(focusId)}"]`) : null;
+    if (!el || !item) return;
+    el.scrollTop = item.offsetTop - el.clientHeight / 2 + item.offsetHeight / 2;
+    updateRef.current();
+    (item.firstElementChild as HTMLElement).animate(
+      [{ translate: "0 0" }, { translate: "0 0", scale: "1.08", offset: 0.35 }, { translate: "0 0" }],
+      { duration: 420, delay: 200, easing: "ease-out", composite: "add" },
+    );
+    // 열릴 때 한 번만
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /** 답글을 누르면 그 답글을 가운데로 */
+  const centerReply = (item: HTMLElement) => {
+    const el = list.current;
+    if (!el) return;
+    el.scrollTo({ top: item.offsetTop - el.clientHeight / 2 + item.offsetHeight / 2, behavior: "smooth" });
+  };
 
   const sendReply = (e: FormEvent) => {
     e.preventDefault();
@@ -190,18 +243,26 @@ export function CommentModal({
           ) : (
             <div
               ref={list}
-              className={`flex h-full flex-col items-center gap-2 overflow-y-auto overscroll-contain pt-8 pb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+              onScroll={updateWheel}
+              className={`relative flex h-full snap-y snap-mandatory flex-col items-center gap-1 overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
                 overflowing ? "[mask-image:linear-gradient(to_bottom,transparent,black_56px,black_calc(100%-56px),transparent)]" : ""
               }`}
             >
               {replies.map((r) => (
-                <p
+                <div
                   key={r.id}
-                  className="shrink-0 rounded-[32px] px-6 py-4 text-center text-[20px] leading-[1.45] font-bold tracking-[-0.4px] whitespace-pre-line text-black transition-[opacity,translate] duration-300 ease-out starting:translate-y-2 starting:opacity-0"
-                  style={{ background: r.color }}
+                  data-reply-id={r.id}
+                  onClick={(e) => centerReply(e.currentTarget)}
+                  className="shrink-0 snap-center transition-[opacity,translate] duration-300 ease-out starting:translate-y-2 starting:opacity-0"
                 >
-                  {splitLines(r.text.replace(/\n/g, " ")).join("\n")}
-                </p>
+                  {/* 휠 크기·흐림은 스크롤할 때 updateWheel이 직접 바꿉니다. */}
+                  <p
+                    className="rounded-[32px] px-6 py-4 text-center text-[20px] leading-[1.45] font-bold tracking-[-0.4px] whitespace-pre-line text-black will-change-[scale,opacity]"
+                    style={{ background: r.color }}
+                  >
+                    {splitLines(r.text.replace(/\n/g, " ")).join("\n")}
+                  </p>
+                </div>
               ))}
             </div>
           )}
@@ -243,3 +304,6 @@ export function CommentModal({
     </div>
   );
 }
+
+/** 휠 한 칸: 답글 말풍선 높이(약 62px) + 간격 */
+const WHEEL_STEP = 72;
