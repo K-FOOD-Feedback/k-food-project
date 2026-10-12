@@ -20,6 +20,8 @@ import { splitLines } from "./GravityPile";
     가운데 답글을 누르면 (내 답글이어도) 입력칸 위에 "↪ 그 답글"이 붙어 그 답글에 답글을 달 수 있습니다.
     신고: 이유를 적는 확인 모달이 위에 하나 더 뜨고, 신고하면 그 답글은 내 화면에서 회색 "가려진 한마디예요"로.
   - 말풍선 위 뱃지: 나 / 글쓴이, 답글이 달렸으면 ↪ 답글 수
+  - 답글에 단 답글은 그 답글 바로 아래에 (오래된 순으로 이어지는 대화 순서)
+  - 답글을 보내면 입력칸에서 목록 속 제자리로 톡 튀어 올라가 앉고, 그 자리가 가운데로 옵니다.
   - 답글이 넘치면 처음 열 때 첫 답글이 원글 바로 아래에서 시작 (가운데가 아니라). 내리면 점점 가운데 휠로.
   - 수정 (Figma 375:8019, 내 한마디만): 원글 카드가 뒤집히며 어두운 수정 카드로 → 체크로 저장하면 다시 뒤집혀
     원래대로, 고친 한마디는 카드에 "수정됨" 표시
@@ -76,6 +78,10 @@ export function CommentModal({
   const byId = new Map([comment, ...replies].map((c) => [c.id, c]));
   const replyCounts = new Map<string, number>();
   for (const r of replies) if (r.replyTo) replyCounts.set(r.replyTo, (replyCounts.get(r.replyTo) ?? 0) + 1);
+  const thread = threadOrder(comment.id, replies);
+  // 방금 보낸 답글: 목록에 나타나면 입력칸에서 날아와 앉는 모션
+  const sentRef = useRef(false);
+  const knownIds = useRef(new Set(replies.map((r) => r.id)));
   // 처음 열 때 첫 답글을 원글 바로 아래에 둔 경우의 스크롤 위치 (그때만 휠 기준선이 위쪽에서 시작)
   const topStart = useRef<number | null>(null);
   const canEdit = !!comment.mine;
@@ -248,11 +254,45 @@ export function CommentModal({
       setEditingReply(null);
       return;
     }
+    sentRef.current = true;
     onReply(text, target?.id);
     setTarget(null);
-    // 새 답글이 보이도록 목록 맨 아래로
-    requestAnimationFrame(() => list.current?.scrollTo({ top: list.current.scrollHeight, behavior: "smooth" }));
   };
+
+  // 새 답글이 목록에 들어오면: 그 자리를 가운데로 데려오면서, 말풍선은 입력칸에서 튀어 올라와 앉습니다.
+  useLayoutEffect(() => {
+    const fresh = replies.filter((r) => !knownIds.current.has(r.id));
+    knownIds.current = new Set(replies.map((r) => r.id));
+    if (!sentRef.current) return;
+    const mine = fresh.find((r) => r.mine);
+    const el = list.current;
+    if (!mine || !el) return;
+    sentRef.current = false;
+    const item = el.querySelector<HTMLElement>(`[data-reply-id="${CSS.escape(mine.id)}"]`);
+    if (!item) return;
+    updateRef.current(); // 위아래 여백부터 새로 맞추고
+    // 처음 열 때 위에서 시작한 상태였으면 보통 휠로 돌려놓습니다.
+    topStart.current = null;
+    el.style.scrollSnapType = "";
+    centerReply(item);
+    // 입력칸 위 "↪ 답글" 줄이 닫히며 목록 높이가 바뀌므로, 한 프레임 뒤 다시 가운데로 맞춥니다.
+    requestAnimationFrame(() => requestAnimationFrame(() => centerReply(item)));
+    const row = item.querySelector<HTMLElement>("[data-row]");
+    const form = input.current?.closest("form");
+    if (!row || !form || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    // 도착 자리 = 칸 가운데. 입력칸 높이에서 출발합니다.
+    const box = el.getBoundingClientRect();
+    const from = form.getBoundingClientRect().top + 32 - (box.top + box.height / 2);
+    row.animate(
+      [
+        { translate: `0 ${from}px`, scale: "0.5", opacity: 0 },
+        { translate: `0 ${from * 0.35}px`, scale: "0.9", opacity: 1, offset: 0.45 },
+        { translate: "0 0", scale: "1" },
+      ],
+      { duration: 560, easing: "cubic-bezier(0.34, 1.4, 0.64, 1)" },
+    );
+    // 목록이 바뀔 때마다 (답글 하나가 더해질 때)
+  }, [replies]);
 
   const banner = editingReply ?? target;
   const lines = splitLines(comment.text.replace(/\n/g, " ")).join("\n");
@@ -365,7 +405,7 @@ export function CommentModal({
                   : ""
               }`}
             >
-              {replies.map((r) => {
+              {thread.map((r) => {
                 const active = activeId === r.id;
                 const isHidden = hiddenIds.has(r.id);
                 const parent = r.replyTo && r.replyTo !== comment.id ? byId.get(r.replyTo) : undefined;
@@ -384,7 +424,7 @@ export function CommentModal({
                           <span className="truncate">{parent.text.replace(/\n/g, " ")}</span>
                         </span>
                       )}
-                      <div className="flex items-center">
+                      <div data-row className="flex items-center">
                         <p
                           className={`relative flex items-center gap-2 rounded-[32px] py-4 pr-6 pl-2.5 text-center text-[20px] leading-[1.45] font-bold tracking-[-0.4px] whitespace-pre-line ${
                             isHidden ? "text-black/55" : "text-black"
@@ -536,6 +576,28 @@ export function CommentModal({
       )}
     </div>
   );
+}
+
+/** 대화 순서: 원글에 단 답글을 오래된 순으로, 각 답글 바로 아래에 그 답글에 단 답글들 (부모가 지워졌으면 원글 아래로) */
+function threadOrder(rootId: string, replies: Comment[]): Comment[] {
+  const ids = new Set(replies.map((r) => r.id));
+  const kids = new Map<string, Comment[]>();
+  for (const r of replies) {
+    const parent = r.replyTo && ids.has(r.replyTo) ? r.replyTo : rootId;
+    kids.set(parent, [...(kids.get(parent) ?? []), r]);
+  }
+  const out: Comment[] = [];
+  const seen = new Set<string>();
+  const walk = (id: string) => {
+    for (const r of kids.get(id) ?? []) {
+      if (seen.has(r.id)) continue;
+      seen.add(r.id);
+      out.push(r);
+      walk(r.id);
+    }
+  };
+  walk(rootId);
+  return out;
 }
 
 /** 위에서 시작할 때 첫 답글 위 여백 (원글 카드와의 간격) */
