@@ -13,6 +13,9 @@ const title = "font-(family-name:--font-paperlogy) text-[24px] leading-[1.3] tra
   랜딩 화면 투표 장면과 같은 움직임 (src/app/landing/LandingScreen.tsx)
   - 🇰🇷 토큰: 120° 돌며 칸으로 떨어지고, 살짝 지나쳤다가 제자리 (랜딩의 backOut, c = 1.9)
   - 칸 결과: 토큰이 반쯤 왔을 때부터 칸마다 조금씩 늦게 아래에서 차오르고, %는 그때 나타남
+  랜딩 마지막 "당신은 누구인가요?" 칸과 같은 움직임
+  - 투표 영역이 처음 보이면 토큰이 위에서 톡 떨어지고, 🇰🇷가 손 흔들듯 흔들림 (token-drop · wave)
+  - 내 칸의 색은 윗변이 물결 모양으로 옆으로 흐르며 차오름 (wave-fill), 토큰을 끌어다 대면 살짝 차오름
 */
 const BACK_OUT =
   "linear(0, 0.228, 0.425, 0.592, 0.731, 0.845, 0.936, 1.006, 1.058, 1.092, 1.112, 1.12, 1.118, 1.108, 1.093, 1.073, 1.053, 1.033, 1.016, 1.004, 1)";
@@ -38,6 +41,23 @@ export function VoteBowl({ post }: { post: HomePost }) {
   const flyFrom = useRef<DOMRect | null>(null);
   const [drag, setDrag] = useState<{ x: number; y: number; startX: number; startY: number } | null>(null);
   const [hover, setHover] = useState<number | null>(null);
+  // 투표 영역이 처음 화면에 들어왔는지 (그때 토큰 떨어지기·흔들기 연출)
+  const sectionRef = useRef<HTMLElement>(null);
+  const [inView, setInView] = useState(false);
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        setInView(true);
+        observer.disconnect();
+      },
+      { threshold: 0.4 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const votes = post.votes.map((n, i) => n + (i === myVote ? 1 : 0));
   const total = votes.reduce((sum, n) => sum + n, 0);
@@ -134,12 +154,13 @@ export function VoteBowl({ post }: { post: HomePost }) {
       ref={token}
       className="flex size-16 items-center justify-center rounded-full bg-on-light text-[25px] leading-none shadow-[0_6px_16px_rgba(0,0,0,0.35)]"
     >
-      🇰🇷
+      <span className={`inline-block origin-[50%_85%] ${inView ? "animate-[wave_1s_ease-in-out_650ms_both]" : ""}`}>🇰🇷</span>
     </div>
   );
 
   return (
     <section
+      ref={sectionRef}
       id="vote"
       className="flex scroll-mt-4 flex-col gap-6 rounded-[32px] bg-[#292929] px-7 py-[30px]"
       aria-label="투표"
@@ -168,7 +189,11 @@ export function VoteBowl({ post }: { post: HomePost }) {
         ) : (
           <div
             className={`relative z-10 touch-none select-none ${drag ? "cursor-grabbing" : "cursor-grab transition-transform duration-300"}`}
-            style={{ transform: drag ? `translate(${drag.x}px, ${drag.y}px) scale(1.1)` : undefined }}
+            style={{
+              transform: drag ? `translate(${drag.x}px, ${drag.y}px) scale(1.1)` : undefined,
+              animation: inView ? "token-drop 700ms cubic-bezier(0.3, 1.4, 0.5, 1) both" : undefined,
+              opacity: inView ? undefined : 0,
+            }}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
@@ -205,12 +230,21 @@ export function VoteBowl({ post }: { post: HomePost }) {
                 hover === i ? "bg-[#2e2e2e]" : "bg-[#1e1e1e]"
               } ${mine ? "cursor-default" : "active:scale-[0.98]"}`}
             >
+              {/* 투표 전: 토큰을 끌어다 대면 그 칸이 물결치며 살짝 차오름 */}
+              {!voted && (
+                <span className="absolute inset-0 overflow-hidden rounded-[20px]">
+                  <span
+                    className="wave-fill absolute inset-x-0 bottom-0 bg-primary transition-[height] duration-700 ease-[cubic-bezier(0.3,1.15,0.5,1)]"
+                    style={{ height: hover === i ? "38%" : "0%" }}
+                  />
+                </span>
+              )}
               {/* 차오르는 결과는 칸 모양으로 잘라 냄 (칸 자체는 잘라 내지 않아야 날아오는 토큰이 칸 밖에서도 보임) */}
               {voted && (
                 <span className="absolute inset-0 overflow-hidden rounded-[20px]">
                   <span
                     className={`absolute inset-x-0 bottom-0 transition-[height] duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] starting:h-0 ${
-                      mine ? "bg-primary" : "bg-white/10"
+                      mine ? "wave-fill bg-primary" : "bg-white/10"
                     }`}
                     style={{ height: `${pcts[i]}%`, transitionDelay: `${FILL_DELAY_MS + i * FILL_STAGGER_MS}ms` }}
                   />
@@ -240,7 +274,8 @@ export function VoteBowl({ post }: { post: HomePost }) {
                   aria-hidden="true"
                   className="absolute top-1.5 right-1.5 flex size-10 items-center justify-center rounded-full bg-on-dark text-[18px] leading-none shadow-[0_4px_12px_rgba(0,0,0,0.25)]"
                 >
-                  🇰🇷
+                  {/* 칸에 들어가 앉으면 한 번 손 흔들기 */}
+                  <span className="inline-block origin-[50%_85%] animate-[wave_1s_ease-in-out_450ms_both]">🇰🇷</span>
                 </span>
               )}
             </button>
