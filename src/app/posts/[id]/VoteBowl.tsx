@@ -14,7 +14,7 @@ const title = "font-(family-name:--font-paperlogy) text-[24px] leading-[1.3] tra
   - 🇰🇷 토큰: 120° 돌며 칸으로 떨어지고, 살짝 지나쳤다가 제자리 (랜딩의 backOut, c = 1.9)
   - 칸 결과: 토큰이 반쯤 왔을 때부터 칸마다 조금씩 늦게 아래에서 차오르고, %는 그때 나타남
   랜딩 마지막 "당신은 누구인가요?" 칸과 같은 움직임
-  - 투표 영역이 처음 보이면 토큰이 위에서 톡 떨어지고, 🇰🇷가 손 흔들듯 흔들림 (token-drop · wave)
+  - 투표 영역이 처음 보이면 토큰이 위에서 톡 떨어지고, 투표하기 전까지 🇰🇷가 계속 손 흔들듯 흔들림 (token-drop · wave)
   - 내 칸의 색은 윗변이 물결 모양으로 옆으로 흐르며 차오름 (wave-fill), 토큰을 끌어다 대면 살짝 차오름
 */
 const BACK_OUT =
@@ -154,7 +154,7 @@ export function VoteBowl({ post }: { post: HomePost }) {
       ref={token}
       className="flex size-16 items-center justify-center rounded-full bg-on-light text-[25px] leading-none shadow-[0_6px_16px_rgba(0,0,0,0.35)]"
     >
-      <span className={`inline-block origin-[50%_85%] ${inView ? "animate-[wave_1s_ease-in-out_650ms_both]" : ""}`}>🇰🇷</span>
+      <span className={`inline-block origin-[50%_85%] ${inView ? "animate-[wave_1.2s_ease-in-out_650ms_infinite]" : ""}`}>🇰🇷</span>
     </div>
   );
 
