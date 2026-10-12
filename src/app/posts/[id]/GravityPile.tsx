@@ -566,8 +566,7 @@ export function GravityPile({
     if (ready && seen) world.current?.sync(comments, nodes.current);
   }, [comments, ready, seen]);
 
-  // 태그용: 답글의 원글 찾기, 한마디별 답글 수
-  const byId = new Map(comments.map((c) => [c.id, c]));
+  // 태그용: 한마디별 답글 수
   const replyCounts = new Map<string, number>();
   for (const c of comments) if (c.replyTo) replyCounts.set(c.replyTo, (replyCounts.get(c.replyTo) ?? 0) + 1);
 
@@ -603,7 +602,7 @@ export function GravityPile({
               },
             })}
           >
-            <Bubble comment={c} tags={tagsOf(c, byId, replyCounts)} />
+            <Bubble comment={c} tags={tagsOf(c, replyCounts)} />
           </div>
         ))}
       </div>
@@ -615,17 +614,14 @@ export function GravityPile({
 type Tags = {
   /** 내가 쓴 한마디면 "나", 게시글 작성자가 쓴 한마디면 "글쓴이" */
   who: "나" | "글쓴이" | null;
-  /** 답글이면 원글 내용 (태그에는 앞부분만 보임) */
-  replyToText: string | null;
   /** 이 한마디에 달린 답글 수 */
   replies: number;
 };
 
-function tagsOf(comment: Comment, byId: Map<string, Comment>, replyCounts: Map<string, number>): Tags {
-  const parent = comment.replyTo ? byId.get(comment.replyTo) : undefined;
+// 답글이 어느 글에 단 것인지("↩ 원글") 태그는 뱃지가 너무 많아 지저분해서 뺐습니다.
+function tagsOf(comment: Comment, replyCounts: Map<string, number>): Tags {
   return {
     who: comment.mine ? "나" : comment.author.kind === "author" ? "글쓴이" : null,
-    replyToText: parent ? parent.text.replace(/\n/g, " ") : null,
     replies: replyCounts.get(comment.id) ?? 0,
   };
 }
@@ -637,7 +633,7 @@ const HOVER =
 
 /**
   한마디 말풍선 (Figma 344:3209 한마디 상태)
-  - 태그: 글쓴이 / 나, 답글이면 "↩ 원글", 답글이 달렸으면 "↪ 답글 수"
+  - 태그: 글쓴이 / 나, 답글이 달렸으면 "↪ 답글 수"
   - 태그가 있으면 말풍선 위로 튀어나온 만큼 위쪽 여백을 둡니다.
     물리 몸체는 말풍선 + 태그 줄 두 조각이라, 태그 자리만 막히고 나머지 윗부분은 다른 댓글과 같은 간격입니다.
 */
@@ -668,19 +664,13 @@ function Bubble({ comment, tags }: { comment: Comment; tags: Tags }) {
       {splitLines(comment.text).join("\n")}
     </span>
   );
-  if (!tags.who && !tags.replyToText && !tags.replies) return bubble;
+  if (!tags.who && !tags.replies) return bubble;
   return (
     <span className="relative block pt-2.5">
       {bubble}
       {/* 이모지는 태그를 가운데에. transform으로 옮기면 물리 몸체 위치(offsetLeft)가 어긋나서 flex로 가운데 맞춤 */}
       <span data-part="tag" className={`absolute top-0 flex gap-0.5 ${emoji ? "inset-x-0 justify-center" : "left-6"}`}>
         {tags.who && <span className={`${TAG} px-1.5`}>{tags.who}</span>}
-        {tags.replyToText && (
-          <span className={`${TAG} pr-1.5 pl-1`} aria-label={`답글: ${tags.replyToText}`}>
-            <ReplyToIcon />
-            <span className="max-w-[42px] overflow-hidden text-ellipsis">{tags.replyToText}</span>
-          </span>
-        )}
         {tags.replies > 0 && (
           <span className={`${TAG} pr-1.5 pl-1`} aria-label={`답글 ${tags.replies}개`}>
             <RepliesIcon />
@@ -689,15 +679,6 @@ function Bubble({ comment, tags }: { comment: Comment; tags: Tags }) {
         )}
       </span>
     </span>
-  );
-}
-
-// 답글 태그 아이콘 (Figma ic_reply): ↩ 원글에 답함
-function ReplyToIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="white" aria-hidden="true" className="shrink-0">
-      <path d="M4.85339 3.34736C4.94447 3.25305 4.99487 3.12675 4.99373 2.99566C4.99259 2.86456 4.94001 2.73915 4.8473 2.64645C4.7546 2.55374 4.62919 2.50116 4.49809 2.50002C4.367 2.49888 4.24069 2.54928 4.14639 2.64036L1.64639 5.14036C1.55266 5.23412 1.5 5.36127 1.5 5.49386C1.5 5.62644 1.55266 5.75359 1.64639 5.84736L4.14639 8.34736C4.24069 8.43844 4.367 8.48883 4.49809 8.48769C4.62919 8.48655 4.7546 8.43397 4.8473 8.34126C4.94001 8.24856 4.99259 8.12315 4.99373 7.99206C4.99487 7.86096 4.94447 7.73466 4.85339 7.64036L3.20689 5.99386H6.49989C7.29554 5.99386 8.0586 6.30993 8.62121 6.87254C9.18382 7.43514 9.49989 8.19821 9.49989 8.99386C9.49989 9.12646 9.55257 9.25364 9.64634 9.34741C9.74011 9.44118 9.86728 9.49386 9.99989 9.49386C10.1325 9.49386 10.2597 9.44118 10.3534 9.34741C10.4472 9.25364 10.4999 9.12646 10.4999 8.99386C10.4999 7.93299 10.0785 6.91557 9.32832 6.16543C8.57818 5.41528 7.56076 4.99386 6.49989 4.99386H3.20689L4.85339 3.34736Z" />
-    </svg>
   );
 }
 
