@@ -274,6 +274,8 @@ export function CommentPile({
           <h2 className="flex flex-1 items-center gap-1.5 text-[18px] leading-[1.3] font-bold tracking-[-0.54px]">
             한마디 <span className="text-neutral-400">{commentCount + addedCount}</span>
           </h2>
+          {/* 상세 화면(DetailScreen)이 이 주소로 가는 링크 클릭을 감지해 돌아올 때의 전환·스크롤 위치를 씁니다.
+              href를 바꾸면 상세 화면 담당 세션에 알려 주세요. */}
           <TrackedLink
               href={`/posts/${postId}/comments`}
               event="comments_opened"
