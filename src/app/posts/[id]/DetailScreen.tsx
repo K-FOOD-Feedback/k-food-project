@@ -260,13 +260,12 @@ export function DetailScreen({ post }: { post: HomePost }) {
     };
   }, [introDone, markVoteSeen]);
 
-  // 한마디 전체 화면에서 돌아오면: 그 화면(머리 아래 전체)이 줄어들며 이 화면의 한마디 칸으로 들어가고,
-  // 스크롤은 ↗를 눌렀던 위치로 돌려 놓습니다.
+  // 한마디 전체 화면에서 돌아오면: ↗를 눌렀던 스크롤 위치로 돌려 놓고,
+  // 화면에 보이는 카드들이 위에서부터 하나씩 살짝 떠오르며 나타납니다.
   const [backTrip] = useState(() =>
     !intro && commentsTrip?.postId === post.id && Date.now() - commentsTrip.at < TRIP_TTL_MS ? commentsTrip : null,
   );
-  const [backDone, setBackDone] = useState(!backTrip);
-  const commentsGhost = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   // ↗(한마디 전체 보기)를 누를 때 지금 스크롤 위치를 남김 (링크는 한마디 세션의 CommentPile 안이라 바깥에서 잡음)
   useEffect(() => {
@@ -282,60 +281,35 @@ export function DetailScreen({ post }: { post: HomePost }) {
 
   useLayoutEffect(() => {
     commentsTrip = null;
-    const ghost = commentsGhost.current;
-    const section = commentRef.current?.querySelector("section");
-    const main = section?.closest("main");
-    if (!backTrip || !ghost || !section || !main) return;
+    const content = contentRef.current;
+    if (!backTrip || !content) return;
     window.scrollTo(0, backTrip.scrollY);
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    section.style.opacity = "0";
-    let anim: Animation | null = null;
-    let finished = false;
-    const finish = () => {
-      if (finished) return;
-      finished = true;
-      section.style.opacity = "";
-      section.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160, easing: "ease-out" });
-      setBackDone(true);
-    };
-    const raf = requestAnimationFrame(() => {
-      if (reduced) return finish();
-      // Next.js가 새 화면을 맨 위로 올렸으면 다시 제자리로
-      if (Math.abs(window.scrollY - backTrip.scrollY) > 1) window.scrollTo(0, backTrip.scrollY);
-      const frame = main.getBoundingClientRect();
-      const headerBottom = main.querySelector("header")?.getBoundingClientRect().bottom ?? 80;
-      const to = section.getBoundingClientRect();
-      const background = getComputedStyle(document.documentElement).getPropertyValue("--color-background").trim();
-      anim = ghost.animate(
-        [
-          {
-            left: `${frame.left}px`,
-            top: `${headerBottom}px`,
-            width: `${frame.width}px`,
-            height: `${window.innerHeight - headerBottom - 24}px`,
-            borderRadius: "0px",
-            backgroundColor: background,
-          },
-          {
-            left: `${to.left}px`,
-            top: `${to.top}px`,
-            width: `${to.width}px`,
-            height: `${to.height}px`,
-            borderRadius: "32px",
-            backgroundColor: "rgb(255 255 255 / 0.1)",
-          },
-        ],
-        { duration: INTRO_MS, easing: EASE, fill: "forwards" },
-      );
-      anim.onfinish = finish;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    // 카드 단위: 본문의 각 칸 + 한마디 묶음은 칸·이모지·입력을 따로
+    const comments = commentRef.current;
+    const cards = [...content.children].flatMap((el) =>
+      el === comments ? [...el.querySelectorAll(":scope > div > div > *")] : [el],
+    );
+    const visible = cards.filter((el) => {
+      const r = el.getBoundingClientRect();
+      return r.bottom > 0 && r.top < window.innerHeight && r.height > 0;
     });
-    // 탭이 가려져 있으면 애니메이션이 멈출 수 있으므로 시간이 지나면 그냥 끝냄
-    const fallback = window.setTimeout(finish, INTRO_MS + 300);
+    const anims = visible.map((el, i) =>
+      el.animate(
+        [
+          { opacity: 0, transform: "translateY(16px)" },
+          { opacity: 1, transform: "none" },
+        ],
+        { duration: BACK_CARD_MS, delay: i * BACK_STAGGER_MS, easing: EASE, fill: "backwards" },
+      ),
+    );
+    // Next.js가 새 화면을 맨 위로 올렸으면 다시 제자리로
+    const raf = requestAnimationFrame(() => {
+      if (Math.abs(window.scrollY - backTrip.scrollY) > 1) window.scrollTo(0, backTrip.scrollY);
+    });
     return () => {
       cancelAnimationFrame(raf);
-      clearTimeout(fallback);
-      anim?.cancel();
-      section.style.opacity = "";
+      anims.forEach((a) => a.cancel());
     };
   }, [backTrip]);
 
@@ -371,7 +345,7 @@ export function DetailScreen({ post }: { post: HomePost }) {
         }
       />
 
-      <div className="flex flex-col gap-1 px-2 pb-[calc(40px+env(safe-area-inset-bottom))]">
+      <div ref={contentRef} className="flex flex-col gap-1 px-2 pb-[calc(40px+env(safe-area-inset-bottom))]">
         <div ref={tileRef} className={hiddenUntilIntro}>
           <PhotoTile
             postId={post.id}
@@ -435,9 +409,6 @@ export function DetailScreen({ post }: { post: HomePost }) {
         </div>
       </div>
 
-
-      {/* 한마디 전체 화면 → 상세 전환용 (상단 바 아래에 깔림 — 상단 바는 두 화면이 같으므로 그대로) */}
-      {!backDone && <div ref={commentsGhost} aria-hidden className="fixed inset-0 z-20 bg-background" />}
 
       {/* 메인 카드 → 상세 전환용 (끝나면 사라지고 진짜 사진·본문 카드가 보임) */}
       {intro && !introDone && (
@@ -545,6 +516,8 @@ const INTRO_MS = 420;
 // 한마디 전체 화면에 다녀오는 중 (↗를 누를 때 남김 → 상세로 돌아와 그려질 때 씀). 화면을 바꿔도 남는 모듈 값.
 let commentsTrip: { postId: string; scrollY: number; at: number } | null = null;
 const TRIP_TTL_MS = 30 * 60_000;
+const BACK_CARD_MS = 320;
+const BACK_STAGGER_MS = 70;
 const EASE = "cubic-bezier(0.2, 0.8, 0.2, 1)";
 
 /** 본문 카드 안 글 (진짜 카드와 전환용 카드가 같은 모양을 쓰도록) */
