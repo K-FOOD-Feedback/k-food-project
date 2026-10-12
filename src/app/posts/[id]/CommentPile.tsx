@@ -66,6 +66,24 @@ export function CommentPile({
   const nextId = useRef(0);
   // 전체 화면: 누른 말풍선 (레이어가 떠 있는 동안)
   const [opened, setOpened] = useState<Comment | null>(null);
+  // 전체 화면: 이모지 말풍선을 누르면 떠오르는 이모지 묶음들
+  const [bursts, setBursts] = useState<Burst[]>([]);
+
+  /** 말풍선을 누르면: 글 한마디는 레이어(모달), 이모지는 인스타 라방처럼 같은 이모지가 뾰로롱 떠오름 */
+  const select = (comment: Comment, el: HTMLElement) => {
+    if (comment.kind !== "emoji") {
+      setOpened(comment);
+      return;
+    }
+    // 누른 이모지 원이 톡 하고 커졌다 돌아옵니다.
+    (el.firstElementChild as HTMLElement | null)?.animate([{ scale: "1" }, { scale: "1.18" }, { scale: "1" }], {
+      duration: 260,
+      easing: "ease-out",
+    });
+    const r = el.getBoundingClientRect();
+    const id = nextId.current++;
+    setBursts((list) => [...list, { id, emoji: comment.text, x: r.left + r.width / 2, y: r.top + r.height / 2 }]);
+  };
 
   // 상세 화면: 투표를 마치면 잠금이 풀리면서 맨 위 한마디들이 다시 와르르 쏟아집니다.
   // (ready 전에는 투표 기록을 아직 못 읽은 상태라, 그때의 '투표 전'은 세지 않습니다)
@@ -194,7 +212,7 @@ export function CommentPile({
               scrollable
               rainOnOpen={14}
               onOverflowChange={setOverflowing}
-              onSelect={setOpened}
+              onSelect={select}
             />
           </div>
           <div
@@ -238,6 +256,9 @@ export function CommentPile({
         </form>
 
         {flying}
+        {bursts.map((b) => (
+          <EmojiBurst key={b.id} burst={b} onDone={() => setBursts((list) => list.filter((x) => x.id !== b.id))} />
+        ))}
         {opened && <CommentModal comment={opened} onClose={() => setOpened(null)} />}
       </div>
     );
@@ -391,6 +412,60 @@ function FlyingCircle({ flight, onArrive }: { flight: Flight; onArrive: (vy: num
           </span>
         )}
       </div>
+    </div>
+  );
+}
+
+type Burst = { id: number; emoji: string; x: number; y: number };
+
+/** 한 번 누를 때 떠오르는 이모지 수 */
+const BURST_COUNT = 6;
+
+/**
+  인스타그램 라이브 하트처럼: 누른 이모지 자리에서 같은 이모지 여러 개가 차례로
+  좌우로 살랑이며 위로 떠오르다 사라집니다. 겹쳐 여러 번 눌러도 각각 떠오릅니다.
+*/
+function EmojiBurst({ burst, onDone }: { burst: Burst; onDone: () => void }) {
+  const refs = useRef<(HTMLSpanElement | null)[]>([]);
+
+  useLayoutEffect(() => {
+    // 움직임 줄이기 설정이면 하나만 살짝 떠올랐다 사라집니다.
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const animations = refs.current.slice(0, reduce ? 1 : BURST_COUNT).map((node, i) => {
+      if (!node) return null;
+      const rise = reduce ? 40 : 170 + Math.random() * 90;
+      const sway = (Math.random() - 0.5) * 70;
+      const size = 0.85 + Math.random() * 0.4;
+      const at = (dx: number, dy: number) => `calc(-50% + ${dx}px) calc(-50% - ${dy}px)`;
+      return node.animate(
+        [
+          { translate: at(0, 0), scale: `${size * 0.4}`, opacity: 0 },
+          { translate: at(sway * 0.4, rise * 0.2), scale: `${size * 1.15}`, opacity: 1, offset: 0.15 },
+          { translate: at(-sway * 0.5, rise * 0.6), scale: `${size}`, opacity: 1, offset: 0.6 },
+          { translate: at(sway, rise), scale: `${size * 0.9}`, opacity: 0 },
+        ],
+        { duration: reduce ? 600 : 1300 + Math.random() * 400, delay: i * 90, easing: "ease-out", fill: "both" },
+      );
+    });
+    Promise.all(animations.map((a) => a?.finished)).then(onDone, () => {});
+    return () => animations.forEach((a) => a?.cancel());
+    // 묶음 하나당 한 번만 떠오릅니다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div aria-hidden className="pointer-events-none fixed z-30 size-0" style={{ left: burst.x, top: burst.y }}>
+      {Array.from({ length: BURST_COUNT }, (_, i) => (
+        <span
+          key={i}
+          ref={(el) => {
+            refs.current[i] = el;
+          }}
+          className="absolute top-0 left-0 text-[28px] leading-none opacity-0"
+        >
+          {burst.emoji}
+        </span>
+      ))}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import Matter from "matter-js";
-import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type KeyboardEvent, type Ref } from "react";
+import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type Ref } from "react";
 import type { Comment } from "./comments";
 
 const { Engine, Bodies, Body, Composite, Events, Sleeping } = Matter;
@@ -304,7 +304,7 @@ class PileWorld {
   }
 
   /**
-    이모지 몸체. 태그(작성자·나)가 없으면 굴러가는 원,
+    이모지 몸체. 태그(글쓴이·나)가 없으면 굴러가는 원,
     태그가 있으면 '원 + 위로 튀어나온 태그' 두 조각을 합치고 돌지 않게 해서 태그가 늘 위에 있게 합니다.
   */
   private emojiBody(el: HTMLElement, x: number, y: number, w: number, h: number) {
@@ -335,7 +335,7 @@ class PileWorld {
 
   /**
     말풍선 몸체. 요소 중심이 (x, y)에 오도록 만듭니다.
-    태그(작성자·나·답글)가 붙은 말풍선은 '말풍선 + 위로 튀어나온 태그 줄' 두 조각을 합쳐서,
+    태그(글쓴이·나·답글)가 붙은 말풍선은 '말풍선 + 위로 튀어나온 태그 줄' 두 조각을 합쳐서,
     태그 자리만 막고 나머지 윗부분은 다른 댓글처럼 GAP만큼만 띄웁니다.
   */
   private bubbleBody(el: HTMLElement, x: number, y: number, w: number, h: number) {
@@ -486,8 +486,8 @@ export function GravityPile({
   ready?: boolean;
   /** 더미가 칸의 채움 한도를 넘어 아래쪽이 그라데이션 아래로 묻히기 시작했는지 / 다시 다 보이는지 */
   onOverflowChange?: (overflowing: boolean) => void;
-  /** 말풍선을 누르면 (없으면 누를 수 없는 그냥 말풍선) */
-  onSelect?: (comment: Comment) => void;
+  /** 말풍선을 누르면 (없으면 누를 수 없는 그냥 말풍선). el: 누른 말풍선 요소 (이모지가 떠오를 자리) */
+  onSelect?: (comment: Comment, el: HTMLElement) => void;
 }) {
   const zone = useRef<HTMLDivElement>(null);
   const content = useRef<HTMLDivElement>(null);
@@ -592,12 +592,12 @@ export function GravityPile({
             {...(onSelect && {
               role: "button",
               tabIndex: 0,
-              "aria-label": `한마디 보기: ${c.text.replace(/\n/g, " ")}`,
-              onClick: () => onSelect(c),
+              "aria-label": c.kind === "emoji" ? `${c.text} 띄우기` : `한마디 보기: ${c.text.replace(/\n/g, " ")}`,
+              onClick: (e: MouseEvent<HTMLDivElement>) => onSelect(c, e.currentTarget),
               onKeyDown: (e: KeyboardEvent<HTMLDivElement>) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
-                  onSelect(c);
+                  onSelect(c, e.currentTarget);
                 }
               },
             })}
@@ -612,8 +612,8 @@ export function GravityPile({
 
 /** 말풍선 위 태그 줄에 들어갈 내용 */
 type Tags = {
-  /** 내가 쓴 한마디면 "나", 게시글 작성자가 쓴 한마디면 "작성자" */
-  who: "나" | "작성자" | null;
+  /** 내가 쓴 한마디면 "나", 게시글 작성자가 쓴 한마디면 "글쓴이" */
+  who: "나" | "글쓴이" | null;
   /** 답글이면 원글 내용 (태그에는 앞부분만 보임) */
   replyToText: string | null;
   /** 이 한마디에 달린 답글 수 */
@@ -623,7 +623,7 @@ type Tags = {
 function tagsOf(comment: Comment, byId: Map<string, Comment>, replyCounts: Map<string, number>): Tags {
   const parent = comment.replyTo ? byId.get(comment.replyTo) : undefined;
   return {
-    who: comment.mine ? "나" : comment.author.kind === "author" ? "작성자" : null,
+    who: comment.mine ? "나" : comment.author.kind === "author" ? "글쓴이" : null,
     replyToText: parent ? parent.text.replace(/\n/g, " ") : null,
     replies: replyCounts.get(comment.id) ?? 0,
   };
@@ -636,7 +636,7 @@ const HOVER =
 
 /**
   한마디 말풍선 (Figma 344:3209 한마디 상태)
-  - 태그: 작성자 / 나, 답글이면 "↩ 원글", 답글이 달렸으면 "↪ 답글 수"
+  - 태그: 글쓴이 / 나, 답글이면 "↩ 원글", 답글이 달렸으면 "↪ 답글 수"
   - 태그가 있으면 말풍선 위로 튀어나온 만큼 위쪽 여백을 둡니다.
     물리 몸체는 말풍선 + 태그 줄 두 조각이라, 태그 자리만 막히고 나머지 윗부분은 다른 댓글과 같은 간격입니다.
 */
