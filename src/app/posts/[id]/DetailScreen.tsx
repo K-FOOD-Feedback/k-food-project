@@ -92,6 +92,41 @@ export function DetailScreen({ post }: { post: HomePost }) {
     voteRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
+  // "한마디를 남겨보세요" 카드가 가끔 살랑 흔들려 써 보라고 알려 줌 (상세 화면만).
+  // 카드는 한마디 세션(CommentPile) 담당이라 바깥에서 찾아 움직이고, 쓰는 중(포커스·글 있음)엔 멈춥니다.
+  useEffect(() => {
+    const label = commentRef.current?.querySelector<HTMLElement>("form > label");
+    const input = label?.querySelector("textarea");
+    if (!voted || !label || !input) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    label.style.transformOrigin = "50% 70%";
+    const wiggle = label.animate(
+      [
+        { rotate: "0deg" },
+        { rotate: "4deg", offset: 0.08 },
+        { rotate: "-3deg", offset: 0.16 },
+        { rotate: "2deg", offset: 0.24 },
+        { rotate: "-1deg", offset: 0.32 },
+        { rotate: "0deg", offset: 0.4 },
+        { rotate: "0deg" },
+      ],
+      { duration: WIGGLE_MS, delay: 800, iterations: Infinity, easing: "ease-in-out" },
+    );
+    const sync = () => {
+      if (document.activeElement === input || input.value.trim()) wiggle.pause();
+      else wiggle.play();
+    };
+    input.addEventListener("focus", sync);
+    input.addEventListener("blur", sync);
+    input.addEventListener("input", sync);
+    return () => {
+      wiggle.cancel();
+      input.removeEventListener("focus", sync);
+      input.removeEventListener("blur", sync);
+      input.removeEventListener("input", sync);
+    };
+  }, [voted]);
+
   const showCta = !voted && !seenVote;
 
 
@@ -263,6 +298,72 @@ export function DetailScreen({ post }: { post: HomePost }) {
     };
   }, [introDone, markVoteSeen]);
 
+  // "다음 훈수 거리" 버튼으로 넘어왔으면: 누른 버튼(같은 카드 색 알약)이 커지며 이 글의 본문 카드가 되고,
+  // 사진은 위에서 살짝 내려오며, 아래 칸들은 차례로 떠오릅니다.
+  const [nextIn] = useState(() =>
+    !intro && nextTrip?.postId === post.id && Date.now() - nextTrip.at < 3000 ? nextTrip : null,
+  );
+  const [nextDone, setNextDone] = useState(!nextIn);
+  const nextGhost = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    nextTrip = null;
+    const ghost = nextGhost.current;
+    const article = articleRef.current;
+    const tile = tileRef.current;
+    const content = article?.parentElement;
+    if (!nextIn || !ghost || !article || !tile || !content) return;
+    window.scrollTo(0, 0);
+    const to = article.getBoundingClientRect();
+    const from = nextIn.box;
+    const anims: Animation[] = [
+      ghost.animate(
+        [
+          { left: `${from.left}px`, top: `${from.top}px`, width: `${from.width}px`, height: `${from.height}px`, borderRadius: `${from.height / 2}px` },
+          { left: `${to.left}px`, top: `${to.top}px`, width: `${to.width}px`, height: `${to.height}px`, borderRadius: "32px" },
+        ],
+        { duration: NEXT_MS, easing: EASE, fill: "forwards" },
+      ),
+      // 본문 글은 카드가 거의 자리 잡을 때 드러남 (유령은 그때 사라짐)
+      article.animate([{ opacity: 0 }, { opacity: 0, offset: 0.7 }, { opacity: 1 }], { duration: NEXT_MS }),
+      ghost.animate([{ opacity: 1 }, { opacity: 1, offset: 0.7 }, { opacity: 0 }], { duration: NEXT_MS, fill: "forwards" }),
+      tile.animate(
+        [
+          { opacity: 0, translate: "0 -16px", scale: "0.97" },
+          { opacity: 1, translate: "0 0", scale: "1" },
+        ],
+        { duration: NEXT_MS, easing: EASE, fill: "backwards" },
+      ),
+      // 본문 아래 칸들(투표·한마디·다음 버튼)은 차례로 떠오름
+      ...[...content.children]
+        .filter((el) => el !== article && el !== tile)
+        .map((el, i) =>
+          el.animate(
+            [
+              { opacity: 0, transform: "translateY(24px)" },
+              { opacity: 1, transform: "none" },
+            ],
+            { duration: BACK_CARD_MS, delay: NEXT_MS * 0.6 + i * BACK_STAGGER_MS, easing: EASE, fill: "backwards" },
+          ),
+        ),
+    ];
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      setNextDone(true);
+    };
+    anims[0].onfinish = finish;
+    // 탭이 가려져 애니메이션이 멈춰도 정해진 시간 뒤에는 모두 끝 상태로 (본문이 투명한 채 남지 않게)
+    const fallback = window.setTimeout(() => {
+      anims.forEach((a) => a.finish());
+      finish();
+    }, NEXT_MS + 700);
+    return () => {
+      clearTimeout(fallback);
+      anims.forEach((a) => a.cancel());
+    };
+  }, [nextIn]);
+
   // 한마디 전체 화면에서 돌아오면: ↗를 눌렀던 스크롤 위치로 돌려 놓고,
   // 화면에 보이는 카드들이 위에서부터 하나씩 살짝 떠오르며 나타납니다.
   const [backTrip] = useState(() =>
@@ -399,6 +500,16 @@ export function DetailScreen({ post }: { post: HomePost }) {
             <CommentPile postId={post.id} commentCount={post.commentCount} authorFlag={post.author.flag} />
           </div>
           <CommentLock locked={!voted} onVote={goToVote} />
+          {/* 투표 후: 한마디 칸 어디를 눌러도 한마디 전체 화면으로 (상세에서는 말풍선 호버·모달 없이 칸 전체가 하나의 링크) */}
+          {voted && (
+            <TrackedLink
+              href={`/posts/${post.id}/comments`}
+              event="comments_opened"
+              props={{ post_id: post.id, comment_count: post.commentCount, from: "detail" }}
+              aria-label="한마디 전체 보기"
+              className="absolute inset-x-0 top-0 z-10 h-[362px] rounded-[32px]"
+            />
+          )}
         </div>
 
         {/* 화면 맨 아래 "다음 훈수 거리" (Figma 332:3426 Question CTA) — 떠 있지 않고 내용 끝에 놓임 */}
@@ -407,11 +518,28 @@ export function DetailScreen({ post }: { post: HomePost }) {
             href={`/posts/${next.id}`}
             caption="다음 훈수 거리"
             title={next.title}
-            onClick={() => track("post_opened", { post_id: next.id, from: "next", from_post_id: post.id })}
+            // 넘어갈 글의 카드 색 (게시글 데이터 색이라 토큰 대신 그대로)
+            style={{ backgroundColor: next.color }}
+            onClick={(e) => {
+              track("post_opened", { post_id: next.id, from: "next", from_post_id: post.id });
+              // 다음 상세 화면이 이 버튼 자리에서 본문 카드로 커지도록 위치를 남김
+              const r = e.currentTarget.getBoundingClientRect();
+              nextTrip = { postId: next.id, box: { left: r.left, top: r.top, width: r.width, height: r.height }, at: Date.now() };
+            }}
           />
         </div>
       </div>
 
+
+      {/* "다음 훈수 거리" 버튼 → 본문 카드 전환용 (처음부터 버튼 자리에 그려 깜빡임 없게) */}
+      {nextIn && !nextDone && (
+        <div
+          ref={nextGhost}
+          aria-hidden
+          className="pointer-events-none fixed z-20"
+          style={{ ...nextIn.box, borderRadius: nextIn.box.height / 2, background: post.color }}
+        />
+      )}
 
       {/* 메인 카드 → 상세 전환용 (끝나면 사라지고 진짜 사진·본문 카드가 보임) */}
       {intro && !introDone && (
@@ -518,8 +646,15 @@ function CommentLock({ locked, onVote }: { locked: boolean; onVote: () => void }
 const INTRO_MS = 420;
 // 한마디 전체 화면에 다녀오는 중 (↗를 누를 때 남김 → 상세로 돌아와 그려질 때 씀). 화면을 바꿔도 남는 모듈 값.
 let commentsTrip: { postId: string; scrollY: number; at: number } | null = null;
+// "다음 훈수 거리" 버튼을 누른 자리 (다음 글 상세가 그려질 때 씀)
+let nextTrip: { postId: string; box: Box; at: number } | null = null;
+const NEXT_MS = 480;
 const TRIP_TTL_MS = 30 * 60_000;
 const BACK_CARD_MS = 320;
+// 사진 자동 넘김 간격 (가만히 있은 지 이만큼 지나면 다음 사진)
+const AUTOPLAY_MS = 3500;
+// 한마디 입력 카드 흔들기 한 번의 길이 (앞 40%만 흔들고 나머지는 쉼)
+const WIGGLE_MS = 2600;
 const BACK_STAGGER_MS = 70;
 const EASE = "cubic-bezier(0.2, 0.8, 0.2, 1)";
 
@@ -556,26 +691,117 @@ function PhotoTile({
 }) {
   const [index, setIndex] = useState(0);
   const furthest = useRef(0); // 분석: 몇 번째 사진까지 봤는지
+  const many = photos.length > 1;
+  const count = photos.length;
+  // 끝없이 돌게: 앞에 마지막 사진, 뒤에 첫 사진을 하나씩 더 붙여 두고(가짜 칸),
+  // 가짜 칸에 멈추면 같은 사진인 진짜 칸으로 몰래 옮깁니다. 진짜 첫 사진은 1번 칸.
+  const slides = many ? [photos[count - 1], ...photos, photos[0]] : photos;
+  const scroller = useRef<HTMLDivElement>(null);
+  // 마우스로도 끌어서 넘길 수 있게 (터치·트랙패드는 브라우저 가로 스크롤 그대로)
+  const mouseDrag = useRef<{ x: number; left: number } | null>(null);
+  useLayoutEffect(() => {
+    const el = scroller.current;
+    if (many && el) el.scrollLeft = el.clientWidth;
+  }, [many]);
+  const settleTimer = useRef(0);
+  const settle = (el: HTMLDivElement) => {
+    if (mouseDrag.current) return;
+    const slot = Math.round(el.scrollLeft / el.clientWidth);
+    if (slot === 0) el.scrollLeft = count * el.clientWidth;
+    else if (slot === count + 1) el.scrollLeft = el.clientWidth;
+  };
+
+  // 가만히 있으면 사진이 저절로 다음으로 넘어감 (마지막 다음은 처음).
+  // 사용자가 만지면(누르기·끌기·휠) 그때부터 다시 기다렸다가 넘깁니다. 화면 밖이나 다른 탭이면 쉼.
+  const lastTouched = useRef(0);
+  const touched = () => {
+    lastTouched.current = Date.now();
+  };
+  useEffect(() => {
+    const el = scroller.current;
+    if (!many || !el) return;
+    let visible = false;
+    const observer = new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting;
+    }, { threshold: 0.5 });
+    observer.observe(el);
+    lastTouched.current = Date.now();
+    const timer = window.setInterval(() => {
+      if (!visible || document.hidden || mouseDrag.current) return;
+      if (Date.now() - lastTouched.current < AUTOPLAY_MS) return;
+      const slot = Math.round(el.scrollLeft / el.clientWidth);
+      el.scrollTo({ left: (slot + 1) * el.clientWidth, behavior: "smooth" });
+      lastTouched.current = Date.now();
+    }, 500);
+    return () => {
+      clearInterval(timer);
+      observer.disconnect();
+    };
+  }, [many]);
+
   return (
     <div className="relative aspect-square w-full overflow-hidden rounded-[32px] border border-black/4 bg-[#1e1e1e]">
       <div
-        className="flex size-full snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        onScroll={(e) => {
+        ref={scroller}
+        className={`flex size-full snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+          many ? "cursor-grab overflow-x-auto active:cursor-grabbing" : "overflow-hidden"
+        }`}
+        onPointerDown={(e) => {
+          touched();
+          if (!many || e.pointerType !== "mouse") return;
           const el = e.currentTarget;
-          const next = Math.round(el.scrollLeft / el.clientWidth);
+          mouseDrag.current = { x: e.clientX, left: el.scrollLeft };
+          el.style.scrollSnapType = "none"; // 끄는 동안은 손을 따라오게
+          el.setPointerCapture(e.pointerId);
+        }}
+        onPointerMove={(e) => {
+          const drag = mouseDrag.current;
+          if (drag) e.currentTarget.scrollLeft = drag.left - (e.clientX - drag.x);
+        }}
+        onPointerUp={(e) => {
+          const drag = mouseDrag.current;
+          if (!drag) return;
+          mouseDrag.current = null;
+          const el = e.currentTarget;
+          const moved = e.clientX - drag.x;
+          const from = Math.round(drag.left / el.clientWidth);
+          // 조금만 끌어도(폭의 15%) 다음·이전 사진으로 (가짜 칸까지 가면 settle이 진짜 칸으로 옮김)
+          const to = Math.abs(moved) > el.clientWidth * 0.15 ? from - Math.sign(moved) : from;
+          el.scrollTo({ left: Math.max(0, Math.min(count + 1, to)) * el.clientWidth, behavior: "smooth" });
+          window.setTimeout(() => {
+            el.style.scrollSnapType = "";
+            settle(el);
+          }, 450);
+          touched();
+        }}
+        onTouchMove={touched}
+        onWheel={touched}
+        onPointerCancel={(e) => {
+          mouseDrag.current = null;
+          e.currentTarget.style.scrollSnapType = "";
+        }}
+        onScroll={(e) => {
+          if (!many) return;
+          const el = e.currentTarget;
+          const slot = Math.round(el.scrollLeft / el.clientWidth);
+          const next = (slot - 1 + count) % count;
           setIndex(next);
           if (next > furthest.current) {
             furthest.current = next;
-            track("photo_swiped", { post_id: postId, index: next, total: photos.length });
+            track("photo_swiped", { post_id: postId, index: next, total: count });
           }
+          // 스크롤이 멈추면(잠깐 조용하면) 가짜 칸 → 진짜 칸
+          clearTimeout(settleTimer.current);
+          settleTimer.current = window.setTimeout(() => settle(el), 120);
         }}
       >
-        {photos.map((src, i) => (
+        {slides.map((src, i) => (
           // eslint-disable-next-line @next/next/no-img-element -- 업로드한 사진(blob/외부 URL)도 그대로 보여 줘야 해서 img 사용
           <img
             key={i}
             src={src}
-            alt={i === 0 ? title : ""}
+            alt={i === (many ? 1 : 0) ? title : ""}
+            aria-hidden={many && (i === 0 || i === count + 1) ? true : undefined}
             draggable={false}
             className="size-full shrink-0 snap-center object-cover"
           />
@@ -589,7 +815,8 @@ function PhotoTile({
       >
         {participants}명 참여 중!
       </p>
-      {photos.length > 1 && (
+      {/* 사진이 여러 장일 때만 장수만큼 점 표시 (1장이면 없음) */}
+      {many && (
         <div className="absolute bottom-[13px] left-1/2 flex -translate-x-1/2 gap-1.5" aria-hidden>
           {photos.map((_, i) => (
             <span
