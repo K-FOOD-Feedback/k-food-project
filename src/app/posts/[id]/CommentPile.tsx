@@ -6,6 +6,7 @@ import { track } from "@/lib/analytics";
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { CommentModal } from "./CommentModal";
 import { COMMENT_MAX, QUICK_EMOJIS, useComments, type Comment } from "./comments";
+import { useHiddenComments } from "./hidden";
 import { estimateWidth, GravityPile, type PileHandle } from "./GravityPile";
 
 /** 날아가는 원의 지름. 실제 말풍선보다 작게 날아가서, 떨어질 때 본래 크기로 커집니다. */
@@ -53,7 +54,10 @@ export function CommentPile({
 }) {
   const full = variant === "full";
   const scrolledOld = useRef(false); // 분석: 전체 화면에서 예전 댓글까지 스크롤했는지
-  const { comments, addedCount, add, edit, remove, nextColor, ready } = useComments(postId, authorFlag);
+  const { comments: all, addedCount, add, edit, remove, nextColor, ready } = useComments(postId, authorFlag);
+  // 내가 신고해서 가린 한마디는 더미·답글 레이어에서 뺍니다 (원글 찾기는 가린 글까지 거슬러 올라가도록 전체로).
+  const { hidden, hide } = useHiddenComments(postId);
+  const comments = hidden.size ? all.filter((c) => !hidden.has(c.id)) : all;
   const [draft, setDraft] = useState("");
   const card = useRef<HTMLElement>(null);
   const zone = useRef<HTMLDivElement>(null);
@@ -69,7 +73,7 @@ export function CommentPile({
   const opened = openedId ? comments.find((c) => c.id === openedId) : undefined;
   // 답글 말풍선을 눌러 원글 레이어를 열었으면, 레이어에서 가운데로 데려와 강조할 그 답글 id
   const [focusReplyId, setFocusReplyId] = useState<string | null>(null);
-  const byId = new Map(comments.map((c) => [c.id, c]));
+  const byId = new Map(all.map((c) => [c.id, c]));
   /** 답글에 단 답글도 맨 위 원글까지 거슬러 올라갑니다 (부모가 지워져 끊기면 거기서 멈춤). */
   const rootOf = (c: Comment) => {
     let cur = c;
@@ -289,6 +293,7 @@ export function CommentPile({
             onReply={(text, replyTo) => add("text", text, replyTo ?? opened.id)}
             onEditReply={edit}
             onDeleteReply={remove}
+            onReport={(id) => hide(id)}
             onEdit={(text) => edit(opened.id, text)}
             onDelete={() => {
               remove(opened.id);
