@@ -298,6 +298,72 @@ export function DetailScreen({ post }: { post: HomePost }) {
     };
   }, [introDone, markVoteSeen]);
 
+  // "다음 훈수 거리" 버튼으로 넘어왔으면: 누른 버튼(같은 카드 색 알약)이 커지며 이 글의 본문 카드가 되고,
+  // 사진은 위에서 살짝 내려오며, 아래 칸들은 차례로 떠오릅니다.
+  const [nextIn] = useState(() =>
+    !intro && nextTrip?.postId === post.id && Date.now() - nextTrip.at < 3000 ? nextTrip : null,
+  );
+  const [nextDone, setNextDone] = useState(!nextIn);
+  const nextGhost = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    nextTrip = null;
+    const ghost = nextGhost.current;
+    const article = articleRef.current;
+    const tile = tileRef.current;
+    const content = article?.parentElement;
+    if (!nextIn || !ghost || !article || !tile || !content) return;
+    window.scrollTo(0, 0);
+    const to = article.getBoundingClientRect();
+    const from = nextIn.box;
+    const anims: Animation[] = [
+      ghost.animate(
+        [
+          { left: `${from.left}px`, top: `${from.top}px`, width: `${from.width}px`, height: `${from.height}px`, borderRadius: `${from.height / 2}px` },
+          { left: `${to.left}px`, top: `${to.top}px`, width: `${to.width}px`, height: `${to.height}px`, borderRadius: "32px" },
+        ],
+        { duration: NEXT_MS, easing: EASE, fill: "forwards" },
+      ),
+      // 본문 글은 카드가 거의 자리 잡을 때 드러남 (유령은 그때 사라짐)
+      article.animate([{ opacity: 0 }, { opacity: 0, offset: 0.7 }, { opacity: 1 }], { duration: NEXT_MS }),
+      ghost.animate([{ opacity: 1 }, { opacity: 1, offset: 0.7 }, { opacity: 0 }], { duration: NEXT_MS, fill: "forwards" }),
+      tile.animate(
+        [
+          { opacity: 0, translate: "0 -16px", scale: "0.97" },
+          { opacity: 1, translate: "0 0", scale: "1" },
+        ],
+        { duration: NEXT_MS, easing: EASE, fill: "backwards" },
+      ),
+      // 본문 아래 칸들(투표·한마디·다음 버튼)은 차례로 떠오름
+      ...[...content.children]
+        .filter((el) => el !== article && el !== tile)
+        .map((el, i) =>
+          el.animate(
+            [
+              { opacity: 0, transform: "translateY(24px)" },
+              { opacity: 1, transform: "none" },
+            ],
+            { duration: BACK_CARD_MS, delay: NEXT_MS * 0.6 + i * BACK_STAGGER_MS, easing: EASE, fill: "backwards" },
+          ),
+        ),
+    ];
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      setNextDone(true);
+    };
+    anims[0].onfinish = finish;
+    // 탭이 가려져 애니메이션이 멈춰도 정해진 시간 뒤에는 모두 끝 상태로 (본문이 투명한 채 남지 않게)
+    const fallback = window.setTimeout(() => {
+      anims.forEach((a) => a.finish());
+      finish();
+    }, NEXT_MS + 700);
+    return () => {
+      clearTimeout(fallback);
+      anims.forEach((a) => a.cancel());
+    };
+  }, [nextIn]);
+
   // 한마디 전체 화면에서 돌아오면: ↗를 눌렀던 스크롤 위치로 돌려 놓고,
   // 화면에 보이는 카드들이 위에서부터 하나씩 살짝 떠오르며 나타납니다.
   const [backTrip] = useState(() =>
@@ -454,11 +520,26 @@ export function DetailScreen({ post }: { post: HomePost }) {
             title={next.title}
             // 넘어갈 글의 카드 색 (게시글 데이터 색이라 토큰 대신 그대로)
             style={{ backgroundColor: next.color }}
-            onClick={() => track("post_opened", { post_id: next.id, from: "next", from_post_id: post.id })}
+            onClick={(e) => {
+              track("post_opened", { post_id: next.id, from: "next", from_post_id: post.id });
+              // 다음 상세 화면이 이 버튼 자리에서 본문 카드로 커지도록 위치를 남김
+              const r = e.currentTarget.getBoundingClientRect();
+              nextTrip = { postId: next.id, box: { left: r.left, top: r.top, width: r.width, height: r.height }, at: Date.now() };
+            }}
           />
         </div>
       </div>
 
+
+      {/* "다음 훈수 거리" 버튼 → 본문 카드 전환용 (처음부터 버튼 자리에 그려 깜빡임 없게) */}
+      {nextIn && !nextDone && (
+        <div
+          ref={nextGhost}
+          aria-hidden
+          className="pointer-events-none fixed z-20"
+          style={{ ...nextIn.box, borderRadius: nextIn.box.height / 2, background: post.color }}
+        />
+      )}
 
       {/* 메인 카드 → 상세 전환용 (끝나면 사라지고 진짜 사진·본문 카드가 보임) */}
       {intro && !introDone && (
@@ -565,6 +646,9 @@ function CommentLock({ locked, onVote }: { locked: boolean; onVote: () => void }
 const INTRO_MS = 420;
 // 한마디 전체 화면에 다녀오는 중 (↗를 누를 때 남김 → 상세로 돌아와 그려질 때 씀). 화면을 바꿔도 남는 모듈 값.
 let commentsTrip: { postId: string; scrollY: number; at: number } | null = null;
+// "다음 훈수 거리" 버튼을 누른 자리 (다음 글 상세가 그려질 때 씀)
+let nextTrip: { postId: string; box: Box; at: number } | null = null;
+const NEXT_MS = 480;
 const TRIP_TTL_MS = 30 * 60_000;
 const BACK_CARD_MS = 320;
 // 사진 자동 넘김 간격 (가만히 있은 지 이만큼 지나면 다음 사진)
