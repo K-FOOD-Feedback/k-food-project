@@ -6,6 +6,7 @@ import { saveVote, useMyVote } from "@/app/home/votes";
 import { LoginSheet } from "@/components/LoginSheet";
 import { track } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
+import { burstConfetti } from "./confetti";
 
 const title = "font-(family-name:--font-paperlogy) text-[24px] leading-[1.3] tracking-[-0.72px]";
 
@@ -121,6 +122,14 @@ export function VoteBowl({ post }: { post: HomePost }) {
     });
     flyFrom.current = (landed.current ?? token.current)?.getBoundingClientRect() ?? null;
     saveVote(post.id, choice);
+    // 처음 투표하면 토큰이 내 칸에 앉을 즈음 그 칸에서 폭죽이 한 번 터짐 (선택 바꿀 때는 없음)
+    const col = columns.current[choice];
+    if (myVote === null && col) {
+      window.setTimeout(() => {
+        const r = col.getBoundingClientRect();
+        burstConfetti(r.left + r.width / 2, r.top + r.height * 0.45);
+      }, TOKEN_MS * 0.5);
+    }
   };
 
   const columnAt = (x: number, y: number) =>

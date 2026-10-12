@@ -679,7 +679,12 @@ function ShareVoteCard({ post }: { post: HomePost }) {
     const url = `${window.location.origin}/posts/${post.id}`;
     if (navigator.share) {
       try {
-        await navigator.share({ title: post.title, text: `${post.question.text} — 투표해 주세요!`, url });
+        // 받는 사람이 한국인이든 외국인이든 읽을 수 있게 한국어·영어 같이
+        await navigator.share({
+          title: post.title,
+          text: `${post.question.text}\n난 벌써 한 표 던졌어. 이제 네 차례!\nI already voted. Your turn!`,
+          url,
+        });
         track("post_shared", { channel: "native", from: "detail_vote", post_id: post.id });
       } catch {
         // 사용자가 공유창을 닫음
@@ -700,15 +705,18 @@ function ShareVoteCard({ post }: { post: HomePost }) {
       <button
         type="button"
         onClick={share}
-        className="flex w-full items-center gap-4 rounded-[32px] bg-[#292929] py-4 pr-4 pl-7 text-left transition-[scale,opacity,translate] duration-500 active:scale-[0.98] starting:translate-y-3 starting:opacity-0"
+        className="flex w-full items-center gap-4 rounded-[32px] bg-primary py-5 pr-4 pl-7 text-left text-on-light shadow-[0_10px_30px_-8px_rgba(255,135,197,0.55)] transition-[scale,opacity,translate] duration-500 active:scale-[0.98] starting:translate-y-3 starting:opacity-0"
       >
         <span className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="font-(family-name:--font-paperlogy) text-[20px] leading-[1.3] tracking-[-0.4px] text-on-dark">
-            친구는 어떻게 생각할까요?
+          <span className="font-(family-name:--font-paperlogy) text-[22px] leading-[1.25] tracking-[-0.44px] break-keep">
+            내 입맛만 정상인지 확인하기
           </span>
-          <span className="text-[14px] leading-[1.4] font-medium text-neutral-400">투표를 공유하고 의견을 물어보세요</span>
+          <span className="text-[14px] leading-[1.4] font-semibold break-keep opacity-70">
+            한국·외국 친구 불러서 훈수 배틀 열기
+          </span>
         </span>
-        <span className="flex size-16 shrink-0 items-center justify-center rounded-full bg-on-dark text-on-light">
+        {/* 공유 원이 둥실둥실 떠서 눈길을 끔 */}
+        <span className="flex size-16 shrink-0 animate-float items-center justify-center rounded-full bg-background text-on-dark">
           <Icon name="share" />
         </span>
       </button>
