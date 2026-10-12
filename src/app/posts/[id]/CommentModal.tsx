@@ -5,6 +5,7 @@ import { Icon } from "@/components/Icon";
 import { HEADER_BUTTON, PageHeader } from "@/components/PageHeader";
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { COMMENT_MAX, type Comment } from "./comments";
+import { HIDDEN_COLOR } from "./hidden";
 import { splitLines } from "./GravityPile";
 
 /**
@@ -17,7 +18,9 @@ import { splitLines } from "./GravityPile";
     흐린 답글을 누르면 가운데로, 가운데 답글을 누르면 오른쪽에 버튼 (Figma 377:10769 내 답글: 수정·삭제 /
     377:10770 남의 답글: 신고). 다시 누르거나 스크롤하면 버튼이 사라집니다.
     가운데 답글을 누르면 (내 답글이어도) 입력칸 위에 "↪ 그 답글"이 붙어 그 답글에 답글을 달 수 있습니다.
-    신고: 이유를 적는 확인 모달이 위에 하나 더 뜨고, 신고하면 그 답글은 내 화면에서 가려집니다.
+    신고: 이유를 적는 확인 모달이 위에 하나 더 뜨고, 신고하면 그 답글은 내 화면에서 회색 "가려진 한마디예요"로.
+  - 말풍선 위 뱃지: 나 / 글쓴이, 답글이 달렸으면 ↪ 답글 수
+  - 답글이 넘치면 처음 열 때 첫 답글이 원글 바로 아래에서 시작 (가운데가 아니라). 내리면 점점 가운데 휠로.
   - 수정 (Figma 375:8019, 내 한마디만): 원글 카드가 뒤집히며 어두운 수정 카드로 → 체크로 저장하면 다시 뒤집혀
     원래대로, 고친 한마디는 카드에 "수정됨" 표시
   닫기: X, 배경 누르기, Esc (수정 중이면 X·Esc는 수정 취소)
@@ -33,6 +36,7 @@ export function CommentModal({
   onEditReply,
   onDeleteReply,
   onReport,
+  hiddenIds,
 }: {
   comment: Comment;
   /** 이 한마디 아래 모든 답글 — 답글에 단 답글 포함 (오래된 순) */
@@ -48,6 +52,8 @@ export function CommentModal({
   onDeleteReply: (id: string) => void;
   /** 신고 — 신고한 사람 화면에서 그 한마디를 가립니다. */
   onReport: (id: string, reason: string) => void;
+  /** 내가 신고해서 가린 한마디 (회색, 누를 수 없음) */
+  hiddenIds: Set<string>;
 }) {
   const closeButton = useRef<HTMLButtonElement>(null);
   const editField = useRef<HTMLTextAreaElement>(null);
@@ -68,6 +74,10 @@ export function CommentModal({
   const activeScroll = useRef(0);
   const input = useRef<HTMLInputElement>(null);
   const byId = new Map([comment, ...replies].map((c) => [c.id, c]));
+  const replyCounts = new Map<string, number>();
+  for (const r of replies) if (r.replyTo) replyCounts.set(r.replyTo, (replyCounts.get(r.replyTo) ?? 0) + 1);
+  // 처음 열 때 첫 답글을 원글 바로 아래에 둔 경우의 스크롤 위치 (그때만 휠 기준선이 위쪽에서 시작)
+  const topStart = useRef<number | null>(null);
   const canEdit = !!comment.mine;
 
   const startEdit = () => {
@@ -108,8 +118,23 @@ export function CommentModal({
     el.style.paddingTop = `${Math.max(0, el.clientHeight / 2 - first / 2)}px`;
     el.style.paddingBottom = `${Math.max(0, el.clientHeight / 2 - last / 2)}px`;
     setOverflowing(el.scrollHeight > el.clientHeight + 1);
+    // 휠 기준선: 보통은 칸 가운데. 위에서 시작했으면 첫 답글 자리에서 시작해, 스크롤한 만큼 가운데로 내려옵니다.
+    let line = el.clientHeight / 2;
+    let t = 1;
+    if (topStart.current !== null) {
+      const top = TOP_GAP + first / 2;
+      t = Math.min(1, Math.abs(el.scrollTop - topStart.current) / Math.max(1, line - top));
+      line = top + (line - top) * t;
+      if (t >= 1) {
+        // 기준선이 가운데까지 내려오면 그때부터 가운데에 착 붙는 스크롤을 켭니다.
+        topStart.current = null;
+        el.style.scrollSnapType = "";
+      }
+    }
+    // 위쪽 그라데이션도 기준선이 내려오는 만큼만 (원글 바로 아래 첫 답글이 흐려지지 않게)
+    el.style.setProperty("--fade-top", `${Math.round(56 * t)}px`);
     // 레이아웃 위치(변형 전)로 계산해야 당겨 놓은 위치 때문에 흔들리지 않습니다.
-    const center = el.scrollTop + el.clientHeight / 2;
+    const center = el.scrollTop + line;
     let nearest: HTMLElement | null = null;
     let nearestDist = Infinity;
     for (const item of items) {
@@ -129,6 +154,7 @@ export function CommentModal({
     const id = nearest?.dataset.replyId ?? null;
     setCenterId((prev) => (prev === id ? prev : id));
   };
+  const opened = useRef(false);
   const updateRef = useRef(updateWheel);
   useLayoutEffect(() => {
     updateRef.current = updateWheel;
@@ -138,10 +164,19 @@ export function CommentModal({
     const el = list.current;
     if (!el) return;
     updateRef.current();
+    // 처음 열 때 답글이 넘치면(아래 그라데이션이 생길 만큼) 첫 답글을 가운데가 아니라 원글 바로 아래에
+    if (topStart.current === null && !focusId && !opened.current && el.scrollHeight > el.clientHeight + 1) {
+      const first = el.firstElementChild as HTMLElement;
+      el.style.scrollSnapType = "none"; // 켜져 있으면 바로 가운데로 붙어 버림
+      el.scrollTop = first.offsetTop - TOP_GAP;
+      topStart.current = el.scrollTop;
+      updateRef.current();
+    }
+    opened.current = true;
     const observer = new ResizeObserver(() => updateRef.current());
     observer.observe(el);
     return () => observer.disconnect();
-  }, [replies.length]);
+  }, [replies.length, focusId]);
 
   // 답글 말풍선을 눌러 열었으면 그 답글을 가운데로 데려와 톡 강조합니다.
   useLayoutEffect(() => {
@@ -167,7 +202,7 @@ export function CommentModal({
 
   /** 답글을 누르면: 흐린 답글은 가운데로, 가운데 답글은 버튼 펼치기/접기 (남의 답글이면 답글 달 대상으로) */
   const tapReply = (r: Comment, item: HTMLElement) => {
-    if (r.id !== centerId) {
+    if (r.id !== centerId || hiddenIds.has(r.id)) {
       setActiveId(null);
       centerReply(item);
       return;
@@ -283,6 +318,7 @@ export function CommentModal({
               aria-hidden={editing}
             >
               <p className="text-center text-[22px] leading-[1.45] font-bold tracking-[-0.44px] whitespace-pre-line text-black">{lines}</p>
+              <Badges comment={comment} replies={replyCounts.get(comment.id) ?? 0} card />
               {comment.edited && (
                 <span className="absolute bottom-3 text-[12px] leading-none font-semibold text-black/50">수정됨</span>
               )}
@@ -324,11 +360,14 @@ export function CommentModal({
               ref={list}
               onScroll={onListScroll}
               className={`relative flex h-full snap-y snap-mandatory flex-col items-center gap-0.5 overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
-                overflowing ? "[mask-image:linear-gradient(to_bottom,transparent,black_56px,black_calc(100%-56px),transparent)]" : ""
+                overflowing
+                  ? "[mask-image:linear-gradient(to_bottom,transparent,black_var(--fade-top,56px),black_calc(100%-56px),transparent)]"
+                  : ""
               }`}
             >
               {replies.map((r) => {
                 const active = activeId === r.id;
+                const isHidden = hiddenIds.has(r.id);
                 const parent = r.replyTo && r.replyTo !== comment.id ? byId.get(r.replyTo) : undefined;
                 return (
                   <div
@@ -347,13 +386,19 @@ export function CommentModal({
                       )}
                       <div className="flex items-center">
                         <p
-                          className="flex items-center gap-2 rounded-[32px] py-4 pr-6 pl-2.5 text-center text-[20px] leading-[1.45] font-bold tracking-[-0.4px] whitespace-pre-line text-black"
-                          style={{ background: r.color }}
+                          className={`relative flex items-center gap-2 rounded-[32px] py-4 pr-6 pl-2.5 text-center text-[20px] leading-[1.45] font-bold tracking-[-0.4px] whitespace-pre-line ${
+                            isHidden ? "text-black/55" : "text-black"
+                          }`}
+                          style={{ background: isHidden ? HIDDEN_COLOR : r.color }}
                         >
-                          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white text-[20px] leading-none" aria-hidden>
+                          <span
+                            className={`flex size-9 shrink-0 items-center justify-center rounded-full bg-white text-[20px] leading-none ${isHidden ? "opacity-50 grayscale" : ""}`}
+                            aria-hidden
+                          >
                             {r.author.kind === "korean" ? "🇰🇷" : r.author.flag}
                           </span>
                           {splitLines(r.text.replace(/\n/g, " ")).join("\n")}
+                          <Badges comment={r} replies={replyCounts.get(r.id) ?? 0} />
                         </p>
                         {/* 가운데 답글을 누르면 오른쪽에 펼쳐지는 버튼 (펼치는 동안 말풍선이 왼쪽으로 비켜남) */}
                         <div
@@ -493,6 +538,9 @@ export function CommentModal({
   );
 }
 
+/** 위에서 시작할 때 첫 답글 위 여백 (원글 카드와의 간격) */
+const TOP_GAP = 16;
+
 /** 휠 한 칸: 답글 말풍선 높이(약 68px) + 간격 */
 const WHEEL_STEP = 70;
 /** 한 칸 멀어질 때마다 줄어드는 비율과 가장 작은 크기, 흐려지는 비율과 가장 흐린 정도 */
@@ -523,6 +571,28 @@ function ReplyArrowIcon({ size }: { size: number }) {
     </svg>
   );
 }
+
+/**
+  말풍선 위 뱃지 (더미 말풍선 태그와 같은 모양, 조금 크게): 나 / 글쓴이, 답글이 달렸으면 ↪ 답글 수
+  card: 원글 카드 — 카드 안쪽 위에 붙임
+*/
+function Badges({ comment, replies, card = false }: { comment: Comment; replies: number; card?: boolean }) {
+  const who = comment.mine ? "나" : comment.author.kind === "author" ? "글쓴이" : null;
+  if (!who && !replies) return null;
+  return (
+    <span className={`absolute flex gap-1 ${card ? "top-3 left-1/2 -translate-x-1/2" : "-top-2.5 left-6"}`}>
+      {who && <span className={BADGE}>{who}</span>}
+      {replies > 0 && (
+        <span className={`${BADGE} gap-0.5 pl-1.5`} aria-label={`답글 ${replies}개`}>
+          <ReplyArrowIcon size={12} />
+          {replies}
+        </span>
+      )}
+    </span>
+  );
+}
+
+const BADGE = "flex h-[22px] items-center rounded-full bg-black px-2 text-[12px] leading-none font-bold tracking-[-0.24px] whitespace-nowrap text-white";
 
 /**
   답글 신고 확인 모달 — 답글 레이어 위에 한 겹 더 뜹니다.

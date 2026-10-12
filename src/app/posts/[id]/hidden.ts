@@ -55,3 +55,7 @@ export function useHiddenComments(postId: string) {
 
   return { hidden, hide };
 }
+
+/** 가린 한마디 모습: 회색 말풍선 + 안내 문구 */
+export const HIDDEN_TEXT = "가려진 한마디예요";
+export const HIDDEN_COLOR = "#8e8e8e";
