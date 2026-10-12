@@ -22,7 +22,8 @@ import { splitLines } from "./GravityPile";
   - 말풍선 위 뱃지: 나 / 글쓴이, 답글이 달렸으면 ↪ 답글 수
   - 답글에 단 답글은 그 답글 바로 아래에 (오래된 순으로 이어지는 대화 순서)
   - 답글을 보내면 입력칸에서 목록 속 제자리로 톡 튀어 올라가 앉고, 그 자리가 가운데로 옵니다.
-  - 답글이 넘치면 처음 열 때 첫 답글이 원글 바로 아래에서 시작 (가운데가 아니라). 내리면 점점 가운데 휠로.
+  - 첫 답글은 늘 원글 바로 아래에서 시작하고, 맨 위로 올려도 거기까지만 (원글과 사이가 벌어지지 않게).
+    맨 위 근처에서는 휠 기준선이 첫 답글 자리에 있다가, 내리는 만큼 가운데로 내려와 보통 휠이 됩니다.
   - 수정 (Figma 375:8019, 내 원글·내 답글): 화면이 어두워지며 그 말풍선이 화면 가운데로 날아와 뒤집혀 수정 카드로
     → 체크로 저장하면 다시 뒤집혀 "수정됨"이 붙고 원래 자리로 돌아갑니다.
   - 아래 답글은 늘 윗 답글 뒤에 깔립니다 (겹쳐도 윗 답글이 보이게).
@@ -86,8 +87,6 @@ export function CommentModal({
   // 방금 보낸 답글: 목록에 나타나면 입력칸에서 날아와 앉는 모션
   const sentRef = useRef(false);
   const knownIds = useRef(new Set(replies.map((r) => r.id)));
-  // 처음 열 때 첫 답글을 원글 바로 아래에 둔 경우의 스크롤 위치 (그때만 휠 기준선이 위쪽에서 시작)
-  const topStart = useRef<number | null>(null);
   const canEdit = !!comment.mine;
 
   const startEdit = (c: Comment) => {
@@ -138,22 +137,14 @@ export function CommentModal({
     if (!items.length) return;
     const first = items[0].offsetHeight;
     const last = items[items.length - 1].offsetHeight;
-    el.style.paddingTop = `${Math.max(0, el.clientHeight / 2 - first / 2)}px`;
+    // 위는 원글 바로 아래까지만, 아래는 끝 답글도 가운데까지 올 수 있게
+    el.style.paddingTop = `${TOP_GAP}px`;
     el.style.paddingBottom = `${Math.max(0, el.clientHeight / 2 - last / 2)}px`;
     setOverflowing(el.scrollHeight > el.clientHeight + 1);
-    // 휠 기준선: 보통은 칸 가운데. 위에서 시작했으면 첫 답글 자리에서 시작해, 스크롤한 만큼 가운데로 내려옵니다.
-    let line = el.clientHeight / 2;
-    let t = 1;
-    if (topStart.current !== null) {
-      const top = TOP_GAP + first / 2;
-      t = Math.min(1, Math.abs(el.scrollTop - topStart.current) / Math.max(1, line - top));
-      line = top + (line - top) * t;
-      if (t >= 1) {
-        // 기준선이 가운데까지 내려오면 그때부터 가운데에 착 붙는 스크롤을 켭니다.
-        topStart.current = null;
-        el.style.scrollSnapType = "";
-      }
-    }
+    // 휠 기준선: 맨 위에서는 첫 답글 자리, 내리는 만큼 내려와 칸 가운데에서 멈춥니다.
+    const { line, t } = wheelLine(el, first);
+    // 맨 위 근처에서는 가운데에 착 붙는 스크롤을 끕니다 (첫 답글은 가운데까지 못 오니까).
+    el.style.scrollSnapType = t < 1 ? "none" : "";
     // 위쪽 그라데이션도 기준선이 내려오는 만큼만 (원글 바로 아래 첫 답글이 흐려지지 않게)
     el.style.setProperty("--fade-top", `${Math.round(56 * t)}px`);
     // 레이아웃 위치(변형 전)로 계산해야 당겨 놓은 위치 때문에 흔들리지 않습니다.
@@ -183,7 +174,6 @@ export function CommentModal({
     const id = items[c]?.dataset.replyId ?? null;
     setCenterId((prev) => (prev === id ? prev : id));
   };
-  const opened = useRef(false);
   const updateRef = useRef(updateWheel);
   useLayoutEffect(() => {
     updateRef.current = updateWheel;
@@ -193,26 +183,18 @@ export function CommentModal({
     const el = list.current;
     if (!el) return;
     updateRef.current();
-    // 처음 열 때 답글이 넘치면(아래 그라데이션이 생길 만큼) 첫 답글을 가운데가 아니라 원글 바로 아래에
-    if (topStart.current === null && !focusId && !opened.current && el.scrollHeight > el.clientHeight + 1) {
-      const first = el.firstElementChild as HTMLElement;
-      el.style.scrollSnapType = "none"; // 켜져 있으면 바로 가운데로 붙어 버림
-      el.scrollTop = first.offsetTop - TOP_GAP;
-      topStart.current = el.scrollTop;
-      updateRef.current();
-    }
-    opened.current = true;
     const observer = new ResizeObserver(() => updateRef.current());
     observer.observe(el);
     return () => observer.disconnect();
-  }, [replies.length, focusId]);
+  }, [replies.length]);
 
   // 답글 말풍선을 눌러 열었으면 그 답글을 가운데로 데려와 톡 강조합니다.
   useLayoutEffect(() => {
     const el = list.current;
     const item = focusId ? el?.querySelector<HTMLElement>(`[data-reply-id="${CSS.escape(focusId)}"]`) : null;
     if (!el || !item) return;
-    el.scrollTop = item.offsetTop - el.clientHeight / 2 + item.offsetHeight / 2;
+    el.style.scrollSnapType = "none";
+    el.scrollTop = scrollFor(el, item);
     updateRef.current();
     (item.firstElementChild as HTMLElement).animate(
       [{ translate: "0 0" }, { translate: "0 0", scale: "1.08", offset: 0.35 }, { translate: "0 0" }],
@@ -222,11 +204,12 @@ export function CommentModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /** 답글을 누르면 그 답글을 가운데로 */
+  /** 답글을 누르면 그 답글을 휠 기준선으로 (보통은 가운데, 맨 위 답글들은 원글 바로 아래 근처) */
   const centerReply = (item: HTMLElement) => {
     const el = list.current;
     if (!el) return;
-    el.scrollTo({ top: item.offsetTop - el.clientHeight / 2 + item.offsetHeight / 2, behavior: "smooth" });
+    el.style.scrollSnapType = "none"; // 움직이는 동안 다른 답글에 붙지 않게 (도착하면 updateWheel이 다시 켬)
+    el.scrollTo({ top: scrollFor(el, item), behavior: "smooth" });
   };
 
   /** 답글을 누르면: 흐린 답글은 가운데로, 가운데 답글은 버튼 펼치기/접기 (남의 답글이면 답글 달 대상으로) */
@@ -282,18 +265,16 @@ export function CommentModal({
     const item = el.querySelector<HTMLElement>(`[data-reply-id="${CSS.escape(mine.id)}"]`);
     if (!item) return;
     updateRef.current(); // 위아래 여백부터 새로 맞추고
-    // 처음 열 때 위에서 시작한 상태였으면 보통 휠로 돌려놓습니다.
-    topStart.current = null;
-    el.style.scrollSnapType = "";
     centerReply(item);
     // 입력칸 위 "↪ 답글" 줄이 닫히며 목록 높이가 바뀌므로, 한 프레임 뒤 다시 가운데로 맞춥니다.
     requestAnimationFrame(() => requestAnimationFrame(() => centerReply(item)));
     const row = item.querySelector<HTMLElement>("[data-row]");
     const form = input.current?.closest("form");
     if (!row || !form || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    // 도착 자리 = 칸 가운데. 입력칸 높이에서 출발합니다.
+    // 도착 자리 = 스크롤이 끝났을 때 그 답글 자리. 입력칸 높이에서 출발합니다.
     const box = el.getBoundingClientRect();
-    const from = form.getBoundingClientRect().top + 32 - (box.top + box.height / 2);
+    const arrive = item.offsetTop + item.offsetHeight / 2 - scrollFor(el, item);
+    const from = form.getBoundingClientRect().top + 32 - (box.top + arrive);
     row.animate(
       [
         { translate: `0 ${from}px`, scale: "0.5", opacity: 0 },
@@ -594,8 +575,30 @@ function threadOrder(rootId: string, replies: Comment[]): Comment[] {
   return out;
 }
 
-/** 위에서 시작할 때 첫 답글 위 여백 (원글 카드와의 간격) */
-const TOP_GAP = 16;
+/** 첫 답글 위 여백 — 말풍선 위 뱃지 자리(12px)와 합쳐 답글 사이 간격과 비슷하게 */
+const TOP_GAP = 2;
+
+/**
+  휠 기준선 (칸 위에서부터 px)과 맨 위 구간 진행도 t (0 = 맨 위, 1 = 보통 휠).
+  맨 위에서는 첫 답글 가운데에 있다가, 스크롤한 만큼 내려와 칸 가운데에서 멈춥니다.
+*/
+function wheelLine(el: HTMLElement, firstHeight: number) {
+  const top = TOP_GAP + firstHeight / 2;
+  const mid = el.clientHeight / 2;
+  const range = Math.max(1, mid - top);
+  const t = Math.min(1, el.scrollTop / range);
+  return { line: top + (mid - top) * t, t, top, range };
+}
+
+/** 이 답글이 휠 기준선에 오는 스크롤 위치 (wheelLine의 반대 계산) */
+function scrollFor(el: HTMLElement, item: HTMLElement) {
+  const first = el.firstElementChild as HTMLElement;
+  const { top, range } = wheelLine(el, first.offsetHeight);
+  const c = item.offsetTop + item.offsetHeight / 2;
+  // 맨 위 구간: 기준선이 스크롤의 2배 빠르기로 내려옴 → c = top + 2s
+  if (c <= top + 2 * range) return Math.max(0, (c - top) / 2);
+  return c - el.clientHeight / 2;
+}
 
 /** 휠 한 칸: 답글 말풍선 높이(약 68px) + 간격 */
 const WHEEL_STEP = 70;
