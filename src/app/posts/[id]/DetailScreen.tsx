@@ -5,6 +5,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type Ref } f
 import { clearCardTransition, peekCardTransition, setReturnTransition, type Box } from "@/app/home/cardTransition";
 import { HOME_POSTS, participantsOf, type HomePost } from "@/app/home/mockPosts";
 import { ArrowCta } from "@/components/Buttons";
+import { HEADER_BUTTON, PageHeader } from "@/components/PageHeader";
 import { useMyVote } from "@/app/home/votes";
 import { PostMenu } from "@/components/PostMenu";
 import { TrackedLink } from "@/components/Track";
@@ -13,8 +14,6 @@ import { track } from "@/lib/analytics";
 import { CommentPile } from "./CommentPile";
 import { paperlogy } from "./font";
 import { VoteBowl } from "./VoteBowl";
-
-const circle = "flex size-16 shrink-0 items-center justify-center rounded-full bg-white/8";
 
 /** 상세 화면 · 한국인 (Figma 263:10329 전체, 263:10251 기기 화면의 플로팅 버튼) */
 export function DetailScreen({ post }: { post: HomePost }) {
@@ -267,28 +266,31 @@ export function DetailScreen({ post }: { post: HomePost }) {
     <main
       className={`${paperlogy.variable} relative mx-auto min-h-dvh w-full max-w-[430px] overflow-x-clip bg-background text-on-dark`}
     >
-      <header
-        // 스크롤해도 상단 고정 (송희) — 바탕 없이 버튼만 떠 있음(내용 위에서도 보이게 어두운 유리 버튼). 빈 곳은 터치가 아래 내용으로 통과
-        className="pointer-events-none sticky top-0 z-30 flex items-center justify-between px-2 pt-[calc(16px+env(safe-area-inset-top))] pb-4 [&>*]:pointer-events-auto [&_a]:bg-surface/85 [&_a]:ring-1 [&_a]:ring-white/10 [&_a]:backdrop-blur-xl [&_button]:bg-surface/85 [&_button]:ring-1 [&_button]:ring-white/10 [&_button]:backdrop-blur-xl">
-        <Link href="/home" className={circle} aria-label="뒤로 가기">
-          <ChevronLeftIcon />
-        </Link>
-        <div className="flex items-center gap-1">
-          <TrackedLink href="/" event="language_clicked" props={{ from: "detail" }} className={circle} aria-label="언어 선택">
-            {/* eslint-disable-next-line @next/next/no-img-element -- 작은 SVG 아이콘 */}
-            <img src="/images/icon-world.svg" width={24} height={24} alt="" />
-          </TrackedLink>
-          {/* 더보기 메뉴 (송희 PostMenu) — 내 글이면 수정·삭제, 남의 글이면 링크 복사·신고 */}
-          <PostMenu
-            postId={post.id}
-            isMine={post.id === MY_POST_ID}
-            className={circle}
-            onOpen={() => track("post_more_clicked", { post_id: post.id })}
-          >
-            <MoreIcon />
-          </PostMenu>
-        </div>
-      </header>
+      {/* 공통 상단 바 (src/components/PageHeader — 모든 화면이 같은 위치·크기·디자인) */}
+      <PageHeader
+        left={
+          <Link href="/home" className={HEADER_BUTTON} aria-label="뒤로 가기">
+            <ChevronLeftIcon />
+          </Link>
+        }
+        right={
+          <>
+            <TrackedLink href="/" event="language_clicked" props={{ from: "detail" }} className={HEADER_BUTTON} aria-label="언어 선택">
+              {/* eslint-disable-next-line @next/next/no-img-element -- 작은 SVG 아이콘 */}
+              <img src="/images/icon-world.svg" width={24} height={24} alt="" />
+            </TrackedLink>
+            {/* 더보기 메뉴 (송희 PostMenu) — 내 글이면 수정·삭제, 남의 글이면 링크 복사·신고 */}
+            <PostMenu
+              postId={post.id}
+              isMine={post.id === MY_POST_ID}
+              className={HEADER_BUTTON}
+              onOpen={() => track("post_more_clicked", { post_id: post.id })}
+            >
+              <MoreIcon />
+            </PostMenu>
+          </>
+        }
+      />
 
       <div className="flex flex-col gap-1 px-2 pb-[calc(40px+env(safe-area-inset-bottom))]">
         <div ref={tileRef} className={hiddenUntilIntro}>
