@@ -184,6 +184,7 @@ export function DetailScreen({ post }: { post: HomePost }) {
     const tile = tileRef.current;
     const article = articleRef.current;
     const chip = chipRef.current;
+    const cta = ctaRef.current;
     if (!tile || !article) return;
     // 브라우저 뒤로 가기는 알림(popstate)을 보내기 전에 스크롤을 먼저 맨 위로 되돌려 놓습니다.
     // 그래서 마지막으로 본 스크롤 위치를 따로 기억해 두고, 잴 때 그만큼 빼서 "떠나기 직전 화면 위치"로 맞춥니다.
@@ -194,7 +195,7 @@ export function DetailScreen({ post }: { post: HomePost }) {
     window.addEventListener("scroll", onScroll, { passive: true });
     // shift: 지금 스크롤과 떠나기 직전 스크롤의 차이 (브라우저 뒤로 가기일 때만 0이 아님)
     const measure = (shift = 0) => {
-      const toBox = (r: DOMRect): Box => ({ left: r.left, top: r.top + shift, width: r.width, height: r.height });
+      const toBox = (r: DOMRect, dy = shift): Box => ({ left: r.left, top: r.top + dy, width: r.width, height: r.height });
       return {
         postId: post.id,
         photo: toBox(tile.getBoundingClientRect()),
@@ -202,6 +203,8 @@ export function DetailScreen({ post }: { post: HomePost }) {
         card: toBox(article.getBoundingClientRect()),
         color: post.color,
         ...(chip && { chip: toBox(chip.getBoundingClientRect()) }),
+        // 플로팅 "투표하기"는 화면에 고정이라 스크롤 보정 없이 그대로 (숨어 있으면 넘기지 않음)
+        ...(cta?.getAttribute("aria-hidden") === "false" && { cta: toBox(cta.getBoundingClientRect(), 0) }),
       };
     };
     let snapshot: { at: number; value: ReturnType<typeof measure> } | null = null;

@@ -76,6 +76,8 @@ export type ReturnTransition = {
   color: string;
   /** 상세 "00명 참여 중!" 칩 → 메인 카드 스티커로 */
   chip?: Box;
+  /** 상세 플로팅 "투표하기"(보일 때만) → 메인 "투표하러 가기"로 */
+  cta?: Box;
   at: number;
 };
 
