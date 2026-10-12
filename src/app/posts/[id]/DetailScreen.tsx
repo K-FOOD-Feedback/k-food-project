@@ -452,6 +452,8 @@ export function DetailScreen({ post }: { post: HomePost }) {
             href={`/posts/${next.id}`}
             caption="다음 훈수 거리"
             title={next.title}
+            // 넘어갈 글의 카드 색 (게시글 데이터 색이라 토큰 대신 그대로)
+            style={{ backgroundColor: next.color }}
             onClick={() => track("post_opened", { post_id: next.id, from: "next", from_post_id: post.id })}
           />
         </div>
