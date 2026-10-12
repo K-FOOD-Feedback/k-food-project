@@ -1,7 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useRef } from "react";
-import { CARD_MASK_BOX } from "./CardStack";
+import { CARD_MASK_BOX, CARD_PHOTO_IN_MASK } from "./CardStack";
 import { clearReturnTransition, measureCard, type Box, type ReturnTransition } from "./cardTransition";
 
 const RETURN_MS = 420;
@@ -16,7 +16,11 @@ const place = (b: Box, radius: string) => ({
   height: `${b.height}px`,
   borderRadius: radius,
 });
+const boxOnly = (b: Box) => ({ left: `${b.left}px`, top: `${b.top}px`, width: `${b.width}px`, height: `${b.height}px` });
 const boxStyle = (b: Box) => ({ left: b.left, top: b.top, width: b.width, height: b.height });
+const toBox = (r: DOMRect): Box => ({ left: r.left, top: r.top, width: r.width, height: r.height });
+const WAVE_MASK = 'url("/images/card-mask.svg")';
+const pct = (v: number) => `${v * 100}%`;
 
 /**
   상세 → 메인(뒤로 가기) 전환. 상세 화면 진입 전환의 반대입니다.
@@ -34,7 +38,13 @@ export function ReturnGhosts({
 }) {
   const cardGhost = useRef<HTMLDivElement>(null);
   const photoGhost = useRef<HTMLDivElement>(null);
-  const cardPhotoImg = useRef<HTMLImageElement>(null);
+  const detailPhoto = useRef<HTMLDivElement>(null);
+  const wavePhoto = useRef<HTMLDivElement>(null);
+  const chipFrom = useRef<HTMLSpanElement>(null);
+  const chipTo = useRef<HTMLSpanElement>(null);
+  const ctaGhost = useRef<HTMLDivElement>(null);
+  const ctaFrom = useRef<HTMLSpanElement>(null);
+  const ctaTo = useRef<HTMLSpanElement>(null);
   const chipGhost = useRef<HTMLDivElement>(null);
   const ghosts = useRef<HTMLDivElement>(null);
 
@@ -72,11 +82,16 @@ export function ReturnGhosts({
     const reveal = [{ opacity: 0 }, { opacity: 0, offset: 0.63 }, { opacity: 1, offset: 0.65 }, { opacity: 1 }];
     const vanish = [{ opacity: 1 }, { opacity: 1, offset: 0.66 }, { opacity: 0, offset: 0.86 }, { opacity: 0 }];
 
+    const fade = (el: HTMLElement | null, frames: Keyframe[]) =>
+      el ? [el.animate(frames, { duration: RETURN_MS, easing: "linear", fill: "forwards" as const })] : [];
+
     const animations = [
       cardGhost.current.animate([place(t.card, "32px"), place(to.card, "34.8px")], timing),
-      photoGhost.current.animate([place(t.photo, "32px"), place(to.photo, "45%")], timing),
-      // 상세 사진에서 메인 카드 사진으로 자연스럽게 바뀜
-      ...(cardPhotoImg.current ? [cardPhotoImg.current.animate([{ opacity: 0 }, { opacity: 1, offset: 0.5 }, { opacity: 1 }], timing)] : []),
+      photoGhost.current.animate([boxOnly(t.photo), boxOnly(to.photo)], timing),
+      // 상세 사진(모서리 둥근 사각형)이 줄어드는 동안, 카드와 똑같은 물결 사진이 그 위로 서서히 겹쳐 나타남
+      ...(detailPhoto.current ? [detailPhoto.current.animate([{ borderRadius: "32px" }, { borderRadius: "45%" }], timing)] : []),
+      ...fade(wavePhoto.current, [{ opacity: 0 }, { opacity: 1, offset: 0.45 }, { opacity: 1 }]),
+      ...fade(detailPhoto.current, [{ opacity: 1 }, { opacity: 1, offset: 0.2 }, { opacity: 0, offset: 0.55 }, { opacity: 0 }]),
       front.animate(reveal, { duration: RETURN_MS, easing: "linear" }),
       ...(ghosts.current ? [ghosts.current.animate(vanish, { duration: RETURN_MS, easing: "linear", fill: "forwards" as const })] : []),
     ];
@@ -86,6 +101,17 @@ export function ReturnGhosts({
       const cx = to.sticker.left + to.sticker.width / 2;
       const cy = to.sticker.top + to.sticker.height / 2;
       const sticker = { left: cx - STICKER / 2, top: cy - STICKER / 2, width: STICKER, height: STICKER };
+      // 글자도 "00명 참여 중!" → 스티커의 "00 / 명 참여"로 바뀜 (스티커 내용을 복사, 기울기는 유령이 맡음)
+      const stickerEl = front.querySelector("[data-card-sticker]");
+      if (stickerEl && chipFrom.current && chipTo.current) {
+        const copy = stickerEl.cloneNode(true) as HTMLElement;
+        chipFrom.current.textContent = `${copy.firstElementChild?.textContent ?? ""}명 참여 중!`;
+        chipTo.current.replaceChildren(...copy.childNodes);
+        animations.push(
+          ...fade(chipFrom.current, [{ opacity: 1 }, { opacity: 0, offset: 0.3 }, { opacity: 0 }]),
+          ...fade(chipTo.current, [{ opacity: 0 }, { opacity: 0, offset: 0.2 }, { opacity: 1, offset: 0.5 }, { opacity: 1 }]),
+        );
+      }
       animations.push(
         chipGhost.current.animate(
           [
@@ -94,6 +120,25 @@ export function ReturnGhosts({
           ],
           timing,
         ),
+      );
+    }
+
+    // 플로팅 "투표하기" → 하단 "투표하러 가기" (글자도 바뀜)
+    const mainCta = document.querySelector<HTMLElement>("[data-main-cta]");
+    if (t.cta && mainCta && ctaGhost.current) {
+      const cs = getComputedStyle(mainCta);
+      if (ctaTo.current) ctaTo.current.textContent = mainCta.textContent;
+      animations.push(
+        ctaGhost.current.animate(
+          [
+            { ...place(t.cta, "999px"), backgroundColor: getComputedStyle(ctaGhost.current).backgroundColor },
+            { ...place(toBox(mainCta.getBoundingClientRect()), "999px"), backgroundColor: cs.backgroundColor, color: cs.color },
+          ],
+          timing,
+        ),
+        ...fade(ctaFrom.current, [{ opacity: 1 }, { opacity: 0, offset: 0.4 }, { opacity: 0 }]),
+        ...fade(ctaTo.current, [{ opacity: 0 }, { opacity: 0, offset: 0.2 }, { opacity: 1, offset: 0.55 }, { opacity: 1 }]),
+        mainCta.animate(reveal, { duration: RETURN_MS, easing: "linear" }),
       );
     }
 
@@ -117,20 +162,57 @@ export function ReturnGhosts({
   return (
     <div ref={ghosts} aria-hidden className="pointer-events-none relative z-30">
       <div ref={cardGhost} className="fixed z-30 overflow-hidden" style={{ ...boxStyle(t.card), borderRadius: 32, background: t.color }} />
-      <div ref={photoGhost} className="fixed z-30 overflow-hidden" style={{ ...boxStyle(t.photo), borderRadius: 32 }}>
-        {/* eslint-disable-next-line @next/next/no-img-element -- 전환용 사진 */}
-        <img src={t.photoSrc} alt="" className="absolute inset-0 size-full object-cover" />
+      <div ref={photoGhost} className="fixed z-30" style={boxStyle(t.photo)}>
+        <div ref={detailPhoto} className="absolute inset-0 overflow-hidden" style={{ borderRadius: 32 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- 전환용 사진 */}
+          <img src={t.photoSrc} alt="" className="absolute inset-0 size-full object-cover" />
+        </div>
         {cardPhoto && (
-          // eslint-disable-next-line @next/next/no-img-element -- 전환용 사진
-          <img ref={cardPhotoImg} src={cardPhoto} alt="" className="absolute inset-0 size-full object-cover opacity-0" />
+          // 카드 속 물결 사진과 똑같은 모양·구도 (물결 영역 크기에 맞춰 함께 늘었다 줄었다 함)
+          <div
+            ref={wavePhoto}
+            className="absolute inset-0 opacity-0"
+            style={{ maskImage: WAVE_MASK, WebkitMaskImage: WAVE_MASK, maskSize: "100% 100%", WebkitMaskSize: "100% 100%", maskRepeat: "no-repeat", WebkitMaskRepeat: "no-repeat" }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element -- 전환용 사진 */}
+            <img
+              src={cardPhoto}
+              alt=""
+              className="absolute max-w-none object-cover"
+              style={{
+                left: pct(CARD_PHOTO_IN_MASK.left),
+                top: pct(CARD_PHOTO_IN_MASK.top),
+                width: pct(CARD_PHOTO_IN_MASK.width),
+                height: pct(CARD_PHOTO_IN_MASK.height),
+              }}
+            />
+          </div>
         )}
       </div>
       {t.chip && (
         <div
           ref={chipGhost}
-          className="fixed z-30 bg-background shadow-[0_4px_12px_rgba(0,0,0,0.18)]"
+          className="fixed z-30 overflow-hidden bg-background text-white shadow-[0_4px_12px_rgba(0,0,0,0.18)]"
           style={{ ...boxStyle(t.chip), borderRadius: t.chip.height / 2 }}
-        />
+        >
+          <span
+            ref={chipFrom}
+            className="absolute inset-0 flex items-center justify-center text-[16px] leading-[1.5] font-semibold whitespace-nowrap"
+          />
+          <span ref={chipTo} className="absolute inset-0 flex flex-col items-center justify-center gap-0.5 opacity-0" />
+        </div>
+      )}
+      {t.cta && (
+        <div
+          ref={ctaGhost}
+          className="fixed z-30 overflow-hidden rounded-full bg-primary text-[20px] leading-none font-extrabold tracking-[-0.4px] whitespace-nowrap text-white"
+          style={boxStyle(t.cta)}
+        >
+          <span ref={ctaFrom} className="absolute inset-0 flex items-center justify-center">
+            투표하기
+          </span>
+          <span ref={ctaTo} className="absolute inset-0 flex items-center justify-center opacity-0" />
+        </div>
       )}
     </div>
   );

@@ -14,6 +14,13 @@ const IMAGE = { width: 402.251, height: 280.106, dx: 0.89, dy: -60 };
 const MASK = { x: 64.255, y: 1.914, width: 272.822, height: 271.214 };
 /** 사진 요소 안에서 물결 모양 사진이 보이는 영역 (상세 화면 전환에서 사진의 출발 위치로 씀) */
 export const CARD_MASK_BOX = { left: MASK.x, top: MASK.y, width: MASK.width, height: MASK.height };
+/** 물결 영역을 기준(1 = 물결 영역 크기)으로 본 카드 사진의 위치·크기 — 전환 유령이 카드와 똑같이 사진을 보여 줄 때 씀 */
+export const CARD_PHOTO_IN_MASK = {
+  left: -MASK.x / MASK.width,
+  top: -MASK.y / MASK.height,
+  width: IMAGE.width / MASK.width,
+  height: IMAGE.height / MASK.height,
+};
 
 type Pose = { x: number; y: number; rotate: number; scale: number; dim: number };
 type Place = Pose & { z: number };
@@ -40,13 +47,15 @@ const FLICK_VELOCITY = 0.35; // px/ms
 const TAP_TOLERANCE = 6;
 const SWING_MS = 260;
 const SETTLE_MS = 460;
-// 이전 카드: 빠져나올 때는 감속, 앞에 놓일 때는 멈춘 자리에서 부드럽게 출발해 감속 (속도가 끊기지 않게)
-const EMERGE_EASE = "cubic-bezier(0.33, 1, 0.68, 1)";
-const LAND_EASE = "cubic-bezier(0.45, 0, 0.2, 1)";
+// 이전 카드: 손을 뗀 자리에서 멈추지 않고 바로 맨 앞으로 (빠르게 출발해 감속)
+const PREV_MS = 420;
+const PREV_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
+// 오른쪽으로 끌 때 맨 뒤 카드가 왼쪽으로 빠져나오는 정도 (이만큼 끌면 다 나옴)
+const PREV_PULL = 140;
 
 // out → tuck: 앞 카드가 왼쪽으로 빠졌다가 덱 뒤로 들어감 (왼쪽 스와이프)
-// emerge → land: 뒤 카드가 빠져나왔다가 맨 앞에 놓임 (오른쪽 스와이프)
-type Phase = "out" | "tuck" | "emerge" | "land";
+// land: 끌어낸 뒤 카드가 그 자리에서 곧장 맨 앞에 놓임 (오른쪽 스와이프)
+type Phase = "out" | "tuck" | "land";
 
 /** 맨 앞에서 rel번째 아래 카드가 n장 덱에서 놓이는 자리. 겹침 순서는 항상 덱 순서를 따릅니다. */
 function placeOf(rel: number, n: number): Place {
@@ -122,12 +131,10 @@ export function CardStack({
     const prevIndex = (index - 1 + n) % n;
     track("card_swiped", { direction: "prev", post_id: posts[index].id, position: index, viewer: lang === "en" ? "foreigner" : "korean" });
     const id = posts[prevIndex].id;
-    setPhase(id, "emerge");
-    later(SWING_MS, () => {
-      setPhase(id, "land");
-      onIndexChange(prevIndex);
-    });
-    later(SWING_MS + SETTLE_MS, () => setPhase(id, null));
+    // 끌던 자리(또는 덱 뒤 자리)에서 바로 맨 앞으로 — 중간에 멈추는 단계 없이 한 번에 이어집니다.
+    setPhase(id, "land");
+    onIndexChange(prevIndex);
+    later(PREV_MS, () => setPhase(id, null));
   };
 
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
@@ -176,10 +183,8 @@ export function CardStack({
         return { transform: ASIDE, zIndex: top, transition: `transform ${SWING_MS}ms ease-out` };
       case "tuck":
         return { transform: toTransform(place), zIndex: place.z };
-      case "emerge":
-        return { transform: ASIDE, zIndex: place.z, transition: `transform ${SWING_MS}ms ${EMERGE_EASE}` };
       case "land":
-        return { transform: toTransform(FRONT), zIndex: top, transition: `transform ${SETTLE_MS}ms ${LAND_EASE}` };
+        return { transform: toTransform(FRONT), zIndex: top, transition: `transform ${PREV_MS}ms ${PREV_EASE}` };
     }
 
     const zIndex = place.z;
@@ -190,9 +195,9 @@ export function CardStack({
       }
       // 오른쪽으로 끌면 맨 뒤 카드가 왼쪽 아래에서 빠져나옵니다.
       if (rel === n - 1 && dragX > 0 && n > 1) {
-        const p = Math.min(dragX / 200, 1);
+        const p = Math.min(dragX / PREV_PULL, 1);
         return {
-          transform: `translate(${place.x - 110 * p}px, ${place.y + 8 * p}px) rotate(${place.rotate - 12 * p}deg) scale(${place.scale + 0.04 * p})`,
+          transform: `translate(${place.x - 150 * p}px, ${place.y + 6 * p}px) rotate(${place.rotate - 12 * p}deg) scale(${place.scale + 0.06 * p})`,
           zIndex,
           transition: "none",
         };
@@ -301,7 +306,12 @@ function CardContent({ lang, post, voted }: { lang: Lang; post: Post; voted: boo
             {(en ? QUESTION_LABELS_EN : QUESTION_LABELS)[post.question.id]}
           </span>
         </span>
-        <span className="line-clamp-2 w-full text-[23px] leading-[1.18] font-extrabold tracking-[-0.69px] break-keep text-balance">
+        {/* 한국어 제목은 상세 제목과 같은 Paperlogy */}
+        <span
+          className={`line-clamp-2 w-full text-[23px] leading-[1.18] font-extrabold tracking-[-0.69px] break-keep text-balance ${
+            en ? "" : "font-(family-name:--font-paperlogy)"
+          }`}
+        >
           {en ? post.en.title : post.title}
         </span>
         <span className="flex w-full items-center justify-between text-[13px] font-semibold text-black/60">
