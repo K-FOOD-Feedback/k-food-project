@@ -603,10 +603,43 @@ function PhotoTile({
 }) {
   const [index, setIndex] = useState(0);
   const furthest = useRef(0); // 분석: 몇 번째 사진까지 봤는지
+  const many = photos.length > 1;
+  // 마우스로도 끌어서 넘길 수 있게 (터치·트랙패드는 브라우저 가로 스크롤 그대로)
+  const mouseDrag = useRef<{ x: number; left: number } | null>(null);
   return (
     <div className="relative aspect-square w-full overflow-hidden rounded-[32px] border border-black/4 bg-[#1e1e1e]">
       <div
-        className="flex size-full snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className={`flex size-full snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+          many ? "cursor-grab overflow-x-auto active:cursor-grabbing" : "overflow-hidden"
+        }`}
+        onPointerDown={(e) => {
+          if (!many || e.pointerType !== "mouse") return;
+          const el = e.currentTarget;
+          mouseDrag.current = { x: e.clientX, left: el.scrollLeft };
+          el.style.scrollSnapType = "none"; // 끄는 동안은 손을 따라오게
+          el.setPointerCapture(e.pointerId);
+        }}
+        onPointerMove={(e) => {
+          const drag = mouseDrag.current;
+          if (drag) e.currentTarget.scrollLeft = drag.left - (e.clientX - drag.x);
+        }}
+        onPointerUp={(e) => {
+          const drag = mouseDrag.current;
+          if (!drag) return;
+          mouseDrag.current = null;
+          const el = e.currentTarget;
+          const moved = e.clientX - drag.x;
+          const from = Math.round(drag.left / el.clientWidth);
+          // 조금만 끌어도(폭의 15%) 다음·이전 사진으로
+          const to = Math.abs(moved) > el.clientWidth * 0.15 ? from - Math.sign(moved) : from;
+          const target = Math.max(0, Math.min(photos.length - 1, to)) * el.clientWidth;
+          el.scrollTo({ left: target, behavior: "smooth" });
+          window.setTimeout(() => (el.style.scrollSnapType = ""), 400);
+        }}
+        onPointerCancel={(e) => {
+          mouseDrag.current = null;
+          e.currentTarget.style.scrollSnapType = "";
+        }}
         onScroll={(e) => {
           const el = e.currentTarget;
           const next = Math.round(el.scrollLeft / el.clientWidth);
@@ -636,7 +669,8 @@ function PhotoTile({
       >
         {participants}명 참여 중!
       </p>
-      {photos.length > 1 && (
+      {/* 사진이 여러 장일 때만 장수만큼 점 표시 (1장이면 없음) */}
+      {many && (
         <div className="absolute bottom-[13px] left-1/2 flex -translate-x-1/2 gap-1.5" aria-hidden>
           {photos.map((_, i) => (
             <span
