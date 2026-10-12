@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { track } from "@/lib/analytics";
+import { cardShapeAt } from "./cardShapes";
 import { QUESTION_LABELS, QUESTION_LABELS_EN, participantsOf, type HomePost as Post } from "./mockPosts";
 
 /** ko = 한국인 메인(/home), en = 외국인 메인(/home/en) */
@@ -248,7 +249,7 @@ export function CardStack({
               if (isFront && !moved.current) onOpen(post, e.currentTarget);
             }}
           >
-            <CardContent lang={lang} post={post} voted={votedIds.has(post.id)} />
+            <CardContent lang={lang} post={post} voted={votedIds.has(post.id)} mask={cardShapeAt(i)} />
             <span
               className="pointer-events-none absolute inset-0 bg-black/32 transition-opacity duration-[420ms]"
               style={{ opacity: dim / 0.32 }}
@@ -261,10 +262,9 @@ export function CardStack({
 }
 
 /** 카드 한 장 (Figma: KF/Feed Card) */
-function CardContent({ lang, post, voted }: { lang: Lang; post: Post; voted: boolean }) {
+function CardContent({ lang, post, voted, mask }: { lang: Lang; post: Post; voted: boolean; mask: string }) {
   const en = lang === "en";
   const photo = post.cardPhoto;
-  const mask = 'url("/images/card-mask.svg")';
   return (
     <>
       {photo && (

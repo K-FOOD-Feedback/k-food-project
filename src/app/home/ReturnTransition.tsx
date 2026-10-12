@@ -19,7 +19,6 @@ const place = (b: Box, radius: string) => ({
 const boxOnly = (b: Box) => ({ left: `${b.left}px`, top: `${b.top}px`, width: `${b.width}px`, height: `${b.height}px` });
 const boxStyle = (b: Box) => ({ left: b.left, top: b.top, width: b.width, height: b.height });
 const toBox = (r: DOMRect): Box => ({ left: r.left, top: r.top, width: r.width, height: r.height });
-const WAVE_MASK = 'url("/images/card-mask.svg")';
 const pct = (v: number) => `${v * 100}%`;
 
 /**
@@ -30,10 +29,13 @@ const pct = (v: number) => `${v * 100}%`;
 export function ReturnGhosts({
   transition: t,
   cardPhoto,
+  photoMask,
   onDone,
 }: {
   transition: ReturnTransition;
   cardPhoto?: string;
+  /** 맨 앞 카드의 사진 모양 (cardShapes) */
+  photoMask: string;
   onDone: () => void;
 }) {
   const cardGhost = useRef<HTMLDivElement>(null);
@@ -88,7 +90,7 @@ export function ReturnGhosts({
     const animations = [
       cardGhost.current.animate([place(t.card, "32px"), place(to.card, "34.8px")], timing),
       photoGhost.current.animate([boxOnly(t.photo), boxOnly(to.photo)], timing),
-      // 상세 사진(모서리 둥근 사각형)이 줄어드는 동안, 카드와 똑같은 물결 사진이 그 위로 서서히 겹쳐 나타남
+      // 상세 사진(모서리 둥근 사각형)이 줄어드는 동안, 카드와 똑같은 모양·구도의 사진이 그 위로 서서히 겹쳐 나타남
       ...(detailPhoto.current ? [detailPhoto.current.animate([{ borderRadius: "32px" }, { borderRadius: "45%" }], timing)] : []),
       ...fade(wavePhoto.current, [{ opacity: 0 }, { opacity: 1, offset: 0.45 }, { opacity: 1 }]),
       ...fade(detailPhoto.current, [{ opacity: 1 }, { opacity: 1, offset: 0.2 }, { opacity: 0, offset: 0.55 }, { opacity: 0 }]),
@@ -168,11 +170,11 @@ export function ReturnGhosts({
           <img src={t.photoSrc} alt="" className="absolute inset-0 size-full object-cover" />
         </div>
         {cardPhoto && (
-          // 카드 속 물결 사진과 똑같은 모양·구도 (물결 영역 크기에 맞춰 함께 늘었다 줄었다 함)
+          // 카드 속 사진과 똑같은 모양·구도 (사진 영역 크기에 맞춰 함께 늘었다 줄었다 함)
           <div
             ref={wavePhoto}
             className="absolute inset-0 opacity-0"
-            style={{ maskImage: WAVE_MASK, WebkitMaskImage: WAVE_MASK, maskSize: "100% 100%", WebkitMaskSize: "100% 100%", maskRepeat: "no-repeat", WebkitMaskRepeat: "no-repeat" }}
+            style={{ maskImage: photoMask, WebkitMaskImage: photoMask, maskSize: "100% 100%", WebkitMaskSize: "100% 100%", maskRepeat: "no-repeat", WebkitMaskRepeat: "no-repeat" }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element -- 전환용 사진 */}
             <img

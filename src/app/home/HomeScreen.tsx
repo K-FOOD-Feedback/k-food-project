@@ -6,6 +6,7 @@ import { ShareKfoodButton } from "@/components/ShareKfoodButton";
 import { track, useTrackOnce } from "@/lib/analytics";
 import { measureCard, peekReturnTransition, setCardTransition } from "./cardTransition";
 import { CARD_MASK_BOX, CardStack, type Lang } from "./CardStack";
+import { cardShapeAt } from "./cardShapes";
 import { MainHeader } from "./MainHeader";
 import { ReturnGhosts } from "./ReturnTransition";
 import { HOME_POSTS, type HomePost } from "./mockPosts";
@@ -79,7 +80,7 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
       </div>
 
       {returning && (
-        <ReturnGhosts transition={returning} cardPhoto={current.cardPhoto} onDone={() => setReturning(null)} />
+        <ReturnGhosts transition={returning} cardPhoto={current.cardPhoto} photoMask={cardShapeAt(index)} onDone={() => setReturning(null)} />
       )}
 
       {lang === "en" ? (
