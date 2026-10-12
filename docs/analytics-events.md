@@ -45,7 +45,7 @@
 | `vote_drag_missed` | 토큰을 칸 밖에 놓음 | `post_id` |
 | `comment_section_viewed` | 댓글 영역이 보임 | `post_id`, `voted` |
 | `comment_sent` | 한마디 / 이모지 | `post_id`, `type`(text/emoji), `length`, `emoji`, `lines`, `screen` |
-| `comments_opened` | 댓글 전체 보기 | `post_id`, `comment_count` |
+| `comments_opened` | 댓글 전체 보기 | `post_id`, `comment_count`, `from`(`detail` = 상세 화면 한마디 칸을 눌러서) |
 | `old_comments_scrolled` | 전체 화면에서 스크롤 | `post_id` |
 | `post_closed` | 상세를 떠날 때 | `post_id`, `seconds`, `voted`, `saw_vote`, `saw_comments` |
 | `post_more_clicked` | 상세 ⋯ 메뉴 열림 | `post_id` |

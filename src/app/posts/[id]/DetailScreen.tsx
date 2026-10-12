@@ -434,6 +434,16 @@ export function DetailScreen({ post }: { post: HomePost }) {
             <CommentPile postId={post.id} commentCount={post.commentCount} authorFlag={post.author.flag} />
           </div>
           <CommentLock locked={!voted} onVote={goToVote} />
+          {/* 투표 후: 한마디 칸 어디를 눌러도 한마디 전체 화면으로 (상세에서는 말풍선 호버·모달 없이 칸 전체가 하나의 링크) */}
+          {voted && (
+            <TrackedLink
+              href={`/posts/${post.id}/comments`}
+              event="comments_opened"
+              props={{ post_id: post.id, comment_count: post.commentCount, from: "detail" }}
+              aria-label="한마디 전체 보기"
+              className="absolute inset-x-0 top-0 z-10 h-[362px] rounded-[32px]"
+            />
+          )}
         </div>
 
         {/* 화면 맨 아래 "다음 훈수 거리" (Figma 332:3426 Question CTA) — 떠 있지 않고 내용 끝에 놓임 */}
