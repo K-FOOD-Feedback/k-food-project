@@ -11,7 +11,7 @@ const title = "font-(family-name:--font-paperlogy) text-[24px] leading-[1.3] tra
 
 /*
   랜딩 화면 투표 장면과 같은 움직임 (src/app/landing/LandingScreen.tsx)
-  - 🇰🇷 토큰: 120° 돌며 칸으로 떨어지고, 살짝 지나쳤다가 제자리 (랜딩의 backOut, c = 1.9)
+  - 🇰🇷 토큰: 120° 돌며 내 칸(칸 이름과 % 사이)으로 떨어지고, 살짝 지나쳤다가 제자리 (랜딩의 backOut, c = 1.9)
   - 칸 결과: 토큰이 반쯤 왔을 때부터 칸마다 조금씩 늦게 아래에서 차오르고, %는 그때 나타남
   랜딩 마지막 "당신은 누구인가요?" 칸과 같은 움직임
   - 투표 영역이 처음 보이면 토큰이 위에서 톡 떨어지고, 투표하기 전까지 🇰🇷가 계속 손 흔들듯 흔들림 (token-drop · wave)
@@ -35,7 +35,7 @@ export function VoteBowl({ post }: { post: HomePost }) {
   const options = post.question.options;
   const columns = useRef<(HTMLButtonElement | null)[]>([]);
   const token = useRef<HTMLDivElement>(null);
-  // 내 칸 오른쪽 위에 들어가 앉은 토큰 (랜딩과 같은 자리·모양)
+  // 내 칸에 들어가 앉은 토큰 (칸 이름과 % 사이, 차오른 색 바로 위)
   const landed = useRef<HTMLSpanElement>(null);
   // 토큰이 칸으로 날아가는 애니메이션의 출발점 (투표 직전 위치)
   const flyFrom = useRef<DOMRect | null>(null);
@@ -70,7 +70,7 @@ export function VoteBowl({ post }: { post: HomePost }) {
     if (!from || !el || myVote === null) return;
     flyFrom.current = null;
     const to = el.getBoundingClientRect();
-    // 출발: 원래 토큰 자리·크기(가운데 맞춤)·색 → 도착: 칸 오른쪽 위 작은 흰 원
+    // 출발: 원래 토큰 자리(가운데 맞춤) → 도착: 내 칸 차오른 색 바로 위, 돌면서 떨어짐
     const dx = from.left + from.width / 2 - (to.left + to.width / 2);
     const dy = from.top + from.height / 2 - (to.top + to.height / 2);
     el.animate(
@@ -80,12 +80,6 @@ export function VoteBowl({ post }: { post: HomePost }) {
       ],
       { duration: TOKEN_MS, easing: BACK_OUT },
     );
-    if (from.width !== to.width) {
-      el.animate([{ backgroundColor: "var(--color-on-light)" }, { backgroundColor: "var(--color-on-dark)" }], {
-        duration: TOKEN_MS * 0.5,
-        easing: "ease-out",
-      });
-    }
   }, [myVote]);
 
   // 분석: 화면에 들어와서 투표까지 걸린 시간, 처음 투표인지 선택을 바꾼 건지
@@ -251,9 +245,7 @@ export function VoteBowl({ post }: { post: HomePost }) {
                 </span>
               )}
               <span
-                className={`absolute top-0 left-0 w-full pr-2 pl-4 text-[14px] leading-[1.25] font-medium tracking-[-0.42px] whitespace-pre-line transition-[opacity,padding] duration-300 ${
-                  voted ? "pt-[52px]" : "pt-4"
-                } ${
+                className={`absolute top-0 left-0 w-full pr-2 pl-4 text-[14px] leading-[1.25] font-medium tracking-[-0.42px] whitespace-pre-line pt-4 transition-opacity ${
                   mine || hover === i ? "opacity-100" : "opacity-40"
                 }`}
               >
@@ -267,12 +259,13 @@ export function VoteBowl({ post }: { post: HomePost }) {
                   {pcts[i]}%
                 </span>
               )}
-              {/* 투표하면 칸 이름은 한 줄 아래로 내려가고, 그 위 오른쪽에 토큰이 앉음 (랜딩 투표 장면과 같은 자리) */}
+              {/* 투표하면 토큰은 칸 이름과 % 사이, 차오른 색 바로 위 가운데에 앉음 (투표 전 토큰과 같은 회색 원) */}
               {mine && (
                 <span
                   ref={landed}
                   aria-hidden="true"
-                  className="absolute top-1.5 right-1.5 flex size-10 items-center justify-center rounded-full bg-on-dark text-[18px] leading-none shadow-[0_4px_12px_rgba(0,0,0,0.25)]"
+                  className="absolute left-[calc(50%-32px)] flex size-16 items-center justify-center rounded-full bg-on-light text-[25px] leading-none shadow-[0_6px_16px_rgba(0,0,0,0.35)]"
+                  style={{ bottom: `min(calc(${pcts[i]}% + 8px), 110px)` }}
                 >
                   {/* 칸에 들어가 앉으면 한 번 손 흔들기 */}
                   <span className="inline-block origin-[50%_85%] animate-[wave_1s_ease-in-out_450ms_both]">🇰🇷</span>
