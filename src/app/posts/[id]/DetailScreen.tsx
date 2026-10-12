@@ -565,6 +565,8 @@ const INTRO_MS = 420;
 let commentsTrip: { postId: string; scrollY: number; at: number } | null = null;
 const TRIP_TTL_MS = 30 * 60_000;
 const BACK_CARD_MS = 320;
+// 사진 자동 넘김 간격 (가만히 있은 지 이만큼 지나면 다음 사진)
+const AUTOPLAY_MS = 3500;
 // 한마디 입력 카드 흔들기 한 번의 길이 (앞 40%만 흔들고 나머지는 쉼)
 const WIGGLE_MS = 2600;
 const BACK_STAGGER_MS = 70;
@@ -609,6 +611,8 @@ function PhotoTile({
   // 가짜 칸에 멈추면 같은 사진인 진짜 칸으로 몰래 옮깁니다. 진짜 첫 사진은 1번 칸.
   const slides = many ? [photos[count - 1], ...photos, photos[0]] : photos;
   const scroller = useRef<HTMLDivElement>(null);
+  // 마우스로도 끌어서 넘길 수 있게 (터치·트랙패드는 브라우저 가로 스크롤 그대로)
+  const mouseDrag = useRef<{ x: number; left: number } | null>(null);
   useLayoutEffect(() => {
     const el = scroller.current;
     if (many && el) el.scrollLeft = el.clientWidth;
@@ -620,8 +624,35 @@ function PhotoTile({
     if (slot === 0) el.scrollLeft = count * el.clientWidth;
     else if (slot === count + 1) el.scrollLeft = el.clientWidth;
   };
-  // 마우스로도 끌어서 넘길 수 있게 (터치·트랙패드는 브라우저 가로 스크롤 그대로)
-  const mouseDrag = useRef<{ x: number; left: number } | null>(null);
+
+  // 가만히 있으면 사진이 저절로 다음으로 넘어감 (마지막 다음은 처음).
+  // 사용자가 만지면(누르기·끌기·휠) 그때부터 다시 기다렸다가 넘깁니다. 화면 밖이나 다른 탭이면 쉼.
+  const lastTouched = useRef(0);
+  const touched = () => {
+    lastTouched.current = Date.now();
+  };
+  useEffect(() => {
+    const el = scroller.current;
+    if (!many || !el) return;
+    let visible = false;
+    const observer = new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting;
+    }, { threshold: 0.5 });
+    observer.observe(el);
+    lastTouched.current = Date.now();
+    const timer = window.setInterval(() => {
+      if (!visible || document.hidden || mouseDrag.current) return;
+      if (Date.now() - lastTouched.current < AUTOPLAY_MS) return;
+      const slot = Math.round(el.scrollLeft / el.clientWidth);
+      el.scrollTo({ left: (slot + 1) * el.clientWidth, behavior: "smooth" });
+      lastTouched.current = Date.now();
+    }, 500);
+    return () => {
+      clearInterval(timer);
+      observer.disconnect();
+    };
+  }, [many]);
+
   return (
     <div className="relative aspect-square w-full overflow-hidden rounded-[32px] border border-black/4 bg-[#1e1e1e]">
       <div
@@ -630,6 +661,7 @@ function PhotoTile({
           many ? "cursor-grab overflow-x-auto active:cursor-grabbing" : "overflow-hidden"
         }`}
         onPointerDown={(e) => {
+          touched();
           if (!many || e.pointerType !== "mouse") return;
           const el = e.currentTarget;
           mouseDrag.current = { x: e.clientX, left: el.scrollLeft };
@@ -654,7 +686,10 @@ function PhotoTile({
             el.style.scrollSnapType = "";
             settle(el);
           }, 450);
+          touched();
         }}
+        onTouchMove={touched}
+        onWheel={touched}
         onPointerCancel={(e) => {
           mouseDrag.current = null;
           e.currentTarget.style.scrollSnapType = "";
