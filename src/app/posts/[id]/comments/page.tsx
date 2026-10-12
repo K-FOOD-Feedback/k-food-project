@@ -4,6 +4,7 @@ import { getHomePost } from "@/app/home/mockPosts";
 import { MyPostComments } from "@/app/write/MyPostDetail";
 import { MY_POST_ID } from "@/lib/write-data";
 import { backHrefFrom } from "@/lib/back";
+import { HEADER_BUTTON, PageHeader } from "@/components/PageHeader";
 import { TrackedLink } from "@/components/Track";
 import { CommentPile } from "../CommentPile";
 import { paperlogy } from "../font";
@@ -24,22 +25,29 @@ export default async function Page(props: PageProps<"/posts/[id]/comments">) {
   const post = getHomePost(id);
   if (!post) notFound();
 
-  const circle = "flex size-16 items-center justify-center rounded-full bg-white/8";
-
   return (
     <VoteGate postId={post.id}>
       <main
         className={`${paperlogy.variable} mx-auto flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-background text-on-dark`}
       >
-        <header className="flex shrink-0 items-center justify-between px-2 pt-[calc(16px+env(safe-area-inset-top))] pb-4">
-          <Link href={backHref} aria-label={backHref === `/posts/${id}` ? "상세로 돌아가기" : "알림으로 돌아가기"} className={circle}>
-            <ChevronLeftIcon />
-          </Link>
-          <TrackedLink href="/" event="language_clicked" props={{ from: "comments" }} className={circle} aria-label="언어 선택">
-            {/* eslint-disable-next-line @next/next/no-img-element -- 작은 SVG 아이콘 */}
-            <img src="/images/icon-world.svg" width={24} height={24} alt="" />
-          </TrackedLink>
-        </header>
+        {/* 공통 상단 바 (src/components/PageHeader — 모든 화면이 같은 위치·크기·디자인) */}
+        <PageHeader
+          left={
+            <Link
+              href={backHref}
+              aria-label={backHref === `/posts/${id}` ? "상세로 돌아가기" : "알림으로 돌아가기"}
+              className={HEADER_BUTTON}
+            >
+              <ChevronLeftIcon />
+            </Link>
+          }
+          right={
+            <TrackedLink href="/" event="language_clicked" props={{ from: "comments" }} className={HEADER_BUTTON} aria-label="언어 선택">
+              {/* eslint-disable-next-line @next/next/no-img-element -- 작은 SVG 아이콘 */}
+              <img src="/images/icon-world.svg" width={24} height={24} alt="" />
+            </TrackedLink>
+          }
+        />
 
         <div className="flex min-h-0 flex-1 flex-col pb-[calc(24px+env(safe-area-inset-bottom))]">
           <CommentPile
