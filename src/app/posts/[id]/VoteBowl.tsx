@@ -122,9 +122,9 @@ export function VoteBowl({ post }: { post: HomePost }) {
     });
     flyFrom.current = (landed.current ?? token.current)?.getBoundingClientRect() ?? null;
     saveVote(post.id, choice);
-    // 처음 투표하면 토큰이 내 칸에 앉을 즈음 그 칸에서 폭죽이 한 번 터짐 (선택 바꿀 때는 없음)
+    // 투표할 때마다(선택을 바꿀 때도) 토큰이 내 칸에 앉을 즈음 그 칸에서 폭죽이 터짐
     const col = columns.current[choice];
-    if (myVote === null && col) {
+    if (col) {
       window.setTimeout(() => {
         const r = col.getBoundingClientRect();
         burstConfetti(r.left + r.width / 2, r.top + r.height * 0.45);
