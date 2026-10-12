@@ -9,6 +9,17 @@ import { useFlow } from "@/lib/write-store";
 
 const title = "font-(family-name:--font-paperlogy) text-[24px] leading-[1.3] tracking-[-0.72px]";
 
+/*
+  랜딩 화면 투표 장면과 같은 움직임 (src/app/landing/LandingScreen.tsx)
+  - 🇰🇷 토큰: 120° 돌며 칸으로 떨어지고, 살짝 지나쳤다가 제자리 (랜딩의 backOut, c = 1.9)
+  - 칸 결과: 토큰이 반쯤 왔을 때부터 칸마다 조금씩 늦게 아래에서 차오르고, %는 그때 나타남
+*/
+const BACK_OUT =
+  "linear(0, 0.228, 0.425, 0.592, 0.731, 0.845, 0.936, 1.006, 1.058, 1.092, 1.112, 1.12, 1.118, 1.108, 1.093, 1.073, 1.053, 1.033, 1.016, 1.004, 1)";
+const TOKEN_MS = 600;
+const FILL_DELAY_MS = 300;
+const FILL_STAGGER_MS = 80;
+
 /**
   투표 카드 (Figma: VoteCard / Bowl)
   🇰🇷 토큰을 칸으로 끌어다 놓거나 칸을 누르면 투표되고, 바로 결과가 칸 높이로 보입니다.
@@ -21,6 +32,8 @@ export function VoteBowl({ post }: { post: HomePost }) {
   const options = post.question.options;
   const columns = useRef<(HTMLButtonElement | null)[]>([]);
   const token = useRef<HTMLDivElement>(null);
+  // 내 칸 오른쪽 위에 들어가 앉은 토큰 (랜딩과 같은 자리·모양)
+  const landed = useRef<HTMLSpanElement>(null);
   // 토큰이 칸으로 날아가는 애니메이션의 출발점 (투표 직전 위치)
   const flyFrom = useRef<DOMRect | null>(null);
   const [drag, setDrag] = useState<{ x: number; y: number; startX: number; startY: number } | null>(null);
@@ -33,14 +46,26 @@ export function VoteBowl({ post }: { post: HomePost }) {
   // 투표 직후: 토큰을 원래 자리에서 새 자리(내 칸)로 날려 보냅니다.
   useLayoutEffect(() => {
     const from = flyFrom.current;
-    const el = token.current;
+    const el = landed.current;
     if (!from || !el || myVote === null) return;
     flyFrom.current = null;
     const to = el.getBoundingClientRect();
+    // 출발: 원래 토큰 자리·크기(가운데 맞춤)·색 → 도착: 칸 오른쪽 위 작은 흰 원
+    const dx = from.left + from.width / 2 - (to.left + to.width / 2);
+    const dy = from.top + from.height / 2 - (to.top + to.height / 2);
     el.animate(
-      [{ translate: `${from.left - to.left}px ${from.top - to.top}px`, scale: "1.15" }, { translate: "0 0", scale: "1" }],
-      { duration: 520, easing: "cubic-bezier(0.3, 1.3, 0.5, 1)" },
+      [
+        { translate: `${dx}px ${dy}px`, rotate: "120deg", scale: `${from.width / to.width}` },
+        { translate: "0 0", rotate: "0deg", scale: "1" },
+      ],
+      { duration: TOKEN_MS, easing: BACK_OUT },
     );
+    if (from.width !== to.width) {
+      el.animate([{ backgroundColor: "var(--color-on-light)" }, { backgroundColor: "var(--color-on-dark)" }], {
+        duration: TOKEN_MS * 0.5,
+        easing: "ease-out",
+      });
+    }
   }, [myVote]);
 
   // 분석: 화면에 들어와서 투표까지 걸린 시간, 처음 투표인지 선택을 바꾼 건지
@@ -73,7 +98,7 @@ export function VoteBowl({ post }: { post: HomePost }) {
       seconds_to_vote: Math.round((performance.now() - mountedAt.current) / 100) / 10,
       total_votes_before: total,
     });
-    flyFrom.current = token.current?.getBoundingClientRect() ?? null;
+    flyFrom.current = (landed.current ?? token.current)?.getBoundingClientRect() ?? null;
     saveVote(post.id, choice);
   };
 
@@ -176,20 +201,25 @@ export function VoteBowl({ post }: { post: HomePost }) {
                   ? `${label.replace("\n", " ")} ${pcts[i]}%${mine ? " (내 선택)" : " — 눌러서 선택 바꾸기"}`
                   : `${label.replace("\n", " ")}에 투표`
               }
-              className={`relative h-[230px] min-w-0 flex-1 overflow-hidden rounded-[20px] text-left transition-[background-color,scale] ${
+              className={`relative h-[230px] min-w-0 flex-1 rounded-[20px] text-left transition-[background-color,scale] ${
                 hover === i ? "bg-[#2e2e2e]" : "bg-[#1e1e1e]"
               } ${mine ? "cursor-default" : "active:scale-[0.98]"}`}
             >
+              {/* 차오르는 결과는 칸 모양으로 잘라 냄 (칸 자체는 잘라 내지 않아야 날아오는 토큰이 칸 밖에서도 보임) */}
               {voted && (
-                <span
-                  className={`absolute inset-x-0 bottom-0 transition-[height] duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] starting:h-0 ${
-                    mine ? "bg-primary" : "bg-white/10"
-                  }`}
-                  style={{ height: `${pcts[i]}%` }}
-                />
+                <span className="absolute inset-0 overflow-hidden rounded-[20px]">
+                  <span
+                    className={`absolute inset-x-0 bottom-0 transition-[height] duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] starting:h-0 ${
+                      mine ? "bg-primary" : "bg-white/10"
+                    }`}
+                    style={{ height: `${pcts[i]}%`, transitionDelay: `${FILL_DELAY_MS + i * FILL_STAGGER_MS}ms` }}
+                  />
+                </span>
               )}
               <span
-                className={`absolute top-0 left-0 w-full pt-4 pr-2 pl-4 text-[14px] leading-[1.25] font-medium tracking-[-0.42px] whitespace-pre-line transition-opacity ${
+                className={`absolute top-0 left-0 w-full pr-2 pl-4 text-[14px] leading-[1.25] font-medium tracking-[-0.42px] whitespace-pre-line transition-[opacity,padding] duration-300 ${
+                  voted ? "pt-[52px]" : "pt-4"
+                } ${
                   mine || hover === i ? "opacity-100" : "opacity-40"
                 }`}
               >
@@ -197,14 +227,20 @@ export function VoteBowl({ post }: { post: HomePost }) {
               </span>
               {voted && (
                 <span
-                  className={`${title} absolute bottom-3 left-4 ${mine ? "text-on-light" : "text-on-dark"}`}
+                  className={`${title} absolute bottom-3 left-4 transition-opacity duration-300 starting:opacity-0 ${mine ? "text-on-light" : "text-on-dark"}`}
+                  style={{ transitionDelay: `${FILL_DELAY_MS + i * FILL_STAGGER_MS}ms` }}
                 >
                   {pcts[i]}%
                 </span>
               )}
+              {/* 투표하면 칸 이름은 한 줄 아래로 내려가고, 그 위 오른쪽에 토큰이 앉음 (랜딩 투표 장면과 같은 자리) */}
               {mine && (
-                <span className="absolute left-1/2 -translate-x-1/2" style={{ bottom: `min(calc(${pcts[i]}% + 8px), 110px)` }}>
-                  {tokenEl}
+                <span
+                  ref={landed}
+                  aria-hidden="true"
+                  className="absolute top-1.5 right-1.5 flex size-10 items-center justify-center rounded-full bg-on-dark text-[18px] leading-none shadow-[0_4px_12px_rgba(0,0,0,0.25)]"
+                >
+                  🇰🇷
                 </span>
               )}
             </button>
