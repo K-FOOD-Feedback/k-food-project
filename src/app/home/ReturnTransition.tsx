@@ -1,7 +1,8 @@
 "use client";
 
 import { useLayoutEffect, useRef } from "react";
-import { CARD_MASK_BOX, CARD_PHOTO_IN_MASK } from "./CardStack";
+import { CARD_PHOTO_IN_MASK, cardMaskBox } from "./CardStack";
+import type { CardShape } from "./cardShapes";
 import { clearReturnTransition, measureCard, type Box, type ReturnTransition } from "./cardTransition";
 
 const RETURN_MS = 420;
@@ -29,13 +30,13 @@ const pct = (v: number) => `${v * 100}%`;
 export function ReturnGhosts({
   transition: t,
   cardPhoto,
-  photoMask,
+  shape,
   onDone,
 }: {
   transition: ReturnTransition;
   cardPhoto?: string;
   /** 맨 앞 카드의 사진 모양 (cardShapes) */
-  photoMask: string;
+  shape: CardShape;
   onDone: () => void;
 }) {
   const cardGhost = useRef<HTMLDivElement>(null);
@@ -57,7 +58,7 @@ export function ReturnGhosts({
       onDone();
       return;
     }
-    const to = measureCard(front, CARD_MASK_BOX);
+    const to = measureCard(front, cardMaskBox(shape.scale));
 
     // 카드 유령 안에 맨 앞 카드의 글(질문·제목·작성자)을 복사해 넣어, 처음부터 글이 같이 움직이게 합니다.
     // 글은 카드 아래쪽에 붙어 있어서, 유령의 아래 가운데에 진짜 카드 크기로 붙여 둡니다. 사진·스티커는 따로 움직이는 유령이 맡습니다.
@@ -174,7 +175,7 @@ export function ReturnGhosts({
           <div
             ref={wavePhoto}
             className="absolute inset-0 opacity-0"
-            style={{ maskImage: photoMask, WebkitMaskImage: photoMask, maskSize: "100% 100%", WebkitMaskSize: "100% 100%", maskRepeat: "no-repeat", WebkitMaskRepeat: "no-repeat" }}
+            style={{ maskImage: shape.mask, WebkitMaskImage: shape.mask, maskSize: "100% 100%", WebkitMaskSize: "100% 100%", maskRepeat: "no-repeat", WebkitMaskRepeat: "no-repeat" }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element -- 전환용 사진 */}
             <img

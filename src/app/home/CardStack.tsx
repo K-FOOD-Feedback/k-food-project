@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { track } from "@/lib/analytics";
-import { cardShapeAt } from "./cardShapes";
+import { cardShapeAt, type CardShape } from "./cardShapes";
 import { QUESTION_LABELS, QUESTION_LABELS_EN, participantsOf, type HomePost as Post } from "./mockPosts";
 
 /** ko = 한국인 메인(/home), en = 외국인 메인(/home/en) */
@@ -15,6 +15,13 @@ const IMAGE = { width: 402.251, height: 280.106, dx: 0.89, dy: -60 };
 const MASK = { x: 64.255, y: 1.914, width: 272.822, height: 271.214 };
 /** 사진 요소 안에서 물결 모양 사진이 보이는 영역 (상세 화면 전환에서 사진의 출발 위치로 씀) */
 export const CARD_MASK_BOX = { left: MASK.x, top: MASK.y, width: MASK.width, height: MASK.height };
+/** 모양 크기(scale)를 반영한 사진 요소 안 모양 영역 — 사진 요소와 모양이 같은 가운데를 두고 함께 커지거나 작아짐 */
+export const cardMaskBox = (scale: number) => ({
+  left: MASK.x * scale,
+  top: MASK.y * scale,
+  width: MASK.width * scale,
+  height: MASK.height * scale,
+});
 /** 물결 영역을 기준(1 = 물결 영역 크기)으로 본 카드 사진의 위치·크기 — 전환 유령이 카드와 똑같이 사진을 보여 줄 때 씀 */
 export const CARD_PHOTO_IN_MASK = {
   left: -MASK.x / MASK.width,
@@ -249,7 +256,7 @@ export function CardStack({
               if (isFront && !moved.current) onOpen(post, e.currentTarget);
             }}
           >
-            <CardContent lang={lang} post={post} voted={votedIds.has(post.id)} mask={cardShapeAt(i)} />
+            <CardContent lang={lang} post={post} voted={votedIds.has(post.id)} shape={cardShapeAt(i)} />
             <span
               className="pointer-events-none absolute inset-0 bg-black/32 transition-opacity duration-[420ms]"
               style={{ opacity: dim / 0.32 }}
@@ -262,9 +269,11 @@ export function CardStack({
 }
 
 /** 카드 한 장 (Figma: KF/Feed Card) */
-function CardContent({ lang, post, voted, mask }: { lang: Lang; post: Post; voted: boolean; mask: string }) {
+function CardContent({ lang, post, voted, shape }: { lang: Lang; post: Post; voted: boolean; shape: CardShape }) {
   const en = lang === "en";
   const photo = post.cardPhoto;
+  const { mask, scale: k } = shape;
+  const m = cardMaskBox(k);
   return (
     <>
       {photo && (
@@ -272,16 +281,17 @@ function CardContent({ lang, post, voted, mask }: { lang: Lang; post: Post; vote
           data-card-photo
           className="absolute -translate-x-1/2 -translate-y-1/2 [mask-repeat:no-repeat]"
           style={{
-            width: IMAGE.width,
-            height: IMAGE.height,
+            // 모양마다 시각 보정 크기(k)만큼 사진과 모양을 함께 키우거나 줄임 (가운데는 그대로)
+            width: IMAGE.width * k,
+            height: IMAGE.height * k,
             left: `calc(50% + ${IMAGE.dx}px)`,
             top: `calc(50% + ${IMAGE.dy}px)`,
             maskImage: mask,
             WebkitMaskImage: mask,
-            maskPosition: `${MASK.x}px ${MASK.y}px`,
-            WebkitMaskPosition: `${MASK.x}px ${MASK.y}px`,
-            maskSize: `${MASK.width}px ${MASK.height}px`,
-            WebkitMaskSize: `${MASK.width}px ${MASK.height}px`,
+            maskPosition: `${m.left}px ${m.top}px`,
+            WebkitMaskPosition: `${m.left}px ${m.top}px`,
+            maskSize: `${m.width}px ${m.height}px`,
+            WebkitMaskSize: `${m.width}px ${m.height}px`,
           }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element -- 업로드한 사진(blob/외부 URL)도 그대로 보여 줘야 해서 img 사용 */}

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { ShareKfoodButton } from "@/components/ShareKfoodButton";
 import { track, useTrackOnce } from "@/lib/analytics";
 import { measureCard, peekReturnTransition, setCardTransition } from "./cardTransition";
-import { CARD_MASK_BOX, CardStack, type Lang } from "./CardStack";
+import { CardStack, cardMaskBox, type Lang } from "./CardStack";
 import { cardShapeAt } from "./cardShapes";
 import { MainHeader } from "./MainHeader";
 import { ReturnGhosts } from "./ReturnTransition";
@@ -52,7 +52,15 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
       position: posts.indexOf(post),
       already_voted: votedIds.has(post.id),
     });
-    if (cardEl) setCardTransition({ postId: post.id, ...measureCard(cardEl, CARD_MASK_BOX), cardPhoto: post.cardPhoto, photoMask: cardShapeAt(posts.indexOf(post)), color: post.color });
+    const shape = cardShapeAt(posts.indexOf(post));
+    if (cardEl)
+      setCardTransition({
+        postId: post.id,
+        ...measureCard(cardEl, cardMaskBox(shape.scale)),
+        cardPhoto: post.cardPhoto,
+        photoMask: shape.mask,
+        color: post.color,
+      });
     router.push(`/posts/${post.id}`);
   };
 
@@ -80,7 +88,7 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
       </div>
 
       {returning && (
-        <ReturnGhosts transition={returning} cardPhoto={current.cardPhoto} photoMask={cardShapeAt(index)} onDone={() => setReturning(null)} />
+        <ReturnGhosts transition={returning} cardPhoto={current.cardPhoto} shape={cardShapeAt(index)} onDone={() => setReturning(null)} />
       )}
 
       {lang === "en" ? (
