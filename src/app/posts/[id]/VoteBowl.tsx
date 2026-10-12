@@ -334,9 +334,7 @@ export function VoteBowl({ post }: { post: HomePost }) {
                 </span>
               )}
               <span
-                className={`absolute top-0 left-0 w-full pr-2 pl-4 text-[14px] leading-[1.25] font-medium tracking-[-0.42px] whitespace-pre-line pt-4 transition-opacity ${
-                  mine || hover === i ? "opacity-100" : "opacity-40"
-                }`}
+                className="absolute top-0 left-0 w-full pt-4 pr-2 pl-4 font-(family-name:--font-paperlogy) text-[16px] leading-[1.3] tracking-[-0.32px] whitespace-pre-line text-on-dark"
               >
                 {label}
               </span>
