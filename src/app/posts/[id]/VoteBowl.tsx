@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import type { HomePost } from "@/app/home/mockPosts";
 import { saveVote, useMyVote } from "@/app/home/votes";
 import { LoginSheet } from "@/components/LoginSheet";
@@ -16,12 +16,17 @@ const title = "font-(family-name:--font-paperlogy) text-[24px] leading-[1.3] tra
   랜딩 마지막 "당신은 누구인가요?" 칸과 같은 움직임
   - 투표 영역이 처음 보이면 토큰이 위에서 톡 떨어지고, 투표하기 전까지 🇰🇷가 계속 손 흔들듯 흔들림 (token-drop · wave)
   - 내 칸의 색은 윗변이 물결 모양으로 옆으로 흐르며 차오름 (wave-fill), 토큰을 끌어다 대면 살짝 차오름
+  - 투표 전에는 토큰이 칸마다 차례로 살짝 들어갔다 나오며 투표를 유도 (들어간 칸은 물결치며 살짝 차오름, 토큰을 만지면 멈춤)
 */
 const BACK_OUT =
   "linear(0, 0.228, 0.425, 0.592, 0.731, 0.845, 0.936, 1.006, 1.058, 1.092, 1.112, 1.12, 1.118, 1.108, 1.093, 1.073, 1.053, 1.033, 1.016, 1.004, 1)";
 const TOKEN_MS = 600;
 const FILL_DELAY_MS = 300;
 const FILL_STAGGER_MS = 80;
+// 투표 유도 힌트: 토큰이 떨어지고 나서 시작까지, 칸 하나 다녀오는 시간, 칸 안으로 들어가는 깊이(칸 윗변에서 토큰 가운데까지)
+const HINT_DELAY_MS = 1500;
+const HINT_STEP_MS = 1500;
+const HINT_DIP = 34;
 
 /**
   투표 카드 (Figma: VoteCard / Bowl)
@@ -123,6 +128,7 @@ export function VoteBowl({ post }: { post: HomePost }) {
     });
 
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    setTokenTouched(true);
     e.currentTarget.setPointerCapture(e.pointerId);
     setDrag({ x: 0, y: 0, startX: e.clientX, startY: e.clientY });
   };
@@ -143,6 +149,63 @@ export function VoteBowl({ post }: { post: HomePost }) {
   };
 
   const voted = myVote !== null;
+
+  // 투표 유도 (랜딩 "당신은 누구인가요?"와 같은 힌트): 토큰이 칸마다 차례로 살짝 들어갔다 나오고,
+  // 들어간 칸은 물결치며 살짝 차오름. 토큰을 만지면 멈춥니다.
+  const peeks = useRef<(HTMLSpanElement | null)[]>([]);
+  const [tokenTouched, setTokenTouched] = useState(false);
+  useEffect(() => {
+    if (!inView || voted || tokenTouched) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const anims: Animation[] = [];
+    // 토큰이 떨어져 자리 잡은 뒤에 시작
+    const timer = window.setTimeout(() => {
+      const el = token.current;
+      if (!el) return;
+      const t = el.getBoundingClientRect();
+      const n = options.length;
+      const seg = 1 / (n + 1); // 칸 하나에 한 구간 + 마지막은 쉬는 구간
+      const duration = HINT_STEP_MS * (n + 1);
+      const ease = "ease-in-out";
+      const rest = { translate: "0 0", rotate: "0deg", easing: ease };
+      const tokenFrames: Keyframe[] = [{ offset: 0, ...rest }];
+      columns.current.forEach((col, k) => {
+        if (!col) return;
+        const c = col.getBoundingClientRect();
+        const dx = c.left + c.width / 2 - (t.left + t.width / 2);
+        const dy = c.top + HINT_DIP - (t.top + t.height / 2);
+        const a = k * seg;
+        const mid = a + seg / 2;
+        const b = a + seg;
+        tokenFrames.push(
+          { offset: mid, translate: `${dx}px ${dy}px`, rotate: `${Math.abs(dx) < 1 ? 0 : Math.sign(dx) * 10}deg`, easing: ease },
+          { offset: b, ...rest },
+        );
+        const peek = peeks.current[k];
+        if (peek) {
+          anims.push(
+            peek.animate(
+              [
+                { offset: 0, height: "0%" },
+                { offset: a, height: "0%", easing: ease },
+                { offset: mid, height: "36%", easing: ease },
+                { offset: b, height: "0%" },
+                { offset: 1, height: "0%" },
+              ],
+              { duration, iterations: Infinity },
+            ),
+          );
+        }
+      });
+      tokenFrames.push({ offset: 1, ...rest });
+      anims.push(el.animate(tokenFrames, { duration, iterations: Infinity }));
+    }, HINT_DELAY_MS);
+    return () => {
+      clearTimeout(timer);
+      anims.forEach((a) => a.cancel());
+    };
+  }, [inView, voted, tokenTouched, options.length]);
+
   const tokenEl = (
     <div
       ref={token}
@@ -228,6 +291,9 @@ export function VoteBowl({ post }: { post: HomePost }) {
               {!voted && (
                 <span className="absolute inset-0 overflow-hidden rounded-[20px]">
                   <span
+                    ref={(el) => {
+                      peeks.current[i] = el;
+                    }}
                     className="wave-fill absolute inset-x-0 bottom-0 bg-primary transition-[height] duration-700 ease-[cubic-bezier(0.3,1.15,0.5,1)]"
                     style={{ height: hover === i ? "38%" : "0%" }}
                   />
@@ -236,11 +302,21 @@ export function VoteBowl({ post }: { post: HomePost }) {
               {/* 차오르는 결과는 칸 모양으로 잘라 냄 (칸 자체는 잘라 내지 않아야 날아오는 토큰이 칸 밖에서도 보임) */}
               {voted && (
                 <span className="absolute inset-0 overflow-hidden rounded-[20px]">
+                  {/* 높이는 CSS 변수로 줘야 starting:h-0(처음 그려질 때 0에서 시작)이 먹어서 아래에서 차오름.
+                      내 칸이 바뀌면 새로 그려서 새 내 칸도 바닥부터 물결치며 차오르게 (key) */}
                   <span
-                    className={`absolute inset-x-0 bottom-0 transition-[height] duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] starting:h-0 ${
-                      mine ? "wave-fill bg-primary" : "bg-white/10"
+                    key={mine ? "mine" : "other"}
+                    className={`absolute inset-x-0 bottom-0 h-(--fill) transition-[height] duration-700 starting:h-0 ${
+                      mine
+                        ? "wave-fill bg-primary ease-[cubic-bezier(0.3,1.15,0.5,1)]"
+                        : "bg-white/10 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
                     }`}
-                    style={{ height: `${pcts[i]}%`, transitionDelay: `${FILL_DELAY_MS + i * FILL_STAGGER_MS}ms` }}
+                    style={
+                      {
+                        "--fill": `${pcts[i]}%`,
+                        transitionDelay: `${FILL_DELAY_MS + i * FILL_STAGGER_MS}ms`,
+                      } as CSSProperties
+                    }
                   />
                 </span>
               )}
