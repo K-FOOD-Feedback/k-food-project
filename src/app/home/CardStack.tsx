@@ -13,9 +13,8 @@ export type Lang = "ko" | "en";
 const CARD = { left: 31.3, top: 31.61, width: 312.4, height: 438.578, radius: 34.808 };
 const IMAGE = { width: 402.251, height: 280.106, dx: 0.89, dy: -60 };
 const MASK = { x: 64.255, y: 1.914, width: 272.822, height: 271.214 };
-/** 사진 요소 안에서 물결 모양 사진이 보이는 영역 (상세 화면 전환에서 사진의 출발 위치로 씀) */
-export const CARD_MASK_BOX = { left: MASK.x, top: MASK.y, width: MASK.width, height: MASK.height };
-/** 모양 크기(scale)를 반영한 사진 요소 안 모양 영역 — 사진 요소와 모양이 같은 가운데를 두고 함께 커지거나 작아짐 */
+/** 사진 요소 안에서 모양 사진이 보이는 영역 (상세 화면 전환에서 사진의 출발 위치로 씀).
+    모양 크기(scale)를 반영 — 사진 요소와 모양이 같은 가운데를 두고 함께 커지거나 작아짐 */
 export const cardMaskBox = (scale: number) => ({
   left: MASK.x * scale,
   top: MASK.y * scale,
