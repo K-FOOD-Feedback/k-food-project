@@ -322,8 +322,10 @@ export function VoteBowl({ post }: { post: HomePost }) {
                 </span>
               )}
               {/* 차오르는 결과는 칸 모양으로 잘라 냄 (칸 자체는 잘라 내지 않아야 날아오는 토큰이 칸 밖에서도 보임) */}
+              {/* 내 칸은 색이 글자 위를 덮고(z-1), 그 안에 같은 글자를 어두운 색으로 다시 그림 →
+                  물결 아래는 어두운 글자, 물결 위는 흰 글자 (인스타 투표처럼 경계에서 글자색이 갈림) */}
               {voted && (
-                <span className="absolute inset-0 overflow-hidden rounded-[20px]">
+                <span className={`absolute inset-0 overflow-hidden rounded-[20px] ${mine ? "z-[1]" : ""}`}>
                   {/* 높이는 CSS 변수로 줘야 starting:h-0(처음 그려질 때 0에서 시작)이 먹어서 아래에서 차오름.
                       내 칸이 바뀌면 새로 그려서 새 내 칸도 바닥부터 물결치며 차오르게 (key) */}
                   <span
@@ -339,7 +341,19 @@ export function VoteBowl({ post }: { post: HomePost }) {
                         transitionDelay: `${FILL_DELAY_MS + i * FILL_STAGGER_MS}ms`,
                       } as CSSProperties
                     }
-                  />
+                  >
+                    {mine && (
+                      <>
+                        {/* 칸 맨 위 기준 자리 = 색 영역 맨 위에서 (칸 높이 - 색 높이)만큼 위 */}
+                        <span aria-hidden className="absolute left-0 w-full pt-4 pr-2 pl-4 font-(family-name:--font-paperlogy) text-[16px] leading-[1.3] tracking-[-0.32px] whitespace-pre-line text-on-light" style={{ top: "calc(100% - 230px)" }}>
+                          {label}
+                        </span>
+                        <span aria-hidden className={`${title} absolute bottom-3 left-4 text-on-light`}>
+                          {pcts[i]}%
+                        </span>
+                      </>
+                    )}
+                  </span>
                 </span>
               )}
               <span
@@ -349,7 +363,7 @@ export function VoteBowl({ post }: { post: HomePost }) {
               </span>
               {voted && (
                 <span
-                  className={`${title} absolute bottom-3 left-4 transition-opacity duration-300 starting:opacity-0 ${mine ? "text-on-light" : "text-on-dark"}`}
+                  className={`${title} absolute bottom-3 left-4 text-on-dark transition-opacity duration-300 starting:opacity-0`}
                   style={{ transitionDelay: `${FILL_DELAY_MS + i * FILL_STAGGER_MS}ms` }}
                 >
                   {pcts[i]}%
@@ -360,7 +374,7 @@ export function VoteBowl({ post }: { post: HomePost }) {
                 <span
                   ref={landed}
                   aria-hidden="true"
-                  className="absolute left-[calc(50%-32px)] flex size-16 items-center justify-center rounded-full bg-on-light text-[25px] leading-none shadow-[0_6px_16px_rgba(0,0,0,0.35)]"
+                  className="absolute left-[calc(50%-32px)] z-[2] flex size-16 items-center justify-center rounded-full bg-on-light text-[25px] leading-none shadow-[0_6px_16px_rgba(0,0,0,0.35)]"
                   style={{ bottom: `min(calc(${pcts[i]}% + 8px), 110px)` }}
                 >
                   {/* 칸에 들어가 앉으면 한 번 손 흔들기 */}
