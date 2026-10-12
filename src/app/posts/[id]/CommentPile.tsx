@@ -53,7 +53,7 @@ export function CommentPile({
 }) {
   const full = variant === "full";
   const scrolledOld = useRef(false); // 분석: 전체 화면에서 예전 댓글까지 스크롤했는지
-  const { comments, addedCount, add, nextColor, ready } = useComments(postId, authorFlag);
+  const { comments, addedCount, add, edit, remove, nextColor, ready } = useComments(postId, authorFlag);
   const [draft, setDraft] = useState("");
   const card = useRef<HTMLElement>(null);
   const zone = useRef<HTMLDivElement>(null);
@@ -64,15 +64,19 @@ export function CommentPile({
   // 전체 화면: 더미가 칸의 3/4를 넘었을 때만 아래 그라데이션을 보여 줍니다.
   const [overflowing, setOverflowing] = useState(false);
   const nextId = useRef(0);
-  // 전체 화면: 누른 말풍선 (레이어가 떠 있는 동안)
-  const [opened, setOpened] = useState<Comment | null>(null);
+  // 전체 화면: 누른 한마디(원글) id — 레이어가 떠 있는 동안. 고치면 바로 보이도록 목록에서 다시 찾습니다.
+  const [openedId, setOpenedId] = useState<string | null>(null);
+  const opened = openedId ? comments.find((c) => c.id === openedId) : undefined;
   // 전체 화면: 이모지 말풍선을 누르면 떠오르는 이모지 묶음들
   const [bursts, setBursts] = useState<Burst[]>([]);
 
-  /** 말풍선을 누르면: 글 한마디는 레이어(모달), 이모지는 인스타 라방처럼 같은 이모지가 뾰로롱 떠오름 */
+  /**
+    말풍선을 누르면: 원글 한마디는 답글 레이어, 이모지는 인스타 라방처럼 같은 이모지가 뾰로롱 떠오름.
+    다른 한마디에 단 답글을 눌렀을 때는 아직 정해지지 않아서 아무 일도 없습니다.
+  */
   const select = (comment: Comment, el: HTMLElement) => {
     if (comment.kind !== "emoji") {
-      setOpened(comment);
+      if (!comment.replyTo) setOpenedId(comment.id);
       return;
     }
     // 누른 이모지 원이 톡 하고 커졌다 돌아옵니다.
@@ -259,7 +263,19 @@ export function CommentPile({
         {bursts.map((b) => (
           <EmojiBurst key={b.id} burst={b} onDone={() => setBursts((list) => list.filter((x) => x.id !== b.id))} />
         ))}
-        {opened && <CommentModal comment={opened} onClose={() => setOpened(null)} />}
+        {opened && (
+          <CommentModal
+            comment={opened}
+            replies={comments.filter((c) => c.replyTo === opened.id)}
+            onClose={() => setOpenedId(null)}
+            onReply={(text) => add("text", text, opened.id)}
+            onEdit={(text) => edit(opened.id, text)}
+            onDelete={() => {
+              remove(opened.id);
+              setOpenedId(null);
+            }}
+          />
+        )}
       </div>
     );
   }
