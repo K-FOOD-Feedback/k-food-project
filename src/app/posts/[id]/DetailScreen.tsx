@@ -179,21 +179,59 @@ export function DetailScreen({ post }: { post: HomePost }) {
   }, [intro, ctaIntro]);
 
   // 떠날 때(뒤로 가기 등) 사진·본문 카드·참여 칩 위치를 남겨, 메인 화면이 맨 앞 카드로 이어지게 움직일 수 있게 합니다.
+  // 화면이 사라지는 순간에는 Next.js가 이미 스크롤을 맨 위로 돌려 놓아서, 떠나려는 순간(링크·버튼 클릭,
+  // 브라우저 뒤로 가기)에 미리 재 둡니다. 그 순간을 못 잡으면 사라질 때 잰 값을 씁니다.
   useLayoutEffect(() => {
     const tile = tileRef.current;
     const article = articleRef.current;
     const chip = chipRef.current;
-    return () => {
-      if (!tile || !article) return;
-      const toBox = (r: DOMRect): Box => ({ left: r.left, top: r.top, width: r.width, height: r.height });
-      setReturnTransition({
+    if (!tile || !article) return;
+    // 브라우저 뒤로 가기는 알림(popstate)을 보내기 전에 스크롤을 먼저 맨 위로 되돌려 놓습니다.
+    // 그래서 마지막으로 본 스크롤 위치를 따로 기억해 두고, 잴 때 그만큼 빼서 "떠나기 직전 화면 위치"로 맞춥니다.
+    let lastScrollY = window.scrollY;
+    const onScroll = () => {
+      lastScrollY = window.scrollY;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    // shift: 지금 스크롤과 떠나기 직전 스크롤의 차이 (브라우저 뒤로 가기일 때만 0이 아님)
+    const measure = (shift = 0) => {
+      const toBox = (r: DOMRect): Box => ({ left: r.left, top: r.top + shift, width: r.width, height: r.height });
+      return {
         postId: post.id,
         photo: toBox(tile.getBoundingClientRect()),
         photoSrc: post.photos[0],
         card: toBox(article.getBoundingClientRect()),
         color: post.color,
         ...(chip && { chip: toBox(chip.getBoundingClientRect()) }),
-      });
+      };
+    };
+    let snapshot: { at: number; value: ReturnType<typeof measure> } | null = null;
+    const snap = (shift: number) => {
+      snapshot = { at: Date.now(), value: measure(shift) };
+      // 메인 화면은 그리기 시작할 때 이 값을 읽으므로, 이 화면이 사라지기 전에 미리 남겨 둡니다.
+      setReturnTransition(snapshot.value);
+    };
+    // 링크·버튼 클릭: 아직 스크롤이 그대로라 지금 위치 그대로
+    const onClick = () => snap(0);
+    // 브라우저 뒤로 가기: 스크롤이 이미 되돌려졌으므로 마지막으로 본 스크롤만큼 빼서 맞춤
+    const onPopState = () => snap(window.scrollY - lastScrollY);
+    // 브라우저 뒤로·앞으로: Navigation API의 navigate 알림이 가장 먼저 옴 (이 화면이 아직 그대로일 때).
+    // 지원하지 않는 브라우저는 popstate로 (조금 늦지만 스크롤 차이로 보정).
+    const navigation = (window as unknown as { navigation?: EventTarget }).navigation;
+    const onNavigate = (e: Event) => {
+      if ((e as Event & { navigationType?: string }).navigationType === "traverse") snap(window.scrollY - lastScrollY);
+    };
+    // capture 단계라서 링크 이동·Next.js의 뒤로 가기 처리보다 먼저 잼
+    document.addEventListener("click", onClick, true);
+    window.addEventListener("popstate", onPopState, true);
+    navigation?.addEventListener("navigate", onNavigate);
+    return () => {
+      document.removeEventListener("click", onClick, true);
+      window.removeEventListener("popstate", onPopState, true);
+      navigation?.removeEventListener("navigate", onNavigate);
+      window.removeEventListener("scroll", onScroll);
+      const fresh = snapshot && Date.now() - snapshot.at < 2000 ? snapshot.value : measure();
+      setReturnTransition(fresh);
     };
   }, [post.id, post.photos, post.color]);
 
