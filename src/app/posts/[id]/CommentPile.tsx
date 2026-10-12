@@ -224,13 +224,13 @@ export function CommentPile({
 
         {emojiKeys}
 
-        {/* 한마디 입력칸 + 보내기 */}
+        {/* 한마디 입력칸 + 보내기 (Figma 332:3284 — 한마디 전체 화면만. 상세 화면은 아래 기울어진 카드 그대로) */}
         <form onSubmit={onSubmit} className="flex items-center gap-0.5 px-2">
           <label
             ref={(el) => {
               card.current = el;
             }}
-            className="flex h-16 min-w-0 flex-1 items-center gap-2 rounded-full border-[1.5px] border-white/40 px-5 font-medium focus-within:border-white/70"
+            className="flex h-16 min-w-0 flex-1 items-center gap-2 rounded-full bg-surface-2 px-5 font-semibold"
           >
             <span className="sr-only">한마디 남기기</span>
             <input
