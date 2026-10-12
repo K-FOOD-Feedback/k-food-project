@@ -406,15 +406,16 @@ export function CommentModal({
                     className="relative shrink-0 cursor-pointer snap-center transition-[opacity,translate] duration-300 ease-out starting:translate-y-2 starting:opacity-0"
                   >
                     {/* 휠 크기·흐림·당김은 스크롤할 때 updateWheel이 직접 바꿉니다. */}
-                    <div className="flex flex-col items-center gap-1 will-change-[scale,opacity,translate]">
+                    {/* 말풍선 사이는 늘 뱃지 높이만큼(12px) 띄웁니다. 답글에 단 답글은 "↪ 원 답글" 줄 위를 띄우고,
+                        그 줄과 말풍선 사이는 뱃지가 있을 때만 띄움 */}
+                    <div className={`flex flex-col items-center gap-1 will-change-[scale,opacity,translate] ${parent ? "pt-3" : ""}`}>
                       {parent && (
                         <span className="flex max-w-[280px] items-center gap-1 text-[12px] leading-none font-semibold text-white/50">
                           <ReplyArrowIcon size={12} />
                           <span className="truncate">{parent.text.replace(/\n/g, " ")}</span>
                         </span>
                       )}
-                      {/* 뱃지가 말풍선 위로 튀어나온 만큼 위 여백 (윗 답글과 겹치지 않게) */}
-                      <div data-row className={`flex items-center ${hasBadge ? "pt-3" : ""}`}>
+                      <div data-row className={`flex items-center ${!parent || hasBadge ? "pt-3" : ""}`}>
                         <p
                           data-bubble
                           className={`relative flex items-center gap-2 ${editTarget?.id === r.id ? "invisible" : ""} rounded-[32px] py-4 pr-6 pl-2.5 text-center text-[20px] leading-[1.45] font-bold tracking-[-0.4px] whitespace-pre-line ${
