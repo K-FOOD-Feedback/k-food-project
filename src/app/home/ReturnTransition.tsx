@@ -46,16 +46,37 @@ export function ReturnGhosts({
       return;
     }
     const to = measureCard(front, CARD_MASK_BOX);
+
+    // 카드 유령 안에 맨 앞 카드의 글(질문·제목·작성자)을 복사해 넣어, 처음부터 글이 같이 움직이게 합니다.
+    // 글은 카드 아래쪽에 붙어 있어서, 유령의 아래 가운데에 진짜 카드 크기로 붙여 둡니다. 사진·스티커는 따로 움직이는 유령이 맡습니다.
+    const clone = front.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll("[data-card-photo], [data-card-sticker]").forEach((el) => el.remove());
+    clone.removeAttribute("data-front-card");
+    clone.removeAttribute("aria-label");
+    clone.setAttribute("tabindex", "-1");
+    Object.assign(clone.style, {
+      left: "50%",
+      top: "auto",
+      bottom: "0px",
+      width: `${to.card.width}px`,
+      height: `${to.card.height}px`,
+      transform: "translateX(-50%)",
+      transition: "none",
+      background: "transparent",
+    });
+    cardGhost.current.replaceChildren(clone);
+
     const timing = { duration: RETURN_MS, easing: EASING, fill: "forwards" as const };
-    // 끝 무렵(위치가 거의 맞았을 때) 유령은 사라지고 진짜 카드(글·스티커 포함)가 드러남
-    const reveal = [{ opacity: 0 }, { opacity: 0, offset: 0.7 }, { opacity: 1 }];
-    const vanish = [{ opacity: 1 }, { opacity: 1, offset: 0.7 }, { opacity: 0 }];
+    // 유령이 글까지 들고 움직이므로, 위치가 거의 맞았을 때(65%면 99% 가까이 도착) 진짜 카드로 넘겨 줍니다.
+    // 둘이 같이 반투명해지면 뒤 카드가 비쳐 보이므로, 진짜 카드를 유령 밑에서 먼저 다 보이게 한 뒤 유령을 걷어 냅니다.
+    const reveal = [{ opacity: 0 }, { opacity: 0, offset: 0.63 }, { opacity: 1, offset: 0.65 }, { opacity: 1 }];
+    const vanish = [{ opacity: 1 }, { opacity: 1, offset: 0.66 }, { opacity: 0, offset: 0.86 }, { opacity: 0 }];
 
     const animations = [
       cardGhost.current.animate([place(t.card, "32px"), place(to.card, "34.8px")], timing),
       photoGhost.current.animate([place(t.photo, "32px"), place(to.photo, "45%")], timing),
       // 상세 사진에서 메인 카드 사진으로 자연스럽게 바뀜
-      ...(cardPhotoImg.current ? [cardPhotoImg.current.animate([{ opacity: 0 }, { opacity: 0, offset: 0.35 }, { opacity: 1 }], timing)] : []),
+      ...(cardPhotoImg.current ? [cardPhotoImg.current.animate([{ opacity: 0 }, { opacity: 1, offset: 0.5 }, { opacity: 1 }], timing)] : []),
       front.animate(reveal, { duration: RETURN_MS, easing: "linear" }),
       ...(ghosts.current ? [ghosts.current.animate(vanish, { duration: RETURN_MS, easing: "linear", fill: "forwards" as const })] : []),
     ];
@@ -94,8 +115,8 @@ export function ReturnGhosts({
   }, []);
 
   return (
-    <div ref={ghosts} aria-hidden className="pointer-events-none">
-      <div ref={cardGhost} className="fixed z-30" style={{ ...boxStyle(t.card), borderRadius: 32, background: t.color }} />
+    <div ref={ghosts} aria-hidden className="pointer-events-none relative z-30">
+      <div ref={cardGhost} className="fixed z-30 overflow-hidden" style={{ ...boxStyle(t.card), borderRadius: 32, background: t.color }} />
       <div ref={photoGhost} className="fixed z-30 overflow-hidden" style={{ ...boxStyle(t.photo), borderRadius: 32 }}>
         {/* eslint-disable-next-line @next/next/no-img-element -- 전환용 사진 */}
         <img src={t.photoSrc} alt="" className="absolute inset-0 size-full object-cover" />

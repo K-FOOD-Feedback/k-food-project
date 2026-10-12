@@ -33,10 +33,16 @@ const HIDDEN: Pose = { x: 0, y: 8, rotate: 0, scale: 0.85, dim: 0.32 };
 // 카드가 덱 뒤로 들어가거나 뒤에서 나올 때 잠깐 비켜나는 자리
 const ASIDE = "translate(-250px, 28px) rotate(-14deg) scale(0.96)";
 
-const SWIPE_THRESHOLD = 70;
+// 이만큼 끌거나, 짧아도 빠르게 튕기면(FLICK) 넘어갑니다.
+const SWIPE_THRESHOLD = 36;
+const FLICK_MIN = 14;
+const FLICK_VELOCITY = 0.35; // px/ms
 const TAP_TOLERANCE = 6;
 const SWING_MS = 260;
 const SETTLE_MS = 460;
+// 이전 카드: 빠져나올 때는 감속, 앞에 놓일 때는 멈춘 자리에서 부드럽게 출발해 감속 (속도가 끊기지 않게)
+const EMERGE_EASE = "cubic-bezier(0.33, 1, 0.68, 1)";
+const LAND_EASE = "cubic-bezier(0.45, 0, 0.2, 1)";
 
 // out → tuck: 앞 카드가 왼쪽으로 빠졌다가 덱 뒤로 들어감 (왼쪽 스와이프)
 // emerge → land: 뒤 카드가 빠져나왔다가 맨 앞에 놓임 (오른쪽 스와이프)
@@ -77,6 +83,8 @@ export function CardStack({
   const [dragX, setDragX] = useState<number | null>(null);
   const [phases, setPhases] = useState<Record<string, Phase>>({});
   const start = useRef<{ x: number; y: number; id: number; horizontal: boolean | null } | null>(null);
+  // 손을 뗄 때의 속도를 재기 위한 최근 위치
+  const lastMove = useRef<{ x: number; t: number; v: number }>({ x: 0, t: 0, v: 0 });
   const moved = useRef(false);
   const timers = useRef<number[]>([]);
 
@@ -124,6 +132,7 @@ export function CardStack({
 
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
     start.current = { x: e.clientX, y: e.clientY, id: e.pointerId, horizontal: null };
+    lastMove.current = { x: e.clientX, t: e.timeStamp, v: 0 };
     moved.current = false;
   };
 
@@ -138,14 +147,20 @@ export function CardStack({
       if (s.horizontal) e.currentTarget.setPointerCapture(e.pointerId);
     }
     if (s.horizontal) setDragX(dx);
+    const last = lastMove.current;
+    const dt = e.timeStamp - last.t;
+    if (dt > 0) lastMove.current = { x: e.clientX, t: e.timeStamp, v: (e.clientX - last.x) / dt };
   };
 
-  const onPointerEnd = () => {
+  const onPointerEnd = (e: PointerEvent<HTMLDivElement>) => {
     const dx = dragX ?? 0;
+    // 손을 떼기 직전 잠깐 멈췄으면 튕긴 것으로 보지 않음
+    const v = e.timeStamp - lastMove.current.t < 80 ? lastMove.current.v : 0;
     start.current = null;
     setDragX(null);
-    if (dx <= -SWIPE_THRESHOLD) goNext();
-    else if (dx >= SWIPE_THRESHOLD) goPrev();
+    const flick = Math.abs(dx) >= FLICK_MIN && Math.abs(v) >= FLICK_VELOCITY && Math.sign(v) === Math.sign(dx);
+    if (dx <= -SWIPE_THRESHOLD || (flick && dx < 0)) goNext();
+    else if (dx >= SWIPE_THRESHOLD || (flick && dx > 0)) goPrev();
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -162,9 +177,9 @@ export function CardStack({
       case "tuck":
         return { transform: toTransform(place), zIndex: place.z };
       case "emerge":
-        return { transform: ASIDE, zIndex: place.z, transition: `transform ${SWING_MS}ms ease-out` };
+        return { transform: ASIDE, zIndex: place.z, transition: `transform ${SWING_MS}ms ${EMERGE_EASE}` };
       case "land":
-        return { transform: toTransform(FRONT), zIndex: top };
+        return { transform: toTransform(FRONT), zIndex: top, transition: `transform ${SETTLE_MS}ms ${LAND_EASE}` };
     }
 
     const zIndex = place.z;
