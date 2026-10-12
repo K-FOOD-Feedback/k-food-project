@@ -604,11 +604,28 @@ function PhotoTile({
   const [index, setIndex] = useState(0);
   const furthest = useRef(0); // 분석: 몇 번째 사진까지 봤는지
   const many = photos.length > 1;
+  const count = photos.length;
+  // 끝없이 돌게: 앞에 마지막 사진, 뒤에 첫 사진을 하나씩 더 붙여 두고(가짜 칸),
+  // 가짜 칸에 멈추면 같은 사진인 진짜 칸으로 몰래 옮깁니다. 진짜 첫 사진은 1번 칸.
+  const slides = many ? [photos[count - 1], ...photos, photos[0]] : photos;
+  const scroller = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = scroller.current;
+    if (many && el) el.scrollLeft = el.clientWidth;
+  }, [many]);
+  const settleTimer = useRef(0);
+  const settle = (el: HTMLDivElement) => {
+    if (mouseDrag.current) return;
+    const slot = Math.round(el.scrollLeft / el.clientWidth);
+    if (slot === 0) el.scrollLeft = count * el.clientWidth;
+    else if (slot === count + 1) el.scrollLeft = el.clientWidth;
+  };
   // 마우스로도 끌어서 넘길 수 있게 (터치·트랙패드는 브라우저 가로 스크롤 그대로)
   const mouseDrag = useRef<{ x: number; left: number } | null>(null);
   return (
     <div className="relative aspect-square w-full overflow-hidden rounded-[32px] border border-black/4 bg-[#1e1e1e]">
       <div
+        ref={scroller}
         className={`flex size-full snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
           many ? "cursor-grab overflow-x-auto active:cursor-grabbing" : "overflow-hidden"
         }`}
@@ -630,32 +647,40 @@ function PhotoTile({
           const el = e.currentTarget;
           const moved = e.clientX - drag.x;
           const from = Math.round(drag.left / el.clientWidth);
-          // 조금만 끌어도(폭의 15%) 다음·이전 사진으로
+          // 조금만 끌어도(폭의 15%) 다음·이전 사진으로 (가짜 칸까지 가면 settle이 진짜 칸으로 옮김)
           const to = Math.abs(moved) > el.clientWidth * 0.15 ? from - Math.sign(moved) : from;
-          const target = Math.max(0, Math.min(photos.length - 1, to)) * el.clientWidth;
-          el.scrollTo({ left: target, behavior: "smooth" });
-          window.setTimeout(() => (el.style.scrollSnapType = ""), 400);
+          el.scrollTo({ left: Math.max(0, Math.min(count + 1, to)) * el.clientWidth, behavior: "smooth" });
+          window.setTimeout(() => {
+            el.style.scrollSnapType = "";
+            settle(el);
+          }, 450);
         }}
         onPointerCancel={(e) => {
           mouseDrag.current = null;
           e.currentTarget.style.scrollSnapType = "";
         }}
         onScroll={(e) => {
+          if (!many) return;
           const el = e.currentTarget;
-          const next = Math.round(el.scrollLeft / el.clientWidth);
+          const slot = Math.round(el.scrollLeft / el.clientWidth);
+          const next = (slot - 1 + count) % count;
           setIndex(next);
           if (next > furthest.current) {
             furthest.current = next;
-            track("photo_swiped", { post_id: postId, index: next, total: photos.length });
+            track("photo_swiped", { post_id: postId, index: next, total: count });
           }
+          // 스크롤이 멈추면(잠깐 조용하면) 가짜 칸 → 진짜 칸
+          clearTimeout(settleTimer.current);
+          settleTimer.current = window.setTimeout(() => settle(el), 120);
         }}
       >
-        {photos.map((src, i) => (
+        {slides.map((src, i) => (
           // eslint-disable-next-line @next/next/no-img-element -- 업로드한 사진(blob/외부 URL)도 그대로 보여 줘야 해서 img 사용
           <img
             key={i}
             src={src}
-            alt={i === 0 ? title : ""}
+            alt={i === (many ? 1 : 0) ? title : ""}
+            aria-hidden={many && (i === 0 || i === count + 1) ? true : undefined}
             draggable={false}
             className="size-full shrink-0 snap-center object-cover"
           />
