@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 /*
   모든 화면 공통 상단 바
   - 위치: 화면 위에 붙어 따라옴(sticky), 위 8px(+노치 안전 영역)·아래 8px·좌우 8px — 메인 화면 헤더 위치 기준
-  - 버튼: 64px 원형, 어두운 유리(surface 85% + 흐림 + 옅은 흰 테두리) — 내용 위에 떠 있어도 잘 보이게 (상세 화면 기준)
+  - 버튼: 64px 원형, 어두운 유리(surface 85% + 흐림, 테두리 없음) — 내용 위에 떠 있어도 잘 보이게 (상세 화면 기준)
   - 바탕은 없음: 버튼 사이 빈 곳은 터치가 아래 내용으로 통과
   - 버튼끼리 간격 4px
   사용:
@@ -15,7 +15,7 @@ import type { ReactNode } from "react";
 */
 
 export const HEADER_BUTTON =
-  "flex size-16 shrink-0 items-center justify-center rounded-full bg-surface/85 text-on-dark ring-1 ring-white/10 backdrop-blur-xl transition-transform active:scale-95";
+  "flex size-16 shrink-0 items-center justify-center rounded-full bg-surface/85 text-on-dark backdrop-blur-xl transition-transform active:scale-95";
 
 export function PageHeader({ left, right }: { left?: ReactNode; right?: ReactNode }) {
   return (
