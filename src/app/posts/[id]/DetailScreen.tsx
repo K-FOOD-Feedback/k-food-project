@@ -92,6 +92,41 @@ export function DetailScreen({ post }: { post: HomePost }) {
     voteRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
+  // "한마디를 남겨보세요" 카드가 가끔 살랑 흔들려 써 보라고 알려 줌 (상세 화면만).
+  // 카드는 한마디 세션(CommentPile) 담당이라 바깥에서 찾아 움직이고, 쓰는 중(포커스·글 있음)엔 멈춥니다.
+  useEffect(() => {
+    const label = commentRef.current?.querySelector<HTMLElement>("form > label");
+    const input = label?.querySelector("textarea");
+    if (!voted || !label || !input) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    label.style.transformOrigin = "50% 70%";
+    const wiggle = label.animate(
+      [
+        { rotate: "0deg" },
+        { rotate: "4deg", offset: 0.08 },
+        { rotate: "-3deg", offset: 0.16 },
+        { rotate: "2deg", offset: 0.24 },
+        { rotate: "-1deg", offset: 0.32 },
+        { rotate: "0deg", offset: 0.4 },
+        { rotate: "0deg" },
+      ],
+      { duration: WIGGLE_MS, delay: 800, iterations: Infinity, easing: "ease-in-out" },
+    );
+    const sync = () => {
+      if (document.activeElement === input || input.value.trim()) wiggle.pause();
+      else wiggle.play();
+    };
+    input.addEventListener("focus", sync);
+    input.addEventListener("blur", sync);
+    input.addEventListener("input", sync);
+    return () => {
+      wiggle.cancel();
+      input.removeEventListener("focus", sync);
+      input.removeEventListener("blur", sync);
+      input.removeEventListener("input", sync);
+    };
+  }, [voted]);
+
   const showCta = !voted && !seenVote;
 
 
@@ -520,6 +555,8 @@ const INTRO_MS = 420;
 let commentsTrip: { postId: string; scrollY: number; at: number } | null = null;
 const TRIP_TTL_MS = 30 * 60_000;
 const BACK_CARD_MS = 320;
+// 한마디 입력 카드 흔들기 한 번의 길이 (앞 40%만 흔들고 나머지는 쉼)
+const WIGGLE_MS = 2600;
 const BACK_STAGGER_MS = 70;
 const EASE = "cubic-bezier(0.2, 0.8, 0.2, 1)";
 
