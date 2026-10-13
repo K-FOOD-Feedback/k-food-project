@@ -893,7 +893,10 @@ function ArticleBody({ post, lang = "ko" }: { post: HomePost; lang?: Lang }) {
       <p className="text-[14px] leading-none font-medium tracking-[-0.28px] text-[#696969]">
         {DETAIL_COPY[lang].from(en ? post.en.country : post.author.country)}
       </p>
-      <h1 className={`max-w-[204px] ${titleFont(lang)} text-[31px] leading-[1.2] tracking-[-0.62px] break-keep`}>
+      {/* 영어는 소문자가 낮아 같은 행간이면 줄 사이가 비어 보여서 좁게 (한국어 1.2 → 영어 1.05) */}
+      <h1
+        className={`max-w-[204px] ${titleFont(lang)} text-[31px] ${en ? "leading-[1.05]" : "leading-[1.2]"} tracking-[-0.62px] break-keep`}
+      >
         {en ? post.en.title : post.title}
       </h1>
       <p className="text-[16px] leading-[1.55] font-medium tracking-[-0.32px] whitespace-pre-line text-[#444]">
