@@ -11,15 +11,16 @@ import {
   type ReturnTransition,
 } from "./cardTransition";
 
-const RETURN_MS = 600;
+const RETURN_MS = 720;
 const EASING = "cubic-bezier(0.2, 0.8, 0.2, 1)";
 /*
-  두 단계로 이어집니다. (상세 글은 ① 동안 그대로)
-  ① 합치며 모양 바꾸기 (0 ~ MORPH): 네모 사진이 카드 모양으로 오므라들며 큰 카드 속 사진 자리로 가고,
-     그 뒤로 노란 원이 떠올라 위로 늘어나는 본문 카드와 이어져 한 장의 큰 카드가 됨 · 참여 칩은 스티커로
-  ② 줄어들기 (MORPH ~ 1): 그 카드가 통째로 메인 맨 앞 카드로 줄어들고, 상세 글은 카드 글로 바뀜
+  세 단계로 이어집니다. (상세 글은 ①② 동안 그대로)
+  ① 모양 자르기 (0 ~ CROP): 상세 사진이 제자리에서 카드 모양으로 오므라듦 (랜딩과 같은 방식, 둥근 모서리 그대로)
+  ② 넓히기 (CROP ~ GROW): 아래 본문 카드가 위로 넓어져 모양 사진을 감싸 한 장의 큰 카드가 됨 · 참여 칩은 스티커로
+  ③ 줄어들기 (GROW ~ 1): 그 카드가 통째로 메인 맨 앞 카드로 줄어들고, 상세 글은 카드 글로 바뀜
 */
-const MORPH = 0.45;
+const CROP = 0.32;
+const GROW = 0.58;
 /** 상세에서 첫 사진이 아닌 사진을 보고 있었으면, 먼저 첫 사진으로 넘기는 시간 */
 const SWIPE_MS = 220;
 const SWIPE_EASE = "cubic-bezier(0.3, 0, 0.2, 1)";
@@ -86,7 +87,6 @@ export function ReturnGhosts({
   onDone: () => void;
 }) {
   const cardGhost = useRef<HTMLDivElement>(null);
-  const halo = useRef<HTMLDivElement>(null);
   const cardText = useRef<HTMLDivElement>(null);
   const detailText = useRef<HTMLDivElement>(null);
   const photoGhost = useRef<HTMLDivElement>(null);
@@ -190,20 +190,6 @@ export function ReturnGhosts({
       height: r.height * k,
     });
     const bigPhoto = grow(photoRel);
-    // 사진 뒤 노란 원: 처음엔 사진 칸에 숨어 있다가 → 카드 모양 사진 둘레의 원 → 큰 카드 윗부분으로 이어짐
-    const haloSide = Math.max(bigPhoto.width, bigPhoto.height) * 1.12;
-    const haloCircle = {
-      left: bigPhoto.left + bigPhoto.width / 2 - haloSide / 2,
-      top: bigPhoto.top + bigPhoto.height / 2 - haloSide / 2,
-      width: haloSide,
-      height: haloSide,
-    };
-    const haloTop = {
-      left: merged.left,
-      top: merged.top,
-      width: merged.width,
-      height: bigPhoto.top + bigPhoto.height / 2 - merged.top,
-    };
 
     const fade = (el: HTMLElement | null, frames: Keyframe[]) =>
       el ? [el.animate(frames, staged)] : [];
@@ -217,8 +203,8 @@ export function ReturnGhosts({
       height: pct(CARD_PHOTO_IN_MASK.height),
     };
     const frameKeys: Keyframe[] = [
-      { ...fullFrame, easing: MORPH_EASE },
-      { ...cardFrame, offset: MORPH },
+      { ...fullFrame, easing: MASK_EASE },
+      { ...cardFrame, offset: CROP },
       cardFrame,
     ];
 
@@ -236,20 +222,22 @@ export function ReturnGhosts({
           ...(ghosts.current ? [ghosts.current.animate(vanish, staged)] : []),
         ]
       : [
-          // 본문 카드: 위로 늘어나 사진 뒤 노란 원과 이어져 한 장이 됨 → 그 한 장이 메인 카드로 줄어듦
+          // 본문 카드: 사진이 모양으로 잘린 뒤 위로 넓어져 사진을 감싸 한 장이 됨 → 그 한 장이 메인 카드로 줄어듦
           card!.animate(
             [
-              { ...place(t.card, "32px"), easing: MORPH_EASE },
-              { ...place(merged, "32px"), offset: MORPH, easing: SHRINK_EASE },
+              { ...place(t.card, "32px") },
+              { ...place(t.card, "32px"), offset: CROP, easing: MORPH_EASE },
+              { ...place(merged, "32px"), offset: GROW, easing: SHRINK_EASE },
               place(to.card, "34.8px"),
             ],
             staged,
           ),
-          // 사진: 카드 모양으로 오므라들며 큰 카드 속 사진 자리로, 그다음 메인 카드 사진 자리로
+          // 사진: 제자리에서 모양으로 잘린 뒤 큰 카드 속 사진 자리로, 그다음 메인 카드 사진 자리로
           photo!.animate(
             [
-              { ...boxOnly(t.photo), easing: MORPH_EASE },
-              { ...boxOnly(bigPhoto), offset: MORPH, easing: SHRINK_EASE },
+              { ...boxOnly(t.photo) },
+              { ...boxOnly(t.photo), offset: CROP, easing: MORPH_EASE },
+              { ...boxOnly(bigPhoto), offset: GROW, easing: SHRINK_EASE },
               boxOnly(to.photo),
             ],
             staged,
@@ -263,14 +251,6 @@ export function ReturnGhosts({
             ? [
                 rectLayer.current.animate(
                   [
-                    { borderRadius: "32px", easing: MORPH_EASE },
-                    { borderRadius: "0px", offset: MORPH * 0.7 },
-                    { borderRadius: "0px" },
-                  ],
-                  staged,
-                ),
-                rectLayer.current.animate(
-                  [
                     {
                       maskSize: MASK_OPEN,
                       webkitMaskSize: MASK_OPEN,
@@ -279,41 +259,9 @@ export function ReturnGhosts({
                     {
                       maskSize: "100% 100%",
                       webkitMaskSize: "100% 100%",
-                      offset: MORPH,
+                      offset: CROP,
                     },
                     { maskSize: "100% 100%", webkitMaskSize: "100% 100%" },
-                  ],
-                  staged,
-                ),
-              ]
-            : []),
-          // 사진 뒤 노란 원 → 큰 카드 윗부분 (그 뒤엔 큰 카드가 덮으므로 감춤)
-          ...(halo.current
-            ? [
-                halo.current.animate(
-                  [
-                    {
-                      ...place(t.photo, "32px"),
-                      opacity: 1,
-                      easing: MORPH_EASE,
-                    },
-                    {
-                      ...place(haloCircle, "50%"),
-                      opacity: 1,
-                      offset: MORPH * 0.6,
-                      easing: MORPH_EASE,
-                    },
-                    {
-                      ...place(haloTop, "32px 32px 0px 0px"),
-                      opacity: 1,
-                      offset: MORPH,
-                    },
-                    {
-                      ...place(haloTop, "32px 32px 0px 0px"),
-                      opacity: 0,
-                      offset: MORPH + 0.01,
-                    },
-                    { ...place(haloTop, "32px 32px 0px 0px"), opacity: 0 },
                   ],
                   staged,
                 ),
@@ -323,17 +271,28 @@ export function ReturnGhosts({
           // 두 글이 겹쳐 보이지 않게 상세 글이 먼저 다 사라진 뒤 카드 글이 떠오름
           ...fade(detailText.current, [
             { opacity: 1 },
-            { opacity: 1, offset: MORPH },
-            { opacity: 0, offset: MORPH + 0.1 },
+            { opacity: 1, offset: GROW },
+            { opacity: 0, offset: GROW + 0.08 },
             { opacity: 0 },
           ]),
           ...fade(cardText.current, [
             { opacity: 0 },
-            { opacity: 0, offset: MORPH + 0.12 },
-            { opacity: 1, offset: MORPH + 0.3 },
+            { opacity: 0, offset: GROW + 0.1 },
+            { opacity: 1, offset: GROW + 0.26 },
             { opacity: 1 },
           ]),
           front.animate(reveal, staged),
+          // 뒤에 깔린 카드들: 사진이 잘리고 넓어지는 동안엔 감춰 두었다가(모양 사진 둘레로 비치지 않게) 줄어들며 나타남
+          ...[
+            ...document.querySelectorAll<HTMLElement>(
+              "[aria-roledescription='carousel'] > button:not([data-front-card])",
+            ),
+          ].map((el) =>
+            el.animate(
+              [{ opacity: 0 }, { opacity: 0, offset: GROW }, { opacity: 1 }],
+              staged,
+            ),
+          ),
           ...(ghosts.current ? [ghosts.current.animate(vanish, staged)] : []),
         ];
 
@@ -378,13 +337,14 @@ export function ReturnGhosts({
         animations.push(
           ...fade(chipFrom.current, [
             { opacity: 1 },
-            { opacity: 0, offset: 0.16 },
+            { opacity: 1, offset: CROP },
+            { opacity: 0, offset: CROP + 0.08 },
             { opacity: 0 },
           ]),
           ...fade(chipTo.current, [
             { opacity: 0 },
-            { opacity: 0, offset: 0.12 },
-            { opacity: 1, offset: MORPH - 0.08 },
+            { opacity: 0, offset: CROP + 0.06 },
+            { opacity: 1, offset: GROW - 0.04 },
             { opacity: 1 },
           ]),
         );
@@ -392,16 +352,18 @@ export function ReturnGhosts({
       animations.push(
         chipGhost.current.animate(
           [
-            // 사진을 따라가며 큰 카드의 스티커가 되고(①), 같이 줄어듦(②)
+            // 사진이 잘리는 동안은 제자리(①), 넓어질 때 큰 카드의 스티커가 되고(②), 같이 줄어듦(③)
+            { ...place(t.chip, `${t.chip.height / 2}px`), rotate: "0deg" },
             {
               ...place(t.chip, `${t.chip.height / 2}px`),
               rotate: "0deg",
+              offset: CROP,
               easing: MORPH_EASE,
             },
             {
               ...place(bigSticker, `${bigSticker.height / 2}px`),
               rotate: "12deg",
-              offset: MORPH,
+              offset: GROW,
               easing: SHRINK_EASE,
             },
             { ...place(sticker, `${size / 2}px`), rotate: "12deg" },
@@ -489,16 +451,6 @@ export function ReturnGhosts({
             {/* 메인 카드 글 (맨 앞 카드를 복사해 넣음) */}
             <div ref={cardText} className="absolute inset-0 opacity-0" />
           </div>
-          {/* 사진 뒤 노란 원 (본문 카드 색) */}
-          <div
-            ref={halo}
-            className="fixed z-30"
-            style={{
-              ...boxStyle(t.photo),
-              borderRadius: 32,
-              background: t.color,
-            }}
-          />
           <div
             ref={photoGhost}
             className="fixed z-30"
