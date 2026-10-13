@@ -29,8 +29,8 @@ const SWIPE_EASE = "cubic-bezier(0.3, 0, 0.2, 1)";
 const SETTLE_MS = 420;
 /** 모양 마스크를 이만큼 크게 씌우면 사진 칸 전체가 보여 네모처럼 보임 (랜딩 photo-frame과 같은 값) */
 const MASK_OPEN = "340% 340%";
-/** 마스크가 오므라드는 움직임 — 랜딩과 같은 곡선 (끝에서 살짝 튕김) */
-const MASK_EASE = "cubic-bezier(0.65, 0, 0.25, 1.12)";
+/** 마스크가 오므라드는 움직임 — 튕기지 않고 부드럽게 감속하며 닫힘 */
+const MASK_EASE = "cubic-bezier(0.45, 0, 0.2, 1)";
 const MERGE_EASE = "cubic-bezier(0.4, 0, 0.2, 1)";
 const SHRINK_EASE = "cubic-bezier(0.25, 0.8, 0.25, 1)";
 /** 카드 스티커 크기 (CardStack의 size-[68px]) — 회전된 요소의 바깥 상자 대신 이 크기로 가운데를 맞춥니다 */
