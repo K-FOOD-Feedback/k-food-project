@@ -434,6 +434,9 @@
 html,
 body {
   background-color: var(--color-background);
+  /* 화면 끝에서 더 당겨도 페이지가 끌려 내려오거나(아이폰 당겨서 새로고침) 튕기지 않게 — 앱처럼 고정된 느낌.
+     긴 화면의 보통 스크롤은 그대로 됨 */
+  overscroll-behavior: none;
 }
 
 body {
