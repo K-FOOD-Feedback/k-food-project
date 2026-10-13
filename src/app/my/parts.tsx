@@ -78,7 +78,24 @@ export function MyTabs<T extends string>({
 }
 
 /** 빈 상태 — 카드 없이 문구 + 중간 크기 버튼 */
-export function Empty({ title, body, cta }: { title: string; body: string; cta?: ReactNode }) {
+/** 빈 화면 버튼 모양 — PillButton md primary와 같음 (다른 동작의 버튼에 같은 모양을 입힐 때) */
+export const EMPTY_CTA =
+  "flex h-12 flex-none items-center justify-center rounded-full bg-primary px-6 text-[15px] leading-[1.5] font-semibold text-on-light transition active:scale-[0.99]";
+
+/**
+ * 빈 화면 (마이의 모든 탭 · 한국인/외국인 공통) — 안내 글 + 분홍 버튼 하나
+ * 버튼은 여기서 그려서 탭마다 색·크기·간격이 달라지지 않게 함
+ * action: 이동 링크(href) 또는 직접 만든 버튼(render — 로그인 흐름이 있는 Share 버튼 등, 모양은 EMPTY_CTA)
+ */
+export function Empty({
+  title,
+  body,
+  action,
+}: {
+  title: string;
+  body: string;
+  action?: { label: string; href: string; onClick?: () => void } | { render: (className: string) => ReactNode };
+}) {
   return (
     // 안내 글과 버튼 사이 48px (붙어 보이지 않게)
     <div className="flex flex-col items-center gap-12 px-6 pt-14 text-center break-keep">
@@ -86,7 +103,14 @@ export function Empty({ title, body, cta }: { title: string; body: string; cta?:
         <p className="text-[15px] font-semibold">{title}</p>
         <p className="text-[14px] leading-[1.5] text-muted">{body}</p>
       </div>
-      {cta}
+      {action &&
+        ("render" in action ? (
+          action.render(EMPTY_CTA)
+        ) : (
+          <PillButton tone="primary" size="md" href={action.href} onClick={action.onClick}>
+            {action.label}
+          </PillButton>
+        ))}
     </div>
   );
 }

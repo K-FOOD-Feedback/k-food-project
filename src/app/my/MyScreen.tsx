@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { getHomePost } from "@/app/home/mockPosts";
-import { IconButton, PillButton } from "@/components/Buttons";
+import { IconButton } from "@/components/Buttons";
 import { Screen, TopBar } from "@/components/Layout";
 import { ShareKfoodButton } from "@/components/ShareKfoodButton";
 import { track, useTrackOnce } from "@/lib/analytics";
@@ -145,15 +145,14 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
             <Empty
               title="No posts yet"
               body="Share your K-food and Koreans will vote on it."
-              cta={
-                // 메인의 Share 버튼과 같은 흐름 (로그인 → 가입 → 이어 쓰기 → 사진 고르기). 모양은 PillButton md primary와 같게
-                <ShareKfoodButton
-                  from="my-en"
-                  className="flex h-12 flex-none items-center justify-center rounded-full bg-primary px-6 text-[15px] font-semibold leading-[1.5] text-on-light transition active:scale-[0.99]"
-                >
-                  Share your K-food
-                </ShareKfoodButton>
-              }
+              // 메인의 Share 버튼과 같은 흐름 (로그인 → 가입 → 이어 쓰기 → 사진 고르기), 모양은 빈 화면 공통 버튼
+              action={{
+                render: (className) => (
+                  <ShareKfoodButton from="my-en" className={className}>
+                    Share your K-food
+                  </ShareKfoodButton>
+                ),
+              }}
             />
           ) : (
             <div className="grid grid-cols-2 gap-x-3 gap-y-6 px-1">
@@ -176,16 +175,11 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
             <Empty
               title="No comments yet"
               body="Comments you leave on posts will show up here."
-              cta={
-                <PillButton
-                  tone="soft"
-                  size="md"
-                  href="/home?lang=en"
-                  onClick={() => track("my_item_clicked", { item: "browse", viewer: "foreigner" })}
-                >
-                  Browse posts
-                </PillButton>
-              }
+              action={{
+                label: "Browse posts",
+                href: "/home?lang=en",
+                onClick: () => track("my_item_clicked", { item: "browse", viewer: "foreigner" }),
+              }}
             />
           ) : (
             <div className="flex flex-col gap-3">

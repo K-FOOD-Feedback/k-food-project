@@ -5,7 +5,7 @@ import { useState } from "react";
 import { getHomePost, HOME_POSTS, type HomePost } from "@/app/home/mockPosts";
 import { useMyVote, useVotedIds } from "@/app/home/votes";
 import { useMyComments } from "@/app/posts/[id]/comments";
-import { IconButton, PillButton } from "@/components/Buttons";
+import { IconButton } from "@/components/Buttons";
 import { Screen, TopBar } from "@/components/Layout";
 import { track, useTrackOnce } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
@@ -102,16 +102,11 @@ export function KoMyScreen() {
             <Empty
               title="아직 투표한 글이 없어요"
               body="외국인이 만든 한식에 한 표 던져 보세요."
-              cta={
-                <PillButton
-                  tone="primary"
-                  size="md"
-                  href="/home"
-                  onClick={() => track("my_item_clicked", { item: "browse", viewer: "korean" })}
-                >
-                  투표하러 가기
-                </PillButton>
-              }
+              action={{
+                label: "투표하러 가기",
+                href: "/home",
+                onClick: () => track("my_item_clicked", { item: "browse", viewer: "korean" }),
+              }}
             />
           ) : (
             <div className="grid grid-cols-2 gap-x-3 gap-y-6 px-1">
@@ -126,16 +121,11 @@ export function KoMyScreen() {
             <Empty
               title="아직 남긴 한마디가 없어요"
               body="투표한 글에 한마디를 남기면 여기 모여요."
-              cta={
-                <PillButton
-                  tone="soft"
-                  size="md"
-                  href="/home"
-                  onClick={() => track("my_item_clicked", { item: "browse", viewer: "korean" })}
-                >
-                  둘러보기
-                </PillButton>
-              }
+              action={{
+                label: "둘러보기",
+                href: "/home",
+                onClick: () => track("my_item_clicked", { item: "browse", viewer: "korean" }),
+              }}
             />
           ) : (
             <div className="flex flex-col gap-3">
