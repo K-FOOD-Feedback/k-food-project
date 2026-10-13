@@ -5,7 +5,7 @@ import { track } from "@/lib/analytics";
 import { cardShapeAt, type CardShape } from "./cardShapes";
 import { QUESTION_LABELS, QUESTION_LABELS_EN, participantsOf, type HomePost as Post } from "./mockPosts";
 
-/** ko = 한국인 메인(/home), en = 외국인 메인(/home/en) */
+/** ko = 한국인 메인(/home), en = 외국인 메인(/home?lang=en) */
 export type Lang = "ko" | "en";
 
 // 카드 크기·위치는 Figma(node 259:7795) 기준이고 가로 가운데 정렬입니다.
