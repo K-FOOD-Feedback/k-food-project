@@ -11,7 +11,7 @@ import { rememberRole } from "@/lib/role";
   언어 변경 (Figma 378:10854) — 모든 화면 상단의 지구본 버튼과, 누르면 뜨는 언어 고르기 창.
   사용: 헤더에 <LanguageButton lang="ko" from="detail" /> 하나만 넣으면 됩니다.
   그 화면 글자만 바꾸려면 onChange를 주세요 → 메인으로 가지 않고 onChange(고른 언어)를 부른 뒤 창을 닫습니다.
-  - 한국어·영어를 고르면 그 언어의 메인(/home, /home/en)으로 갑니다. 지금 언어를 고르면 창만 닫힙니다.
+  - 한국어·영어를 고르면 그 언어의 메인(/home, /home?lang=en)으로 갑니다. 지금 언어를 고르면 창만 닫힙니다.
   - 중국어·일본어는 아직 화면이 없어서 "곧 지원할게요"를 잠깐 보여 줍니다.
   - 창은 다른 화면처럼 가운데 430px 틀 안에만 뜹니다.
   - 창 하단에서 자동 번역을 켜고 끌 수 있습니다. 화면에서는 useAutoTranslate()로 읽습니다 (기본: 켬).
@@ -60,7 +60,7 @@ type Option = { id: string; flag: string; ko: string; en: string; href?: string 
 
 const OPTIONS: Option[] = [
   { id: "ko", flag: "🇰🇷", ko: "한국어", en: "Korean", href: "/home" },
-  { id: "en", flag: "🇺🇸", ko: "영어", en: "English", href: "/home/en" },
+  { id: "en", flag: "🇺🇸", ko: "영어", en: "English", href: "/home?lang=en" },
   { id: "zh", flag: "🇨🇳", ko: "중국어", en: "Chinese" },
   { id: "ja", flag: "🇯🇵", ko: "일본어", en: "Japanese" },
 ];

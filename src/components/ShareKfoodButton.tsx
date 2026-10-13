@@ -84,7 +84,7 @@ export function ShareKfoodButton({ className, children }: { className?: string; 
         }}
       />
 
-      {/* 가입 환영 — 주소 ?welcome 로 열림 (/home/en?welcome 로 바로 열기도 됨) */}
+      {/* 가입 환영 — 주소 ?welcome 로 열림 (/home?lang=en&welcome 로 바로 열기도 됨) */}
       <WelcomePopup lang="en" onDone={start} />
 
       {/* 쓰다 만 글이 있으면 이어 쓸지 */}

@@ -525,7 +525,7 @@ export function LandingScreen() {
  */
 const ROLES = [
   { kind: "korean", href: "/home", fill: "bg-primary" },
-  { kind: "foreigner", href: "/home/en", fill: "bg-content" },
+  { kind: "foreigner", href: "/home?lang=en", fill: "bg-content" },
 ] as const;
 
 function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
@@ -691,7 +691,7 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
               setLoginOpen(false);
               // 중국어·일본어도 이후 화면은 아직 영어 외국인 화면으로
               rememberRole(lang === "ko" ? "ko" : "en");
-              router.push(lang === "ko" ? "/home" : "/home/en");
+              router.push(lang === "ko" ? "/home" : "/home?lang=en");
             }}
           />,
           document.body,

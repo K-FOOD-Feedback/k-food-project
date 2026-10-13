@@ -11,7 +11,7 @@ import { useFlow, type DraftStep } from "@/lib/write-store";
  * 글 작성 어느 단계에서든 바로 나가기 (오른쪽 위 ×) — 담당 송희
  * 뒤로(‹)는 이전 단계로, ×는 작성 자체를 나감 → 저장하고 나갈지 / 지우고 나갈지 묻는 시트
  */
-export function WriteExit({ step, exitHref = "/home/en" }: { step: DraftStep; exitHref?: string }) {
+export function WriteExit({ step, exitHref = "/home?lang=en" }: { step: DraftStep; exitHref?: string }) {
   const router = useRouter();
   const { saveDraftForLater, discardDraft } = useFlow();
   const [open, setOpen] = useState(false);

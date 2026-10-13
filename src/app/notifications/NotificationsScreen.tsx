@@ -39,7 +39,7 @@ export function NotificationsScreen({ lang }: { lang: Lang }) {
   return (
     <Screen className="pb-16">
       <TopBar
-        left={<IconButton icon="chevron-left" label={t.back} href={lang === "en" ? "/home/en" : "/home"} />}
+        left={<IconButton icon="chevron-left" label={t.back} href={lang === "en" ? "/home?lang=en" : "/home"} />}
       />
 
       <div className="flex flex-col gap-7 px-4 pt-2">

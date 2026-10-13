@@ -61,7 +61,7 @@ export function DoneScreen() {
       <TopBar right={<IconButton
             icon="x"
             label="Close"
-            href="/home/en"
+            href="/home?lang=en"
             onClick={() => track("posted_next_action", { action: "close", taps: burst, tilted: tilted.current })}
           />} />
 

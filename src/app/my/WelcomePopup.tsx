@@ -27,7 +27,7 @@ import {
   서버 전까지: 닉네임·나라·가입 여부는 이 브라우저에 저장
 
   주소: 열리면 지금 주소에 ?welcome 이 붙음 (화면 위에 덮이는 팝업은 그대로)
-  - 폰 뒤로가기 → 팝업만 닫힘 · ?welcome 주소로 바로 열 수 있음 (외국인 /home/en?welcome · 한국인 /posts/2?welcome)
+  - 폰 뒤로가기 → 팝업만 닫힘 · ?welcome 주소로 바로 열 수 있음 (외국인 /home?lang=en&welcome · 한국인 /posts/2?welcome)
   - 열고 닫기는 openWelcome() / 주소로 — 열려 있는지는 주소가 정함
 */
 
