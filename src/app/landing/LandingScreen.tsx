@@ -548,9 +548,6 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
           → 토큰이 왼쪽 칸, 오른쪽 칸을 번갈아 살짝 들어갔다 나오며 "넣어 보세요" 힌트 */}
       <div key={active ? "on" : "off"} className="relative rounded-[32px] bg-surface-2 px-5 pt-7 pb-5">
         <p className="animate-rise text-center font-display text-[24px] leading-[1.3] [animation-delay:150ms]">{t.pickTitle}</p>
-        <p className="mt-1.5 animate-rise text-center text-[13px] font-medium text-neutral-400 [animation-delay:250ms]">
-          {t.pickHint}
-        </p>
 
         {/* 토큰 */}
         <div className="mt-6 flex h-14 items-center justify-center">
@@ -655,7 +652,7 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
         }}
         className="mt-3 py-1 text-center text-[14px] font-bold leading-[1.3] text-neutral-400"
       >
-        {t.login}
+        {t.loginLead} <span className="text-on-dark">{t.loginAction}</span>
       </button>
       {/* 움직이는 패널 안에 두면 화면 전체를 못 덮어서, 페이지 맨 바깥(body)에 띄움 */}
       {loginOpen &&
