@@ -365,12 +365,12 @@ export function CommentModal({
       />
 
       {/* 내용: 빈 곳을 누르면 아래 배경이 눌려 닫히도록 통과시킵니다.
-          답글 목록 칸처럼 화면을 덮는 칸의 빈 곳도 — 버튼·입력칸·원글 카드가 아닌 곳을 누르면 닫힘 (송희) */}
+          답글 목록 칸처럼 화면을 덮는 칸의 빈 곳도 — 버튼·입력칸·원글 카드·답글이 아닌 곳을 누르면 닫힘 (송희) */}
       <div
         className="pointer-events-none relative flex h-full flex-col transition-opacity duration-200 ease-out starting:opacity-0 [&>*]:pointer-events-auto"
         onClick={(e) => {
           if (editing || reporting) return;
-          if ((e.target as Element).closest("button, a, input, textarea, label, form, [data-keep-open]")) return;
+          if ((e.target as Element).closest("button, a, input, textarea, label, form, [data-keep-open], [data-reply-id]")) return;
           onClose();
         }}
       >
