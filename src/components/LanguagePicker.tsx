@@ -141,85 +141,89 @@ function LanguagePicker({ lang, from, onClose }: { lang: ServiceLang; from: stri
           }
         />
 
-        <ul className="absolute top-1/2 left-1/2 flex w-[230px] -translate-x-1/2 -translate-y-1/2 flex-col gap-2">
-          {OPTIONS.map((o, i) => {
-            const selected = o.id === lang;
-            return (
-              <li
-                key={o.id}
-                className="animate-[lang-rise_320ms_cubic-bezier(0.2,0.8,0.2,1)_both]"
-                style={{ animationDelay: `${i * 40}ms` }}
-              >
-                <button
-                  type="button"
-                  onClick={() => choose(o)}
-                  aria-pressed={selected}
-                  className={`flex w-full items-center gap-4 rounded-[32px] py-2.5 pr-5 pl-2.5 text-left transition-transform active:scale-[0.97] ${
-                    selected ? "bg-secondary text-background" : "bg-surface-2 text-white"
-                  }`}
+        {/* 언어 목록 + 자동 번역을 한 덩어리로 묶어 화면 가운데에 */}
+        <div className="absolute top-1/2 left-1/2 flex w-[230px] -translate-x-1/2 -translate-y-1/2 flex-col gap-10">
+          <ul className="flex flex-col gap-2">
+            {OPTIONS.map((o, i) => {
+              const selected = o.id === lang;
+              return (
+                <li
+                  key={o.id}
+                  className="animate-[lang-rise_320ms_cubic-bezier(0.2,0.8,0.2,1)_both]"
+                  style={{ animationDelay: `${i * 40}ms` }}
                 >
-                  <span
-                    className={`flex size-[54px] shrink-0 items-center justify-center rounded-full text-[32px] leading-none ${
-                      selected ? "bg-white" : "bg-background"
+                  <button
+                    type="button"
+                    onClick={() => choose(o)}
+                    aria-pressed={selected}
+                    className={`flex w-full items-center gap-4 rounded-[32px] py-2.5 pr-5 pl-2.5 text-left transition-transform active:scale-[0.97] ${
+                      selected ? "bg-secondary text-background" : "bg-surface-2 text-white"
                     }`}
-                    aria-hidden
                   >
-                    {o.flag}
-                  </span>
-                  <span className="flex min-w-0 flex-col gap-0.5">
-                    <span className="font-(family-name:--font-paperlogy) text-[18px] leading-[1.3] tracking-[-0.36px]">
-                      {o.ko}
+                    <span
+                      className={`flex size-[54px] shrink-0 items-center justify-center rounded-full text-[32px] leading-none ${
+                        selected ? "bg-white" : "bg-background"
+                      }`}
+                      aria-hidden
+                    >
+                      {o.flag}
                     </span>
-                    <span className="font-display text-[22px] leading-[1.3] tracking-[-0.44px]">{o.en}</span>
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+                    <span className="flex min-w-0 flex-col gap-0.5">
+                      <span className="font-(family-name:--font-paperlogy) text-[18px] leading-[1.3] tracking-[-0.36px]">
+                        {o.ko}
+                      </span>
+                      <span className="font-display text-[22px] leading-[1.3] tracking-[-0.44px]">{o.en}</span>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
 
-        {/* 중국어·일본어를 누르면 잠깐 알려 줌 (자동 번역 줄 바로 위) */}
+          {/* 자동 번역 켬/끔 — 일본어 아래 40px */}
+          <div className="flex animate-[lang-rise_320ms_cubic-bezier(0.2,0.8,0.2,1)_160ms_both] flex-col items-center gap-2">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={autoTranslate}
+              onClick={() => {
+                track("auto_translate_toggled", { on: !autoTranslate, screen: from, viewer: en ? "foreigner" : "korean" });
+                setAutoTranslate(!autoTranslate);
+              }}
+              className="flex w-full items-center gap-3 rounded-[32px] bg-surface-2 py-3 pr-3 pl-5 text-left text-white transition-transform active:scale-[0.97]"
+            >
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="font-(family-name:--font-paperlogy) text-[16px] leading-[1.3] tracking-[-0.32px]">자동 번역</span>
+                <span className="font-display text-[18px] leading-[1.3] tracking-[-0.36px]">Auto-translate</span>
+              </span>
+              {/* 스위치 */}
+              <span
+                aria-hidden
+                className={`relative h-8 w-[52px] shrink-0 rounded-full transition-colors duration-200 ${autoTranslate ? "bg-secondary" : "bg-background"}`}
+              >
+                <span
+                  className={`absolute top-[3px] left-[3px] size-[26px] rounded-full bg-white shadow-[0_2px_6px_rgba(0,0,0,0.25)] transition-transform duration-200 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
+                    autoTranslate ? "translate-x-5" : ""
+                  }`}
+                />
+              </span>
+            </button>
+            <p className="text-center text-[12px] leading-[1.4] break-keep text-muted">
+              {en ? "Show posts and comments in your language" : "다른 언어로 쓴 글·한마디를 내 언어로 보여 줘요"}
+            </p>
+          </div>
+        </div>
+
+        {/* 중국어·일본어를 누르면 잠깐 알려 줌 */}
         <p
           role="status"
-          className={`absolute bottom-[calc(150px+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 rounded-full bg-surface-2 px-4 py-2.5 text-[14px] font-semibold whitespace-nowrap text-white transition-opacity duration-200 ${
+          className={`absolute bottom-[calc(40px+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 rounded-full bg-surface-2 px-4 py-2.5 text-[14px] font-semibold whitespace-nowrap text-white transition-opacity duration-200 ${
             soon ? "opacity-100" : "pointer-events-none opacity-0"
           }`}
         >
           {soon ? (en ? "Coming soon" : "곧 지원할게요") : ""}
         </p>
 
-        {/* 하단: 자동 번역 켬/끔 */}
-        <div className="absolute bottom-[calc(40px+env(safe-area-inset-bottom))] left-1/2 flex w-[230px] -translate-x-1/2 animate-[lang-rise_320ms_cubic-bezier(0.2,0.8,0.2,1)_160ms_both] flex-col items-center gap-2">
-          <button
-            type="button"
-            role="switch"
-            aria-checked={autoTranslate}
-            onClick={() => {
-              track("auto_translate_toggled", { on: !autoTranslate, screen: from, viewer: en ? "foreigner" : "korean" });
-              setAutoTranslate(!autoTranslate);
-            }}
-            className="flex w-full items-center gap-3 rounded-[32px] bg-surface-2 py-3 pr-3 pl-5 text-left text-white transition-transform active:scale-[0.97]"
-          >
-            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span className="font-(family-name:--font-paperlogy) text-[16px] leading-[1.3] tracking-[-0.32px]">자동 번역</span>
-              <span className="font-display text-[18px] leading-[1.3] tracking-[-0.36px]">Auto-translate</span>
-            </span>
-            {/* 스위치 */}
-            <span
-              aria-hidden
-              className={`relative h-8 w-[52px] shrink-0 rounded-full transition-colors duration-200 ${autoTranslate ? "bg-secondary" : "bg-background"}`}
-            >
-              <span
-                className={`absolute top-[3px] left-[3px] size-[26px] rounded-full bg-white shadow-[0_2px_6px_rgba(0,0,0,0.25)] transition-transform duration-200 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
-                  autoTranslate ? "translate-x-5" : ""
-                }`}
-              />
-            </span>
-          </button>
-          <p className="text-center text-[12px] leading-[1.4] break-keep text-muted">
-            {en ? "Show posts and comments in your language" : "다른 언어로 쓴 글·한마디를 내 언어로 보여 줘요"}
-          </p>
-        </div>
       </div>
 
       <style>{`
