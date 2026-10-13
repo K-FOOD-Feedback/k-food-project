@@ -3,10 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowCta, IconButton } from "@/components/Buttons";
-import { TextField } from "@/components/Field";
 import { Icon } from "@/components/Icon";
 import { Screen, StepProgress, StickyBottom, Tile, TopBar } from "@/components/Layout";
-import { getQuestion, rankQuestions, VOTE_TITLE_MAX, voteBasisOf, type QuestionId } from "@/lib/write-data";
+import { getQuestion, rankQuestions, voteBasisOf, type QuestionId } from "@/lib/write-data";
 import { keptRatio, track } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
 import { OptionsEditor } from "../OptionsEditor";
@@ -19,9 +18,8 @@ const MAKING_MS = 1400;
   ③ 질문 + 투표 (마지막 단계)
   - 위: 한국인에게 물어볼 질문 고르기 — AI가 글을 보고 순서를 매기고 1순위를 미리 골라 둠
   - 질문을 바꾸면 아래 투표가 그 질문에 맞게 바로 다시 만들어짐
-  - 휠 = 주제 고르기 "Pick a topic" (메인 카드 칩에 보이는 짧은 문구, 예: "Did I add too much?")
-  - Your question = 작성자가 진짜 묻고 싶은 한 문장. 이게 곧 글 제목 (글 단계에는 제목 칸 없음)
-    AI가 주제 + 글에 맞춰 채우고, 고칠 수 있음
+  - 휠 = 투표 주제. 고른 주제 문구가 그대로 투표 질문 (예: "Did I add too much?")
+    AI가 ②의 글을 보고 순서를 매겨 1순위를 미리 골라 둠
   - AI가 사진 + 주제 + 제목·본문을 보고 선택지를 만듦 (2~4개, 고칠 수 있음)
   - ③에서 글을 고치고 오면 "선택지도 다시 맞출까요?" 안내 (자동으로 덮어쓰지 않음)
 */
@@ -127,7 +125,7 @@ export function VoteStepScreen() {
         <Tile>
           {/* 한국인에게 물어볼 질문 — 투표 주제 — iOS 알람처럼 위아래로 굴려서 고르기. 가운데 띠가 선택, 처음엔 AI 추천 1순위 */}
           <div className="flex flex-col gap-2 pt-5 pb-1">
-            <h2 className="px-5 font-display text-[20px] leading-[1.2]">Pick a topic</h2>
+            <h2 className="px-5 font-display text-[20px] leading-[1.2]">What do you want to ask?</h2>
             <div className="px-3">
               <QuestionWheel
                 items={ranked}
@@ -143,18 +141,6 @@ export function VoteStepScreen() {
             <MakingVote />
           ) : (
             <div key={`vote-${variant}-${draft.voteBasis}`} className="animate-fade-in">
-              {/* 이 질문이 곧 글 제목 (메인 카드 · 상세 맨 위) — 그래서 제목처럼 크게 */}
-              <TextField
-                label="Your question"
-                hint="Be specific. It's also your post title."
-                large
-                value={draft.voteQuestion}
-                maxLength={VOTE_TITLE_MAX}
-                onChange={(voteQuestion) => updateDraft({ voteQuestion })}
-                onBlur={(v) => {
-                  if (v !== draft.ai.voteQuestion) track("vote_title_edited", { length: v.length, source: "write" });
-                }}
-              />
               <div className="flex flex-col gap-2 px-5 pt-3 pb-5">
                 <div className="flex items-center">
                   <p className="flex-1 text-[13px] font-semibold leading-[1.3]">Choices Koreans can pick</p>
@@ -178,7 +164,7 @@ export function VoteStepScreen() {
 
         <p className="flex items-center gap-1.5 px-6 pt-3 text-[13px] font-medium leading-[1.3] text-muted">
           <Icon name="info" size={14} />
-          You can&apos;t change the question or the vote after posting.
+          You can&apos;t change the vote after posting.
         </p>
       </div>
 

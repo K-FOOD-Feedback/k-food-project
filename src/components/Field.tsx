@@ -12,14 +12,8 @@ export function TextField({
   rows = 1,
   locked = false,
   onBlur,
-  hint,
-  large = false,
 }: {
   label: string;
-  /** 이름 아래 작은 안내 문구 */
-  hint?: string;
-  /** 제목처럼 크게 (font-display) */
-  large?: boolean;
   value: string;
   onChange?: (value: string) => void;
   maxLength?: number;
@@ -55,7 +49,6 @@ export function TextField({
           </span>
         )}
       </div>
-      {hint && <p className="-mt-1 text-[13px] leading-[1.4] text-muted">{hint}</p>}
       <div className="flex items-start gap-2 rounded-[20px] border-2 border-transparent bg-surface-2 px-4 py-[14px] focus-within:border-on-dark">
         <textarea
           ref={ref}
@@ -67,9 +60,7 @@ export function TextField({
           aria-readonly={locked}
           onBlur={(e) => onBlur?.(e.target.value)}
           onChange={(e) => onChange?.(e.target.value.replace(rows === 1 ? /\n/g : /$^/, ""))}
-          className={`min-w-0 flex-1 resize-none overflow-hidden bg-transparent outline-none ${
-            large ? "font-display text-[20px] leading-[1.3]" : "text-[15px] leading-[1.5]"
-          } ${
+          className={`min-w-0 flex-1 resize-none overflow-hidden bg-transparent text-[15px] leading-[1.5] outline-none ${
             locked ? "text-muted" : "text-on-dark"
           }`}
         />

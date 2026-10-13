@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -65,7 +66,18 @@ type FlowState = {
   myPost: MyPost | null;
   /** 검사에서 걸려 자동으로 뺀 사진 수 (늘어나면 화면에서 안내) */
   unsafeRemoved: number;
+  /**
+   * AI 진행 상태 — ① 사진 화면에서 음식을 알아보고(dish), 알아본 순간 뒤에서 본문을 미리 씀(story)
+   * 음식을 고치면 미리 쓰던 글은 버리고 고친 이름으로 다시 씀
+   */
+  ai: { dish: AiStatus; story: AiStatus };
 };
+
+export type AiStatus = "idle" | "working" | "ready";
+
+/** AI 목업 시간 (실제 AI가 붙으면 응답이 오는 대로) */
+const DISH_MS = 1500;
+const STORY_MS = 3500;
 
 const emptyDraft = (): Draft => ({
   photos: [],
@@ -91,8 +103,6 @@ export const SAMPLE_MY_POST: MyPost = {
   dish: AI_DISH,
   ...aiPostFor(AI_DISH),
   ...aiVoteFor("line", AI_DISH, aiPostFor(AI_DISH)),
-  // 질문이 곧 글 제목
-  title: aiVoteFor("line", AI_DISH, aiPostFor(AI_DISH)).voteQuestion,
   voteBasis: "",
   votes: 0,
   comments: 0,
@@ -116,6 +126,12 @@ type FlowActions = {
   makeVote: (variant?: number) => void;
   saveDraftForLater: (step: DraftStep) => void;
   discardDraft: () => void;
+  /** ① 음식 알아보기 */
+  recognizeDish: () => void;
+  /** ② 본문 미리 쓰기 (dish: 고친 음식 이름으로 다시) */
+  writeStory: (dish?: string) => void;
+  /** 사진을 다 빼면 AI 상태 초기화 */
+  resetAi: () => void;
   publish: () => void;
   updateMyPost: (patch: Partial<MyPost>) => void;
   deleteMyPost: () => void;
@@ -131,7 +147,11 @@ export function FlowProvider({ children }: { children: ReactNode }) {
     draft: emptyDraft(),
     myPost: null,
     unsafeRemoved: 0,
+    ai: { dish: "idle", story: "idle" },
   });
+  // 오래된 AI 응답을 버리기 위한 번호 (음식을 고치거나 사진을 다 빼면 올라감)
+  const dishRun = useRef(0);
+  const storyRun = useRef(0);
 
   const logIn = useCallback(() => {
     setState((s) => ({ ...s, loggedIn: true }));
@@ -246,7 +266,61 @@ export function FlowProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const discardDraft = useCallback(() => {
-    setState((s) => ({ ...s, draft: emptyDraft() }));
+    dishRun.current++;
+    storyRun.current++;
+    setState((s) => ({ ...s, draft: emptyDraft(), ai: { dish: "idle", story: "idle" } }));
+  }, []);
+
+  /** ① 음식 알아보기 (사진 검사가 끝난 뒤) */
+  const recognizeDish = useCallback(() => {
+    const run = ++dishRun.current;
+    storyRun.current++;
+    const started = performance.now();
+    setState((s) => ({ ...s, ai: { dish: "working", story: "idle" } }));
+    window.setTimeout(() => {
+      if (run !== dishRun.current) return;
+      track("dish_recognized", { duration_ms: Math.round(performance.now() - started) });
+      setState((s) => ({
+        ...s,
+        ai: { ...s.ai, dish: "ready" },
+        draft: { ...s.draft, dish: AI_DISH, ai: { ...s.draft.ai, dish: AI_DISH } },
+      }));
+    }, DISH_MS);
+  }, []);
+
+  /** ② 본문 미리 쓰기 — 음식을 알아본 순간 뒤에서 시작. 음식을 고치면 dish를 주고 다시 */
+  const writeStory = useCallback((dish?: string) => {
+    const run = ++storyRun.current;
+    const started = performance.now();
+    setState((s) => ({
+      ...s,
+      ai: { ...s.ai, story: "working" },
+      draft: dish ? { ...s.draft, dish } : s.draft,
+    }));
+    window.setTimeout(() => {
+      if (run !== storyRun.current) return; // 그사이 음식을 고쳤으면 버림
+      track("ai_draft_completed", { duration_ms: Math.round(performance.now() - started), rewrite: !!dish });
+      setState((s) => {
+        const name = dish ?? (s.draft.dish || AI_DISH);
+        const post = aiPostFor(name);
+        return {
+          ...s,
+          ai: { ...s.ai, story: "ready" },
+          draft: { ...s.draft, dish: name, ...post, ai: { ...s.draft.ai, ...post } },
+        };
+      });
+    }, STORY_MS);
+  }, []);
+
+  /** 사진을 다 빼면 AI 결과도 처음부터 (알아본 음식 · 미리 쓴 글도 지움) */
+  const resetAi = useCallback(() => {
+    dishRun.current++;
+    storyRun.current++;
+    setState((s) => ({
+      ...s,
+      ai: { dish: "idle", story: "idle" },
+      draft: { ...s.draft, dish: "", title: "", story: "" },
+    }));
   }, []);
 
   const publish = useCallback(() => {
@@ -260,8 +334,7 @@ export function FlowProvider({ children }: { children: ReactNode }) {
           coverId: d.coverId ?? photos[0].id,
           questionId: d.questionId,
           dish: d.dish || AI_DISH,
-          // 질문이 곧 글 제목 (글 단계에 제목 칸 없음)
-          title: d.voteQuestion || d.title || SAMPLE_MY_POST.title,
+          title: d.title || SAMPLE_MY_POST.title,
           story: d.story || SAMPLE_MY_POST.story,
           voteQuestion: d.voteQuestion || SAMPLE_MY_POST.voteQuestion,
           options: d.options.filter((o) => o.trim()).length >= 2 ? d.options.filter((o) => o.trim()) : SAMPLE_MY_POST.options,
@@ -297,6 +370,9 @@ export function FlowProvider({ children }: { children: ReactNode }) {
       makeVote,
       saveDraftForLater,
       discardDraft,
+      recognizeDish,
+      writeStory,
+      resetAi,
       publish,
       updateMyPost,
       deleteMyPost,
@@ -314,6 +390,9 @@ export function FlowProvider({ children }: { children: ReactNode }) {
       makeVote,
       saveDraftForLater,
       discardDraft,
+      recognizeDish,
+      writeStory,
+      resetAi,
       publish,
       updateMyPost,
       deleteMyPost,

@@ -8,7 +8,7 @@ import { Icon } from "@/components/Icon";
 import { Screen, StickyBottom, Tile, Toast, TopBar } from "@/components/Layout";
 import { PhotoGrid } from "@/components/PhotoGrid";
 import { usePhotoPicker } from "@/components/PhotoPicker";
-import { getQuestion, MAX_PHOTOS, STORY_MAX, VOTE_TITLE_MAX, type Photo } from "@/lib/write-data";
+import { getQuestion, MAX_PHOTOS, STORY_MAX, TITLE_MAX, type Photo } from "@/lib/write-data";
 import { SAMPLE_MY_POST, useFlow, type MyPost, MY_POST_ID } from "@/lib/write-store";
 import { OptionsEditor } from "@/app/write/OptionsEditor";
 import { track } from "@/lib/analytics";
@@ -34,7 +34,7 @@ export function EditScreen() {
   const [lockShake, setLockShake] = useState(0);
   const [lockToast, setLockToast] = useState(false);
   const closeLockToast = useCallback(() => setLockToast(false), []);
-  const canSave = form.story.trim().length > 0;
+  const canSave = form.title.trim().length > 0 && form.story.trim().length > 0;
   const set = (patch: Partial<MyPost>) => setForm((f) => ({ ...f, ...patch }));
   const question = getQuestion(form.questionId);
 
@@ -87,6 +87,7 @@ export function EditScreen() {
       <div className="stagger flex flex-col gap-1 px-2">
         <Tile>
           <h2 className="px-5 pt-5 pb-2 font-display text-[20px] leading-[1.2]">Your post</h2>
+          <TextField label="Title" value={form.title} maxLength={TITLE_MAX} onChange={(title) => set({ title })} />
           <TextField
             label="Story"
             value={form.story}
@@ -139,8 +140,6 @@ export function EditScreen() {
               <Icon name="lock" size={16} className="text-neutral-400" />
             </button>
           </div>
-          {/* 질문 = 글 제목. 올린 뒤엔 못 바꿈 */}
-          <TextField label="Your question" large value={form.voteQuestion} maxLength={VOTE_TITLE_MAX} locked />
           <div className="flex flex-col gap-2 px-5 pt-3 pb-4">
             <p className="text-[13px] font-semibold leading-[1.3]">Choices Koreans can pick</p>
             <OptionsEditor source="edit" options={form.options} locked onChange={() => {}} />

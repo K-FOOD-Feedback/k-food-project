@@ -10,7 +10,8 @@ import { usePhotoPicker } from "@/components/PhotoPicker";
 import { MAX_PHOTOS } from "@/lib/write-data";
 import { track } from "@/lib/analytics";
 import { coverOf, useFlow } from "@/lib/write-store";
-import { PhotoCheckNotice, usePhotoCheck } from "./PhotoCheckNotice";
+import { DishCard, useDishFlow } from "./DishCard";
+import { PhotoCheckNotice } from "./PhotoCheckNotice";
 import { usePhotoActions } from "./usePhotoActions";
 import { WriteExit } from "./WriteExit";
 
@@ -19,7 +20,8 @@ export function PhotosScreen({ backHref = "/home/en" }: { backHref?: string }) {
   // 로그인은 외국인 메인의 Share 버튼(ShareKfoodButton)에서 사진 선택 전에 끝냅니다.
   const { draft, saveDraftForLater } = useFlow();
   const photo = usePhotoActions("photos");
-  const photoCheck = usePhotoCheck();
+  const dishFlow = useDishFlow();
+  const [editingDish, setEditingDish] = useState(false);
   const [limitToast, setLimitToast] = useState(false);
   const closeToast = useCallback(() => setLimitToast(false), []);
 
@@ -102,18 +104,21 @@ export function PhotosScreen({ backHref = "/home/en" }: { backHref?: string }) {
           </Tile>
         )}
         {draft.photos.length > 0 && (
-          <div className="px-2 pt-2">
+          <div className="px-2 pt-2 empty:hidden">
             <PhotoCheckNotice step="photos" />
           </div>
         )}
+        {/* AI가 알아본 음식 — 맞는지 확인 (틀리면 고침) */}
+        <DishCard onEditingChange={setEditingDish} />
       </div>
 
       <StickyBottom>
         <ArrowCta
           title="Next"
           compact
-          {...(draft.photos.length && photoCheck.canGo
-            ? { href: "/write/writing", onClick: () => track("photos_completed", { count: draft.photos.length }) }
+          caption={dishFlow.working ? "Looking at your photos…" : undefined}
+          {...(dishFlow.canGo && !editingDish
+            ? { href: "/write/post", onClick: () => track("photos_completed", { count: draft.photos.length }) }
             : { disabled: true })}
         />
       </StickyBottom>

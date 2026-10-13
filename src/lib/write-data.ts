@@ -82,12 +82,12 @@ export function getQuestion(id: QuestionId): Question {
 /*
   ── AI 목업 ──────────────────────────────────────────────
   실제 AI가 붙기 전까지 쓰는 가짜 결과입니다. 작성 순서(사진 → AI 글쓰기 → 글 → 질문+투표)에 따른 재료:
-    ① 음식 인식            : 사진 (+ 사진 검사 상태값)        → "AI thinks this is …", 틀리면 고치고 ② 다시
-    ② 본문(Story)          : 사진 + ①                         → 주제는 아직 안 고른 상태
-    ③-a 주제 추천 순서      : 사진 + ②(사용자가 고친 본문)      → 휠 1순위로 미리 선택
-    ③-b 질문 + 선택지       : 사진 + 고른 주제 + ① + ②          → 질문(Your question)이 곧 글 제목
+    ① 음식 인식          : 사진 (+ 사진 검사 상태값)      → ① 사진 화면 "Is this right?" (틀리면 고침)
+    ② 제목 · 본문        : 사진 + ①                       → ①에서 음식을 알아본 순간 뒤에서 미리 씀
+                                                            음식을 고치면 미리 쓴 글은 버리고 다시
+    ③-a 투표 주제 추천    : 사진 + ②(사용자가 고친 글)      → 휠 1순위로 미리 선택
+    ③-b 선택지           : 사진 + 고른 주제 + ②             → 투표 질문은 주제 문구 그대로
   ③-b를 만든 뒤 ①·②·주제가 바뀌면 "투표도 다시 맞출까요?" (voteBasisOf)
-  ※ 제목 칸은 없음(질문 = 제목). aiPostFor의 title은 예전 흐름에서 남은 값이라 화면에선 안 씀
 */
 
 /** ① 사진에서 알아본 음식 이름 */
@@ -165,7 +165,8 @@ export function aiVoteFor(
     better: { q: `Better than a Korean made it?`, options: [[`Yes, honestly 🏆`, `Same level`, `Nice try 😂`]] },
   };
   const set = sets[questionId] ?? sets.line; // 예전 질문 id로 저장된 글도 깨지지 않게
-  return { voteQuestion: set.q, options: set.options[variant % set.options.length] };
+  // 투표 질문은 고른 주제 문구 그대로 (예: "Did I add too much?") — 구체적인 문장(set.q)은 선택지 만들 때 참고만
+  return { voteQuestion: getQuestion(questionId).label, options: set.options[variant % set.options.length] };
 }
 
 /**

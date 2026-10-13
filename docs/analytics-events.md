@@ -57,6 +57,7 @@
 | `photos_added` | 사진 추가 | `count`, `total`, `from`(share/photos/post) |
 | `photo_checked` | 사진 검사 결과 (AI, 지금은 목업) | `result`(ok/not_food/unsafe/unsure) — 사진 내용은 보내지 않음 |
 | `photo_blocked_shown` | "음식 사진이 아니에요" 안내가 보임 | `count`(걸린 사진 수), `step` |
+| `dish_recognized` | ① 사진 화면에서 AI가 음식을 알아봄 | `duration_ms` |
 | `photo_removed` · `cover_changed` · `photos_reordered` | 사진 조작 | `from` 등 |
 | `photo_limit_hit` | 10장 초과 | `from` |
 | `photos_completed` | ① Next | `count` |
@@ -66,7 +67,7 @@
 | `topic_changed` | 질문+투표 화면에서 질문 휠 바꿈 | `from_topic`, `to_topic`, `method`(drag/scroll/tap/keyboard), `ai_rank`(AI 추천 순위, 0=1순위) |
 | `topic_selected` | ② Write with AI | `topic`, `is_ai_top_pick`, `changes` |
 | `topic_reselected` | 투표에서 주제만 바꾸고 복귀 | `from_topic`, `to_topic`, `changed` |
-| `ai_draft_completed` / `ai_draft_stopped` | AI 작성 화면 | `duration_ms`, `topic` / `step_done` |
+| `ai_draft_completed` | 제목·본문을 다 씀 (① 사진 화면에서 음식을 알아본 순간 뒤에서 미리 씀) | `duration_ms`, `rewrite`(음식을 고쳐서 다시 썼는지) |
 | `dish_correction_opened` / `dish_corrected` | ③ Not right? / Rewrite | `ai_dish`, `user_dish` |
 | `post_step_completed` | ③ Make the vote | `dish_corrected`, `title_kept`, `story_kept`, 길이, `photos` |
 | `vote_generated` | ④ 투표 만들어짐 | `reason`(first/remake/update), `variant`, `topic` |

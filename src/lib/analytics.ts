@@ -50,6 +50,7 @@ export type EventName =
   // ── 외국인 글쓰기 (송희)
   | "photos_added"
   | "photo_checked"
+  | "dish_recognized"
   | "photo_blocked_shown"
   | "photo_removed"
   | "cover_changed"
@@ -63,7 +64,6 @@ export type EventName =
   | "topic_selected"
   | "topic_reselected"
   | "ai_draft_completed"
-  | "ai_draft_stopped"
   | "dish_correction_opened"
   | "dish_corrected"
   | "post_step_completed"
