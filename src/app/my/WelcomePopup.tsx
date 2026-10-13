@@ -94,9 +94,7 @@ const COPY = {
     title: "Welcome! 👋",
     sub: "Just a few things before you start.",
     nickname: "Your nickname",
-    nicknameHint: "This is how others see you. Tap ↻ for another one.",
     country: "Where are you from?",
-    countryHint: "Koreans will see your flag next to your posts.",
     all: "Agree to all",
     items: ["I'm 14 or older", "Terms of Service", "Privacy Policy"],
     required: "Required",
@@ -109,9 +107,7 @@ const COPY = {
     title: "반가워요! 👋",
     sub: "시작하기 전에 두 가지만 확인할게요.",
     nickname: "내 닉네임",
-    nicknameHint: "다른 사람에게 보이는 이름이에요. ↻로 바꿀 수 있어요.",
     country: "",
-    countryHint: "",
     all: "전체 동의",
     items: ["만 14세 이상이에요", "이용약관 동의", "개인정보 수집·이용 동의"],
     required: "필수",
@@ -203,7 +199,6 @@ export function WelcomePopup({
           {nickname && (
             <NicknameSlot lang={lang} value={nickname} onChange={setNickname} onSpinningChange={setSpinning} from="signup" />
           )}
-          <p className="px-2 text-[13px] leading-[1.4] text-muted">{t.nicknameHint}</p>
         </section>
 
         {/* 나라 (외국인만) */}
@@ -228,7 +223,6 @@ export function WelcomePopup({
               </select>
               <Icon name="chevron-right" size={18} className="rotate-90 text-muted" />
             </label>
-            <p className="px-2 text-[13px] leading-[1.4] text-muted">{t.countryHint}</p>
           </section>
         )}
       </div>
