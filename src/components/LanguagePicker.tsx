@@ -154,12 +154,20 @@ function LanguagePicker({
       return onClose();
     }
     rememberRole(o.id === "ko" ? "ko" : "en"); // 다음에 첫 화면(/)으로 와도 이 언어 메인으로 (송희)
+    // 고르는 즉시 창을 닫고 이동 (같은 화면에서 주소만 바뀌는 경우 — 예: /home ↔ /home?lang=en — 에도 창이 남지 않게)
+    onClose();
     router.push(o.href);
   };
 
   return (
     // 바깥(430px 틀 밖)은 비워 두고 누르는 것만 막음
-    <div className="fixed inset-0 z-40">
+    // 언어 선택지·자동 번역·닫기 버튼 밖(배경)을 누르면 닫기와 똑같이 닫힘
+    <div
+      className="fixed inset-0 z-40"
+      onClick={(e) => {
+        if (!(e.target as HTMLElement).closest("button")) onClose();
+      }}
+    >
       <div
         role="dialog"
         aria-modal="true"
