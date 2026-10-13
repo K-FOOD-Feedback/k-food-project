@@ -487,7 +487,8 @@ function CardContent({
             >
               {post.author.flag}
             </span>
-            <span className="truncate">{post.author.name}</span>
+            {/* 높이를 줄(국기 원 24px)에 꽉 채워 y·g 같은 글자 아래가 잘리지 않게 */}
+            <span className="truncate leading-6">{post.author.name}</span>
           </span>
           {/* 한마디 수 — 채워진 말풍선 아이콘 */}
           <span className="flex shrink-0 items-center gap-1">
