@@ -18,7 +18,7 @@ import { coverOf, useFlow } from "@/lib/write-store";
   - 프로필: 이름 · 나라만 (프로필 사진은 받지 않음)
   - Posts / Comments 탭
     · Posts: 2열 사진 타일 (음식 사진이 주인공) + 받은 투표 칩 → 상세
-    · Comments: 상세 화면 한마디와 같은 말풍선 + 어느 글에 썼는지 → 상세
+    · Comments: 알림함과 같은 카드 (왼쪽 그 글 사진 · 한마디 · 어느 글에 썼는지 · 시간) → 상세
   - 오른쪽 위는 로그아웃만 (알림은 메인 🔔에 있어서 여기엔 두지 않음)
   - 쓰다 만 글은 여기 없음 (글 쓰기를 시작할 때 이어 쓰기로 보여 줌)
   서버 전까지: 프로필은 목업(Sam · Canada), 내 글은 이 브라우저의 글 1개, 한마디는 목업
@@ -32,9 +32,9 @@ import { coverOf, useFlow } from "@/lib/write-store";
   - 받은 투표: 0 → "No votes yet" · 1 → "1 vote" · 2~999 → "12 votes" · 1,000부터 줄여서 "1.2K votes"
   [Comments]
   - 없음: 안내 문구 + 중간 크기 버튼(Browse posts → 외국인 메인)
-  - 한마디: 3줄까지, 넘치면 …
+  - 한마디: 2줄까지, 넘치면 …
   - 어느 글: "On 글 제목" / 내 글 댓글에 단 답글이면 "Reply on 글 제목" · 1줄, 넘치면 …
-  - 글이 지워졌으면: "On a deleted post", 누를 수 없음, 말풍선을 흐리게
+  - 글이 지워졌으면: "On a deleted post", 사진 자리는 회색, 누를 수 없음(화살표 없음), 카드를 흐리게
   - 시간 (timeAgo):
       1분 안 "Just now" · 1시간 안 "5m" · 오늘 "3h" · 어제 "Yesterday"
       · 7일 안 "3d" · 올해 "Oct 10" · 작년 이전 "Oct 10, 2025"
@@ -82,8 +82,12 @@ function votesLabel(n: number) {
   return `${n < 1000 ? n : new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(n)} votes`;
 }
 
-// 말풍선 색 — 상세 화면 한마디처럼 하나씩 다르게
-const BUBBLES = ["bg-content", "bg-lilac", "bg-secondary", "bg-primary"];
+const CARD_MASK = {
+  maskImage: "url(/images/card-mask.svg)",
+  WebkitMaskImage: "url(/images/card-mask.svg)",
+  maskSize: "100% 100%",
+  WebkitMaskSize: "100% 100%",
+} as const;
 
 type Tab = "posts" | "comments";
 
@@ -103,8 +107,10 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
   const comments = noComments
     ? []
     : MY_COMMENTS.map((c) => {
-        const title = c.postId === MY_POST_ID ? myPost?.title : getHomePost(c.postId)?.en.title;
-        return { ...c, postTitle: title ?? null, time: timeAgo(now - c.ago, now) };
+        const home = getHomePost(c.postId);
+        const title = c.postId === MY_POST_ID ? myPost?.title : home?.en.title;
+        const photo = c.postId === MY_POST_ID ? (myPost ? coverOf(myPost)?.src : undefined) : home?.cardPhoto;
+        return { ...c, postTitle: title ?? null, photo, time: timeAgo(now - c.ago, now) };
       });
 
   useTrackOnce("my_page_viewed", { posts: posts.length, comments: comments.length });
@@ -220,30 +226,34 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
               }
             />
           ) : (
-            <div className="flex flex-col gap-5 px-2">
-              {comments.map((c, i) => {
+            <div className="flex flex-col gap-3">
+              {comments.map((c) => {
                 const deleted = c.postTitle === null;
+                // 알림함 카드와 같은 모양: 왼쪽 그 글 사진 · 한마디(2줄) + 시간 · 어느 글에 썼는지
                 const body = (
                   <>
-                    {/* 상세 화면 한마디와 같은 말풍선 · 3줄까지 */}
-                    <span
-                      className={`max-w-[85%] rounded-[22px] rounded-bl-[6px] px-4 py-2.5 text-[15px] font-semibold leading-[1.4] text-on-light ${
-                        BUBBLES[i % BUBBLES.length]
-                      } ${deleted ? "opacity-40" : ""}`}
-                    >
-                      {/* 줄 자르기는 안쪽 글에만 (바깥에 걸면 넘친 줄이 아래 여백에 비침) */}
-                      <span className="line-clamp-3">{c.text}</span>
+                    <span className="relative size-12 shrink-0 bg-surface-2" style={CARD_MASK} aria-hidden="true">
+                      {c.photo && (
+                        <Image src={c.photo} alt="" fill sizes="48px" unoptimized={c.photo.startsWith("blob:")} className="object-cover" />
+                      )}
                     </span>
-                    <span className="flex w-full items-center gap-1 px-1 text-[13px] text-muted">
-                      <span className="line-clamp-1 min-w-0">
-                        {deleted ? "On a deleted post" : `${c.reply ? "Reply on" : "On"} ${c.postTitle}`}
+                    <span className="flex min-w-0 flex-1 flex-col gap-1">
+                      <span className="flex items-start gap-2">
+                        <span className="line-clamp-2 min-w-0 flex-1 text-[15px] font-semibold leading-[1.4]">{c.text}</span>
+                        <span className="shrink-0 pt-0.5 text-[12px] font-medium tabular-nums text-muted">{c.time}</span>
                       </span>
-                      <span className="shrink-0">· {c.time}</span>
+                      <span className="flex items-center gap-2">
+                        <span className="line-clamp-1 min-w-0 flex-1 text-[13px] leading-[1.45] text-muted">
+                          {deleted ? "On a deleted post" : `${c.reply ? "Reply on" : "On"} ${c.postTitle}`}
+                        </span>
+                        {!deleted && <Icon name="chevron-right" size={16} className="shrink-0 text-muted" />}
+                      </span>
                     </span>
                   </>
                 );
+                const card = "flex items-start gap-3.5 rounded-[24px] bg-surface py-4 pl-4 pr-3";
                 return deleted ? (
-                  <div key={c.id} className="flex flex-col items-start gap-1.5">
+                  <div key={c.id} className={`${card} opacity-50`}>
                     {body}
                   </div>
                 ) : (
@@ -251,7 +261,7 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
                     key={c.id}
                     href={`/posts/${c.postId}`}
                     onClick={() => track("my_item_clicked", { item: "comment", reply: c.reply })}
-                    className="flex flex-col items-start gap-1.5 transition active:scale-[0.99]"
+                    className={`${card} transition active:scale-[0.99]`}
                   >
                     {body}
                   </Link>
