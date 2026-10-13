@@ -32,6 +32,8 @@ const HEADLINE = {
 
 /** 제목 아래끝 ~ 맨 앞 카드 위끝 간격 */
 const TITLE_GAP = 40;
+/** 두 줄 한마디 높이 (24px × 한국어 행간 1.3 × 2줄) — 두 버전 카드 크기를 같게 계산하려고 고정값으로 */
+const HEADLINE_H = 24 * 1.3 * 2;
 
 // 상세에 다녀와도 보던 카드에서 다시 시작하도록 기억해 둡니다 (새로고침하면 처음부터).
 let lastIndex = 0;
@@ -65,37 +67,37 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
   const detailLang = lang === "en" ? viewerLang : "ko";
   const current = posts[index];
 
-  // 화면 높이에 맞추기: 헤더와 하단 버튼 사이 빈 칸에 카드 더미가 다 들어가도록, 모자라면 통째로 줄임 (스크롤 없음)
-  // 제목 + (40px) + 카드 더미를 한 덩어리로 가운데에 — 남는 높이에 다 들어가도록, 모자라면 카드 더미를 줄임
-  // 제목 + (40px) + 카드를 한 덩어리로, 헤더까지 포함한 화면 전체 높이의 가운데에.
-  // 가운데를 지키면서 위로는 헤더, 아래로는 하단 버튼 자리에 닿지 않을 만큼만 쓰고, 모자라면 카드 더미를 줄임
+  // 제목 + (40px) + 카드를 한 덩어리로 가운데에.
+  // - 한국인: 헤더까지 포함한 화면 전체 높이의 가운데 (위로 헤더, 아래로 여백에 닿지 않게)
+  // - 외국인: 헤더 아래 ~ 하단 버튼 위 공간의 가운데
+  // 카드 크기는 두 버전이 같도록, 두 경우 중 더 좁은 쪽에 맞춰 줄임 (스크롤 없음)
   const stage = useRef<HTMLDivElement>(null);
-  const headline = useRef<HTMLHeadingElement>(null);
   const headerBox = useRef<HTMLDivElement>(null);
-  const bottomLimit = useRef<HTMLDivElement>(null);
+  const koLimit = useRef<HTMLDivElement>(null);
+  const enLimit = useRef<HTMLDivElement>(null);
   const [fit, setFit] = useState<number | null>(null);
+  const [headerH, setHeaderH] = useState(0);
   useLayoutEffect(() => {
-    const el = stage.current;
-    const h1 = headline.current;
+    const main = stage.current?.closest("main");
     const top = headerBox.current;
-    const bottom = bottomLimit.current;
-    if (!el || !h1 || !top || !bottom) return;
+    const ko = koLimit.current;
+    const en = enLimit.current;
+    if (!main || !top || !ko || !en) return;
     const measure = () => {
-      const center = el.clientHeight / 2;
-      const room =
-        2 * Math.min(center - top.offsetHeight, bottom.offsetTop - center);
+      const vh = main.clientHeight;
+      const header = top.offsetHeight;
+      const roomKo = 2 * Math.min(vh / 2 - header, ko.offsetTop - vh / 2);
+      const roomEn = en.offsetTop - header;
       // 카드 더미 틀 맨 위엔 뒤 카드 자리(CARD_TOP)가 있어서, 보이는 카드까지 40px이 되도록 그만큼은 간격에 겹쳐 씀
+      const room = Math.min(roomKo, roomEn);
+      setHeaderH(header);
       setFit(
-        Math.min(
-          1,
-          (room - h1.offsetHeight - TITLE_GAP) / (CARD_BOTTOM - CARD_TOP),
-        ),
+        Math.min(1, (room - HEADLINE_H - TITLE_GAP) / (CARD_BOTTOM - CARD_TOP)),
       );
     };
     measure();
     const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    ro.observe(h1);
+    ro.observe(main);
     ro.observe(top);
     return () => ro.disconnect();
   }, []);
@@ -155,24 +157,29 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
       <div ref={headerBox} className="absolute inset-x-0 top-0 z-20">
         <MainHeader lang={lang} />
       </div>
-      {/* 하단 버튼 자리 (한국인은 버튼이 없어 여백만) — 내용이 여기 닿지 않게 재는 용도 */}
+      {/* 아래 자리 재기용 (보이지 않음): 한국인은 여백만, 외국인은 하단 버튼 자리 — 두 버전 카드 크기를 같게 맞추려고 둘 다 잼 */}
       <div
-        ref={bottomLimit}
+        ref={koLimit}
         aria-hidden
-        className={`pointer-events-none absolute inset-x-0 bottom-0 ${
-          lang === "en"
-            ? "h-[calc(166px+env(safe-area-inset-bottom))]"
-            : "h-[calc(24px+env(safe-area-inset-bottom))]"
-        }`}
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[calc(24px+env(safe-area-inset-bottom))]"
+      />
+      <div
+        ref={enLimit}
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[calc(166px+env(safe-area-inset-bottom))]"
       />
       <div className="relative min-h-0 flex-1">
         <div
           ref={stage}
-          className="absolute inset-0 flex flex-col items-center justify-center"
+          className={`absolute inset-x-0 flex flex-col items-center justify-center ${
+            lang === "en"
+              ? "bottom-[calc(166px+env(safe-area-inset-bottom))]"
+              : "bottom-0"
+          }`}
+          style={{ top: lang === "en" ? headerH : 0 }}
         >
           {/* 두 줄 한마디 (가운데 정렬) */}
           <h1
-            ref={headline}
             className={`shrink-0 px-6 text-center text-[24px] tracking-[-0.48px] text-white break-keep ${
               lang === "en"
                 ? "font-title-en leading-[1.15]"

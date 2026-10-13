@@ -10,8 +10,9 @@ export type Lang = "ko" | "en";
 
 // 카드 크기·위치는 Figma(node 259:7795) 기준이고 가로 가운데 정렬입니다.
 // 뒤에 깔린 카드들은 앞 카드를 회전·축소한 것이라, 모든 자리를 앞 카드의 transform으로 표현합니다.
-const CARD = { left: 31.3, top: 31.61, width: 312.4, height: 438.578, radius: 34.808 };
-const IMAGE = { width: 402.251, height: 280.106, dx: 0.89, dy: -60 };
+// 투표 주제 칩을 빼면서 사진~제목 사이가 비지 않게 카드 높이를 24px 줄임 (Figma 438.578). 사진은 위에서 같은 자리에 두려고 dy를 절반만큼 내림
+const CARD = { left: 31.3, top: 31.61, width: 312.4, height: 414.578, radius: 34.808 };
+const IMAGE = { width: 402.251, height: 280.106, dx: 0.89, dy: -48 };
 const MASK = { x: 64.255, y: 1.914, width: 272.822, height: 271.214 };
 /** 사진 요소 안에서 모양 사진이 보이는 영역 (상세 화면 전환에서 사진의 출발 위치로 씀).
     모양 크기(scale)를 반영 — 사진 요소와 모양이 같은 가운데를 두고 함께 커지거나 작아짐 */
