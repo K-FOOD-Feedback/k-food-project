@@ -14,7 +14,7 @@ export default async function Page(props: PageProps<"/">) {
   const role = (await cookies()).get(ROLE_COOKIE)?.value;
   if (intro === undefined) {
     if (role === "ko") redirect("/home");
-    if (role === "en") redirect("/home/en");
+    if (role === "en") redirect("/home?lang=en");
   }
   return <LandingScreen />;
 }

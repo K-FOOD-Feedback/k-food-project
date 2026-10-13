@@ -224,7 +224,7 @@ export function PostMenu({
                     track("post_deleted", { post_id: postId, from: "detail_menu" });
                     deleteMyPost();
                     setSheet(null);
-                    router.push("/home/en");
+                    router.push("/home?lang=en");
                   }}
                 >
                   삭제하기

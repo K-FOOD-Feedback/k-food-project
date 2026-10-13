@@ -100,7 +100,7 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
   return (
     <Screen className="pb-16">
       <TopBar
-        left={<IconButton icon="chevron-left" label="Back" href="/home/en" />}
+        left={<IconButton icon="chevron-left" label="Back" href="/home?lang=en" />}
         right={
           <IconButton
             icon="log-out"
@@ -178,7 +178,7 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
                 <PillButton
                   tone="soft"
                   size="md"
-                  href="/home/en"
+                  href="/home?lang=en"
                   onClick={() => track("my_item_clicked", { item: "browse", viewer: "foreigner" })}
                 >
                   Browse posts
@@ -231,7 +231,7 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
         onConfirm={() => {
           track("logged_out", { from: "my", viewer: "foreigner" });
           logOut();
-          router.push("/home/en");
+          router.push("/home?lang=en");
         }}
       />
     </Screen>
