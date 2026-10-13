@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { PillButton } from "@/components/Buttons";
-import { Icon } from "@/components/Icon";
+import { Icon, type IconName } from "@/components/Icon";
 import { BottomSheet } from "@/components/Layout";
 
 /*
@@ -97,6 +97,7 @@ export function PhotoTile({
   photo,
   chip,
   chipStrong = false,
+  chipIcon,
   title,
 }: {
   href: string;
@@ -105,15 +106,14 @@ export function PhotoTile({
   chip: string;
   /** 노란 칩 (받은 투표가 있을 때 등) */
   chipStrong?: boolean;
+  /** 칩 앞 아이콘 (예: 내 선택 ✓) — 글자 대신 써서 칸을 아낌 */
+  chipIcon?: IconName;
   title: string;
 }) {
   return (
-    <Link
-      href={href}
-      onClick={onClick}
-      className="flex flex-col gap-2 rounded-[24px] bg-surface p-2 pb-3 transition active:scale-[0.98]"
-    >
-      <span className="relative aspect-square overflow-hidden rounded-[18px] bg-surface-2">
+    // 카드 테두리 없이 사진 + 제목 (사진이 주인공) — 사진 모서리와 제목 왼쪽 끝을 맞춤
+    <Link href={href} onClick={onClick} className="flex min-w-0 flex-col gap-2.5 transition active:scale-[0.98]">
+      <span className="relative aspect-square overflow-hidden rounded-[24px] bg-surface-2">
         {photo ? (
           <Image src={photo} alt="" fill sizes="200px" unoptimized={photo.startsWith("blob:")} className="object-cover" />
         ) : (
@@ -121,15 +121,18 @@ export function PhotoTile({
             <Icon name="image" size={28} />
           </span>
         )}
+        {/* 칩: 한 줄, 길면 … (선택지는 최대 28자라 다 못 보여 줌 — 전체는 상세에서) */}
         <span
-          className={`absolute bottom-2 left-2 max-w-[calc(100%-16px)] truncate rounded-full px-2.5 py-1 text-[12px] font-bold tabular-nums ${
-            chipStrong ? "bg-content text-on-light" : "bg-background/80 text-on-dark"
-          }`}
+          className={`absolute bottom-3 left-3 flex max-w-[calc(100%-24px)] items-center gap-1 rounded-full py-1.5 pr-3 text-[12px] leading-none font-bold tabular-nums ${
+            chipIcon ? "pl-2" : "pl-3"
+          } ${chipStrong ? "bg-content text-on-light" : "bg-background/80 text-on-dark"}`}
         >
-          {chip}
+          {chipIcon && <Icon name={chipIcon} size={14} strokeWidth={3} className="shrink-0" />}
+          <span className="min-w-0 truncate">{chip}</span>
         </span>
       </span>
-      <span className="line-clamp-2 break-keep px-1 text-[14px] font-semibold leading-[1.35]">{title}</span>
+      {/* 제목: 2줄까지, 길면 … */}
+      <span className="line-clamp-2 break-keep px-1 text-[15px] font-semibold leading-[1.35]">{title}</span>
     </Link>
   );
 }
