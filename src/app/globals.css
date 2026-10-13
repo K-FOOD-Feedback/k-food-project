@@ -271,20 +271,20 @@
   }
 }
 
+/* 랜딩 역할 고르기 힌트 — 토큰이 떨어지자마자 왼쪽 칸 → 오른쪽 칸으로 들어갔다 나온 뒤 잠깐 쉼 (3.6초마다) */
 @keyframes token-hint {
   0%,
   25%,
   50%,
-  75%,
   100% {
     translate: 0 0;
     rotate: 0deg;
   }
-  38% {
+  12% {
     translate: -72px 52px;
     rotate: -10deg;
   }
-  63% {
+  37% {
     translate: 72px 52px;
     rotate: 10deg;
   }
@@ -292,24 +292,24 @@
 
 @keyframes col-peek-l {
   0%,
-  28%,
-  48%,
+  4%,
+  22%,
   100% {
     height: 0;
   }
-  38% {
+  12% {
     height: 36%;
   }
 }
 
 @keyframes col-peek-r {
   0%,
-  53%,
-  73%,
+  29%,
+  47%,
   100% {
     height: 0;
   }
-  63% {
+  37% {
     height: 36%;
   }
 }

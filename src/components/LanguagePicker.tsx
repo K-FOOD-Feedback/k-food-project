@@ -5,6 +5,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { Icon } from "@/components/Icon";
 import { HEADER_BUTTON, PageHeader } from "@/components/PageHeader";
 import { track } from "@/lib/analytics";
+import { rememberRole } from "@/lib/role";
 
 /*
   언어 변경 (Figma 378:10854) — 모든 화면 상단의 지구본 버튼과, 누르면 뜨는 언어 고르기 창.
@@ -52,6 +53,8 @@ export function useAutoTranslate() {
 }
 
 export type ServiceLang = "ko" | "en";
+/** 고를 수 있는 언어 전체 (중국어·일본어는 지금 랜딩에서만, 송희) */
+export type PickLang = ServiceLang | "zh" | "ja";
 
 type Option = { id: string; flag: string; ko: string; en: string; href?: string };
 
@@ -68,15 +71,18 @@ export function LanguageButton({
   from,
   className = HEADER_BUTTON,
   onChange,
+  onPick,
 }: {
-  lang: ServiceLang;
+  lang: PickLang;
   from: string;
   className?: string;
+  /** 랜딩처럼 중국어·일본어까지 네 언어 모두 그 자리에서 바꿀 때 (송희) — onChange보다 먼저 */
+  onPick?: (lang: PickLang) => void;
   /** 있으면 언어를 골랐을 때 메인으로 가지 않고 이걸 부름 (그 화면 글자만 바꿀 때) */
   onChange?: (lang: ServiceLang) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const en = lang === "en";
+  const en = lang !== "ko"; // 중국어·일본어 화면에서도 영어 문구 (송희)
   return (
     <>
       <button
@@ -92,7 +98,7 @@ export function LanguageButton({
         {/* eslint-disable-next-line @next/next/no-img-element -- 작은 SVG 아이콘 */}
         <img src="/images/icon-world.svg" width={24} height={24} alt="" />
       </button>
-      {open && <LanguagePicker lang={lang} from={from} onChange={onChange} onClose={() => setOpen(false)} />}
+      {open && <LanguagePicker lang={lang} from={from} onChange={onChange} onPick={onPick} onClose={() => setOpen(false)} />}
     </>
   );
 }
@@ -101,15 +107,17 @@ function LanguagePicker({
   lang,
   from,
   onChange,
+  onPick,
   onClose,
 }: {
-  lang: ServiceLang;
+  lang: PickLang;
   from: string;
   onChange?: (lang: ServiceLang) => void;
+  onPick?: (lang: PickLang) => void;
   onClose: () => void;
 }) {
   const router = useRouter();
-  const en = lang === "en";
+  const en = lang !== "ko"; // 중국어·일본어 화면에서도 영어 문구 (송희)
   const [soon, setSoon] = useState(false);
   const autoTranslate = useAutoTranslate();
 
@@ -133,6 +141,11 @@ function LanguagePicker({
       selected: o.id,
       available: !!o.href,
     });
+    // 랜딩(송희): 중국어·일본어도 "곧 지원" 없이 그 자리에서 바로
+    if (onPick) {
+      if (o.id !== lang) onPick(o.id as PickLang);
+      return onClose();
+    }
     if (!o.href) return setSoon(true);
     if (o.id === lang) return onClose();
     // 화면이 직접 언어를 바꾸는 경우(예: 한마디 화면) — 이동하지 않고 알려 준 뒤 창을 닫음
@@ -140,6 +153,7 @@ function LanguagePicker({
       onChange(o.id as ServiceLang);
       return onClose();
     }
+    rememberRole(o.id === "ko" ? "ko" : "en"); // 다음에 첫 화면(/)으로 와도 이 언어 메인으로 (송희)
     router.push(o.href);
   };
 

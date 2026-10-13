@@ -19,6 +19,7 @@
 | `role_selected` | 랜딩 마지막 "당신은 누구인가요?"에서 칸 고름 | `role`(korean/foreigner), `method`(drag/tap) |
 | `landing_login_clicked` | 랜딩 Already joined? Log in | |
 | `landing_scrolled` | 랜딩 스크롤 이야기 단계 도달 | `step`(1~4) |
+| `landing_skipped` | 랜딩 오른쪽 위 건너뛰기 | `at`(어디까지 보다가 눌렀는지 0~1) |
 | `language_clicked` | 🌐 (모든 화면) · 언어 창에서 언어 고름 | `from`, `viewer` · 언어 창: `from`=language_picker, `screen`, `selected`, `available` |
 | `auto_translate_toggled` | 언어 창 하단 자동 번역 켬/끔 | `on`, `screen`, `viewer` |
 | `my_page_clicked` | 👤 (메인) | `from`, `viewer` |
@@ -113,6 +114,8 @@
 | `my_page_viewed` | 마이 열림 | 외국인 `posts`·`comments` / 한국인 `votes`·`comments` (개수) |
 | `my_item_clicked` | 마이에서 누름 | `item`(profile/post/voted_post/comment/write/browse/tab_*/logout), 한마디는 `reply` |
 | `logged_out` | 로그아웃 확인 | `from` |
+| `signup_shown` · `signup_closed` · `signup_completed` | 처음 가입 환영 화면 (닉네임 · 나라 · 약관) | `viewer`, `from`(share/vote), 완료 시 외국인은 `country`(나라 코드) |
+| `draft_resume_shown` · `draft_resumed` | Share your K-food → 쓰다 만 글 이어 쓸지 | `step` (새로 시작은 `draft_discarded` from: resume) |
 | `nickname_rerolled` | 프로필 시트 🔄 (새 랜덤 닉네임) | `spins`(이번에 몇 번째) |
 | `nickname_changed` | 새 닉네임 적용 | `spins`(몇 번 돌려서 골랐는지) |
 | `account_deleted` | 계정 삭제 확인 | — |

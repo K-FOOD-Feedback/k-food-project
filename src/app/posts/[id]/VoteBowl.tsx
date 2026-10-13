@@ -4,6 +4,8 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type 
 import type { HomePost } from "@/app/home/mockPosts";
 import { saveVote, useMyVote } from "@/app/home/votes";
 import { LoginSheet } from "@/components/LoginSheet";
+import { isOnboarded } from "@/app/my/profile";
+import { openWelcome, WelcomePopup } from "@/app/my/WelcomePopup";
 import { track } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
 import { burstConfetti } from "./confetti";
@@ -101,6 +103,8 @@ export function VoteBowl({ post }: { post: HomePost }) {
   // 로그인 전에 고른 칸 — 로그인하면 바로 투표
   const { loggedIn, logIn } = useFlow();
   const [pending, setPending] = useState<{ choice: number; method: "drag" | "tap" } | null>(null);
+  // 처음 가입이면 환영 화면(닉네임 · 약관)을 마친 뒤 투표 (송희)
+  const [welcome, setWelcome] = useState<{ choice: number; method: "drag" | "tap" } | null>(null);
 
   const vote = (choice: number, method: "drag" | "tap" = "tap") => {
     if (choice === myVote) return; // 이미 고른 칸
@@ -400,7 +404,11 @@ export function VoteBowl({ post }: { post: HomePost }) {
         onLoggedIn={() => {
           track("login_completed", { from: "vote", method: "google" });
           logIn();
-          if (pending) castVote(pending.choice, pending.method);
+          if (!isOnboarded("ko")) {
+            track("signup_shown", { viewer: "korean", from: "vote" });
+            setWelcome(pending);
+            openWelcome();
+          } else if (pending) castVote(pending.choice, pending.method);
           setPending(null);
         }}
       >
@@ -415,6 +423,16 @@ export function VoteBowl({ post }: { post: HomePost }) {
           </span>
         </div>
       </LoginSheet>
+
+      {/* 주소 ?welcome 로 열림 (/posts/2?welcome 로 바로 열기도 됨) */}
+      <WelcomePopup
+        lang="ko"
+        onClose={() => setWelcome(null)}
+        onDone={() => {
+          if (welcome) castVote(welcome.choice, welcome.method);
+          setWelcome(null);
+        }}
+      />
     </section>
   );
 }

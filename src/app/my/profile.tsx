@@ -67,6 +67,50 @@ export function saveNickname(lang: MyLang, name: string | null) {
   window.dispatchEvent(new Event(CHANGE));
 }
 
+// ── 나라 · 가입 여부 (이 브라우저, 서버 전까지) ─────────────────────
+const COUNTRY_KEY = "kfood:country";
+const onboardedKey = (lang: MyLang) => `kfood:onboarded:${lang}`;
+
+function readRaw(k: string) {
+  try {
+    return localStorage.getItem(k) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function saveRaw(k: string, v: string | null) {
+  try {
+    if (v) localStorage.setItem(k, v);
+    else localStorage.removeItem(k);
+  } catch {
+    // 저장소를 못 쓰면 이번 화면에서만
+  }
+  window.dispatchEvent(new Event(CHANGE));
+}
+
+/** 외국인 나라 (ISO 코드, 예: "CA") — 가입할 때 받음 */
+export function useCountry() {
+  return useSyncExternalStore(subscribe, () => readRaw(COUNTRY_KEY), () => "");
+}
+export const saveCountry = (code: string | null) => saveRaw(COUNTRY_KEY, code);
+
+/** 처음 가입 환영 화면을 마쳤는지 (버튼 누를 때 바로 읽음) */
+export const isOnboarded = (lang: MyLang) => readRaw(onboardedKey(lang)) === "1";
+export const markOnboarded = (lang: MyLang, done: boolean) => saveRaw(onboardedKey(lang), done ? "1" : null);
+
+/** 나라 이름 (영어) · 국기 이모지 */
+export function countryName(code: string) {
+  try {
+    return new Intl.DisplayNames(["en"], { type: "region" }).of(code) ?? code;
+  } catch {
+    return code;
+  }
+}
+export function countryFlag(code: string) {
+  return code.length === 2 ? String.fromCodePoint(...[...code.toUpperCase()].map((c) => 0x1f1a5 + c.charCodeAt(0))) : "🌍";
+}
+
 /** 내 닉네임 — 없으면 처음 열 때 랜덤으로 정해 저장 (서버에서 그린 첫 화면은 빈 값) */
 export function useNickname(lang: MyLang) {
   const name = useSyncExternalStore(subscribe, () => read(lang), () => "");
@@ -140,45 +184,46 @@ export function ProfileHeader({
 const REEL_H = 44; // 슬롯 한 칸 높이
 const REEL_SPINS = 12; // 멈추기 전에 지나가는 닉네임 수
 
-/** 닉네임 시트 — 슬롯으로 새 랜덤 닉네임 고르기 */
-export function ProfileSheet({
-  open,
-  onClose,
+/**
+ * 닉네임 슬롯 — ↻를 누르면 닉네임들이 위로 빠르게 지나가다가 살짝 넘쳤다 돌아오며(띠용) 멈춤
+ * 닉네임 시트와 가입 환영 화면에서 같이 씀. 멈춘 닉네임은 onChange로
+ */
+export function NicknameSlot({
   lang,
-  nickname,
+  value,
+  onChange,
+  onSpinningChange,
+  from,
 }: {
-  open: boolean;
-  onClose: () => void;
   lang: MyLang;
-  nickname: string;
+  value: string;
+  onChange: (name: string) => void;
+  onSpinningChange?: (spinning: boolean) => void;
+  /** 분석용: 어디서 돌렸는지 */
+  from: "profile" | "signup";
 }) {
   const t = COPY[lang];
-  const [candidate, setCandidate] = useState(nickname);
-  const [reel, setReel] = useState<string[]>([nickname]);
+  const [reel, setReel] = useState<string[]>([value]);
   const [spins, setSpins] = useState(0);
   const [spinning, setSpinning] = useState(false);
   const reelRef = useRef<HTMLDivElement>(null);
 
-  // 시트를 열 때마다 지금 닉네임부터
-  const [wasOpen, setWasOpen] = useState(open);
-  if (open !== wasOpen) {
-    setWasOpen(open);
-    if (open) {
-      setCandidate(nickname);
-      setReel([nickname]);
-      setSpinning(false);
-    }
+  // 바깥에서 값이 바뀌면(시트를 다시 열 때 등) 그 닉네임부터
+  const [prevValue, setPrevValue] = useState(value);
+  if (value !== prevValue) {
+    setPrevValue(value);
+    if (!spinning) setReel([value]);
   }
 
-  // 🔄 → 닉네임들이 위로 빠르게 지나가다가 살짝 넘쳤다 돌아오며(띠용) 멈춤
   const reroll = () => {
     if (spinning) return;
-    const final = randomNickname(lang, candidate);
+    const final = randomNickname(lang, value);
     const passing = Array.from({ length: REEL_SPINS }, () => randomNickname(lang));
-    setReel([candidate, ...passing, final]);
+    setReel([value, ...passing, final]);
     setSpinning(true);
+    onSpinningChange?.(true);
     setSpins((n) => n + 1);
-    track("nickname_rerolled", { viewer: lang === "en" ? "foreigner" : "korean", spins: spins + 1 });
+    track("nickname_rerolled", { viewer: lang === "en" ? "foreigner" : "korean", spins: spins + 1, from });
   };
 
   useLayoutEffect(() => {
@@ -197,12 +242,14 @@ export function ProfileSheet({
     );
     anim.onfinish = () => {
       const final = reel[reel.length - 1];
-      setCandidate(final);
       setReel([final]);
       setSpinning(false);
+      onSpinningChange?.(false);
+      onChange(final);
       anim.cancel();
     };
     return () => anim.cancel();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 릴이 바뀔 때만 돌림
   }, [reel]);
 
   // 멈춘 닉네임이 톡 튀어나옴
@@ -215,59 +262,84 @@ export function ProfileSheet({
     });
   }, [spinning, spins]);
 
+  return (
+    <div className="flex h-[72px] items-center gap-2 rounded-[24px] bg-surface-2 pl-5 pr-3">
+      <div className="relative min-w-0 flex-1 overflow-hidden" style={{ height: REEL_H }}>
+        <div ref={reelRef} className="flex flex-col">
+          {reel.map((name, i) => (
+            <span
+              key={`${spins}-${i}`}
+              ref={reel.length === 1 ? landed : undefined}
+              className="flex shrink-0 items-center truncate font-display text-[24px] leading-none break-keep"
+              style={{ height: REEL_H }}
+            >
+              {name}
+            </span>
+          ))}
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={reroll}
+        disabled={spinning}
+        aria-label={t.reroll}
+        className="flex size-12 shrink-0 items-center justify-center rounded-full bg-on-dark text-on-light transition active:scale-90 disabled:opacity-60"
+      >
+        <span className={spinning ? "animate-spin [animation-duration:600ms]" : ""}>
+          <Icon name="refresh" size={22} />
+        </span>
+      </button>
+    </div>
+  );
+}
+
+/** 닉네임 시트 — 슬롯으로 새 랜덤 닉네임 고르기 */
+export function ProfileSheet({
+  open,
+  onClose,
+  lang,
+  nickname,
+}: {
+  open: boolean;
+  onClose: () => void;
+  lang: MyLang;
+  nickname: string;
+}) {
+  const t = COPY[lang];
+  const [candidate, setCandidate] = useState(nickname);
+  const [spinning, setSpinning] = useState(false);
+
+  // 시트를 열 때마다 지금 닉네임부터
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setCandidate(nickname);
+  }
+
   const changed = candidate !== nickname;
 
   return (
-    <>
-      <BottomSheet open={open} onClose={onClose} label={t.sheet}>
-        <div className="flex w-full flex-col gap-3 px-4 pt-2">
-          <h2 className="px-2 font-display text-[22px] leading-[1.25]">{t.title}</h2>
-          {/* 슬롯 */}
-          <div className="flex h-[72px] items-center gap-2 rounded-[24px] bg-surface-2 pl-5 pr-3">
-            <div className="relative min-w-0 flex-1 overflow-hidden" style={{ height: REEL_H }}>
-              <div ref={reelRef} className="flex flex-col">
-                {reel.map((name, i) => (
-                  <span
-                    key={`${spins}-${i}`}
-                    ref={reel.length === 1 ? landed : undefined}
-                    className="flex shrink-0 items-center truncate font-display text-[24px] leading-none break-keep"
-                    style={{ height: REEL_H }}
-                  >
-                    {name}
-                  </span>
-                ))}
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={reroll}
-              disabled={spinning}
-              aria-label={t.reroll}
-              className="flex size-12 shrink-0 items-center justify-center rounded-full bg-on-dark text-on-light transition active:scale-90 disabled:opacity-60"
-            >
-              <span className={spinning ? "animate-spin [animation-duration:600ms]" : ""}>
-                <Icon name="refresh" size={22} />
-              </span>
-            </button>
-          </div>
-          <p className="px-2 text-[13px] leading-[1.4] text-muted break-keep">{t.hint}</p>
-        </div>
+    <BottomSheet open={open} onClose={onClose} label={t.sheet}>
+      <div className="flex w-full flex-col gap-3 px-4 pt-2">
+        <h2 className="px-2 font-display text-[22px] leading-[1.25]">{t.title}</h2>
+        <NicknameSlot lang={lang} value={candidate} onChange={setCandidate} onSpinningChange={setSpinning} from="profile" />
+        <p className="px-2 text-[13px] leading-[1.4] text-muted break-keep">{t.hint}</p>
+      </div>
 
-        <div className="flex w-full">
-          <PillButton
-            tone={changed && !spinning ? "primary" : "disabled"}
-            disabled={!changed || spinning}
-            onClick={() => {
-              saveNickname(lang, candidate);
-              track("nickname_changed", { viewer: lang === "en" ? "foreigner" : "korean", spins });
-              onClose();
-            }}
-          >
-            {changed ? t.apply : t.same}
-          </PillButton>
-        </div>
-      </BottomSheet>
-    </>
+      <div className="flex w-full">
+        <PillButton
+          tone={changed && !spinning ? "primary" : "disabled"}
+          disabled={!changed || spinning}
+          onClick={() => {
+            saveNickname(lang, candidate);
+            track("nickname_changed", { viewer: lang === "en" ? "foreigner" : "korean", from: "profile" });
+            onClose();
+          }}
+        >
+          {changed ? t.apply : t.same}
+        </PillButton>
+      </div>
+    </BottomSheet>
   );
 }
 
@@ -305,6 +377,8 @@ export function AccountFooter({ lang, email, onDelete }: { lang: MyLang; email: 
             onClick={() => {
               track("account_deleted", { viewer: lang === "en" ? "foreigner" : "korean" });
               saveNickname(lang, null);
+              markOnboarded(lang, false);
+              if (lang === "en") saveCountry(null);
               setConfirm(false);
               onDelete();
             }}

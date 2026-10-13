@@ -1,11 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { memo, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
+import { LanguageButton } from "@/components/LanguagePicker";
 import { LoginSheet } from "@/components/LoginSheet";
 import { useRouter } from "next/navigation";
 import { setSuperProps, track, useTrackOnce } from "@/lib/analytics";
+import { rememberRole } from "@/lib/role";
 import { useFlow } from "@/lib/write-store";
 import { COPY, REACTIONS, SAMPLE_PCTS, type LandingLang } from "./copy";
 
@@ -20,8 +22,10 @@ import { COPY, REACTIONS, SAMPLE_PCTS, type LandingLang } from "./copy";
 // 스크롤 이야기 구간 (0~1)
 const STEP_AT = [0, 0.1, 0.42, 0.74];
 // 스크롤이 멈추는 자리 (진행도). 섹션 높이 400svh - 화면 100svh = 300svh 기준
-// 한마디는 스크롤 한 번에 하나씩 (0.5 · 0.58 · 0.66)
-const SNAP_AT = [0, 0.345, 0.5, 0.58, 0.66, 0.83, 1];
+// 한마디는 스크롤 한 번(0.5)에 첫 번째가 오고, 두·세 번째는 스크롤 없이 시간차로 이어서 옴
+const SNAP_AT = [0, 0.345, 0.5, 0.83, 1];
+/** 첫 한마디가 붙은 뒤 나머지 둘이 이어서 오는 시간 */
+const TALK_MS = 800;
 
 const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 /** p가 a→b 사이에서 0→1 */
@@ -72,7 +76,10 @@ export function LandingScreen() {
   // 언어: 처음엔 브라우저 언어, 이후엔 고른 언어
   const browserLang = useSyncExternalStore<LandingLang>(
     subscribeNone,
-    () => (navigator.language.toLowerCase().startsWith("ko") ? "ko" : "en"),
+    () => {
+      const l = navigator.language.toLowerCase();
+      return l.startsWith("ko") ? "ko" : l.startsWith("zh") ? "zh" : l.startsWith("ja") ? "ja" : "en";
+    },
     () => "ko",
   );
   const [chosen, setChosen] = useState<LandingLang | null>(null);
@@ -86,6 +93,8 @@ export function LandingScreen() {
   // - 단계마다 스크롤이 멈추는 자리(스냅)가 있어서, 세게 넘겨도 한 단계씩 넘어감
   const story = useRef<HTMLElement>(null);
   const [p, setP] = useState(0);
+  // 건너뛰기: 천천히 따라가지 않고 바로 마지막 장면(역할 고르기)으로
+  const jump = useRef(false);
   const seen = useRef(0);
   useEffect(() => {
     // 새로고침하면 맨 위에서 시작
@@ -99,6 +108,7 @@ export function LandingScreen() {
     let target = 0;
     let shown = 0;
     let frame = 0;
+    let last = 0; // 지난 프레임 시각 — 따라가는 속도를 "프레임당"이 아니라 "시간당"으로 (폰에서 프레임이 적어도 같은 속도)
     const read = () => {
       const el = story.current;
       if (!el) return;
@@ -110,16 +120,22 @@ export function LandingScreen() {
         track("landing_scrolled", { step });
       }
     };
-    const tick = () => {
+    const tick = (now: number) => {
+      const dt = last ? Math.min(now - last, 64) : 16; // 탭을 다녀오는 등 오래 멈췄으면 한 번에 튀지 않게
+      last = now;
       const gap = target - shown;
       if (Math.abs(gap) < 0.0005) {
         shown = target;
         setP(shown);
         frame = 0;
+        last = 0;
+        jump.current = false;
         return;
       }
-      // 천천히 따라감: 남은 거리의 6%씩, 한 프레임 최대 0.005 (한 단계 ≈ 1초)
-      shown += noMotion() ? gap : clamp(gap * 0.06, -0.005, 0.005);
+      // 천천히 따라감: 남은 거리의 6%씩(60fps 기준), 1초에 최대 0.3 (한 단계 ≈ 1초) — 시간 기준이라 폰에서도 같은 속도
+      const k = 1 - Math.pow(1 - 0.06, dt / 16.7);
+      const max = 0.3 * (dt / 1000);
+      shown += noMotion() || jump.current ? gap : clamp(gap * k, -max, max);
       setP(shown);
       frame = requestAnimationFrame(tick);
     };
@@ -224,26 +240,60 @@ export function LandingScreen() {
   }, []);
   const typed = Math.min(t.story.length, Math.max(clock - 36, 0));
 
+  // 한마디: 첫 번째가 붙으면(p≈0.5) 두·세 번째는 시간 따라 저절로 (talk 0→1), 위로 돌아가면 빠르게 되감음
+  const [talk, setTalk] = useState(0);
+  const talkRef = useRef(0);
+  const talkOn = p >= 0.47; // 첫 번째가 거의 붙었을 때부터
+  useEffect(() => {
+    const goal = talkOn ? 1 : 0;
+    let frame = 0;
+    let last = 0;
+    const tick = (now: number) => {
+      const dt = last ? Math.min(now - last, 64) : 16;
+      last = now;
+      const v = talkRef.current;
+      const next = noMotion() ? goal : clamp(v + (talkOn ? dt / TALK_MS : (-dt / TALK_MS) * 3));
+      talkRef.current = next;
+      setTalk(next);
+      if (next !== goal) frame = requestAnimationFrame(tick);
+    };
+    if (talkRef.current !== goal) frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [talkOn]);
+  // 두·세 번째 한마디가 쓰는 진행도: 스크롤 위치와 시간 중 앞선 쪽
+  const talkP = Math.max(p, 0.5 + 0.16 * talk);
+
   return (
     <main className="mx-auto w-full max-w-[430px] bg-background text-on-dark">
-      {/* 상단: 로고 · 언어 */}
+      {/* 상단: 로고 · 건너뛰기 · 언어(🌐) */}
       <header className="fixed inset-x-0 top-0 z-40 mx-auto flex h-[calc(56px+env(safe-area-inset-top))] w-full max-w-[430px] items-center justify-between px-5 pt-[env(safe-area-inset-top)]">
         <span className="font-display text-[19px] leading-none">{t.brand}</span>
-        <div className="flex rounded-full bg-surface p-1 text-[13px] font-bold" role="group" aria-label="Language">
-          {(["ko", "en"] as const).map((l) => (
-            <button
-              key={l}
-              type="button"
-              aria-pressed={lang === l}
-              onClick={() => {
-                setChosen(l);
-                track("language_clicked", { from: "landing", to: l });
-              }}
-              className={`rounded-full px-3 py-1.5 uppercase transition ${lang === l ? "bg-on-dark text-on-light" : "text-neutral-400"}`}
-            >
-              {l}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+        {/* 건너뛰기 — 스토리를 생략하고 바로 "당신은 누구인가요?" (마지막 장면에선 숨김) */}
+        {p < 0.97 && (
+          <button
+            type="button"
+            onClick={() => {
+              track("landing_skipped", { at: Math.round(p * 100) / 100 });
+              jump.current = true;
+              window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "auto" });
+            }}
+            className="h-9 rounded-full px-3 text-[13px] font-bold text-neutral-400 transition active:scale-95"
+          >
+            {t.skip}
+          </button>
+        )}
+        {/* 언어 — 메인과 같은 🌐 (한국어 · 영어 · 일본어 · 중국어). 처음엔 기기 언어로 자동 */}
+        <LanguageButton
+          lang={lang}
+          from="landing"
+          // 랜딩 상단 높이(56)에 맞춰 메인보다 작게
+          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-surface/85 transition-transform active:scale-95"
+          onPick={(l) => {
+            setChosen(l as LandingLang);
+            track("language_clicked", { from: "landing", to: l });
+          }}
+        />
         </div>
       </header>
 
@@ -261,22 +311,7 @@ export function LandingScreen() {
         <div className="sticky top-0 flex h-[100svh] flex-col overflow-hidden px-5 pt-[calc(100px+env(safe-area-inset-top))]">
           {/* 카드 뒤에 흩어진 작은 도형 6개 (구글 랩스 레퍼런스: 물결 원·클로버·꽃·알약·원·겹친 알약) — 35% 투명도로 은은하게, 천천히 둥둥
               스크롤해도 자리는 고정, 제자리에서 천천히 둥둥 */}
-          <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-            {DECOR.map((d, i) => {
-              const [x, y, r] = d.at;
-              return (
-                <div
-                  key={i}
-                  className="absolute -translate-x-1/2 -translate-y-1/2"
-                  style={{ left: `${x}%`, top: `${y}%`, rotate: `${r}deg`, width: d.size, height: d.size }}
-                >
-                  <div className="size-full animate-drift opacity-35" style={{ animationDelay: `${i * -1.7}s`, animationDuration: `${7 + i}s` }}>
-                    <Shape kind={d.kind} color={d.color} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <Decor />
 
           {/* 제목 — 스크롤 단계마다 바뀜 (첫 화면은 서비스 한 줄 소개) */}
           <h1
@@ -303,7 +338,7 @@ export function LandingScreen() {
             <div ref={postRef} className="relative isolate rounded-[32px] px-5 pt-7 pb-6 text-on-dark">
               <span
                 aria-hidden="true"
-                className="absolute inset-0 -z-10 animate-[fade-in_500ms_ease-out_1300ms_both] rounded-[32px] bg-surface/70 backdrop-blur-xl"
+                className="absolute inset-0 -z-10 animate-[fade-in_500ms_ease-out_1300ms_both] rounded-[32px] bg-surface/70"
               />
               <div
                 className="relative mx-auto animate-photo-frame overflow-hidden [animation-delay:250ms]"
@@ -377,7 +412,7 @@ export function LandingScreen() {
                 style={{ top: box.author.y - 2, rotate: `${REPLY_TILT}deg`, transformOrigin: "16px 19px" }}
               >
                 <span
-                  className="flex max-w-[240px] flex-col gap-1 rounded-[24px] bg-surface-2/80 px-4 pt-2.5 pb-3 text-on-dark backdrop-blur-xl"
+                  className="flex max-w-[240px] flex-col gap-1 rounded-[24px] bg-surface-2/80 px-4 pt-2.5 pb-3 text-on-dark"
                   style={fly(p, 0.72, 0.79, { y: 40, s: 0.6 })}
                 >
                   <span ref={slotRef} className="invisible flex items-center gap-[5px] whitespace-nowrap text-[13px] font-semibold" aria-hidden="true">
@@ -391,7 +426,7 @@ export function LandingScreen() {
 
             {/* 투표 (앱 상세와 같은 모양: 세로 칸이 아래에서 차오름) */}
             <div className="mt-3" style={{ opacity: 1 - voteOut, translate: `0 ${voteOut * 60}px` }} aria-hidden={voteOut >= 1}>
-            <div className="relative rounded-[32px] bg-surface-2/75 px-4 pt-5 pb-4 backdrop-blur-xl" style={fly(p, 0.1, 0.17, { y: 260, r: -6 })}>
+            <div className="relative rounded-[32px] bg-surface-2/75 px-4 pt-5 pb-4" style={fly(p, 0.1, 0.17, { y: 260, r: -6 })}>
               <p className="text-center font-display text-[18px] leading-[1.3]">{t.voteTitle}</p>
               <div className="mt-3 flex h-[min(128px,15svh)] gap-1.5">
                 {t.options.map((opt, i) => {
@@ -444,13 +479,13 @@ export function LandingScreen() {
               lang={lang}
               r={REACTIONS[1]}
               className="-right-2 top-[17%] max-w-[200px] bg-content"
-              style={fly(p, 0.52, 0.58, { x: 300, y: 20, r: 25 }, 5)}
+              style={fly(talkP, 0.52, 0.58, { x: 300, y: 20, r: 25 }, 5)}
             />
             <Bubble
               lang={lang}
               r={REACTIONS[2]}
               className="-left-1 top-[30%] bg-lilac"
-              style={fly(p, 0.6, 0.66, { x: -300, y: 60, r: -20 }, 3)}
+              style={fly(talkP, 0.6, 0.66, { x: -300, y: 60, r: -20 }, 3)}
             />
           </div>
           </div>
@@ -512,6 +547,7 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
     setPicked(i);
     setSuperProps({ user_type: role.kind });
     track("role_selected", { role: role.kind, method });
+    rememberRole(role.kind === "korean" ? "ko" : "en"); // 다음부터는 랜딩 없이 바로 메인
     // 칸이 차오르는 걸 보여 준 뒤 이동
     window.setTimeout(() => router.push(role.href), 750);
   };
@@ -531,9 +567,6 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
           → 토큰이 왼쪽 칸, 오른쪽 칸을 번갈아 살짝 들어갔다 나오며 "넣어 보세요" 힌트 */}
       <div key={active ? "on" : "off"} className="relative rounded-[32px] bg-surface-2 px-5 pt-7 pb-5">
         <p className="animate-rise text-center font-display text-[24px] leading-[1.3] [animation-delay:150ms]">{t.pickTitle}</p>
-        <p className="mt-1.5 animate-rise text-center text-[13px] font-medium text-neutral-400 [animation-delay:250ms]">
-          {t.pickHint}
-        </p>
 
         {/* 토큰 */}
         <div className="mt-6 flex h-14 items-center justify-center">
@@ -542,7 +575,7 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
               className="relative z-20"
               style={{
                 animation: hinting
-                  ? "token-drop 700ms cubic-bezier(0.3, 1.4, 0.5, 1) 650ms both, token-hint 3.6s ease-in-out 2200ms infinite"
+                  ? "token-drop 700ms cubic-bezier(0.3, 1.4, 0.5, 1) 650ms both, token-hint 3.6s ease-in-out 1350ms infinite"
                   : active && !touched
                     ? "token-drop 700ms cubic-bezier(0.3, 1.4, 0.5, 1) 650ms both"
                     : undefined,
@@ -609,7 +642,7 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
                   <span
                     className={`wave-fill absolute inset-x-0 bottom-0 overflow-hidden ${role.fill}`}
                     style={{
-                      animation: `${i === 0 ? "col-peek-l" : "col-peek-r"} 3.6s ease-in-out 2200ms infinite, wave-flow 1.4s linear infinite`,
+                      animation: `${i === 0 ? "col-peek-l" : "col-peek-r"} 3.6s ease-in-out 1350ms infinite, wave-flow 1.4s linear infinite`,
                       height: 0,
                     }}
                   >
@@ -636,15 +669,15 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
           track("login_sheet_opened", { from: "landing" });
           setLoginOpen(true);
         }}
-        className="py-1 text-center text-[14px] font-bold leading-[1.3] text-neutral-400"
+        className="mt-3 py-1 text-center text-[14px] font-bold leading-[1.3] text-neutral-400"
       >
-        {t.login}
+        {t.loginLead} <span className="text-on-dark">{t.loginAction}</span>
       </button>
       {/* 움직이는 패널 안에 두면 화면 전체를 못 덮어서, 페이지 맨 바깥(body)에 띄움 */}
       {loginOpen &&
         createPortal(
           <LoginSheet
-            lang={lang}
+            lang={lang === "ko" ? "ko" : "en"}
             open
             title={t.loginTitle}
             body={t.loginBody}
@@ -656,6 +689,8 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
               track("login_completed", { from: "landing", method: "google" });
               logIn();
               setLoginOpen(false);
+              // 중국어·일본어도 이후 화면은 아직 영어 외국인 화면으로
+              rememberRole(lang === "ko" ? "ko" : "en");
               router.push(lang === "ko" ? "/home" : "/home/en");
             }}
           />,
@@ -690,17 +725,24 @@ function Bubble({
   style,
 }: {
   lang: LandingLang;
-  r: { ko: string; en: string };
+  r: { ko: string; en: string; zh: string; ja: string };
   className: string;
   style: CSSProperties;
 }) {
+  const cjk = lang === "zh" || lang === "ja";
   return (
     <div
-      className={`absolute z-10 flex flex-col items-center rounded-[32px] px-5 py-3 text-center text-on-light ${className}`}
+      className={`absolute z-10 flex max-w-[220px] flex-col items-center rounded-[32px] px-5 py-3 text-center text-on-light ${className}`}
       style={style}
     >
-      <span className="break-keep text-[15px] font-bold leading-[1.35] tracking-[-0.3px]">{r.ko}</span>
-      {lang === "en" && <span className="text-[11px] font-semibold leading-[1.3] opacity-60">{r.en}</span>}
+      {/* 보는 사람의 모국어를 크게, 한국어 원문은 작게 아래 (한국어 화면은 한국어만) */}
+      {/* 한국어·영어는 단어 단위로 줄바꿈, 띄어쓰기가 없는 중국어·일본어는 글자 단위로 (안 그러면 한 줄로 쭉 늘어남) */}
+      <span
+        className={`whitespace-pre-line text-[15px] font-bold leading-[1.35] tracking-[-0.3px] ${cjk ? "break-all" : "break-keep"}`}
+      >
+        {lang === "ko" ? r.ko : r[lang]}
+      </span>
+      {lang !== "ko" && <span className="break-keep text-[11px] font-semibold leading-[1.3] opacity-60">{r.ko}</span>}
     </div>
   );
 }
@@ -753,3 +795,25 @@ function Shape({ kind, color }: { kind: ShapeKind; color: string }) {
     </svg>
   );
 }
+
+/** 배경 도형 — 스크롤과 상관없어서 스크롤할 때마다 다시 그리지 않음 (폰에서 느려지지 않게) */
+const Decor = memo(function Decor() {
+  return (
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+      {DECOR.map((d, i) => {
+        const [x, y, r] = d.at;
+        return (
+          <div
+            key={i}
+            className="absolute -translate-x-1/2 -translate-y-1/2"
+            style={{ left: `${x}%`, top: `${y}%`, rotate: `${r}deg`, width: d.size, height: d.size }}
+          >
+            <div className="size-full animate-drift opacity-35" style={{ animationDelay: `${i * -1.7}s`, animationDuration: `${7 + i}s` }}>
+              <Shape kind={d.kind} color={d.color} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+});

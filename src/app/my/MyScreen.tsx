@@ -9,7 +9,7 @@ import { track, useTrackOnce } from "@/lib/analytics";
 import { MY_POST_ID } from "@/lib/write-data";
 import { coverOf, useFlow } from "@/lib/write-store";
 import { CommentCard, Empty, LogoutSheet, MyTabs, PhotoTile, TIME, timeAgo } from "./parts";
-import { AccountFooter, ProfileHeader, ProfileSheet, useNickname } from "./profile";
+import { AccountFooter, countryFlag, countryName, ProfileHeader, ProfileSheet, useCountry, useNickname } from "./profile";
 
 /*
   7. 마이 · 외국인 /my/en (담당 송희)
@@ -40,7 +40,7 @@ import { AccountFooter, ProfileHeader, ProfileSheet, useNickname } from "./profi
       · 7일 안 "3d" · 올해 "Oct 10" · 작년 이전 "Oct 10, 2025"
 */
 
-const PROFILE = { country: "Canada", flag: "🇨🇦", email: "sam.taylor@gmail.com" };
+const PROFILE = { email: "sam.taylor@gmail.com" };
 
 /**
  * 내가 쓴 한마디 — 목업 (외국인 화면에서 한마디 쓰기가 붙으면 실제 기록으로). 위 경우들이 다 보이게 구성
@@ -74,6 +74,7 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
   const router = useRouter();
   const { myPost, logOut, deleteMyPost, discardDraft } = useFlow();
   const nickname = useNickname("en");
+  const country = useCountry() || "CA"; // 가입 때 고른 나라 (없으면 목업 캐나다)
   const [profileOpen, setProfileOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("posts");
   const [logoutOpen, setLogoutOpen] = useState(false);
@@ -115,7 +116,7 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
       <ProfileHeader
         lang="en"
         nickname={nickname}
-        line={`${PROFILE.flag} ${PROFILE.country}`}
+        line={`${countryFlag(country)} ${countryName(country)}`}
         onOpen={() => {
           track("my_item_clicked", { item: "profile", viewer: "foreigner" });
           setProfileOpen(true);
