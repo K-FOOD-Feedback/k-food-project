@@ -130,7 +130,8 @@ const COPY = {
 /** 제목은 모두 문장형 */
 function titleOf(n: Notif, lang: Lang) {
   if (lang === "ko") {
-    return n.byAuthor ? `글쓴이 ${n.actor}님이 내 한마디에 답글을 달았어요` : "내 한마디에 답글이 달렸어요";
+    // 한마디·답글에는 닉네임을 보이지 않음 (지현 규칙) — 글쓴이도 "글쓴이"로만
+    return n.byAuthor ? "글쓴이가 내 한마디에 답글을 달았어요" : "내 한마디에 답글이 달렸어요";
   }
   switch (n.type) {
     case "first":
@@ -139,9 +140,9 @@ function titleOf(n: Notif, lang: Lang) {
       return `Your post got ${n.detail} votes.`;
     case "comment":
       // 한국인 한마디는 익명
-      return n.actor ? `${n.actor} commented on your post.` : "A Korean commented on your post.";
+      return "A Korean commented on your post.";
     case "reply":
-      return n.actor ? `${n.actor} replied to your comment.` : "A Korean replied to your comment.";
+      return "A Korean replied to your comment.";
     case "draft":
       return "You have an unfinished post.";
   }

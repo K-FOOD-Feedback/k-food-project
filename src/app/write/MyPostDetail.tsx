@@ -32,7 +32,7 @@ function asHomePost(p: MyPost, author: Author, sample: boolean): HomePost {
     color: "#fae276", // 메인 카드 노랑 (지현 목업과 같은 값)
     // 글쓴이 = 나 (가입 때 정한 닉네임 · 나라)
     en: { title: p.title, country: author.country.en, body: p.story, options: p.options },
-    author: { name: author.name || "Sam", country: author.country.ko, flag: author.flag },
+    author: { name: author.name, country: author.country.ko, flag: author.flag },
     createdAt: "2026-10-09T00:00:00Z",
     // 질문 종류 id는 지현 목업의 예전 5개 값이라 아직 맞지 않음 — 상세 화면은 이 값을 쓰지 않아서 자리만 채움
     question: { id: "korean", text: p.voteQuestion, options: p.options },
@@ -72,7 +72,7 @@ export function MyPostComments({ backHref, backTo }: { backHref: string; backTo:
           postId={post.id}
           commentCount={post.commentCount}
           authorFlag={post.author.flag}
-          authorName={post.author.name}
+          // 한마디에는 닉네임을 보이지 않음 (글쓴이 뱃지는 "글쓴이"만, 지현 규칙)
           title={{ ko: post.title, en: post.title }}
         />
       </main>
