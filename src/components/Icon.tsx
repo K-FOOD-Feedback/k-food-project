@@ -3,6 +3,12 @@ import type { SVGProps } from "react";
 // Figma 아이콘과 같은 Lucide 아이콘(MIT)을 패키지 없이 인라인으로 씁니다.
 const PATHS = {
   "chevron-left": <path d="m15 18-6-6 6-6" />,
+  "skip-forward": (
+    <>
+      <polygon points="5 4 15 12 5 20 5 4" />
+      <line x1="19" x2="19" y1="5" y2="19" />
+    </>
+  ),
   more: (
     <>
       <circle cx="12" cy="12" r="1" />

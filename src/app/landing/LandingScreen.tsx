@@ -3,7 +3,9 @@
 import Image from "next/image";
 import { memo, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
+import { Icon } from "@/components/Icon";
 import { LanguageButton } from "@/components/LanguagePicker";
+import { HEADER_BUTTON } from "@/components/PageHeader";
 import { LoginSheet } from "@/components/LoginSheet";
 import { useRouter } from "next/navigation";
 import { setSuperProps, track, useTrackOnce } from "@/lib/analytics";
@@ -292,7 +294,7 @@ export function LandingScreen() {
       {/* 위치·버튼 크기는 메인 상단 바(PageHeader)와 같게 — 위·아래·오른쪽 8px, 🌐는 메인과 같은 64px 버튼 */}
       <header className="fixed inset-x-0 top-0 z-40 mx-auto flex w-full max-w-[430px] items-center justify-between pt-[calc(8px+env(safe-area-inset-top))] pr-2 pb-2 pl-5">
         <span className="font-display text-[19px] leading-none">{t.brand}</span>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
         {/* 건너뛰기 — 스토리를 생략하고 바로 "당신은 누구인가요?" (마지막 장면에선 숨김) */}
         {p < 0.97 && (
           <button
@@ -302,9 +304,11 @@ export function LandingScreen() {
               jump.current = true;
               window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "auto" });
             }}
-            className="h-9 rounded-full px-3 text-[13px] font-bold text-neutral-400 transition active:scale-95"
+            aria-label={t.skip}
+            // 옆 🌐와 같은 64px 원형 버튼 (메인 상단 바와 같은 모양)
+            className={HEADER_BUTTON}
           >
-            {t.skip}
+            <Icon name="skip-forward" size={24} fill="currentColor" strokeWidth={2.5} />
           </button>
         )}
         {/* 언어 — 메인과 같은 🌐 (한국어 · 영어 · 일본어 · 중국어). 처음엔 기기 언어로 자동 */}
