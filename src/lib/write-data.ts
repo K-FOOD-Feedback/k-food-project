@@ -3,7 +3,11 @@ import type { IconName } from "@/components/Icon";
 export const MAX_PHOTOS = 10;
 /** 서버 전까지 내 글은 하나만 다루며 이 id를 씁니다. (서버 컴포넌트에서도 읽도록 여기에 둠) */
 export const MY_POST_ID = "mine";
-export const TITLE_MAX = 60;
+/**
+ * 제목 글자 수 — 메인 카드 제목 3줄 안에 다 들어가게 (점검 화면 /dev/edge-cases 에서 잰 값)
+ * 영어(작성 언어)는 대문자만 써도 50자 = 3줄, 55자부터 4줄 · 한국어 번역은 40자까지 3줄
+ */
+export const TITLE_MAX = 50;
 export const STORY_MAX = 500;
 /** 투표 제목 — 상세 화면 투표 카드에서 두 줄 안쪽 */
 export const VOTE_TITLE_MAX = 50;

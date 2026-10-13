@@ -49,9 +49,15 @@ export function post(id: string, patch: Partial<HomePost> = {}): HomePost {
 const opts = (text: (i: number) => string, count = OPTIONS_MAX) => Array.from({ length: count }, (_, i) => `${i + 1}${text(i)}`.slice(0, OPTION_MAX));
 
 /** 메인 카드 */
-export const CARD_CASES: { label: string; post: HomePost }[] = [
+export const CARD_CASES: { label: string; post: HomePost; lang?: "ko" | "en" }[] = [
   { label: "제목 1자 · 투표 0명 · 한마디 0", post: post("c1", { title: TEXTS.one, votes: [0, 0, 0], commentCount: 0 }) },
-  { label: `제목 최대 ${TITLE_MAX}자`, post: post("c2", { title: TEXTS.koMax(TITLE_MAX) }) },
+  { label: `제목 최대 ${TITLE_MAX}자 (한국어)`, post: post("c2", { title: TEXTS.koMax(TITLE_MAX) }) },
+  { label: "한국어 번역 40자 (3줄 꽉)", post: post("c5", { title: fill("한국 사람들은 이 불닭 까르보나라를 어떻게 생각할까요 정말 궁금해요 ", 40).trimEnd() }) },
+  {
+    label: `영어 대문자 ${TITLE_MAX}자 (외국인 메인)`,
+    lang: "en",
+    post: post("c6", { en: { title: fill("WOW MMM WHAT DO KOREANS THINK OF MY HOMEMADE BULDAK ", TITLE_MAX).trimEnd(), country: "Canada" } }),
+  },
   { label: "띄어쓰기 없는 긴 영어 제목 · 투표 9,999명", post: post("c3", { title: TEXTS.enWord(TITLE_MAX), votes: [5000, 3000, 1999], commentCount: 9999 }) },
   { label: "닉네임·나라 길게", post: post("c4", { author: { name: "Extremely Saucy Cheesy Taster", country: "보스니아 헤르체고비나", flag: "🇧🇦" } }) },
 ];

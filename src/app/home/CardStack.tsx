@@ -335,7 +335,8 @@ function CardContent({ lang, post, voted, shape }: { lang: Lang; post: Post; vot
         <span
           // 띄어쓰기 없는 긴 단어도 칸 안에서 줄을 바꾸고, 줄 수를 넘으면 … (점검 화면 /dev/edge-cases)
           className={`w-full text-[23px] font-extrabold tracking-[-0.69px] break-keep text-balance [overflow-wrap:anywhere] ${
-            en ? "line-clamp-3 font-title-en leading-[1.03]" : "line-clamp-2 font-(family-name:--font-paperlogy) leading-[1.18]"
+            // 3줄까지 (제목 글자 수 한도 TITLE_MAX가 3줄에 맞춰져 있음 — …는 번역이 길어질 때의 안전장치)
+            en ? "line-clamp-3 font-title-en leading-[1.03]" : "line-clamp-3 font-(family-name:--font-paperlogy) leading-[1.18]"
           }`}
         >
           {en ? post.en.title : post.title}

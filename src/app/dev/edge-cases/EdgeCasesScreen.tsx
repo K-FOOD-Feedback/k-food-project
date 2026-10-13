@@ -35,7 +35,7 @@ export function EdgeCasesScreen() {
         {CARD_CASES.map((c) => (
           <Case key={c.label} label={c.label}>
             <div className="-mx-2 overflow-hidden">
-              <CardStack posts={[c.post]} index={0} votedIds={new Set()} onIndexChange={noop} onOpen={noop} />
+              <CardStack lang={c.lang} posts={[c.post]} index={0} votedIds={new Set()} onIndexChange={noop} onOpen={noop} />
             </div>
           </Case>
         ))}
