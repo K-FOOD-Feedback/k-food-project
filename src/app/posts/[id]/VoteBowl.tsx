@@ -9,6 +9,7 @@ import { openWelcome, WelcomePopup } from "@/app/my/WelcomePopup";
 import { track } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
 import { burstConfetti } from "./confetti";
+import { DETAIL_COPY, type Lang } from "./copy";
 
 const title = "font-(family-name:--font-paperlogy) text-[24px] leading-[1.3] tracking-[-0.72px]";
 
@@ -34,6 +35,8 @@ const HINT_STEP_MS = 1500;
 const HINT_DIP = -22; // 음수: 토큰 가운데는 칸 위에 있고 아랫부분만 칸에 살짝 걸침 (칸 이름을 가리지 않게)
 const HINT_LIFT = 28; // 곡선이 위로 떠오르는 정도
 const HINT_SAMPLES = 12; // 곡선을 나누는 점 개수 (많을수록 매끈)
+/** 분석용: 그때부터 지금까지 몇 초 (0.1초 단위) */
+const secondsSince = (start: number) => Math.round((performance.now() - start) / 100) / 10;
 
 /**
   투표 카드 (Figma: VoteCard / Bowl)
@@ -41,10 +44,14 @@ const HINT_SAMPLES = 12; // 곡선을 나누는 점 개수 (많을수록 매끈)
   투표한 뒤 다른 칸을 누르면 내 선택이 그 칸으로 바뀝니다 (투표 전으로 되돌리지 않음 —
   되돌리면 투표한 사람에게만 보이는 한마디 영역이 사라졌다 다시 나타나기 때문).
   로그인 안 했으면 투표 대신 로그인 시트가 뜨고, 로그인하면 고른 칸에 바로 투표됩니다. (송희)
+  viewOnly (외국인 상세): 외국인은 투표할 수 없어서 처음부터 투표 완료 모양으로 결과만 보여 주고 누를 수 없습니다.
+    🇰🇷 토큰은 없고, 내 칸 대신 가장 많이 고른 칸이 분홍으로 차오릅니다.
 */
-export function VoteBowl({ post }: { post: HomePost }) {
-  const myVote = useMyVote(post.id);
-  const options = post.question.options;
+export function VoteBowl({ post, viewOnly = false, lang = "ko" }: { post: HomePost; viewOnly?: boolean; lang?: Lang }) {
+  const storedVote = useMyVote(post.id);
+  const myVote = viewOnly ? null : storedVote;
+  const options = (lang === "en" && post.en.options) || post.question.options;
+  const T = DETAIL_COPY[lang];
   const columns = useRef<(HTMLButtonElement | null)[]>([]);
   const token = useRef<HTMLDivElement>(null);
   // 내 칸에 들어가 앉은 토큰 (칸 이름과 % 사이, 차오른 색 바로 위)
@@ -107,7 +114,7 @@ export function VoteBowl({ post }: { post: HomePost }) {
   const [welcome, setWelcome] = useState<{ choice: number; method: "drag" | "tap" } | null>(null);
 
   const vote = (choice: number, method: "drag" | "tap" = "tap") => {
-    if (choice === myVote) return; // 이미 고른 칸
+    if (viewOnly || choice === myVote) return; // 외국인 · 이미 고른 칸
     if (!loggedIn) {
       track("login_sheet_opened", { from: "vote", post_id: post.id, method });
       setPending({ choice, method });
@@ -123,7 +130,7 @@ export function VoteBowl({ post }: { post: HomePost }) {
       previous: myVote,
       options_count: options.length,
       method,
-      seconds_to_vote: Math.round((performance.now() - mountedAt.current) / 100) / 10,
+      seconds_to_vote: secondsSince(mountedAt.current),
       total_votes_before: total,
     });
     flyFrom.current = (landed.current ?? token.current)?.getBoundingClientRect() ?? null;
@@ -165,7 +172,10 @@ export function VoteBowl({ post }: { post: HomePost }) {
     setDrag(null);
   };
 
-  const voted = myVote !== null;
+  const voted = viewOnly || myVote !== null;
+  // 색이 차오르는 칸: 내 칸, 외국인은 가장 많이 고른 칸
+  const top = total ? votes.indexOf(Math.max(...votes)) : -1;
+  const filled = viewOnly ? top : myVote;
 
   // 투표 유도 (랜딩 "당신은 누구인가요?"와 같은 힌트): 토큰이 칸마다 차례로 살짝 들어갔다 나오고,
   // 들어간 칸은 물결치며 살짝 차오름. 토큰을 만지면 멈춥니다.
@@ -248,10 +258,12 @@ export function VoteBowl({ post }: { post: HomePost }) {
       ref={sectionRef}
       id="vote"
       className="flex scroll-mt-4 flex-col gap-6 rounded-[32px] bg-[#292929] px-7 py-[30px]"
-      aria-label="투표"
+      aria-label={T.vote}
     >
       <h2 className={`${title} text-center`}>
-        {voted ? (
+        {viewOnly ? (
+          T.resultsTitle
+        ) : voted ? (
           "투표 완료!"
         ) : (
           <>
@@ -264,7 +276,12 @@ export function VoteBowl({ post }: { post: HomePost }) {
 
       {/* 토큰 자리: 투표 전엔 토큰, 투표 후엔 결과 요약 */}
       <div className="flex h-16 items-center justify-center">
-        {voted ? (
+        {viewOnly ? (
+          <div className="flex flex-col items-center gap-1 text-center">
+            <p className="text-[15px] leading-[1.4] font-semibold text-neutral-400">{T.resultsTotal(total)}</p>
+            <p className="text-[12px] leading-[1.4] font-medium text-neutral-400/70">{T.resultsNote}</p>
+          </div>
+        ) : myVote !== null ? (
           <div className="flex flex-col items-center gap-1 text-center">
             <p className="text-[15px] leading-[1.4] font-semibold text-neutral-400">
               {total}명 중 <span className="text-on-dark">{pcts[myVote]}%</span>가 같은 생각이에요
@@ -296,7 +313,7 @@ export function VoteBowl({ post }: { post: HomePost }) {
 
       <div className="flex gap-1.5">
         {options.map((label, i) => {
-          const mine = i === myVote;
+          const mine = i === filled;
           return (
             <button
               key={label}
@@ -305,15 +322,18 @@ export function VoteBowl({ post }: { post: HomePost }) {
               }}
               type="button"
               onClick={() => vote(i)}
-              aria-pressed={mine}
+              disabled={viewOnly}
+              aria-pressed={viewOnly ? undefined : mine}
               aria-label={
-                voted
+                viewOnly
+                  ? T.resultLabel(label.replace("\n", " "), pcts[i], mine)
+                  : voted
                   ? `${label.replace("\n", " ")} ${pcts[i]}%${mine ? " (내 선택)" : " — 눌러서 선택 바꾸기"}`
                   : `${label.replace("\n", " ")}에 투표`
               }
               className={`relative h-[230px] min-w-0 flex-1 rounded-[20px] text-left transition-[background-color,scale] ${
                 hover === i ? "bg-[#2e2e2e]" : "bg-[#1e1e1e]"
-              } ${mine ? "cursor-default" : "active:scale-[0.98]"}`}
+              } ${mine || viewOnly ? "cursor-default" : "active:scale-[0.98]"}`}
             >
               {/* 투표 전: 토큰을 끌어다 대면 그 칸이 물결치며 살짝 차오름 */}
               {!voted && (
@@ -376,7 +396,7 @@ export function VoteBowl({ post }: { post: HomePost }) {
                 </span>
               )}
               {/* 투표하면 토큰은 칸 이름과 % 사이, 차오른 색 바로 위 가운데에 앉음 (투표 전 토큰과 같은 회색 원) */}
-              {mine && (
+              {mine && !viewOnly && (
                 <span
                   ref={landed}
                   aria-hidden="true"
@@ -424,15 +444,15 @@ export function VoteBowl({ post }: { post: HomePost }) {
         </div>
       </LoginSheet>
 
-      {/* 주소 ?welcome 로 열림 (/posts/2?welcome 로 바로 열기도 됨) */}
-      <WelcomePopup
+      {/* 주소 ?welcome 로 열림 (/posts/2?welcome 로 바로 열기도 됨) — 외국인 상세는 한마디 로그인 쪽(CommentLogin)이 띄움 */}
+      {!viewOnly && <WelcomePopup
         lang="ko"
         onClose={() => setWelcome(null)}
         onDone={() => {
           if (welcome) castVote(welcome.choice, welcome.method);
           setWelcome(null);
         }}
-      />
+      />}
     </section>
   );
 }

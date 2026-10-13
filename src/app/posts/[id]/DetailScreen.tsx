@@ -14,13 +14,42 @@ import { PostMenu } from "@/components/PostMenu";
 import { TrackedLink } from "@/components/Track";
 import { MY_POST_ID } from "@/lib/write-data";
 import { track } from "@/lib/analytics";
+import { useCommentLogin } from "./CommentLogin";
 import { CommentPile } from "./CommentPile";
+import { DETAIL_COPY, type Lang } from "./copy";
 import { paperlogy } from "./font";
+import { saveViewerLang, useViewerLang } from "./viewerLang";
 import { VoteBowl } from "./VoteBowl";
 
-/** 상세 화면 · 한국인 (Figma 263:10329 전체, 263:10251 기기 화면의 플로팅 버튼) */
-export function DetailScreen({ post }: { post: HomePost }) {
+/**
+  상세 화면 (Figma 263:10329 전체, 263:10251 기기 화면의 플로팅 버튼)
+  viewer "ko": 한국인 — 투표하면 한마디가 열림
+  viewer "en": 외국인 — 투표할 수 없어서 투표 카드가 투표 완료 모양으로 결과만(VoteBowl viewOnly), 한마디는 처음부터 보임.
+    한마디를 남기려면 로그인 (CommentLogin). 글자는 지구본으로 고른 언어(기본 영어, viewerLang)로,
+    한마디 전체 화면·말풍선 모달도 같은 언어로 열림. 상세 안의 링크에는 ?viewer=en 이 붙음.
+*/
+export function DetailScreen({
+  post,
+  viewer = "ko",
+  backHref = "/home",
+}: {
+  post: HomePost;
+  viewer?: "ko" | "en";
+  /** 뒤로 가기 목적지 (외국인 메인·알림함 등) */
+  backHref?: string;
+}) {
+  const foreigner = viewer === "en";
+  const viewerLang = useViewerLang();
+  const lang: Lang = foreigner ? viewerLang : "ko";
+  const T = DETAIL_COPY[lang];
+  const q = foreigner ? "?viewer=en" : "";
+  const postHref = (id: string) => `/posts/${id}${q}`;
+  const commentsHref = `/posts/${post.id}/comments${q}`;
+  const titleOf = (p: HomePost) => (lang === "en" ? p.en.title : p.title);
+  const login = useCommentLogin({ enabled: foreigner, lang, postId: post.id, screen: "detail" });
   const voted = useMyVote(post.id) !== null;
+  // 한마디를 볼 수 있는지 — 한국인은 투표한 뒤, 외국인은 처음부터
+  const open = foreigner || voted;
   const voteRef = useRef<HTMLDivElement>(null);
   // 투표 영역을 한 번이라도 봤으면(스크롤 또는 버튼) 플로팅 버튼을 다시 띄우지 않습니다.
   const [seenVote, setSeenVote] = useState(false);
@@ -54,9 +83,10 @@ export function DetailScreen({ post }: { post: HomePost }) {
           voted: votedRef.current,
           saw_vote: seen.vote,
           saw_comments: seen.comments,
+          viewer: foreigner ? "foreigner" : "korean",
         });
     };
-  }, [post.id]);
+  }, [post.id, foreigner]);
   const markVoteSeen = useCallback(
     (via: "scroll" | "cta") => {
       if (reached.current.vote) return;
@@ -100,7 +130,7 @@ export function DetailScreen({ post }: { post: HomePost }) {
   useEffect(() => {
     const label = commentRef.current?.querySelector<HTMLElement>("form > label");
     const input = label?.querySelector("textarea");
-    if (!voted || !label || !input) return;
+    if (!open || !label || !input) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     label.style.transformOrigin = "50% 70%";
     const wiggle = label.animate(
@@ -128,9 +158,10 @@ export function DetailScreen({ post }: { post: HomePost }) {
       input.removeEventListener("blur", sync);
       input.removeEventListener("input", sync);
     };
-  }, [voted]);
+  }, [open]);
 
-  const showCta = !voted && !seenVote;
+  // 플로팅 "투표하기"는 한국인만 (외국인은 투표할 수 없음)
+  const showCta = !foreigner && !voted && !seenVote;
 
 
   // 다음 훈수 거리: 메인 카드 순서상 다음 게시글 (마지막이면 처음으로), 이전은 그 반대
@@ -155,7 +186,7 @@ export function DetailScreen({ post }: { post: HomePost }) {
   const ctaGhost = useRef<HTMLDivElement>(null);
   const fadeIns = useRef<(HTMLElement | null)[]>([]);
   // 전환을 시작할 때 투표 전이었는지 (그때만 "투표하러 가기" → 플로팅 "투표하기"로 이어짐)
-  const [ctaIntro] = useState(() => !!intro?.cta && !voted);
+  const [ctaIntro] = useState(() => !!intro?.cta && !voted && !foreigner);
 
   useLayoutEffect(() => {
     if (!intro || !tileRef.current || !articleRef.current || !photoGhost.current || !cardGhost.current) return;
@@ -426,7 +457,7 @@ export function DetailScreen({ post }: { post: HomePost }) {
       content.style.opacity = "0";
       track("post_opened", { post_id: target.id, from: "swipe", from_post_id: post.id, direction: dir });
       nextTrip = { postId: target.id, at: Date.now(), swipe: dir };
-      window.setTimeout(() => router.push(`/posts/${target.id}`), SWIPE_OUT_MS - 40);
+      window.setTimeout(() => router.push(`/posts/${target.id}${q}`), SWIPE_OUT_MS - 40);
     };
     const onTouchStart = (e: TouchEvent) => {
       if (e.touches.length !== 1) return void (start = null);
@@ -462,7 +493,7 @@ export function DetailScreen({ post }: { post: HomePost }) {
       document.removeEventListener("pointerup", onMouseUp);
       document.removeEventListener("pointercancel", onMouseUp);
     };
-  }, [router, next, prev, post.id]);
+  }, [router, next, prev, post.id, q]);
 
   // 한마디 전체 화면에서 돌아오면: ↗를 눌렀던 스크롤 위치로 돌려 놓고,
   // 화면에 보이는 카드들이 위에서부터 하나씩 살짝 떠오르며 나타납니다.
@@ -475,7 +506,8 @@ export function DetailScreen({ post }: { post: HomePost }) {
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
       const link = (e.target as Element | null)?.closest?.("a");
-      if (link?.getAttribute("href") === `/posts/${post.id}/comments`) {
+      // 외국인 상세는 ?viewer=en 이 붙어서 주소 경로만 비교
+      if (link && new URL(link.href).pathname === `/posts/${post.id}/comments`) {
         commentsTrip = { postId: post.id, scrollY: window.scrollY, at: Date.now() };
       }
     };
@@ -526,14 +558,15 @@ export function DetailScreen({ post }: { post: HomePost }) {
       {/* 공통 상단 바 (src/components/PageHeader — 모든 화면이 같은 위치·크기·디자인) */}
       <PageHeader
         left={
-          <Link href="/home" className={HEADER_BUTTON} aria-label="뒤로 가기">
+          <Link href={backHref} className={HEADER_BUTTON} aria-label={T.back}>
             <ChevronLeftIcon />
           </Link>
         }
         right={
           <>
             {/* 지구본: 메인과 같은 언어 변경 창 (공통 LanguageButton) */}
-            <LanguageButton lang="ko" from="detail" />
+            {/* 외국인: 메인으로 가지 않고 이 화면 글자만 바뀜 (한마디 전체 화면도 같은 언어로) */}
+            <LanguageButton lang={lang} from="detail" onChange={foreigner ? saveViewerLang : undefined} />
             {/* 더보기 메뉴 (송희 PostMenu) — 내 글이면 수정·삭제, 남의 글이면 링크 복사·신고 */}
             <PostMenu
               postId={post.id}
@@ -552,8 +585,8 @@ export function DetailScreen({ post }: { post: HomePost }) {
           <PhotoTile
             postId={post.id}
             photos={post.photos}
-            participants={participantsOf(post)}
-            title={post.title}
+            chip={T.participants(participantsOf(post))}
+            title={titleOf(post)}
             chipRef={chipRef}
             hideChip={!!intro?.sticker && !introDone}
             onShow={(i) => {
@@ -567,7 +600,7 @@ export function DetailScreen({ post }: { post: HomePost }) {
           className={`flex flex-col gap-5 rounded-[32px] px-7 py-[30px] text-on-light ${hiddenUntilIntro}`}
           style={{ background: post.color }}
         >
-          <ArticleBody post={post} />
+          <ArticleBody post={post} lang={lang} />
         </article>
 
         <div
@@ -576,11 +609,12 @@ export function DetailScreen({ post }: { post: HomePost }) {
             fadeIns.current[0] = el;
           }}
         >
-          <VoteBowl post={post} />
+          {/* 외국인은 투표할 수 없어서 투표 완료 모양으로 결과만 (토큰·국기 없음) */}
+          <VoteBowl post={post} viewOnly={foreigner} lang={lang} />
         </div>
 
-        {/* 투표 완료 후: 투표 ↔ 한마디 사이 공유 카드 (누르면 휴대폰·브라우저 공유창) */}
-        {voted && <ShareVoteCard post={post} />}
+        {/* 투표 완료 후: 투표 ↔ 한마디 사이 공유 카드 (누르면 휴대폰·브라우저 공유창) — 한국인만 */}
+        {voted && !foreigner && <ShareVoteCard post={post} />}
 
         <div
           className="relative"
@@ -594,9 +628,9 @@ export function DetailScreen({ post }: { post: HomePost }) {
             (CommentPile은 한마디 세션 담당이라 안을 고치지 않고 바깥에서 감쌉니다 — 칸(section) 아래 요소들만 숨김)
           */}
           <div
-            inert={!voted}
+            inert={!open}
             className={
-              voted
+              open
                 ? "[&>div>*:not(section)]:transition-opacity [&>div>*:not(section)]:duration-500 [&>div>*:not(section)]:starting:opacity-0"
                 : // 잠금 레이어 아래 한마디 칸은 칸 안 내용 자체를 흐리게 (위에 backdrop-blur를 얹으면
                   // 움직이는 말풍선 위에서 블러가 매 프레임 다시 그려지며 세로 줄·깜빡임이 생김)
@@ -604,16 +638,24 @@ export function DetailScreen({ post }: { post: HomePost }) {
                   "[&>div>*:not(section)]:hidden [&>div>section>*:not([data-fade])]:blur-[8px]"
             }
           >
-            <CommentPile postId={post.id} commentCount={post.commentCount} authorFlag={post.author.flag} />
+            <CommentPile
+              postId={post.id}
+              commentCount={post.commentCount}
+              authorFlag={post.author.flag}
+              lang={lang}
+              commentsHref={commentsHref}
+              writeLocked={login.locked}
+              onLockedWrite={login.ask}
+            />
           </div>
-          <CommentLock locked={!voted} onVote={goToVote} />
+          {!foreigner && <CommentLock locked={!voted} onVote={goToVote} />}
           {/* 투표 후: 한마디 칸 어디를 눌러도 한마디 전체 화면으로 (상세에서는 말풍선 호버·모달 없이 칸 전체가 하나의 링크) */}
-          {voted && (
+          {open && (
             <TrackedLink
-              href={`/posts/${post.id}/comments`}
+              href={commentsHref}
               event="comments_opened"
-              props={{ post_id: post.id, comment_count: post.commentCount, from: "detail" }}
-              aria-label="한마디 전체 보기"
+              props={{ post_id: post.id, comment_count: post.commentCount, from: "detail", viewer: foreigner ? "foreigner" : "korean" }}
+              aria-label={T.openComments}
               className="absolute inset-x-0 top-0 z-10 h-[362px] rounded-[32px]"
             />
           )}
@@ -622,9 +664,9 @@ export function DetailScreen({ post }: { post: HomePost }) {
         {/* 화면 맨 아래 "다음 훈수 거리" (Figma 332:3426 Question CTA) — 떠 있지 않고 내용 끝에 놓임 */}
         <div className="mt-[46px]">
           <ArrowCta
-            href={`/posts/${next.id}`}
-            caption="다음 훈수 거리"
-            title={next.title}
+            href={postHref(next.id)}
+            caption={T.next}
+            title={titleOf(next)}
             // 넘어갈 글의 카드 색 (게시글 데이터 색이라 토큰 대신 그대로)
             style={{ backgroundColor: next.color }}
             // 제목 글자만 Paperlogy로 (ArrowCta는 공통 부품이라 바깥에서 지정)
@@ -651,7 +693,7 @@ export function DetailScreen({ post }: { post: HomePost }) {
           >
             {/* 진짜 본문 카드와 같은 글을 같이 실어 나름 (도착하면 그대로 이어짐) */}
             <div ref={cardGhostText} className="flex flex-col gap-5 px-7 py-[30px] text-on-light">
-              <ArticleBody post={post} />
+              <ArticleBody post={post} lang={lang} />
             </div>
           </div>
           <div
@@ -672,7 +714,7 @@ export function DetailScreen({ post }: { post: HomePost }) {
               className="pointer-events-none fixed z-30 flex items-center justify-center overflow-hidden bg-black text-[16px] leading-[1.5] font-semibold whitespace-nowrap text-white"
               style={{ ...boxStyle(intro.sticker), borderRadius: 999 }}
             >
-              {participantsOf(post)}명 참여 중!
+              {T.participants(participantsOf(post))}
             </div>
           )}
           {ctaIntro && intro.cta && (
@@ -701,6 +743,8 @@ export function DetailScreen({ post }: { post: HomePost }) {
       >
         투표하기
       </button>
+
+      {login.sheet}
     </main>
   );
 }
@@ -839,14 +883,19 @@ function ShareVoteCard({ post }: { post: HomePost }) {
 }
 
 /** 본문 카드 안 글 (진짜 카드와 전환용 카드가 같은 모양을 쓰도록) */
-function ArticleBody({ post }: { post: HomePost }) {
+function ArticleBody({ post, lang = "ko" }: { post: HomePost; lang?: Lang }) {
+  const en = lang === "en";
   return (
     <>
-      <p className="text-[14px] leading-none font-medium tracking-[-0.28px] text-[#696969]">from. {post.author.country}</p>
+      <p className="text-[14px] leading-none font-medium tracking-[-0.28px] text-[#696969]">
+        {DETAIL_COPY[lang].from(en ? post.en.country : post.author.country)}
+      </p>
       <h1 className="max-w-[204px] font-(family-name:--font-paperlogy) text-[31px] leading-[1.2] tracking-[-0.62px] break-keep">
-        {post.title}
+        {en ? post.en.title : post.title}
       </h1>
-      <p className="text-[16px] leading-[1.55] font-medium tracking-[-0.32px] whitespace-pre-line text-[#444]">{post.body}</p>
+      <p className="text-[16px] leading-[1.55] font-medium tracking-[-0.32px] whitespace-pre-line text-[#444]">
+        {(en && post.en.body) || post.body}
+      </p>
     </>
   );
 }
@@ -856,7 +905,7 @@ const boxStyle = (b: Box) => ({ left: b.left, top: b.top, width: b.width, height
 function PhotoTile({
   postId,
   photos,
-  participants,
+  chip,
   title,
   chipRef,
   hideChip = false,
@@ -864,7 +913,8 @@ function PhotoTile({
 }: {
   postId: string;
   photos: string[];
-  participants: number;
+  /** 참여 인원 칩 글자 ("00명 참여 중!" / "00 joined!") */
+  chip: string;
   title: string;
   chipRef?: Ref<HTMLParagraphElement>;
   /** 메인 카드 스티커에서 이어지는 전환 중에는 숨김 */
@@ -1020,7 +1070,7 @@ function PhotoTile({
           hideChip ? "invisible" : ""
         }`}
       >
-        {participants}명 참여 중!
+        {chip}
       </p>
       {/* 사진이 여러 장일 때만 장수만큼 점 표시 (1장이면 없음) */}
       {many && (

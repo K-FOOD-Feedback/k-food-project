@@ -10,6 +10,7 @@ export const COMMENTS_COPY = {
   ko: {
     title: "한마디",
     section: "댓글",
+    openAll: "댓글 전체 보기",
     recent: "최근 댓글",
     leave: "한마디를 남겨보세요",
     leaveLabel: "한마디 남기기",
@@ -47,10 +48,16 @@ export const COMMENTS_COPY = {
     cancel: "취소",
     report: "신고하기",
     reported: "신고가 접수됐어요",
+    // 상세 화면 한마디 칸 (기울어진 카드)
+    leaveCard: "한마디를\n남겨보세요",
+    // 외국인: 로그인 안 하고 한마디·답글을 쓰려 할 때 (LoginSheet)
+    loginTitle: "로그인하고 한마디 남기기",
+    loginBody: "구글로 3초면 끝나요. 한국인들과 이 음식 이야기를 나눠 보세요.",
   },
   en: {
     title: "Comments",
     section: "Comments",
+    openAll: "See all comments",
     recent: "Recent comments",
     leave: "Leave a comment",
     leaveLabel: "Leave a comment",
@@ -87,7 +94,43 @@ export const COMMENTS_COPY = {
     cancel: "Cancel",
     report: "Report",
     reported: "Report received",
+    leaveCard: "Leave a\ncomment",
+    loginTitle: "Log in to leave a comment",
+    loginBody: "Chat with Koreans about this dish. It only takes a few seconds with Google.",
   },
 } satisfies Record<Lang, Record<string, unknown>>;
 
 export type CommentsCopy = (typeof COMMENTS_COPY)[Lang];
+
+/*
+  상세 화면 문구 — 외국인 상세 화면은 지구본으로 고른 언어(viewerLang)로 보여 줍니다.
+  한국인 상세 화면은 한국어 그대로입니다.
+*/
+export const DETAIL_COPY = {
+  ko: {
+    back: "뒤로 가기",
+    participants: (n: number) => `${n}명 참여 중!`,
+    from: (country: string) => `from. ${country}`,
+    next: "다음 훈수 거리",
+    openComments: "한마디 전체 보기",
+    vote: "투표",
+    resultsTitle: "한국인들의 생각",
+    resultsTotal: (n: number) => `${n}명의 한국인이 투표했어요`,
+    resultsNote: "투표는 한국인만 할 수 있어요",
+    resultLabel: (label: string, pct: number, top: boolean) => `${label} ${pct}%${top ? " (가장 많음)" : ""}`,
+  },
+  en: {
+    back: "Back",
+    participants: (n: number) => `${n} joined!`,
+    from: (country: string) => `from. ${country}`,
+    next: "Next one to judge",
+    openComments: "See all comments",
+    vote: "Vote",
+    resultsTitle: "What Koreans think",
+    resultsTotal: (n: number) => `${n} Koreans voted`,
+    resultsNote: "Only Koreans can vote",
+    resultLabel: (label: string, pct: number, top: boolean) => `${label} ${pct}%${top ? " (top pick)" : ""}`,
+  },
+} satisfies Record<Lang, Record<string, unknown>>;
+
+export type DetailCopy = (typeof DETAIL_COPY)[Lang];

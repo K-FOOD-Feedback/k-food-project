@@ -5,16 +5,20 @@ import { useState } from "react";
 import { LanguageButton } from "@/components/LanguagePicker";
 import { HEADER_BUTTON, PageHeader } from "@/components/PageHeader";
 import { CommentPile } from "../CommentPile";
+import { useCommentLogin } from "../CommentLogin";
 import { COMMENTS_COPY, type Lang } from "../copy";
+import { saveViewerLang, useViewerLang } from "../viewerLang";
 
 /**
   한마디 전체 화면의 상단 바 + 한마디 칸.
   지구본으로 언어를 고르면 메인으로 가지 않고 이 화면 글자만 그 언어로 바뀝니다.
   (영어에서 자동 번역이 켜져 있으면 한마디도 영어로 — CommentPile)
   고른 언어는 주소 ?lang= 에 남겨 새로 고쳐도 그대로입니다.
+  외국인은 상세 화면과 같은 언어 설정(viewerLang, 기본 영어)을 함께 쓰고, 한마디·답글을 남기려면 로그인합니다.
 */
 export function CommentsScreen({
   initialLang,
+  foreigner = false,
   backHref,
   isDetailBack,
   postId,
@@ -23,6 +27,8 @@ export function CommentsScreen({
   title,
 }: {
   initialLang: Lang;
+  /** 외국인 화면 (?viewer=en) */
+  foreigner?: boolean;
   backHref: string;
   /** 뒤로 가기가 상세 화면이면 true, 알림함이면 false */
   isDetailBack: boolean;
@@ -31,11 +37,15 @@ export function CommentsScreen({
   authorFlag: string;
   title: Record<Lang, string>;
 }) {
-  const [lang, setLang] = useState<Lang>(initialLang);
+  const [koreanLang, setKoreanLang] = useState<Lang>(initialLang);
+  const viewerLang = useViewerLang();
+  const lang = foreigner ? viewerLang : koreanLang;
   const t = COMMENTS_COPY[lang];
+  const login = useCommentLogin({ enabled: foreigner, lang, postId, screen: "comments" });
 
   const changeLang = (next: Lang) => {
-    setLang(next);
+    if (foreigner) saveViewerLang(next);
+    else setKoreanLang(next);
     const url = new URL(window.location.href);
     url.searchParams.set("lang", next);
     window.history.replaceState(window.history.state, "", url);
@@ -61,8 +71,11 @@ export function CommentsScreen({
           postTitle={title[lang]}
           variant="full"
           lang={lang}
+          writeLocked={login.locked}
+          onLockedWrite={login.ask}
         />
       </div>
+      {login.sheet}
     </>
   );
 }

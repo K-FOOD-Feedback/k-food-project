@@ -45,6 +45,8 @@ export function CommentModal({
   onReport,
   hiddenIds,
   lang = "ko",
+  writeLocked = false,
+  onLockedWrite,
 }: {
   comment: Comment;
   /** 이 한마디 아래 모든 답글 — 답글에 단 답글 포함 (오래된 순) */
@@ -64,6 +66,9 @@ export function CommentModal({
   hiddenIds: Set<string>;
   /** 화면 문구 언어 (한마디 전체 화면의 지구본으로 바꿈) */
   lang?: Lang;
+  /** 로그인 전 외국인: 답글 칸을 누르면 쓰는 대신 onLockedWrite (로그인 시트) */
+  writeLocked?: boolean;
+  onLockedWrite?: () => void;
 }) {
   const t = COMMENTS_COPY[lang];
   const closeButton = useRef<HTMLButtonElement>(null);
@@ -550,6 +555,8 @@ export function CommentModal({
             <input
               ref={input}
               value={draft}
+              readOnly={writeLocked}
+              onClick={writeLocked ? onLockedWrite : undefined}
               onChange={(e) => setDraft(e.target.value.slice(0, COMMENT_MAX))}
               placeholder={t.leaveReply}
               enterKeyHint="send"
