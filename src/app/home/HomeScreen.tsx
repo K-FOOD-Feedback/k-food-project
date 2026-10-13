@@ -22,12 +22,25 @@ import { MainHeader } from "./MainHeader";
 import { ReturnGhosts } from "./ReturnTransition";
 import { HOME_POSTS, type HomePost } from "./mockPosts";
 import { useVotedIds } from "./votes";
-import { useViewerLang } from "../posts/[id]/viewerLang";
+import { useKoreanLang, useViewerLang } from "../posts/[id]/viewerLang";
+import { useAutoTranslate } from "@/components/LanguagePicker";
 
-/** 메인 상단 두 줄 — 참여를 부르는 한마디 (한국인: 참견하러 오세요 / 외국인: 한식 올려 보세요) */
+/** 메인 상단 두 줄 — 참여를 부르는 한마디. [버전][화면 언어]
+    한국인 버전: 참견하러 오세요 / 외국인 버전: 한식 올려 보세요 — 지구본으로 언어를 바꾸면 같은 뜻으로 바뀜 */
 const HEADLINE = {
-  ko: ["외국인 친구가 만든 한식,", "참견할 준비 됐나요? 👀"],
-  en: ["Cooked some K-food?", "Let Koreans judge it 👀"],
+  ko: {
+    ko: ["외국인 친구가 만든 한식,", "참견할 준비 됐나요? 👀"],
+    en: ["K-food by friends abroad,", "Ready to weigh in? 👀"],
+  },
+  en: {
+    en: ["Cooked some K-food?", "Let Koreans judge it 👀"],
+    ko: ["한식 만들어 봤나요?", "한국인에게 평가받아 봐요 👀"],
+  },
+} as const;
+/** 외국인 버전 하단 버튼 문구 (화면 언어) */
+const SHARE_LABEL = {
+  en: "Share your K-food",
+  ko: "내 한식 공유하기",
 } as const;
 
 /** 제목 아래끝 ~ 맨 앞 카드 위끝 간격 */
@@ -63,8 +76,16 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
   });
   const votedIds = useVotedIds();
   // 상세에서 돌아오는 전환의 상세 글 언어: 한국인 메인이면 늘 한국어, 외국인 메인이면 상세에서 고른 언어(기본 영어)
+  // lang = 버전(한국인 /home · 외국인 /home?lang=en, 로그인 정보로 정해짐 — 지구본으로 바뀌지 않음)
+  // ui = 화면 언어 (지구본으로 고름, 상세·한마디와 같은 기억: 외국인 기본 영어 · 한국인 기본 한국어)
+  // content = 글(제목) 언어 — 자동 번역이 켜져 있으면 화면 언어, 꺼져 있으면 원문(글쓴이 언어 = 영어). 상세와 같은 규칙
   const viewerLang = useViewerLang();
-  const detailLang = lang === "en" ? viewerLang : "ko";
+  const koreanLang = useKoreanLang();
+  const ui: Lang = lang === "en" ? viewerLang : koreanLang;
+  const autoTranslate = useAutoTranslate();
+  const content: Lang = autoTranslate ? ui : "en";
+  // 상세에서 돌아오는 전환의 상세 글 언어 = 상세가 보여 주던 글 언어
+  const detailLang = content;
   const current = posts[index];
 
   // 제목 + (40px) + 카드를 한 덩어리로 가운데에.
@@ -155,7 +176,7 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
     <main className="relative mx-auto flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-background text-on-dark">
       {/* 헤더는 위에 떠 있고, 내용은 헤더 포함 화면 전체 높이의 가운데에 */}
       <div ref={headerBox} className="absolute inset-x-0 top-0 z-20">
-        <MainHeader lang={lang} />
+        <MainHeader version={lang} lang={ui} />
       </div>
       {/* 아래 자리 재기용 (보이지 않음): 한국인은 여백만, 외국인은 하단 버튼 자리 — 두 버전 카드 크기를 같게 맞추려고 둘 다 잼 */}
       <div
@@ -181,12 +202,12 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
           {/* 두 줄 한마디 (가운데 정렬) */}
           <h1
             className={`shrink-0 px-6 text-center text-[24px] tracking-[-0.48px] text-white break-keep ${
-              lang === "en"
+              ui === "en"
                 ? "font-title-en leading-[1.15]"
                 : "font-(family-name:--font-paperlogy) leading-[1.3]"
             }`}
           >
-            {HEADLINE[lang].map((line) => (
+            {HEADLINE[lang][ui].map((line) => (
               <span key={line} className="block">
                 {line}
               </span>
@@ -201,7 +222,9 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
           >
             <div style={{ scale, transformOrigin: "top center" }}>
               <CardStack
-                lang={lang}
+                lang={ui}
+                contentLang={content}
+                viewer={viewer}
                 posts={posts}
                 index={index}
                 votedIds={votedIds}
@@ -228,7 +251,7 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
       {lang === "en" && (
         // 외국인 메인 하단 CTA (Figma 259:7823): 로그인 시트 → 사진 선택 → /write (동작은 송희 담당 ShareKfoodButton)
         <ShareKfoodButton className="fixed bottom-[calc(60px+env(safe-area-inset-bottom))] left-1/2 z-10 flex h-[80px] w-[259px] -translate-x-1/2 items-center justify-center rounded-full bg-primary text-[20px] font-extrabold tracking-[-0.4px] whitespace-nowrap text-white drop-shadow-[0_10px_12px_rgba(255,135,196,0.45)] transition-transform active:scale-[0.97]">
-          Share your K-food
+          {SHARE_LABEL[ui]}
         </ShareKfoodButton>
       )}
     </main>
