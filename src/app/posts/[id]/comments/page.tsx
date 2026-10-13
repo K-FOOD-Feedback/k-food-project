@@ -5,7 +5,7 @@ import { MyPostComments } from "@/app/write/MyPostDetail";
 import { MY_POST_ID } from "@/lib/write-data";
 import { backHrefFrom } from "@/lib/back";
 import { HEADER_BUTTON, PageHeader } from "@/components/PageHeader";
-import { TrackedLink } from "@/components/Track";
+import { LanguageButton } from "@/components/LanguagePicker";
 import { CommentPile } from "../CommentPile";
 import { paperlogy } from "../font";
 import { VoteGate } from "./VoteGate";
@@ -41,12 +41,7 @@ export default async function Page(props: PageProps<"/posts/[id]/comments">) {
               <ChevronLeftIcon />
             </Link>
           }
-          right={
-            <TrackedLink href="/" event="language_clicked" props={{ from: "comments" }} className={HEADER_BUTTON} aria-label="언어 선택">
-              {/* eslint-disable-next-line @next/next/no-img-element -- 작은 SVG 아이콘 */}
-              <img src="/images/icon-world.svg" width={24} height={24} alt="" />
-            </TrackedLink>
-          }
+          right={<LanguageButton lang="ko" from="comments" />}
         />
 
         <div className="flex min-h-0 flex-1 flex-col pb-[calc(24px+env(safe-area-inset-bottom))]">
