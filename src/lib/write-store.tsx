@@ -13,13 +13,16 @@ import {
   aiPostFor,
   aiVoteFor,
   MAX_PHOTOS,
+  mockCheckPhoto,
   MY_POST_ID,
   QUESTIONS,
   SAMPLE_PHOTOS,
   type Photo,
+  type PhotoCheck,
   type QuestionId,
   voteBasisOf,
 } from "./write-data";
+import { track } from "./analytics";
 
 /*
   업로드 → 작성 → 게시 → 수정/삭제 흐름의 화면 간 상태입니다.
@@ -60,6 +63,8 @@ type FlowState = {
   loggedIn: boolean;
   draft: Draft;
   myPost: MyPost | null;
+  /** 검사에서 걸려 자동으로 뺀 사진 수 (늘어나면 화면에서 안내) */
+  unsafeRemoved: number;
 };
 
 const emptyDraft = (): Draft => ({
@@ -123,6 +128,7 @@ export function FlowProvider({ children }: { children: ReactNode }) {
     loggedIn: false,
     draft: emptyDraft(),
     myPost: null,
+    unsafeRemoved: 0,
   });
 
   const logIn = useCallback(() => {
@@ -140,10 +146,32 @@ export function FlowProvider({ children }: { children: ReactNode }) {
       const fresh = opts?.fresh ?? false;
       const files = Array.from(input).filter((f) => f.type.startsWith("image/"));
       const room = Math.max(0, MAX_PHOTOS - (fresh ? 0 : photoCount));
-      const accepted = files.slice(0, room).map<Photo>((file) => ({
+      const picked = files.slice(0, room);
+      const accepted = picked.map<Photo>((file) => ({
         id: `photo-${Date.now()}-${photoSeq++}`,
         src: URL.createObjectURL(file),
+        check: "checking",
       }));
+      // 사진 검사 (목업: 한 장씩 차례로 결과가 나옴). 혐오·선정 사진은 바로 빼고 수만 셈
+      accepted.forEach((p, i) => {
+        const result = mockCheckPhoto(picked[i].name);
+        window.setTimeout(
+          () => {
+            track("photo_checked", { result });
+            setState((s) => {
+              if (!s.draft.photos.some((x) => x.id === p.id)) return s;
+              if (result === "unsafe") {
+                const photos = s.draft.photos.filter((x) => x.id !== p.id);
+                const coverId = s.draft.coverId === p.id ? (photos[0]?.id ?? null) : s.draft.coverId;
+                return { ...s, unsafeRemoved: s.unsafeRemoved + 1, draft: { ...s.draft, photos, coverId } };
+              }
+              const photos = s.draft.photos.map((x) => (x.id === p.id ? { ...x, check: result as PhotoCheck } : x));
+              return { ...s, draft: { ...s.draft, photos } };
+            });
+          },
+          700 + i * 250,
+        );
+      });
       setState((s) => {
         const base = fresh ? emptyDraft() : s.draft;
         const photos = [...base.photos, ...accepted];

@@ -12,7 +12,28 @@ export const OPTION_MAX = 28;
 export const OPTIONS_MIN = 2;
 export const OPTIONS_MAX = 4;
 
-export type Photo = { id: string; src: string };
+/**
+ * 사진 검사 결과 (AI) — 올리기 전에 사진마다 확인
+ * - checking: 검사 중 · ok: 음식 사진
+ * - not_food: 음식이 아님(셀카·풍경·동물·장난 사진) → 빼야 다음으로
+ * - unsafe: 혐오·선정·폭력·공포 사진 → 바로 빼고 안내만 (사진을 다시 보여 주지 않음)
+ * - unsure: 너무 어둡거나 흐림 → 막지 않고 알려 주기만
+ */
+export type PhotoCheck = "checking" | "ok" | "not_food" | "unsafe" | "unsure";
+
+export type Photo = { id: string; src: string; check?: PhotoCheck };
+
+/**
+ * 사진 검사 목업 — 실제 AI가 붙기 전까지 파일 이름으로 결과를 정함 (리뷰용)
+ * 실제로는 음식 인식(①)과 같은 호출에서 상태값을 받고, 혐오·선정 사진은 전문 검사 서비스를 한 번 더 거침
+ */
+export function mockCheckPhoto(fileName: string): Exclude<PhotoCheck, "checking"> {
+  const n = fileName.toLowerCase();
+  if (/ghost|horror|gore|nsfw|unsafe|귀신/.test(n)) return "unsafe";
+  if (/cat|dog|selfie|poop|nofood|landscape|screenshot|똥/.test(n)) return "not_food";
+  if (/dark|blur|흐림/.test(n)) return "unsure";
+  return "ok";
+}
 
 export type QuestionId =
   | "line"

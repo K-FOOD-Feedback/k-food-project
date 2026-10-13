@@ -158,7 +158,8 @@ export function Toast({
   }, [open, onClose, duration]);
 
   if (!open) return null;
-  return (
+  // 바텀시트처럼 페이지 맨 바깥(body)에 그려서, 움직이는 부모(애니메이션 등) 안에 있어도 화면 위쪽에 제대로 뜨게
+  return createPortal(
     <div className="fixed inset-x-0 top-[calc(88px+env(safe-area-inset-top))] z-50 mx-auto w-full max-w-[430px] px-2">
       <div
         role="status"
@@ -176,7 +177,8 @@ export function Toast({
           <Icon name="x" size={20} />
         </button>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

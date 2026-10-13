@@ -10,6 +10,7 @@ import { usePhotoPicker } from "@/components/PhotoPicker";
 import { MAX_PHOTOS } from "@/lib/write-data";
 import { track } from "@/lib/analytics";
 import { coverOf, useFlow } from "@/lib/write-store";
+import { PhotoCheckNotice, usePhotoCheck } from "./PhotoCheckNotice";
 import { usePhotoActions } from "./usePhotoActions";
 import { WriteExit } from "./WriteExit";
 
@@ -18,6 +19,7 @@ export function PhotosScreen({ backHref = "/home/en" }: { backHref?: string }) {
   // 로그인은 외국인 메인의 Share 버튼(ShareKfoodButton)에서 사진 선택 전에 끝냅니다.
   const { draft, saveDraftForLater } = useFlow();
   const photo = usePhotoActions("photos");
+  const photoCheck = usePhotoCheck();
   const [limitToast, setLimitToast] = useState(false);
   const closeToast = useCallback(() => setLimitToast(false), []);
 
@@ -58,6 +60,13 @@ export function PhotosScreen({ backHref = "/home/en" }: { backHref?: string }) {
             <div key={cover.id} className="absolute inset-0 animate-fade-in">
               <PhotoImage src={cover.src} sizes="(max-width: 430px) 100vw, 430px" priority />
             </div>
+            {/* 대표 사진이 음식이 아니면 크게도 알려 줌 */}
+            {cover.check === "not_food" && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70 text-white">
+                <Icon name="alert" size={32} />
+                <span className="text-[15px] font-bold">This doesn&apos;t look like food</span>
+              </div>
+            )}
             <Chip className="absolute left-4 top-4">
               <Icon name="check" size={14} strokeWidth={2.5} />
               Cover
@@ -92,13 +101,18 @@ export function PhotosScreen({ backHref = "/home/en" }: { backHref?: string }) {
             </p>
           </Tile>
         )}
+        {draft.photos.length > 0 && (
+          <div className="px-2 pt-2">
+            <PhotoCheckNotice step="photos" />
+          </div>
+        )}
       </div>
 
       <StickyBottom>
         <ArrowCta
           title="Next"
           compact
-          {...(draft.photos.length
+          {...(draft.photos.length && photoCheck.canGo
             ? { href: "/write/writing", onClick: () => track("photos_completed", { count: draft.photos.length }) }
             : { disabled: true })}
         />

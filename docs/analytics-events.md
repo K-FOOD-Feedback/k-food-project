@@ -55,6 +55,8 @@
 | 이벤트 | 어디서 | 속성 |
 |---|---|---|
 | `photos_added` | 사진 추가 | `count`, `total`, `from`(share/photos/post) |
+| `photo_checked` | 사진 검사 결과 (AI, 지금은 목업) | `result`(ok/not_food/unsafe/unsure) — 사진 내용은 보내지 않음 |
+| `photo_blocked_shown` | "음식 사진이 아니에요" 안내가 보임 | `count`(걸린 사진 수), `step` |
 | `photo_removed` · `cover_changed` · `photos_reordered` | 사진 조작 | `from` 등 |
 | `photo_limit_hit` | 10장 초과 | `from` |
 | `photos_completed` | ① Next | `count` |

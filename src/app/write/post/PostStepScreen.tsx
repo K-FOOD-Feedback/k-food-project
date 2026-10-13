@@ -11,6 +11,7 @@ import { usePhotoPicker } from "@/components/PhotoPicker";
 import { MAX_PHOTOS, STORY_MAX, TITLE_MAX } from "@/lib/write-data";
 import { keptRatio, track } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
+import { PhotoCheckNotice, usePhotoCheck } from "../PhotoCheckNotice";
 import { usePhotoActions } from "../usePhotoActions";
 import { WriteExit } from "../WriteExit";
 
@@ -24,6 +25,7 @@ export function PostStepScreen() {
   const router = useRouter();
   const { draft, updateDraft, applyAiDraft, saveDraftForLater } = useFlow();
   const photo = usePhotoActions("post");
+  const photoCheck = usePhotoCheck();
   const [limitToast, setLimitToast] = useState(false);
   const closeToast = useCallback(() => setLimitToast(false), []);
   const picker = usePhotoPicker((files) => {
@@ -52,7 +54,7 @@ export function PostStepScreen() {
     setEditingDish(false);
   };
 
-  const canNext = draft.photos.length > 0 && draft.title.trim().length > 0;
+  const canNext = draft.photos.length > 0 && draft.title.trim().length > 0 && photoCheck.canGo;
 
   return (
     <Screen className="pb-[140px]">
@@ -151,6 +153,7 @@ export function PostStepScreen() {
               }}
             />
             <p className="text-[13px] leading-[1.4] text-muted">Drag to reorder · The first photo is the cover</p>
+            <PhotoCheckNotice step="post" />
           </div>
         </Tile>
 

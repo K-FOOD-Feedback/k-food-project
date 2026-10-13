@@ -49,6 +49,8 @@ export type EventName =
   | "post_reported"
   // ── 외국인 글쓰기 (송희)
   | "photos_added"
+  | "photo_checked"
+  | "photo_blocked_shown"
   | "photo_removed"
   | "cover_changed"
   | "photos_reordered"
