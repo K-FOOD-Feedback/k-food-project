@@ -912,9 +912,12 @@ function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: HomePost
   const enText = contentLang === "en";
   return (
     <>
-      <p className="text-[14px] leading-none font-medium tracking-[-0.28px] text-[#696969]">
-        {/* 글쓴이는 닉네임까지 (한마디는 익명) */}
-        {post.author.name} · {DETAIL_COPY[lang].from(en ? post.en.country : post.author.country)}
+      {/* 글쓴이: 국기 + "프랑스에서 온 Emma" / "Emma from France" (메인 카드와 같은 모양, 한마디는 익명) */}
+      <p className="flex items-center gap-1.5 text-[14px] leading-none font-medium tracking-[-0.28px] text-[#696969]">
+        <span className="text-[16px]" aria-hidden>
+          {post.author.flag}
+        </span>
+        {DETAIL_COPY[lang].byline(post.author.name, en ? post.en.country : post.author.country)}
       </p>
       {/* 영어는 소문자가 낮아 같은 행간이면 줄 사이가 비어 보여서 좁게 (한국어 1.2 → 영어 1.05) */}
       <h1

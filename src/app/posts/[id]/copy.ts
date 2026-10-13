@@ -112,7 +112,8 @@ export const DETAIL_COPY = {
   ko: {
     back: "뒤로 가기",
     participants: (n: number) => `${n}명 참여 중!`,
-    from: (country: string) => `from. ${country}`,
+    // 글쓴이 표시 (국기는 앞에 따로): 한국어 "프랑스에서 온 Emma"
+    byline: (name: string, country: string) => `${country}에서 온 ${name}`,
     next: "다음 훈수 거리",
     openComments: "한마디 전체 보기",
     vote: "투표",
@@ -140,7 +141,8 @@ export const DETAIL_COPY = {
   en: {
     back: "Back",
     participants: (n: number) => `${n} joined!`,
-    from: (country: string) => `from. ${country}`,
+    // 영어 "Emma from France"
+    byline: (name: string, country: string) => `${name} from ${country}`,
     next: "Next one to judge",
     openComments: "See all comments",
     vote: "Vote",
