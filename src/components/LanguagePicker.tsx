@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { HEADER_BUTTON, PageHeader } from "@/components/PageHeader";
 import { track } from "@/lib/analytics";
+import { rememberRole } from "@/lib/role";
 
 /*
   언어 변경 (Figma 378:10854) — 모든 화면 상단의 지구본 버튼과, 누르면 뜨는 언어 고르기 창.
@@ -84,6 +85,7 @@ function LanguagePicker({ lang, from, onClose }: { lang: ServiceLang; from: stri
     });
     if (!o.href) return setSoon(true);
     if (o.id === lang) return onClose();
+    rememberRole(o.id === "ko" ? "ko" : "en"); // 다음에 첫 화면(/)으로 와도 이 언어 메인으로 (송희)
     router.push(o.href);
   };
 

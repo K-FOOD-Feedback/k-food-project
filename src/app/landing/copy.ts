@@ -9,6 +9,7 @@ export type LandingLang = "ko" | "en";
 export const COPY = {
   ko: {
     brand: "오늘의 참견",
+    skip: "건너뛰기",
     // 스크롤 단계마다 바뀌는 제목 (두 줄씩)
     titles: [
       ["전 세계의 한식 도전에,", "한국인이 한마디."],
@@ -35,6 +36,7 @@ export const COPY = {
   },
   en: {
     brand: "오늘의 참견",
+    skip: "Skip",
     titles: [
       ["Tried Korean food?", "See how Koreans react."],
       ["Koreans vote", "on your question"],

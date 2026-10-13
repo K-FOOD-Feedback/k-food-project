@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { LoginSheet } from "@/components/LoginSheet";
 import { useRouter } from "next/navigation";
 import { setSuperProps, track, useTrackOnce } from "@/lib/analytics";
+import { rememberRole } from "@/lib/role";
 import { useFlow } from "@/lib/write-store";
 import { COPY, REACTIONS, SAMPLE_PCTS, type LandingLang } from "./copy";
 
@@ -86,6 +87,8 @@ export function LandingScreen() {
   // - 단계마다 스크롤이 멈추는 자리(스냅)가 있어서, 세게 넘겨도 한 단계씩 넘어감
   const story = useRef<HTMLElement>(null);
   const [p, setP] = useState(0);
+  // 건너뛰기: 천천히 따라가지 않고 바로 마지막 장면(역할 고르기)으로
+  const jump = useRef(false);
   const seen = useRef(0);
   useEffect(() => {
     // 새로고침하면 맨 위에서 시작
@@ -116,10 +119,11 @@ export function LandingScreen() {
         shown = target;
         setP(shown);
         frame = 0;
+        jump.current = false;
         return;
       }
       // 천천히 따라감: 남은 거리의 6%씩, 한 프레임 최대 0.005 (한 단계 ≈ 1초)
-      shown += noMotion() ? gap : clamp(gap * 0.06, -0.005, 0.005);
+      shown += noMotion() || jump.current ? gap : clamp(gap * 0.06, -0.005, 0.005);
       setP(shown);
       frame = requestAnimationFrame(tick);
     };
@@ -229,6 +233,21 @@ export function LandingScreen() {
       {/* 상단: 로고 · 언어 */}
       <header className="fixed inset-x-0 top-0 z-40 mx-auto flex h-[calc(56px+env(safe-area-inset-top))] w-full max-w-[430px] items-center justify-between px-5 pt-[env(safe-area-inset-top)]">
         <span className="font-display text-[19px] leading-none">{t.brand}</span>
+        <div className="flex items-center gap-2">
+        {/* 건너뛰기 — 스토리를 생략하고 바로 "당신은 누구인가요?" (마지막 장면에선 숨김) */}
+        {p < 0.97 && (
+          <button
+            type="button"
+            onClick={() => {
+              track("landing_skipped", { at: Math.round(p * 100) / 100 });
+              jump.current = true;
+              window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "auto" });
+            }}
+            className="h-9 rounded-full px-3 text-[13px] font-bold text-neutral-400 transition active:scale-95"
+          >
+            {t.skip}
+          </button>
+        )}
         <div className="flex rounded-full bg-surface p-1 text-[13px] font-bold" role="group" aria-label="Language">
           {(["ko", "en"] as const).map((l) => (
             <button
@@ -244,6 +263,7 @@ export function LandingScreen() {
               {l}
             </button>
           ))}
+        </div>
         </div>
       </header>
 
@@ -512,6 +532,7 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
     setPicked(i);
     setSuperProps({ user_type: role.kind });
     track("role_selected", { role: role.kind, method });
+    rememberRole(role.kind === "korean" ? "ko" : "en"); // 다음부터는 랜딩 없이 바로 메인
     // 칸이 차오르는 걸 보여 준 뒤 이동
     window.setTimeout(() => router.push(role.href), 750);
   };
@@ -656,6 +677,7 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
               track("login_completed", { from: "landing", method: "google" });
               logIn();
               setLoginOpen(false);
+              rememberRole(lang);
               router.push(lang === "ko" ? "/home" : "/home/en");
             }}
           />,
