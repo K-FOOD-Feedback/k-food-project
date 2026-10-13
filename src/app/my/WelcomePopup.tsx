@@ -105,7 +105,7 @@ const COPY = {
   ko: {
     label: "가입 환영",
     title: "반가워요! 👋",
-    sub: "시작하기 전에 두 가지만 확인할게요.",
+    sub: "시작하기 전에 닉네임만 정해 주세요.",
     nickname: "내 닉네임",
     country: "",
     all: "전체 동의",
@@ -187,7 +187,7 @@ export function WelcomePopup({
         />
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto px-4 pt-2 pb-6 break-keep">
+      <div className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto px-4 pt-[30px] pb-6 break-keep">
         <div className="flex flex-col gap-2 px-2">
           <h1 className="font-display text-[32px] leading-[1.1]">{t.title}</h1>
           <p className="text-[15px] leading-[1.5] text-muted">{t.sub}</p>
