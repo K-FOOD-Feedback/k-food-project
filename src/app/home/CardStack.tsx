@@ -41,6 +41,8 @@ export const cardMaskBox = (scale: number) => ({
 /** 물결 영역을 기준(1 = 물결 영역 크기)으로 본 카드 사진의 위치·크기 — 전환 유령이 카드와 똑같이 사진을 보여 줄 때 씀 */
 /** 카드 더미 틀 위끝에서 맨 앞 카드 위끝까지 거리 (틀 위로 뒤 카드가 비져 나올 자리) */
 export const CARD_TOP = CARD.top;
+/** 맨 앞 카드 폭 */
+export const CARD_WIDTH = CARD.width;
 /** 카드 더미 틀 위끝에서 맨 앞 카드 아래끝까지 거리 */
 export const CARD_BOTTOM = CARD.top + CARD.height;
 export const CARD_PHOTO_IN_MASK = {
@@ -380,7 +382,7 @@ function CardContent({
   const photoLeft = CARD.width / 2 + IMAGE.dx - (IMAGE.width * k) / 2 + m.left;
   const photoBottom =
     CARD.height / 2 + IMAGE.dy - (IMAGE.height * k) / 2 + m.top + m.height;
-  const badge = { left: photoLeft + m.width * 0.12, top: photoBottom - 34 };
+  const badge = { left: photoLeft + m.width * 0.12 - 16, top: photoBottom - 54 };
   return (
     <>
       {photo && (

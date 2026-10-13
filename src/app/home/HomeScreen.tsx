@@ -12,6 +12,7 @@ import {
 import {
   CARD_BOTTOM,
   CARD_TOP,
+  CARD_WIDTH,
   CardStack,
   cardMaskBox,
   cardPhotoOf,
@@ -45,6 +46,8 @@ const SHARE_LABEL = {
 
 /** 제목 아래끝 ~ 맨 앞 카드 위끝 간격 */
 const TITLE_GAP = 40;
+/** 카드 최대 크기 (Figma 카드 대비) */
+const MAX_SCALE = 1.2;
 /** 두 줄 한마디 높이 (24px × 한국어 행간 1.3 × 2줄) — 두 버전 카드 크기를 같게 계산하려고 고정값으로 */
 const HEADLINE_H = 24 * 1.3 * 2;
 
@@ -112,8 +115,13 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
       // 카드 더미 틀 맨 위엔 뒤 카드 자리(CARD_TOP)가 있어서, 보이는 카드까지 40px이 되도록 그만큼은 간격에 겹쳐 씀
       const room = Math.min(roomKo, roomEn);
       setHeaderH(header);
+      // 카드는 Figma보다 1.2배까지 키우되, 화면 폭(좌우 12px 여백)과 위아래 공간에 들어가는 만큼만
       setFit(
-        Math.min(1, (room - HEADLINE_H - TITLE_GAP) / (CARD_BOTTOM - CARD_TOP)),
+        Math.min(
+          MAX_SCALE,
+          (main.clientWidth - 24) / CARD_WIDTH,
+          (room - HEADLINE_H - TITLE_GAP) / (CARD_BOTTOM - CARD_TOP),
+        ),
       );
     };
     measure();
@@ -173,7 +181,8 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
 
   return (
     // 랜딩(src/app/page.tsx)과 같은 틀: 가운데 430px 폭의 어두운 화면
-    <main className="relative mx-auto flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-background text-on-dark">
+    // 화면에 고정해 페이지 자체가 스크롤되지 않게 (모바일 주소창·툴바가 오르내려도 화면 높이에 꽉)
+    <main className="fixed inset-0 mx-auto flex w-full max-w-[430px] flex-col overflow-hidden overscroll-none bg-background text-on-dark">
       {/* 헤더는 위에 떠 있고, 내용은 헤더 포함 화면 전체 높이의 가운데에 */}
       <div ref={headerBox} className="absolute inset-x-0 top-0 z-20">
         <MainHeader version={lang} lang={ui} />
