@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { IconButton, PillButton } from "@/components/Buttons";
 import { Icon, type IconName } from "@/components/Icon";
-import { BottomSheet, Screen, Tile, TopBar } from "@/components/Layout";
+import { BottomSheet, Screen, TopBar } from "@/components/Layout";
 import { track, useTrackOnce } from "@/lib/analytics";
 import { MY_POST_ID } from "@/lib/write-data";
 import { coverOf, useFlow, type DraftStep } from "@/lib/write-store";
@@ -14,8 +14,8 @@ import { coverOf, useFlow, type DraftStep } from "@/lib/write-store";
 /*
   7. 마이 · 외국인 /my/en (담당 송희)
   재미 요소 없이 "내 정보를 빠르게 확인"하는 화면
-  - 프로필 (이름 · 나라)
-  - 숫자 한 줄: 올린 글 · 받은 투표 · 받은 한마디
+  - 프로필: 이름 · 나라 (프로필 사진은 받지 않음 → 사진·이니셜 자리 없이 글자만)
+  - 외국인은 투표를 하지 않으므로 "내 투표" 같은 숫자는 없음. 받은 투표·한마디는 내 글 줄마다
   - 쓰다 만 글 (있을 때만) → 저장한 단계로 이어서 쓰기
   - 내 글 목록 → 상세 화면
   - 설정: 알림 · 로그아웃 · 계정 삭제
@@ -33,8 +33,6 @@ export function MyScreen() {
 
   const posts = myPost ? [myPost] : [];
   const hasDraft = draft.savedStep !== null && draft.photos.length > 0;
-  const votes = posts.reduce((n, p) => n + p.votes, 0);
-  const comments = posts.reduce((n, p) => n + p.comments, 0);
 
   useTrackOnce("my_page_viewed", { posts: posts.length, has_draft: hasDraft });
 
@@ -43,25 +41,13 @@ export function MyScreen() {
       <TopBar title="My" left={<IconButton icon="chevron-left" label="Back" href="/home/en" />} />
 
       <div className="flex flex-col gap-8 px-2">
-        {/* 프로필 + 숫자 */}
-        <Tile>
-          <div className="flex items-center gap-4 px-5 pt-5 pb-4">
-            <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-lilac font-display text-[24px] text-on-light">
-              {PROFILE.name[0]}
-            </span>
-            <div className="flex min-w-0 flex-col gap-1">
-              <p className="truncate font-display text-[22px] leading-[1.15]">{PROFILE.name}</p>
-              <p className="text-[14px] text-muted">
-                {PROFILE.flag} {PROFILE.country} · Google account
-              </p>
-            </div>
-          </div>
-          <dl className="grid grid-cols-3 rounded-[28px] bg-surface-2 py-4">
-            <Stat label="Posts" value={posts.length} />
-            <Stat label="Votes" value={votes} divided />
-            <Stat label="Comments" value={comments} divided />
-          </dl>
-        </Tile>
+        {/* 프로필 — 사진 없이 이름 · 나라만 */}
+        <div className="flex flex-col gap-1.5 px-4 pt-2">
+          <p className="font-display text-[32px] leading-[1.1]">{PROFILE.name}</p>
+          <p className="text-[15px] text-muted">
+            {PROFILE.flag} {PROFILE.country} · Google account
+          </p>
+        </div>
 
         {/* 쓰다 만 글 */}
         {hasDraft && draft.savedStep && (
@@ -77,7 +63,7 @@ export function MyScreen() {
         )}
 
         {/* 내 글 */}
-        <Section title="My posts">
+        <Section title="My posts" count={posts.length}>
           {posts.length === 0 ? (
             <div className="flex flex-col items-center gap-4 rounded-[24px] bg-surface px-6 py-8 text-center">
               <div className="flex flex-col gap-1">
@@ -101,7 +87,7 @@ export function MyScreen() {
                 onClick={() => track("my_item_clicked", { item: "post" })}
                 thumb={coverOf(p)?.src}
                 title={p.title}
-                meta={`${p.votes} ${p.votes === 1 ? "vote" : "votes"} · ${p.comments} ${p.comments === 1 ? "comment" : "comments"}`}
+                meta={`${p.votes === 0 ? "No votes yet" : `${p.votes} ${p.votes === 1 ? "Korean" : "Koreans"} voted`} · ${p.comments} ${p.comments === 1 ? "comment" : "comments"}`}
               />
             ))
           )}
@@ -170,19 +156,13 @@ export function MyScreen() {
   );
 }
 
-function Stat({ label, value, divided = false }: { label: string; value: number; divided?: boolean }) {
-  return (
-    <div className={`flex flex-col items-center gap-1 ${divided ? "border-l border-white/10" : ""}`}>
-      <dt className="order-2 text-[13px] text-muted">{label}</dt>
-      <dd className="order-1 font-display text-[22px] leading-none tabular-nums">{value}</dd>
-    </div>
-  );
-}
-
-function Section({ title, children }: { title: string; children: ReactNode }) {
+function Section({ title, count, children }: { title: string; count?: number; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="px-4 font-display text-[20px] leading-[1.2]">{title}</h2>
+      <h2 className="flex items-baseline gap-2 px-4 font-display text-[20px] leading-[1.2]">
+        {title}
+        {count !== undefined && count > 0 && <span className="text-[17px] tabular-nums text-muted">{count}</span>}
+      </h2>
       {children}
     </section>
   );
