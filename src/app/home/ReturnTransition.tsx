@@ -506,7 +506,7 @@ export function ReturnGhosts({
             >
               <span
                 ref={chipFrom}
-                className="absolute inset-0 flex items-center justify-center text-[16px] leading-[1.5] font-semibold whitespace-nowrap"
+                className="absolute inset-0 flex items-center justify-center text-[14px] leading-[1.4] font-semibold whitespace-nowrap"
               />
               <span
                 ref={chipTo}

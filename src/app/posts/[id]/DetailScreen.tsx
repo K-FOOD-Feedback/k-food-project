@@ -719,7 +719,7 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
             <div
               ref={chipGhost}
               aria-hidden
-              className="pointer-events-none fixed z-30 flex items-center justify-center overflow-hidden bg-black text-[16px] leading-[1.5] font-semibold whitespace-nowrap text-white"
+              className="pointer-events-none fixed z-30 flex items-center justify-center overflow-hidden bg-black text-[14px] leading-[1.4] font-semibold whitespace-nowrap text-white"
               style={{ ...boxStyle(intro.sticker), borderRadius: 999 }}
             >
               {T.participants(participantsOf(post))}
@@ -1108,9 +1108,10 @@ function PhotoTile({
           />
         ))}
       </div>
+      {/* 참여 인원 칩 — 본문(16px)보다 작게 14px, 사진 둥근 모서리(32px)에 붙어 보이지 않게 24px 안쪽 */}
       <p
         ref={chipRef}
-        className={`absolute top-[19px] left-[19px] rounded-full bg-black px-3 py-1.5 text-[16px] leading-[1.5] font-semibold text-white ${
+        className={`absolute top-6 left-6 rounded-full bg-black px-3 py-1.5 text-[14px] leading-[1.4] font-semibold text-white ${
           hideChip ? "invisible" : ""
         }`}
       >
