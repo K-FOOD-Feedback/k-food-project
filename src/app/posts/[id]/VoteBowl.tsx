@@ -72,6 +72,10 @@ export function VoteBowl({
   // 영어 행간은 한국어보다 0.15 좁게 (소문자가 낮아 같은 행간이면 줄 사이가 비어 보임 — 상세 제목과 같은 규칙)
   const title = `${font} ${titleSize} ${lang === "en" ? "leading-[1.15]" : "leading-[1.3]"}`;
   const optionLeading = contentLang === "en" ? "leading-[1.15]" : "leading-[1.3]";
+  // 선택지는 잘리지 않고 전부 보임 (글자 수는 입력할 때 OPTION_MAX로 제한). 4칸이면 칸이 좁아서 글자·%를 조금 작게
+  const narrow = options.length >= 4;
+  const optionText = narrow ? "pl-3 text-[14px] tracking-[-0.28px]" : "pl-4 text-[16px] tracking-[-0.32px]";
+  const pctText = narrow ? `${font} left-3 text-[19px] leading-none tracking-[-0.57px]` : `${title} left-4`;
   const columns = useRef<(HTMLButtonElement | null)[]>([]);
   const token = useRef<HTMLDivElement>(null);
   // 내 칸에 들어가 앉은 토큰 (칸 이름과 % 사이, 차오른 색 바로 위)
@@ -414,10 +418,10 @@ export function VoteBowl({
                     {mine && (
                       <>
                         {/* 칸 맨 위 기준 자리 = 색 영역 맨 위에서 (칸 높이 - 색 높이)만큼 위 */}
-                        <span aria-hidden className={`absolute left-0 w-full pt-4 pr-2 pl-4 ${optionFont} text-[16px] ${optionLeading} tracking-[-0.32px] line-clamp-3 whitespace-pre-line [overflow-wrap:anywhere] text-on-light`} style={{ top: "calc(100% - 230px)" }}>
+                        <span aria-hidden className={`absolute left-0 w-full pt-4 pr-2 ${optionText} ${optionFont} ${optionLeading} whitespace-pre-line [overflow-wrap:anywhere] text-on-light`} style={{ top: "calc(100% - 230px)" }}>
                           {label}
                         </span>
-                        <span aria-hidden className={`${title} absolute bottom-3 left-4 text-on-light`}>
+                        <span aria-hidden className={`${pctText} absolute bottom-3 text-on-light`}>
                           {pcts[i]}%
                         </span>
                       </>
@@ -426,13 +430,13 @@ export function VoteBowl({
                 </span>
               )}
               <span
-                className={`absolute top-0 left-0 w-full pt-4 pr-2 pl-4 ${optionFont} text-[16px] ${optionLeading} tracking-[-0.32px] line-clamp-3 whitespace-pre-line [overflow-wrap:anywhere] text-on-dark`}
+                className={`absolute top-0 left-0 w-full pt-4 pr-2 ${optionText} ${optionFont} ${optionLeading} whitespace-pre-line [overflow-wrap:anywhere] text-on-dark`}
               >
                 {label}
               </span>
               {voted && (
                 <span
-                  className={`${title} absolute bottom-3 left-4 text-on-dark transition-opacity duration-300 starting:opacity-0`}
+                  className={`${pctText} absolute bottom-3 text-on-dark transition-opacity duration-300 starting:opacity-0`}
                   style={{ transitionDelay: `${FILL_DELAY_MS + i * FILL_STAGGER_MS}ms` }}
                 >
                   {pcts[i]}%

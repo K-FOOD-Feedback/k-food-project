@@ -7,8 +7,12 @@ export const TITLE_MAX = 60;
 export const STORY_MAX = 500;
 /** 투표 제목 — 상세 화면 투표 카드에서 두 줄 안쪽 */
 export const VOTE_TITLE_MAX = 50;
-/** 상세 화면 투표 칸에 들어가야 해서 짧게 (대략 2줄) */
-export const OPTION_MAX = 28;
+/**
+ * 선택지 글자 수 — 상세 투표 칸에서 잘리지 않고 전부 보여야 해서 짧게 (송희·점검 화면 /dev/edge-cases 기준)
+ * 가장 좁은 경우(선택지 4개, 칸 폭 약 60px)에 영어 20자 ≈ 3줄, 한국어 번역 ≈ 8~10자 ≈ 3줄
+ * AI가 만드는 선택지도 이 안으로 (aiVoteFor)
+ */
+export const OPTION_MAX = 20;
 export const OPTIONS_MIN = 2;
 export const OPTIONS_MAX = 4;
 
@@ -149,7 +153,7 @@ export function aiVoteFor(
       q: `Is this a crime against K-food?`,
       options: [
         [`Guilty 🚨`, `Suspicious 🤨`, `Innocent 😇`],
-        [`Lock it up 🚨`, `Let it go with a warning`, `Free to go 😇`],
+        [`Lock it up 🚨`, `Off with a warning`, `Free to go 😇`],
       ],
     },
     messup: {
@@ -160,9 +164,9 @@ export function aiVoteFor(
       ],
     },
     eating: { q: `Am I eating this right?`, options: [[`Yes, exactly`, `Mix it more!`, `Wrong tools 🥢`, `Add rice 🍚`]] },
-    laugh: { q: `Would a Korean friend laugh?`, options: [[`LOL yes 😂`, `A little 🤭`, `No, they'd be impressed`]] },
+    laugh: { q: `Would a Korean friend laugh?`, options: [[`LOL yes 😂`, `A little 🤭`, `No, they'd be wowed`]] },
     still: { q: `Is this still Korean food?`, options: [[`100% Korean`, `Korean-ish`, `Something new now`]] },
-    name: { q: `What should I call this?`, options: [[`Keep the name`, `"${main} bomb" 💣`, `Name it after yourself 😂`]] },
+    name: { q: `What should I call this?`, options: [[`Keep the name`, `${main} bomb 💣`, `Name it after you 😂`]] },
     toomuch: { q: `Too much ${main}?`, options: [[`Way too much 🙈`, `Just right 👌`, `Need more!`]] },
     nailed: { q: `Did I nail this ${dish}?`, options: [[`Nailed it 🎯`, `Almost 🤏`, `Not yet 😅`]] },
     better: { q: `Better than a Korean made it?`, options: [[`Yes, honestly 🏆`, `Same level`, `Nice try 😂`]] },
@@ -173,7 +177,9 @@ export function aiVoteFor(
   // 투표 질문은 고른 주제 문구 그대로 (예: "Did I add too much?") — 구체적인 문장(set.q)은 선택지 만들 때 참고만
   // 직접 쓰기면 질문은 비워 두고 사용자가 씀
   const voteQuestion = questionId === "custom" ? "" : getQuestion(questionId).label;
-  return { voteQuestion, options: set.options[variant % set.options.length] };
+  // 선택지는 글자 수 한도 안으로 (재료 이름이 길면 넘칠 수 있어서)
+  const options = set.options[variant % set.options.length].map((o) => (o.length > OPTION_MAX ? `${o.slice(0, OPTION_MAX - 1).trimEnd()}…` : o));
+  return { voteQuestion, options };
 }
 
 /**
