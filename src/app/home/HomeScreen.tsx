@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ShareKfoodButton } from "@/components/ShareKfoodButton";
 import { track, useTrackOnce } from "@/lib/analytics";
 import {
@@ -15,6 +15,9 @@ import { MainHeader } from "./MainHeader";
 import { ReturnGhosts } from "./ReturnTransition";
 import { HOME_POSTS, type HomePost } from "./mockPosts";
 import { useVotedIds } from "./votes";
+
+/** 카드 더미(CardStack) 원래 높이 — 화면이 낮으면 이 높이가 들어가도록 통째로 줄임 */
+const STACK_HEIGHT = 480;
 
 // 상세에 다녀와도 보던 카드에서 다시 시작하도록 기억해 둡니다 (새로고침하면 처음부터).
 let lastIndex = 0;
@@ -44,6 +47,20 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
   });
   const votedIds = useVotedIds();
   const current = posts[index];
+
+  // 화면 높이에 맞추기: 헤더와 하단 버튼 사이 빈 칸에 카드 더미가 다 들어가도록, 모자라면 통째로 줄임 (스크롤 없음)
+  const stage = useRef<HTMLDivElement>(null);
+  const [fit, setFit] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const el = stage.current;
+    if (!el) return;
+    const measure = () => setFit(Math.min(1, el.clientHeight / STACK_HEIGHT));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const scale = fit ?? 1;
   const voted = votedIds.has(current.id);
 
   const changeIndex = (next: number) => {
@@ -82,7 +99,7 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
     if (cardEl)
       setCardTransition({
         postId: post.id,
-        ...measureCard(cardEl, cardMaskBox(shape.scale)),
+        ...measureCard(cardEl, cardMaskBox(shape.scale * scale)),
         cardPhoto: cardPhotoOf(post),
         photoMask: shape.mask,
         color: post.color,
@@ -92,32 +109,36 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
 
   return (
     // 랜딩(src/app/page.tsx)과 같은 틀: 가운데 430px 폭의 어두운 화면
-    <main className="relative mx-auto min-h-dvh w-full max-w-[430px] overflow-x-clip bg-background text-on-dark">
-      <div className="pb-[calc(160px+env(safe-area-inset-bottom))]">
-        <MainHeader lang={lang} />
-        <CardStack
-          lang={lang}
-          posts={posts}
-          index={index}
-          votedIds={votedIds}
-          onIndexChange={changeIndex}
-          onOpen={openPost}
-        />
-        <div className="mt-3 flex justify-center gap-1.5" aria-hidden>
-          {posts.map((p, i) => (
-            <span
-              key={p.id}
-              className={`h-1.5 rounded-full bg-white transition-[width] duration-300 ${i === index ? "w-5" : "w-1.5"}`}
-            />
-          ))}
+    <main className="relative mx-auto flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-background text-on-dark">
+      <MainHeader lang={lang} />
+      {/* 헤더 아래 ~ 하단 버튼 위: 카드 더미를 가운데에 (화면이 낮으면 줄여서) */}
+      <div className="relative min-h-0 flex-1">
+        <div
+          ref={stage}
+          className="absolute inset-x-0 top-0 bottom-[calc(166px+env(safe-area-inset-bottom))] flex items-center justify-center"
+        >
+          <div style={{ height: STACK_HEIGHT * scale }}>
+            <div style={{ scale, transformOrigin: "top center" }}>
+              <CardStack
+                lang={lang}
+                posts={posts}
+                index={index}
+                votedIds={votedIds}
+                onIndexChange={changeIndex}
+                onOpen={openPost}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
-      {returning && (
+      {/* 화면 크기를 잰 뒤에 시작 (카드가 줄어든 크기 기준으로 자리를 잡아야 해서) */}
+      {returning && fit !== null && (
         <ReturnGhosts
           transition={returning}
           post={current}
           shape={cardShapeAt(index)}
+          fit={scale}
           onDone={() => setReturning(null)}
         />
       )}
