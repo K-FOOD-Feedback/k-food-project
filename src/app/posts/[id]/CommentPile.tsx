@@ -68,8 +68,30 @@ export function CommentPile({
   const pile = useRef<PileHandle>(null);
   // 보내기·이모지를 누른 뒤 댓글 칸으로 날아가는 중인 원들 (도착하면 댓글로 추가)
   const [flights, setFlights] = useState<Flight[]>([]);
-  // 전체 화면: 더미가 칸의 3/4를 넘었을 때만 아래 그라데이션을 보여 줍니다.
-  const [overflowing, setOverflowing] = useState(false);
+  // 전체 화면: 칸 위·아래가 스크롤로 가려졌을 때만 그쪽에 그라데이션을 보여 줍니다.
+  // 위: 아래로 스크롤해서 위쪽 한마디가 가려졌을 때 / 아래: 묻힌 한마디가 남아 있을 때 (맨 아래면 없음)
+  const [fades, setFades] = useState({ top: false, bottom: false });
+  const measureFades = () => {
+    const box = zone.current?.firstElementChild;
+    if (!box) return;
+    const top = box.scrollTop > 4;
+    const bottom = box.scrollTop + box.clientHeight < box.scrollHeight - 4;
+    setFades((f) => (f.top === top && f.bottom === bottom ? f : { top, bottom }));
+  };
+  const measureRef = useRef(measureFades);
+  useLayoutEffect(() => {
+    measureRef.current = measureFades;
+  });
+  // 한마디가 쌓여 칸 안쪽이 길어지면(스크롤 없이도) 아래가 가려질 수 있어서 다시 잽니다.
+  useEffect(() => {
+    const box = zone.current?.firstElementChild;
+    const content = box?.firstElementChild;
+    if (!full || !box || !content) return;
+    const observer = new ResizeObserver(() => measureRef.current());
+    observer.observe(box);
+    observer.observe(content);
+    return () => observer.disconnect();
+  }, [full]);
   const nextId = useRef(0);
   // 한마디 상세 주소 (송희) — ?comment=한마디id 로 들어오면 그 한마디 레이어를 바로 엶 (마이·알림에서 바로 가기)
   // 답글 id면 원글 레이어를 열고 그 답글을 강조합니다.
@@ -240,6 +262,7 @@ export function CommentPile({
             ref={zone}
             className="flex min-h-0 flex-1 flex-col"
             onScrollCapture={() => {
+              measureFades();
               if (!scrolledOld.current) {
                 scrolledOld.current = true;
                 track("old_comments_scrolled", { post_id: postId });
@@ -253,13 +276,18 @@ export function CommentPile({
               className="min-h-0 flex-1"
               scrollable
               rainOnOpen={14}
-              onOverflowChange={setOverflowing}
+              onOverflowChange={measureFades}
               onSelect={select}
             />
           </div>
           <div
+            className={`pointer-events-none absolute inset-x-0 top-0 h-[92px] bg-linear-to-b from-background to-background/0 transition-opacity duration-300 ${
+              fades.top ? "opacity-100" : "opacity-0"
+            }`}
+          />
+          <div
             className={`pointer-events-none absolute inset-x-0 bottom-0 h-[92px] bg-linear-to-b from-background/0 to-background transition-opacity duration-300 ${
-              overflowing ? "opacity-100" : "opacity-0"
+              fades.bottom ? "opacity-100" : "opacity-0"
             }`}
           />
         </section>
