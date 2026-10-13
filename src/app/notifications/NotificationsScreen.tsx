@@ -152,11 +152,15 @@ function bodyOf(n: Notif, lang: Lang) {
 /**
  * 알림을 누르면 가는 곳. ?from= 을 붙여서, 그 화면의 뒤로가기 버튼이 알림함으로 돌아오게 함
  * - 외국인: 내 글 / 남의 글 대댓글은 그 글의 댓글 화면 / 쓰다 만 글은 작성 화면(뒤로 → 알림함)
- * - 한국인: 대댓글이 달린 글의 댓글 화면
+ * - 한국인: 대댓글이 달린 글의 댓글 화면 — 답글이 달린 내 한마디가 바로 열린 채로
  */
 function hrefOf(n: Notif, lang: Lang) {
   const from = lang === "en" ? "notifications-en" : "notifications";
   if (n.type === "draft") return `/write?from=${from}`;
-  if (n.type === "reply" && (lang === "ko" || n.postId !== "mine")) return `/posts/${n.postId}/comments?from=${from}`;
+  if (n.type === "reply" && (lang === "ko" || n.postId !== "mine")) {
+    // 답글이 달린 내 한마디를 바로 열어 줌 (한마디 화면의 ?comment=)
+    const comment = n.commentId ? `&comment=${encodeURIComponent(n.commentId)}` : "";
+    return `/posts/${n.postId}/comments?from=${from}${comment}`;
+  }
   return `/posts/${n.postId}?from=${from}`;
 }

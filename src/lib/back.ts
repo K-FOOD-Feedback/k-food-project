@@ -8,8 +8,8 @@
   | notifications-en   | 외국인 알림                   | /notifications/en
   | my                 | 한국인 마이 (투표·한마디 탭)  | /my
   | my-en              | 외국인 마이 (Posts·Comments) | /my/en
-  | home-en            | 외국인 메인 카드              | /home/en
-  | posted             | 글 올린 뒤 완료 → See my post | /home/en (완료 화면은 이미 끝남)
+  | home-en            | 외국인 메인 카드              | /home?lang=en
+  | posted             | 글 올린 뒤 완료 → See my post | /home?lang=en (완료 화면은 이미 끝남)
 
   이어 가기: 상세에서 다음 글로 넘기거나, 상세 → 한마디 → 상세, 상세 → 수정 → 상세로 가도
   from 을 그대로 붙여서(withFrom) 처음 들어온 곳으로 돌아가게 합니다.
@@ -20,8 +20,8 @@ const FROM_BACK = {
   "notifications-en": "/notifications/en",
   my: "/my",
   "my-en": "/my/en",
-  "home-en": "/home/en",
-  posted: "/home/en",
+  "home-en": "/home?lang=en",
+  posted: "/home?lang=en",
 } as const;
 
 export type BackFrom = keyof typeof FROM_BACK;

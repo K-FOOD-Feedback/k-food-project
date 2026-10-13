@@ -28,7 +28,7 @@ export function VoteGate({
   const voted = vote !== null;
 
   useEffect(() => {
-    if (ready && !voted && !open) router.replace(`/posts/${postId}#vote`);
+    if (ready && !voted && !open) router.replace(`/posts/${postId}${window.location.search.match(/[?&](from=[\w-]+)/)?.[0].replace(/^&/, "?") ?? ""}#vote`); // 들어온 곳(?from=)은 유지
   }, [ready, voted, open, postId, router]);
 
   // 확인 전·돌려보내는 중에는 아무것도 보여 주지 않습니다 (한마디가 잠깐 비치지 않도록).
