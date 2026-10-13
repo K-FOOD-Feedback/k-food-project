@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { CardStack } from "@/app/home/CardStack";
 import { PhotoTile } from "@/app/my/parts";
 import { NotificationCard } from "@/app/notifications/NotificationsScreen";
-import { GravityPile } from "@/app/posts/[id]/GravityPile";
+import { CommentPile } from "@/app/posts/[id]/CommentPile";
 import { VoteBowl } from "@/app/posts/[id]/VoteBowl";
 import { paperlogy } from "@/app/posts/[id]/font";
 import { ShareCard, type CardStyle } from "@/app/write/done/ShareCard";
@@ -56,9 +56,7 @@ export function EdgeCasesScreen() {
       <Group title="한마디 칸" owner="지현">
         {COMMENT_CASES.map((c) => (
           <Case key={c.label} label={c.label}>
-            <div className="overflow-hidden rounded-[32px] bg-white/10">
-              <GravityPile comments={c.comments} />
-            </div>
+            <CommentPile postId={`edge-pile-${c.label}`} commentCount={c.comments.length} authorFlag="🇨🇦" fixture={c.comments} />
           </Case>
         ))}
       </Group>
@@ -70,7 +68,7 @@ export function EdgeCasesScreen() {
               key={c.label}
               href="#"
               onClick={noop}
-              photo={"photo" in c ? c.photo : "/images/card-buldak.png"}
+              photo="/images/card-buldak.png"
               chip={c.chip}
               chipIcon="check"
               chipStrong

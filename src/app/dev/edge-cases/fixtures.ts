@@ -97,12 +97,11 @@ export const COMMENT_CASES: { label: string; comments: Comment[] }[] = [
   { label: "한마디 40개 (넘침)", comments: Array.from({ length: 40 }, (_, i) => comment(i, i % 3 ? TEXTS.koMax(8 + (i % 12)) : "🤤", i % 3 ? "text" : "emoji")) },
 ];
 
-/** 마이 사진 타일 */
+/** 마이 사진 타일 (사진 없는 글은 없음 — 글은 사진 1장 이상이어야 올라감) */
 export const TILE_CASES = [
   { label: "짧게", chip: "네", title: TEXTS.one },
   { label: "칩·제목 최대", chip: TEXTS.koMax(OPTION_MAX), title: TEXTS.koMax(TITLE_MAX) },
   { label: "긴 영어", chip: TEXTS.enWord(OPTION_MAX), title: TEXTS.enWord(TITLE_MAX) },
-  { label: "사진 없음", chip: "투표함", title: "사진이 없는 글", photo: undefined },
 ];
 
 /** 알림 카드 */

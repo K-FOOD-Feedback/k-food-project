@@ -358,7 +358,8 @@ export function VoteBowl({
           const mine = i === filled;
           return (
             <button
-              key={label}
+              // 같은 글자 선택지가 있을 수 있어서 순서로 구분
+              key={i}
               ref={(el) => {
                 columns.current[i] = el;
               }}
@@ -413,7 +414,7 @@ export function VoteBowl({
                     {mine && (
                       <>
                         {/* 칸 맨 위 기준 자리 = 색 영역 맨 위에서 (칸 높이 - 색 높이)만큼 위 */}
-                        <span aria-hidden className={`absolute left-0 w-full pt-4 pr-2 pl-4 ${optionFont} text-[16px] ${optionLeading} tracking-[-0.32px] whitespace-pre-line text-on-light`} style={{ top: "calc(100% - 230px)" }}>
+                        <span aria-hidden className={`absolute left-0 w-full pt-4 pr-2 pl-4 ${optionFont} text-[16px] ${optionLeading} tracking-[-0.32px] line-clamp-3 whitespace-pre-line [overflow-wrap:anywhere] text-on-light`} style={{ top: "calc(100% - 230px)" }}>
                           {label}
                         </span>
                         <span aria-hidden className={`${title} absolute bottom-3 left-4 text-on-light`}>
@@ -425,7 +426,7 @@ export function VoteBowl({
                 </span>
               )}
               <span
-                className={`absolute top-0 left-0 w-full pt-4 pr-2 pl-4 ${optionFont} text-[16px] ${optionLeading} tracking-[-0.32px] whitespace-pre-line text-on-dark`}
+                className={`absolute top-0 left-0 w-full pt-4 pr-2 pl-4 ${optionFont} text-[16px] ${optionLeading} tracking-[-0.32px] line-clamp-3 whitespace-pre-line [overflow-wrap:anywhere] text-on-dark`}
               >
                 {label}
               </span>
