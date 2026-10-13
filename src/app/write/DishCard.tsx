@@ -8,9 +8,9 @@ import { useFlow } from "@/lib/write-store";
 import { usePhotoCheck } from "./PhotoCheckNotice";
 
 /**
- * ① 사진 화면 맨 위 — AI가 알아본 음식 + Edit (담당 송희)
+ * ① 사진 화면 맨 위 — AI가 알아본 음식 + 이름 옆 ✎로 고치기 (담당 송희)
  * - 음식 인식은 사진을 고른 순간부터 (write-store) → 이 화면에 들어올 땐 보통 이미 끝나 있음
- * - Edit로 고치면 미리 쓰던 글은 버리고 고친 이름으로 다시 씀
+ * - ✎로 고치면 미리 쓰던 글은 버리고 고친 이름으로 다시 씀
  */
 export function useDishFlow() {
   const { draft, ai } = useFlow();
@@ -81,20 +81,20 @@ export function DishCard({ onEditingChange }: { onEditingChange?: (editing: bool
           </form>
         ) : (
           <>
-            <p key={draft.dish} className="animate-fade-in font-display text-[26px] leading-[1.15]">
-              {draft.dish}
-            </p>
-            <p className="flex items-center gap-2 text-[14px] text-muted">
+            {/* 음식 이름 옆 ✎ — 눌러서 고치기 */}
+            <p key={draft.dish} className="flex animate-fade-in items-center gap-2">
+              <span className="font-display text-[26px] leading-[1.15] break-keep">{draft.dish}</span>
               <button
                 type="button"
+                aria-label="Edit dish name"
                 onClick={() => {
                   track("dish_correction_opened", { ai_dish: draft.dish });
                   setInput(draft.dish);
                   setEditing(true);
                 }}
-                className="font-semibold text-on-dark underline underline-offset-4"
+                className="flex size-9 shrink-0 items-center justify-center rounded-full bg-surface-2 text-neutral-400 transition active:scale-90"
               >
-                Edit
+                <Icon name="pencil" size={16} />
               </button>
             </p>
           </>
