@@ -907,17 +907,16 @@ function ShareVoteCard({ post, lang, title }: { post: HomePost; lang: Lang; titl
 
 /** 본문 카드 안 글 (진짜 카드와 전환용 카드가 같은 모양을 쓰도록) */
 function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: HomePost; lang?: Lang; contentLang?: Lang }) {
-  // lang: 화면 문구·나라 이름 / contentLang: 글쓴이가 쓴 제목·본문 (원어 또는 자동 번역)
-  const en = lang === "en";
+  // contentLang: 글쓴이가 쓴 제목·본문 (원어 또는 자동 번역)
   const enText = contentLang === "en";
   return (
     <>
-      {/* 글쓴이: 국기 + "프랑스에서 온 Emma" / "Emma from France" (메인 카드와 같은 모양, 한마디는 익명) */}
-      <p className="flex items-center gap-1.5 text-[14px] leading-none font-medium tracking-[-0.28px] text-[#696969]">
-        <span className="text-[16px]" aria-hidden>
+      {/* 글쓴이: 하얀 원(24px) 안 국기 + 닉네임 (메인 카드와 같은 디자인, 한마디는 익명) */}
+      <p className="flex items-center gap-1.5 font-sans text-[14px] leading-none font-semibold tracking-[-0.28px] text-[#242424]">
+        <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-white text-[14px]" aria-hidden>
           {post.author.flag}
         </span>
-        {DETAIL_COPY[lang].byline(post.author.name, en ? post.en.country : post.author.country)}
+        {post.author.name}
       </p>
       {/* 영어는 소문자가 낮아 같은 행간이면 줄 사이가 비어 보여서 좁게 (한국어 1.2 → 영어 1.05) */}
       <h1
