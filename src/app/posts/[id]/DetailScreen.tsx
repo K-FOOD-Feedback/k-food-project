@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type Ref } from "react";
 import { clearCardTransition, peekCardTransition, setReturnTransition, type Box } from "@/app/home/cardTransition";
 import { HOME_POSTS, participantsOf, type HomePost } from "@/app/home/mockPosts";
@@ -132,14 +133,17 @@ export function DetailScreen({ post }: { post: HomePost }) {
   const showCta = !voted && !seenVote;
 
 
-  // 다음 훈수 거리: 메인 카드 순서상 다음 게시글 (마지막이면 처음으로)
-  const next = HOME_POSTS[(HOME_POSTS.findIndex((p) => p.id === post.id) + 1) % HOME_POSTS.length];
+  // 다음 훈수 거리: 메인 카드 순서상 다음 게시글 (마지막이면 처음으로), 이전은 그 반대
+  const order = HOME_POSTS.findIndex((p) => p.id === post.id);
+  const next = HOME_POSTS[(order + 1) % HOME_POSTS.length];
+  const prev = HOME_POSTS[(order - 1 + HOME_POSTS.length) % HOME_POSTS.length];
 
   // 메인 카드에서 넘어왔으면: 카드 속 사진은 위쪽 사진 영역으로, 카드는 아래쪽 본문 카드로,
   // "00명 참여" 스티커는 참여 칩으로, "투표하러 가기"는 플로팅 "투표하기"로 이어지게 움직입니다. 헤더는 그대로.
   const [intro] = useState(() => peekCardTransition(post.id));
   const [introDone, setIntroDone] = useState(!intro);
   const tileRef = useRef<HTMLDivElement>(null);
+  const shownPhoto = useRef(0); // 사진 칸에서 지금 보고 있는 사진 번호
   const articleRef = useRef<HTMLElement>(null);
   const chipRef = useRef<HTMLParagraphElement>(null);
   const ctaRef = useRef<HTMLButtonElement>(null);
@@ -236,7 +240,8 @@ export function DetailScreen({ post }: { post: HomePost }) {
       return {
         postId: post.id,
         photo: toBox(tile.getBoundingClientRect()),
-        photoSrc: post.photos[0],
+        // 떠날 때 보고 있던 사진 (메인이 이 사진에서 첫 사진으로 넘긴 뒤 카드로 합침)
+        photoSrc: post.photos[shownPhoto.current] ?? post.photos[0],
         card: toBox(article.getBoundingClientRect()),
         color: post.color,
         ...(chip && { chip: toBox(chip.getBoundingClientRect()) }),
@@ -311,6 +316,26 @@ export function DetailScreen({ post }: { post: HomePost }) {
     if (!nextIn || !content) return;
     window.scrollTo(0, 0);
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    // 옆으로 넘겨서 왔으면: 0.1초 쉬었다가 넘긴 쪽 반대편에서 "띠용" 하고 튀어나옴
+    // (좌우로만 — 제자리를 지나쳤다가 몇 번 출렁이며 멈춤. 크기는 그대로)
+    if (nextIn.swipe) {
+      const from = nextIn.swipe === "next" ? 1 : -1;
+      const slide = content.animate(
+        [
+          { offset: 0, opacity: 0, transform: `translateX(${from * SWIPE_IN_PX}px)`, easing: "cubic-bezier(0.2, 0.9, 0.3, 1)" },
+          { offset: 0.35, opacity: 1, transform: `translateX(${from * -22}px)`, easing: "ease-in-out" },
+          { offset: 0.58, transform: `translateX(${from * 9}px)`, easing: "ease-in-out" },
+          { offset: 0.8, transform: `translateX(${from * -3}px)`, easing: "ease-in-out" },
+          { offset: 1, opacity: 1, transform: "none" },
+        ],
+        { duration: SWIPE_IN_MS, delay: SWIPE_IN_DELAY_MS, fill: "backwards" },
+      );
+      const done = window.setTimeout(() => slide.finish(), SWIPE_IN_DELAY_MS + SWIPE_IN_MS + 300);
+      return () => {
+        clearTimeout(done);
+        slide.cancel();
+      };
+    }
     // 아래에서 살짝 떠올라 자리 잡음 (처음엔 조금 작고 흐릿하다가 부드럽게 감속)
     const anims = [...content.children].map((el, i) =>
       el.animate(
@@ -331,6 +356,113 @@ export function DetailScreen({ post }: { post: HomePost }) {
       anims.forEach((a) => a.cancel());
     };
   }, [nextIn]);
+
+  // 좌우로 밀면(휴대폰은 손가락, 웹은 마우스로 끌기) 이전·다음 훈수 거리로: 화면이 옆으로 밀리다가,
+  // 충분히 밀었으면 그 방향으로 빠져나가고 새 글이 반대편에서 들어옴. 덜 밀면 제자리로.
+  const router = useRouter();
+  useEffect(() => {
+    const content = articleRef.current?.parentElement;
+    if (!content) return;
+    let start: { x: number; y: number; t: number } | null = null;
+    let mode: "undecided" | "swipe" | "scroll" = "undecided";
+    let dx = 0;
+    const setOffset = (x: number) => {
+      content.style.transform = x ? `translateX(${x}px)` : "";
+      content.style.opacity = x ? `${1 - Math.min(Math.abs(x) / 600, 0.4)}` : "";
+    };
+    // 손가락(터치)과 마우스 끌기를 같은 방식으로 처리
+    const begin = (x: number, y: number, target: Element) => {
+      // 사진 넘기기·토큰 끌기·입력칸·열린 창 안에서는 화면 넘기기를 하지 않음
+      if (target.closest("[data-photo-scroller], .touch-none, input, textarea, [role=dialog]")) {
+        start = null;
+        return;
+      }
+      start = { x, y, t: performance.now() };
+      mode = "undecided";
+      dx = 0;
+      content.style.transition = "";
+    };
+    const drag = (x0: number, y0: number) => {
+      if (!start) return;
+      const x = x0 - start.x;
+      const y = y0 - start.y;
+      if (mode === "undecided" && Math.hypot(x, y) > 10) {
+        mode = Math.abs(x) > Math.abs(y) * 1.4 ? "swipe" : "scroll";
+        if (mode === "swipe") {
+          // 마우스로 끌 때 글자가 같이 선택되지 않게
+          window.getSelection()?.removeAllRanges();
+          document.body.style.userSelect = "none";
+        }
+      }
+      if (mode !== "swipe") return;
+      dx = x;
+      setOffset(x * 0.6); // 살짝 무겁게 따라옴
+    };
+    const finish = () => {
+      document.body.style.userSelect = "";
+      if (!start || mode !== "swipe") {
+        start = null;
+        return;
+      }
+      // 끌다가 놓은 자리의 버튼·링크가 눌리지 않게 바로 다음 클릭 한 번은 무시
+      const swallow = (e: MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+      };
+      document.addEventListener("click", swallow, { capture: true, once: true });
+      window.setTimeout(() => document.removeEventListener("click", swallow, true), 0);
+      const speed = Math.abs(dx) / Math.max(1, performance.now() - start.t); // px/ms
+      start = null;
+      const go = Math.abs(dx) > SWIPE_GO_PX || (speed > 0.5 && Math.abs(dx) > 30);
+      if (!go) {
+        content.style.transition = "transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 300ms";
+        setOffset(0);
+        return;
+      }
+      const dir = dx < 0 ? "next" : "prev";
+      const target = dir === "next" ? next : prev;
+      content.style.transition = `transform ${SWIPE_OUT_MS}ms ease-in, opacity ${SWIPE_OUT_MS}ms ease-in`;
+      content.style.transform = `translateX(${dx < 0 ? -SWIPE_OUT_PX : SWIPE_OUT_PX}px)`;
+      content.style.opacity = "0";
+      track("post_opened", { post_id: target.id, from: "swipe", from_post_id: post.id, direction: dir });
+      nextTrip = { postId: target.id, at: Date.now(), swipe: dir };
+      window.setTimeout(() => router.push(`/posts/${target.id}`), SWIPE_OUT_MS - 40);
+    };
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return void (start = null);
+      begin(e.touches[0].clientX, e.touches[0].clientY, e.target as Element);
+    };
+    const onTouchMove = (e: TouchEvent) => drag(e.touches[0].clientX, e.touches[0].clientY);
+    // 웹(마우스): 왼쪽 버튼으로 끌기
+    const onMouseDown = (e: PointerEvent) => {
+      if (e.pointerType === "mouse" && e.button === 0) begin(e.clientX, e.clientY, e.target as Element);
+    };
+    const onMouseMove = (e: PointerEvent) => {
+      if (e.pointerType === "mouse") drag(e.clientX, e.clientY);
+    };
+    const onMouseUp = (e: PointerEvent) => {
+      if (e.pointerType === "mouse") finish();
+    };
+    document.addEventListener("touchstart", onTouchStart, { passive: true });
+    document.addEventListener("touchmove", onTouchMove, { passive: true });
+    document.addEventListener("touchend", finish);
+    document.addEventListener("touchcancel", finish);
+    document.addEventListener("pointerdown", onMouseDown);
+    document.addEventListener("pointermove", onMouseMove);
+    document.addEventListener("pointerup", onMouseUp);
+    document.addEventListener("pointercancel", onMouseUp);
+    return () => {
+      document.body.style.userSelect = "";
+      document.removeEventListener("touchstart", onTouchStart);
+      document.removeEventListener("touchmove", onTouchMove);
+      document.removeEventListener("touchend", finish);
+      document.removeEventListener("touchcancel", finish);
+      document.removeEventListener("pointerdown", onMouseDown);
+      document.removeEventListener("pointermove", onMouseMove);
+      document.removeEventListener("pointerup", onMouseUp);
+      document.removeEventListener("pointercancel", onMouseUp);
+    };
+  }, [router, next, prev, post.id]);
 
   // 한마디 전체 화면에서 돌아오면: ↗를 눌렀던 스크롤 위치로 돌려 놓고,
   // 화면에 보이는 카드들이 위에서부터 하나씩 살짝 떠오르며 나타납니다.
@@ -424,6 +556,9 @@ export function DetailScreen({ post }: { post: HomePost }) {
             title={post.title}
             chipRef={chipRef}
             hideChip={!!intro?.sticker && !introDone}
+            onShow={(i) => {
+              shownPhoto.current = i;
+            }}
           />
         </div>
 
@@ -463,7 +598,9 @@ export function DetailScreen({ post }: { post: HomePost }) {
             className={
               voted
                 ? "[&>div>*:not(section)]:transition-opacity [&>div>*:not(section)]:duration-500 [&>div>*:not(section)]:starting:opacity-0"
-                : "[&>div>*:not(section)]:hidden"
+                : // 잠금 레이어 아래 한마디 칸은 칸 안 내용 자체를 흐리게 (위에 backdrop-blur를 얹으면
+                  // 움직이는 말풍선 위에서 블러가 매 프레임 다시 그려지며 세로 줄·깜빡임이 생김)
+                  "[&>div>*:not(section)]:hidden [&>div>section>*]:blur-[8px]"
             }
           >
             <CommentPile postId={post.id} commentCount={post.commentCount} authorFlag={post.author.flag} />
@@ -489,6 +626,8 @@ export function DetailScreen({ post }: { post: HomePost }) {
             title={next.title}
             // 넘어갈 글의 카드 색 (게시글 데이터 색이라 토큰 대신 그대로)
             style={{ backgroundColor: next.color }}
+            // 제목 글자만 Paperlogy로 (ArrowCta는 공통 부품이라 바깥에서 지정)
+            className="[&>span>span:last-child]:font-(family-name:--font-paperlogy) [&>span>span:last-child]:truncate [&>span>span:last-child]:font-normal"
             onClick={() => {
               track("post_opened", { post_id: next.id, from: "next", from_post_id: post.id });
               // 다음 상세 화면이 위에서부터 차례로 나타나도록 표시를 남김
@@ -573,7 +712,7 @@ function CommentLock({ locked, onVote }: { locked: boolean; onVote: () => void }
   return (
     <div
       aria-hidden={!locked}
-      className={`absolute inset-x-0 top-0 z-10 flex h-[362px] items-center justify-center overflow-hidden rounded-[32px] bg-background/50 backdrop-blur-[8px] transition-opacity duration-500 ${
+      className={`absolute inset-x-0 top-0 z-10 flex h-[362px] items-center justify-center overflow-hidden rounded-[32px] bg-background/50 transition-opacity duration-500 ${
         locked ? "opacity-100" : "pointer-events-none opacity-0"
       }`}
     >
@@ -583,7 +722,7 @@ function CommentLock({ locked, onVote }: { locked: boolean; onVote: () => void }
             {/* eslint-disable-next-line @next/next/no-img-element -- 작은 SVG 아이콘 */}
             <img src="/images/icon-lock.svg" width={32} height={32} alt="" />
           </span>
-          <p className="text-center text-[20px] leading-[1.45] font-extrabold tracking-[-0.4px] whitespace-nowrap text-white">
+          <p className="text-center font-(family-name:--font-paperlogy) text-[20px] leading-[1.45] tracking-[-0.4px] whitespace-nowrap text-white">
             투표하고 다른 사람들과
             <br />
             한마디를 나눠보세요!
@@ -593,7 +732,7 @@ function CommentLock({ locked, onVote }: { locked: boolean; onVote: () => void }
           type="button"
           onClick={onVote}
           tabIndex={locked ? 0 : -1}
-          className="rounded-full bg-primary px-5 py-3.5 text-[18px] leading-[1.45] font-extrabold tracking-[-0.36px] text-white transition-transform active:scale-95"
+          className="rounded-full bg-primary px-5 py-3.5 font-(family-name:--font-paperlogy) text-[18px] leading-[1.45] tracking-[-0.36px] text-white transition-transform active:scale-95"
         >
           투표하기
         </button>
@@ -606,7 +745,16 @@ const INTRO_MS = 420;
 // 한마디 전체 화면에 다녀오는 중 (↗를 누를 때 남김 → 상세로 돌아와 그려질 때 씀). 화면을 바꿔도 남는 모듈 값.
 let commentsTrip: { postId: string; scrollY: number; at: number } | null = null;
 // "다음 훈수 거리" 버튼으로 넘어가는 중 (다음 글 상세가 그려질 때 씀)
-let nextTrip: { postId: string; at: number } | null = null;
+let nextTrip: { postId: string; at: number; swipe?: "next" | "prev" } | null = null;
+// 좌우 넘기기: 넘어가는 기준 거리, 빠져나가는/들어오는 거리·시간
+const SWIPE_GO_PX = 90;
+// 사진: 이만큼 안 움직였으면 끌기가 아니라 누르기
+const TAP_SLOP = 6;
+const SWIPE_OUT_PX = 140;
+const SWIPE_OUT_MS = 200;
+const SWIPE_IN_PX = 160;
+const SWIPE_IN_MS = 620;
+const SWIPE_IN_DELAY_MS = 100;
 const NEXT_MS = 700;
 const NEXT_STAGGER_MS = 130;
 const NEXT_EASE = "cubic-bezier(0.22, 1, 0.36, 1)"; // 빠르게 출발해 길게 감속
@@ -711,6 +859,7 @@ function PhotoTile({
   title,
   chipRef,
   hideChip = false,
+  onShow,
 }: {
   postId: string;
   photos: string[];
@@ -719,6 +868,8 @@ function PhotoTile({
   chipRef?: Ref<HTMLParagraphElement>;
   /** 메인 카드 스티커에서 이어지는 전환 중에는 숨김 */
   hideChip?: boolean;
+  /** 지금 보이는 사진 번호가 바뀔 때 (메인으로 돌아갈 때 보던 사진을 넘기려고) */
+  onShow?: (index: number) => void;
 }) {
   const [index, setIndex] = useState(0);
   const furthest = useRef(0); // 분석: 몇 번째 사진까지 봤는지
@@ -735,6 +886,8 @@ function PhotoTile({
     if (many && el) el.scrollLeft = el.clientWidth;
   }, [many]);
   const settleTimer = useRef(0);
+  // 마우스로 끌어서 넘긴 직후에 따라오는 클릭은 "반 누르기"로 치지 않음
+  const dragged = useRef(false);
   const settle = (el: HTMLDivElement) => {
     if (mouseDrag.current) return;
     const slot = Math.round(el.scrollLeft / el.clientWidth);
@@ -774,6 +927,7 @@ function PhotoTile({
     <div className="relative aspect-square w-full overflow-hidden rounded-[32px] border border-black/4 bg-[#1e1e1e]">
       <div
         ref={scroller}
+        data-photo-scroller={many ? "" : undefined}
         className={`flex size-full snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
           many ? "cursor-grab overflow-x-auto active:cursor-grabbing" : "overflow-hidden"
         }`}
@@ -795,6 +949,12 @@ function PhotoTile({
           mouseDrag.current = null;
           const el = e.currentTarget;
           const moved = e.clientX - drag.x;
+          // 거의 안 움직였으면 끌기가 아니라 누르기 → 아래 onClick이 왼쪽·오른쪽 반으로 넘김
+          if (Math.abs(moved) < TAP_SLOP) {
+            el.style.scrollSnapType = "";
+            return;
+          }
+          dragged.current = true;
           const from = Math.round(drag.left / el.clientWidth);
           // 조금만 끌어도(폭의 15%) 다음·이전 사진으로 (가짜 칸까지 가면 settle이 진짜 칸으로 옮김)
           const to = Math.abs(moved) > el.clientWidth * 0.15 ? from - Math.sign(moved) : from;
@@ -804,6 +964,20 @@ function PhotoTile({
             settle(el);
           }, 450);
           touched();
+        }}
+        onClick={(e) => {
+          // 사진 왼쪽 반을 누르면 이전 사진, 오른쪽 반을 누르면 다음 사진 (끝에서는 처음·마지막으로 돎)
+          if (!many) return;
+          if (dragged.current) {
+            dragged.current = false;
+            return;
+          }
+          touched();
+          const el = e.currentTarget;
+          const r = el.getBoundingClientRect();
+          const step = e.clientX < r.left + r.width / 2 ? -1 : 1;
+          const slot = Math.round(el.scrollLeft / el.clientWidth);
+          el.scrollTo({ left: (slot + step) * el.clientWidth, behavior: "smooth" });
         }}
         onTouchMove={touched}
         onWheel={touched}
@@ -817,6 +991,7 @@ function PhotoTile({
           const slot = Math.round(el.scrollLeft / el.clientWidth);
           const next = (slot - 1 + count) % count;
           setIndex(next);
+          onShow?.(next);
           if (next > furthest.current) {
             furthest.current = next;
             track("photo_swiped", { post_id: postId, index: next, total: count });

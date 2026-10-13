@@ -23,6 +23,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   viewportFit: "cover",
+  // 모바일 브라우저 상단 바·툴바 색을 앱 바탕(--color-background)과 같게
+  themeColor: "#111111",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

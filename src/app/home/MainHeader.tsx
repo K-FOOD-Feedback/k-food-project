@@ -35,7 +35,7 @@ export function MainHeader({ lang = "ko" }: { lang?: Lang }) {
           {/* 언어 변경 — 화면 위에 언어 고르는 창이 뜸 */}
           <LanguageButton lang={lang} from="feed" />
           <TrackedLink
-            href="/my"
+            href={en ? "/my/en" : "/my"}
             event="my_page_clicked"
             props={{ from: "feed", viewer: en ? "foreigner" : "korean" }}
             className={HEADER_BUTTON}
