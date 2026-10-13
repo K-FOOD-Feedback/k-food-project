@@ -309,14 +309,16 @@ export function CommentPile({
             />
           </div>
           <div
-            className={`pointer-events-none absolute inset-x-0 top-0 h-[92px] bg-linear-to-b from-background to-background/0 transition-opacity duration-300 ${
+            className={`pointer-events-none absolute inset-x-0 top-0 h-[120px] transition-opacity duration-300 ${
               fades.top ? "opacity-100" : "opacity-0"
             }`}
+            style={{ background: scrim("to bottom") }}
           />
           <div
-            className={`pointer-events-none absolute inset-x-0 bottom-0 h-[92px] bg-linear-to-b from-background/0 to-background transition-opacity duration-300 ${
+            className={`pointer-events-none absolute inset-x-0 bottom-0 h-[120px] transition-opacity duration-300 ${
               fades.bottom ? "opacity-100" : "opacity-0"
             }`}
+            style={{ background: scrim("to top") }}
           />
         </section>
 
@@ -545,6 +547,27 @@ function FlyingCircle({ flight, onArrive }: { flight: Flight; onArrive: (vy: num
     </div>
   );
 }
+
+/**
+  칸 위·아래 그라데이션 — 직선 그라데이션은 다 어두워지는 지점에서 띠처럼 끊겨 보여서,
+  천천히 어두워지다 끝에서 부드럽게 멈추는 곡선(ease-in-out, "scrim")으로 칠합니다.
+  direction: 어두운 쪽 → 투명한 쪽 ("to bottom": 위가 어두움)
+*/
+const SCRIM_STOPS: [number, number][] = [
+  [0, 1],
+  [0.14, 0.95],
+  [0.28, 0.85],
+  [0.42, 0.69],
+  [0.56, 0.5],
+  [0.7, 0.31],
+  [0.82, 0.15],
+  [0.92, 0.05],
+  [1, 0],
+];
+const scrim = (direction: "to top" | "to bottom") =>
+  `linear-gradient(${direction}, ${SCRIM_STOPS.map(
+    ([at, alpha]) => `color-mix(in srgb, var(--color-background) ${Math.round(alpha * 100)}%, transparent) ${at * 100}%`,
+  ).join(", ")})`;
 
 type Burst = { id: number; emoji: string; x: number; y: number };
 
