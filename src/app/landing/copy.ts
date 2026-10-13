@@ -123,7 +123,7 @@ export const COPY = {
 /** 예시 투표 비율 */
 export const SAMPLE_PCTS = [58, 31, 11];
 
-/** 한국인 반응 — 한국어가 아닌 화면에서는 번역을 작게 같이 */
+/** 한국인 반응 — 한국어가 아닌 화면에서는 번역을 크게, 한국어 원문을 작게 */
 export const REACTIONS = [
   { ko: "면이 어디 있는데요", en: "Where are the noodles?", zh: "面在哪儿？", ja: "麺はどこ？" },
   { ko: "이 정도면 치즈가 불닭을 먹는 중", en: "The cheese is eating the buldak", zh: "这芝士都快把火鸡面吃了", ja: "チーズがブルダックを食べてる" },
