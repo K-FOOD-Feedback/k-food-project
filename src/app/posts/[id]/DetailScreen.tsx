@@ -677,7 +677,7 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
               onLockedWrite={login.ask}
             />
           </div>
-          {!foreigner && <CommentLock locked={!voted} onVote={goToVote} lines={T.lock} button={T.voteNow} />}
+          {!foreigner && <CommentLock locked={!voted} onVote={goToVote} lines={T.lock} button={T.voteNow} color={post.color} />}
           {/* 투표 후: 한마디 칸 어디를 눌러도 한마디 전체 화면으로 (상세에서는 말풍선 호버·모달 없이 칸 전체가 하나의 링크) */}
           {open && (
             <TrackedLink
@@ -792,11 +792,14 @@ function CommentLock({
   onVote,
   lines,
   button,
+  color,
 }: {
   locked: boolean;
   onVote: () => void;
   lines: readonly string[];
   button: string;
+  /** 포인트 색 (자물쇠·투표하기 버튼) = 이 글의 카드 색 */
+  color: string;
 }) {
   return (
     <div
@@ -808,8 +811,12 @@ function CommentLock({
       <div className="flex w-[178px] flex-col items-center gap-[30px]">
         <div className="flex flex-col items-center gap-5">
           <span className="flex size-[60px] items-center justify-center rounded-full bg-[#292929]">
-            {/* eslint-disable-next-line @next/next/no-img-element -- 작은 SVG 아이콘 */}
-            <img src="/images/icon-lock.svg" width={32} height={32} alt="" />
+            {/* 자물쇠 모양(icon-lock.svg)을 마스크로 써서 카드 색으로 칠함 */}
+            <span
+              aria-hidden
+              className="size-8 mask-[url(/images/icon-lock.svg)] mask-contain mask-center mask-no-repeat"
+              style={{ backgroundColor: color }}
+            />
           </span>
           <p className="text-center font-(family-name:--font-paperlogy) text-[20px] leading-[1.45] tracking-[-0.4px] whitespace-nowrap text-white">
             {lines[0]}
@@ -821,7 +828,8 @@ function CommentLock({
           type="button"
           onClick={onVote}
           tabIndex={locked ? 0 : -1}
-          className="rounded-full bg-primary px-5 py-3.5 text-[18px] leading-[1.45] font-extrabold tracking-[-0.36px] text-white transition-transform active:scale-95"
+          className="rounded-full px-5 py-3.5 text-[18px] leading-[1.45] font-extrabold tracking-[-0.36px] text-on-light transition-transform active:scale-95"
+          style={{ backgroundColor: color }}
         >
           {button}
         </button>
