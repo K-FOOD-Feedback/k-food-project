@@ -114,7 +114,7 @@ export function KoMyScreen() {
               }
             />
           ) : (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-6 px-1">
               {votedPosts.map((p) => (
                 <VotedTile key={p.id} post={p} />
               ))}
@@ -189,7 +189,9 @@ function VotedTile({ post }: { post: HomePost }) {
       href={`/posts/${post.id}?from=my`}
       onClick={() => track("my_item_clicked", { item: "voted_post", viewer: "korean" })}
       photo={post.cardPhoto}
-      chip={picked ? `내 선택 · ${picked}` : "투표함"}
+      // 내가 고른 선택지 — "내 선택" 글자 대신 ✓ (선택지가 길면 …)
+      chip={picked ?? "투표함"}
+      chipIcon="check"
       chipStrong
       title={post.title}
     />

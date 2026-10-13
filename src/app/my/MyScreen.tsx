@@ -156,7 +156,7 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
               }
             />
           ) : (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-6 px-1">
               {posts.map((p) => (
                 <PhotoTile
                   key={p.id}
