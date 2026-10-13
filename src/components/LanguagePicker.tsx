@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { Icon } from "@/components/Icon";
 import { HEADER_BUTTON, PageHeader } from "@/components/PageHeader";
 import { track } from "@/lib/analytics";
@@ -12,7 +12,43 @@ import { track } from "@/lib/analytics";
   - 한국어·영어를 고르면 그 언어의 메인(/home, /home/en)으로 갑니다. 지금 언어를 고르면 창만 닫힙니다.
   - 중국어·일본어는 아직 화면이 없어서 "곧 지원할게요"를 잠깐 보여 줍니다.
   - 창은 다른 화면처럼 가운데 430px 틀 안에만 뜹니다.
+  - 창 하단에서 자동 번역을 켜고 끌 수 있습니다. 화면에서는 useAutoTranslate()로 읽습니다 (기본: 켬).
 */
+
+/* ── 자동 번역 설정 (이 브라우저에 저장) ── */
+const AUTO_TRANSLATE_KEY = "kfood:auto-translate";
+const AUTO_TRANSLATE_EVENT = "kfood:auto-translate-change";
+
+function readAutoTranslate() {
+  try {
+    return localStorage.getItem(AUTO_TRANSLATE_KEY) !== "off";
+  } catch {
+    return true;
+  }
+}
+
+function subscribeAutoTranslate(onChange: () => void) {
+  window.addEventListener(AUTO_TRANSLATE_EVENT, onChange);
+  window.addEventListener("storage", onChange);
+  return () => {
+    window.removeEventListener(AUTO_TRANSLATE_EVENT, onChange);
+    window.removeEventListener("storage", onChange);
+  };
+}
+
+export function setAutoTranslate(on: boolean) {
+  try {
+    localStorage.setItem(AUTO_TRANSLATE_KEY, on ? "on" : "off");
+  } catch {
+    // 저장이 막힌 브라우저면 이번 화면에서만 바뀌지 않음
+  }
+  window.dispatchEvent(new Event(AUTO_TRANSLATE_EVENT));
+}
+
+/** 자동 번역이 켜져 있는지 — 다른 언어로 쓴 글·한마디를 내 언어로 보여 줄지 정할 때 씁니다. */
+export function useAutoTranslate() {
+  return useSyncExternalStore(subscribeAutoTranslate, readAutoTranslate, () => true);
+}
 
 export type ServiceLang = "ko" | "en";
 
@@ -61,6 +97,7 @@ function LanguagePicker({ lang, from, onClose }: { lang: ServiceLang; from: stri
   const router = useRouter();
   const en = lang === "en";
   const [soon, setSoon] = useState(false);
+  const autoTranslate = useAutoTranslate();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -141,15 +178,48 @@ function LanguagePicker({ lang, from, onClose }: { lang: ServiceLang; from: stri
           })}
         </ul>
 
-        {/* 중국어·일본어를 누르면 잠깐 알려 줌 */}
+        {/* 중국어·일본어를 누르면 잠깐 알려 줌 (자동 번역 줄 바로 위) */}
         <p
           role="status"
-          className={`absolute bottom-[calc(60px+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 rounded-full bg-surface-2 px-4 py-2.5 text-[14px] font-semibold whitespace-nowrap text-white transition-opacity duration-200 ${
+          className={`absolute bottom-[calc(150px+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 rounded-full bg-surface-2 px-4 py-2.5 text-[14px] font-semibold whitespace-nowrap text-white transition-opacity duration-200 ${
             soon ? "opacity-100" : "pointer-events-none opacity-0"
           }`}
         >
           {soon ? (en ? "Coming soon" : "곧 지원할게요") : ""}
         </p>
+
+        {/* 하단: 자동 번역 켬/끔 */}
+        <div className="absolute bottom-[calc(40px+env(safe-area-inset-bottom))] left-1/2 flex w-[230px] -translate-x-1/2 animate-[lang-rise_320ms_cubic-bezier(0.2,0.8,0.2,1)_160ms_both] flex-col items-center gap-2">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={autoTranslate}
+            onClick={() => {
+              track("auto_translate_toggled", { on: !autoTranslate, screen: from, viewer: en ? "foreigner" : "korean" });
+              setAutoTranslate(!autoTranslate);
+            }}
+            className="flex w-full items-center gap-3 rounded-[32px] bg-surface-2 py-3 pr-3 pl-5 text-left text-white transition-transform active:scale-[0.97]"
+          >
+            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <span className="font-(family-name:--font-paperlogy) text-[16px] leading-[1.3] tracking-[-0.32px]">자동 번역</span>
+              <span className="font-display text-[18px] leading-[1.3] tracking-[-0.36px]">Auto-translate</span>
+            </span>
+            {/* 스위치 */}
+            <span
+              aria-hidden
+              className={`relative h-8 w-[52px] shrink-0 rounded-full transition-colors duration-200 ${autoTranslate ? "bg-secondary" : "bg-background"}`}
+            >
+              <span
+                className={`absolute top-[3px] left-[3px] size-[26px] rounded-full bg-white shadow-[0_2px_6px_rgba(0,0,0,0.25)] transition-transform duration-200 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
+                  autoTranslate ? "translate-x-5" : ""
+                }`}
+              />
+            </span>
+          </button>
+          <p className="text-center text-[12px] leading-[1.4] break-keep text-muted">
+            {en ? "Show posts and comments in your language" : "다른 언어로 쓴 글·한마디를 내 언어로 보여 줘요"}
+          </p>
+        </div>
       </div>
 
       <style>{`
