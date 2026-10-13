@@ -3,6 +3,7 @@
 import { useLayoutEffect, useRef } from "react";
 import { CARD_PHOTO_IN_MASK, cardMaskBox, cardPhotoOf } from "./CardStack";
 import type { CardShape } from "./cardShapes";
+import { DETAIL_COPY } from "../posts/[id]/copy";
 import type { HomePost } from "./mockPosts";
 import {
   clearReturnTransition,
@@ -366,6 +367,19 @@ export function ReturnGhosts({
 
     // 플로팅 "투표하기" → 하단 "투표하러 가기" (글자도 바뀜)
     const mainCta = document.querySelector<HTMLElement>("[data-main-cta]");
+    // 메인에 받을 버튼이 없으면(한국인 메인) 상세의 "투표하기"는 아래로 살짝 내려가며 사라짐
+    if (t.cta && !mainCta && ctaGhost.current) {
+      animations.push(
+        ctaGhost.current.animate(
+          [
+            { opacity: 1, translate: "0 0" },
+            { opacity: 0, translate: "0 24px", offset: 0.3 },
+            { opacity: 0, translate: "0 24px" },
+          ],
+          timing,
+        ),
+      );
+    }
     if (t.cta && mainCta && ctaGhost.current) {
       const cs = getComputedStyle(mainCta);
       if (ctaTo.current) ctaTo.current.textContent = mainCta.textContent;
@@ -537,12 +551,18 @@ function DetailArticleBody({
   const en = lang === "en";
   return (
     <>
-      <p className="text-[14px] leading-none font-medium tracking-[-0.28px] text-[#696969]">
-        from. {en ? post.en.country : post.author.country}
+      <p className="flex items-center gap-1.5 text-[14px] leading-none font-medium tracking-[-0.28px] text-[#696969]">
+        <span className="text-[16px]">{post.author.flag}</span>
+        {DETAIL_COPY[lang].byline(
+          post.author.name,
+          en ? post.en.country : post.author.country,
+        )}
       </p>
       <h1
         className={`max-w-[204px] text-[31px] tracking-[-0.62px] break-keep ${
-          en ? "font-title-en leading-[1.05]" : "font-(family-name:--font-paperlogy) leading-[1.2]"
+          en
+            ? "font-title-en leading-[1.05]"
+            : "font-(family-name:--font-paperlogy) leading-[1.2]"
         }`}
       >
         {en ? post.en.title : post.title}
