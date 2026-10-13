@@ -8,7 +8,7 @@ import { Icon } from "@/components/Icon";
 import { Screen, StickyBottom, Tile, Toast, TopBar } from "@/components/Layout";
 import { PhotoGrid } from "@/components/PhotoGrid";
 import { usePhotoPicker } from "@/components/PhotoPicker";
-import { getQuestion, MAX_PHOTOS, STORY_MAX, TITLE_MAX, VOTE_TITLE_MAX, type Photo } from "@/lib/write-data";
+import { getQuestion, MAX_PHOTOS, STORY_MAX, TITLE_MAX, type Photo } from "@/lib/write-data";
 import { SAMPLE_MY_POST, useFlow, type MyPost, MY_POST_ID } from "@/lib/write-store";
 import { OptionsEditor } from "@/app/write/OptionsEditor";
 import { track } from "@/lib/analytics";
@@ -34,7 +34,7 @@ export function EditScreen() {
   const [lockShake, setLockShake] = useState(0);
   const [lockToast, setLockToast] = useState(false);
   const closeLockToast = useCallback(() => setLockToast(false), []);
-  const canSave = form.title.trim().length > 0;
+  const canSave = form.title.trim().length > 0 && form.story.trim().length > 0;
   const set = (patch: Partial<MyPost>) => setForm((f) => ({ ...f, ...patch }));
   const question = getQuestion(form.questionId);
 
@@ -136,11 +136,10 @@ export function EditScreen() {
               }`}
             >
               <Icon name={question.icon} size={18} />
-              <span className="text-[17px] font-bold">{question.label}</span>
+              <span className="text-[17px] font-bold">{form.questionId === "custom" ? form.voteQuestion : question.label}</span>
               <Icon name="lock" size={16} className="text-neutral-400" />
             </button>
           </div>
-          <TextField label="Vote title" value={form.voteQuestion} maxLength={VOTE_TITLE_MAX} locked />
           <div className="flex flex-col gap-2 px-5 pt-3 pb-4">
             <p className="text-[13px] font-semibold leading-[1.3]">Choices Koreans can pick</p>
             <OptionsEditor source="edit" options={form.options} locked onChange={() => {}} />

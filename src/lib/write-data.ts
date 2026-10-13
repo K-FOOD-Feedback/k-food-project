@@ -12,7 +12,28 @@ export const OPTION_MAX = 28;
 export const OPTIONS_MIN = 2;
 export const OPTIONS_MAX = 4;
 
-export type Photo = { id: string; src: string };
+/**
+ * 사진 검사 결과 (AI) — 올리기 전에 사진마다 확인
+ * - checking: 검사 중 · ok: 음식 사진
+ * - not_food: 음식이 아님(셀카·풍경·동물·장난 사진) → 빼야 다음으로
+ * - unsafe: 혐오·선정·폭력·공포 사진 → 바로 빼고 안내만 (사진을 다시 보여 주지 않음)
+ * - unsure: 너무 어둡거나 흐림 → 막지 않고 알려 주기만
+ */
+export type PhotoCheck = "checking" | "ok" | "not_food" | "unsafe" | "unsure";
+
+export type Photo = { id: string; src: string; check?: PhotoCheck };
+
+/**
+ * 사진 검사 목업 — 실제 AI가 붙기 전까지 파일 이름으로 결과를 정함 (리뷰용)
+ * 실제로는 음식 인식(①)과 같은 호출에서 상태값을 받고, 혐오·선정 사진은 전문 검사 서비스를 한 번 더 거침
+ */
+export function mockCheckPhoto(fileName: string): Exclude<PhotoCheck, "checking"> {
+  const n = fileName.toLowerCase();
+  if (/ghost|horror|gore|nsfw|unsafe|귀신/.test(n)) return "unsafe";
+  if (/cat|dog|selfie|poop|nofood|landscape|screenshot|똥/.test(n)) return "not_food";
+  if (/dark|blur|흐림/.test(n)) return "unsure";
+  return "ok";
+}
 
 export type QuestionId =
   | "line"
@@ -24,7 +45,8 @@ export type QuestionId =
   | "name"
   | "toomuch"
   | "nailed"
-  | "better";
+  | "better"
+  | "custom"; // 직접 쓰기 (휠 맨 끝)
 
 export type Question = {
   id: QuestionId;
@@ -52,6 +74,8 @@ export const QUESTIONS: Question[] = [
   { id: "toomuch", label: "Did I add too much?", hint: "Cheese, sauce, toppings… too much?", icon: "layers" }, // 너무 많이 넣었어요?
   { id: "nailed", label: "Did I nail it?", hint: "Tell me I got it right.", icon: "star" }, // 저 해냈어요?
   { id: "better", label: "Better than a Korean made it?", hint: "Bold question. Let them judge.", icon: "chef-hat" }, // 한국인이 만든 것보다 나아요?
+  // 직접 쓰기 — 항상 휠 맨 끝. 고르면 질문을 직접 씀 (투표 질문 = 쓴 문장)
+  { id: "custom", label: "Write my own", hint: "Ask anything, in your own words.", icon: "pencil" },
 ];
 
 export function getQuestion(id: QuestionId): Question {
@@ -60,10 +84,13 @@ export function getQuestion(id: QuestionId): Question {
 
 /*
   ── AI 목업 ──────────────────────────────────────────────
-  실제 AI가 붙기 전까지 쓰는 가짜 결과입니다. 만드는 순서와 재료:
-    ① 음식 인식   : 사진
-    ② 제목·본문   : 사진 + 주제 (+ ①)
-    ③ 투표       : 사진 + 주제 + 제목·본문  ← 사용자가 고친 글이 가장 정확한 정보
+  실제 AI가 붙기 전까지 쓰는 가짜 결과입니다. 작성 순서(사진 → AI 글쓰기 → 글 → 질문+투표)에 따른 재료:
+    ① 음식 인식          : 사진 (+ 사진 검사 상태값)      → ① 사진 화면 "Is this right?" (틀리면 고침)
+    ② 제목 · 본문        : 사진 + ①                       → ①에서 음식을 알아본 순간 뒤에서 미리 씀
+                                                            음식을 고치면 미리 쓴 글은 버리고 다시
+    ③-a 투표 주제 추천    : 사진 + ②(사용자가 고친 글)      → 휠 1순위로 미리 선택
+    ③-b 선택지           : 사진 + 고른 주제 + ②             → 투표 질문은 주제 문구 그대로
+  ③-b를 만든 뒤 ①·②·주제가 바뀌면 "투표도 다시 맞출까요?" (voteBasisOf)
 */
 
 /** ① 사진에서 알아본 음식 이름 */
@@ -139,9 +166,14 @@ export function aiVoteFor(
     toomuch: { q: `Too much ${main}?`, options: [[`Way too much 🙈`, `Just right 👌`, `Need more!`]] },
     nailed: { q: `Did I nail this ${dish}?`, options: [[`Nailed it 🎯`, `Almost 🤏`, `Not yet 😅`]] },
     better: { q: `Better than a Korean made it?`, options: [[`Yes, honestly 🏆`, `Same level`, `Nice try 😂`]] },
+    // 직접 쓴 질문 — 실제 AI는 쓴 문장을 보고 선택지를 만듦. 목업은 무난한 3개
+    custom: { q: "", options: [[`Yes 👍`, `Kind of 🤔`, `No 👎`]] },
   };
   const set = sets[questionId] ?? sets.line; // 예전 질문 id로 저장된 글도 깨지지 않게
-  return { voteQuestion: set.q, options: set.options[variant % set.options.length] };
+  // 투표 질문은 고른 주제 문구 그대로 (예: "Did I add too much?") — 구체적인 문장(set.q)은 선택지 만들 때 참고만
+  // 직접 쓰기면 질문은 비워 두고 사용자가 씀
+  const voteQuestion = questionId === "custom" ? "" : getQuestion(questionId).label;
+  return { voteQuestion, options: set.options[variant % set.options.length] };
 }
 
 /**
@@ -154,8 +186,8 @@ export function rankQuestions(post: { title: string; story: string }): QuestionI
   if (/too |a lot|extra|lots of|chees|mozzarella/.test(t)) first.push("toomuch");
   if (/first time|my first|tried/.test(t)) first.push("nailed");
   if (/added|instead|mix|with /.test(t)) first.push("line");
-  const rest = QUESTIONS.map((q) => q.id).filter((id) => !first.includes(id));
-  return [...first, ...rest];
+  const rest = QUESTIONS.map((q) => q.id).filter((id) => !first.includes(id) && id !== "custom");
+  return [...first, ...rest, "custom"]; // 직접 쓰기는 항상 맨 끝
 }
 
 /** 투표가 만들어질 때 쓴 재료 — 이게 바뀌면 "선택지 다시 맞출까요?" */

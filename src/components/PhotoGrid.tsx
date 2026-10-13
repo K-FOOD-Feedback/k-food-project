@@ -114,7 +114,7 @@ export function PhotoGrid({
           >
             <button
               type="button"
-              aria-label={`Photo ${i + 1}${isCover ? " (cover)" : ""}. Drag to reorder`}
+              aria-label={`Photo ${i + 1}${isCover ? " (cover)" : ""}${photo.check === "not_food" ? " — not a food photo, remove it" : ""}. Drag to reorder`}
               onPointerDown={onPointerDown(i)}
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
@@ -131,9 +131,26 @@ export function PhotoGrid({
               }
               className={`absolute inset-0 touch-none select-none overflow-hidden rounded-[20px] bg-surface-2 [-webkit-touch-callout:none] ${
                 dragging ? "shadow-[0_12px_24px_rgba(0,0,0,0.2)]" : "transition-transform"
-              } ${isCover ? "border-[3px] border-on-dark" : ""}`}
+              } ${photo.check === "not_food" ? "border-[3px] border-error" : isCover ? "border-[3px] border-on-dark" : ""}`}
             >
               <PhotoImage src={photo.src} sizes="72px" className="pointer-events-none object-cover" />
+              {/* 사진 검사 (AI) — 검사 중 · 음식 아님 · 흐림 */}
+              {photo.check === "checking" && (
+                <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/55">
+                  <Icon name="sparkle" size={18} className="animate-spin text-white [animation-duration:1.4s]" />
+                </span>
+              )}
+              {photo.check === "not_food" && (
+                <span className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-0.5 bg-black/70 text-white">
+                  <Icon name="alert" size={18} />
+                  <span className="text-[10px] font-bold leading-none">Not food</span>
+                </span>
+              )}
+              {photo.check === "unsure" && (
+                <span className="pointer-events-none absolute left-1 top-1 flex size-5 items-center justify-center rounded-full bg-content text-[12px] font-bold leading-none text-on-light">
+                  !
+                </span>
+              )}
               {/* 대표 사진 표시 — 썸네일 아래쪽 안에 꽉 찬 띠 */}
               {isCover && (
                 <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-black/80 py-1 text-center text-[11px] font-bold leading-[1.3] text-white">

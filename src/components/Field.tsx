@@ -12,8 +12,10 @@ export function TextField({
   rows = 1,
   locked = false,
   onBlur,
+  placeholder,
 }: {
   label: string;
+  placeholder?: string;
   value: string;
   onChange?: (value: string) => void;
   maxLength?: number;
@@ -55,12 +57,13 @@ export function TextField({
           id={id}
           rows={rows}
           value={value}
+          placeholder={placeholder}
           maxLength={maxLength}
           readOnly={locked}
           aria-readonly={locked}
           onBlur={(e) => onBlur?.(e.target.value)}
           onChange={(e) => onChange?.(e.target.value.replace(rows === 1 ? /\n/g : /$^/, ""))}
-          className={`min-w-0 flex-1 resize-none overflow-hidden bg-transparent text-[15px] leading-[1.5] outline-none ${
+          className={`min-w-0 flex-1 resize-none overflow-hidden bg-transparent text-[15px] leading-[1.5] outline-none placeholder:text-neutral-400 ${
             locked ? "text-muted" : "text-on-dark"
           }`}
         />

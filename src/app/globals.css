@@ -414,6 +414,13 @@
   }
 }
 
+/* 모든 화면이 어두운 앱이라 페이지 바탕도 어둡게 — 모바일에서 위·아래로 당겼을 때나
+   브라우저 주소창·툴바 뒤로 하얀 바탕이 비치지 않게 */
+html,
+body {
+  background-color: var(--color-background);
+}
+
 body {
   font-family: var(--font-sans);
   /* Figma 전 텍스트 자간 -2% */

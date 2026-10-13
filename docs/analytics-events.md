@@ -31,7 +31,7 @@
 |---|---|---|
 | `feed_viewed` | 메인 진입 | `viewer`, `posts` |
 | `card_swiped` | 카드 넘김 | `direction`(next/prev), `post_id`, `position`, `viewer` |
-| `post_opened` | 카드 탭 / 하단 CTA / 상세 맨 아래 "다음 훈수 거리" | `post_id`, `from`(card/cta/next), `viewer`, `position`, `already_voted` · next일 때는 `post_id`(다음 글), `from_post_id`(보던 글)만 |
+| `post_opened` | 카드 탭 / 하단 CTA / 상세 맨 아래 "다음 훈수 거리" / 상세 좌우 넘기기 | `post_id`, `from`(card/cta/next/swipe), `viewer`, `position`, `already_voted` · next·swipe일 때는 `post_id`(넘어간 글), `from_post_id`(보던 글)만, swipe는 `direction`(next/prev)도 |
 | `feed_cta_clicked` | 투표하러 가기 / 투표 결과 보기 | `post_id`, `voted` |
 | `share_clicked` | Share your K-food | `logged_in` |
 
@@ -56,6 +56,9 @@
 | 이벤트 | 어디서 | 속성 |
 |---|---|---|
 | `photos_added` | 사진 추가 | `count`, `total`, `from`(share/photos/post) |
+| `photo_checked` | 사진 검사 결과 (AI, 지금은 목업) | `result`(ok/not_food/unsafe/unsure) — 사진 내용은 보내지 않음 |
+| `photo_blocked_shown` | "음식 사진이 아니에요" 안내가 보임 | `count`(걸린 사진 수), `step` |
+| `dish_recognized` | ① 사진 화면에서 AI가 음식을 알아봄 | `duration_ms` |
 | `photo_removed` · `cover_changed` · `photos_reordered` | 사진 조작 | `from` 등 |
 | `photo_limit_hit` | 10장 초과 | `from` |
 | `photos_completed` | ① Next | `count` |
@@ -65,7 +68,7 @@
 | `topic_changed` | 질문+투표 화면에서 질문 휠 바꿈 | `from_topic`, `to_topic`, `method`(drag/scroll/tap/keyboard), `ai_rank`(AI 추천 순위, 0=1순위) |
 | `topic_selected` | ② Write with AI | `topic`, `is_ai_top_pick`, `changes` |
 | `topic_reselected` | 투표에서 주제만 바꾸고 복귀 | `from_topic`, `to_topic`, `changed` |
-| `ai_draft_completed` / `ai_draft_stopped` | AI 작성 화면 | `duration_ms`, `topic` / `step_done` |
+| `ai_draft_completed` | 제목·본문을 다 씀 (① 사진 화면에서 음식을 알아본 순간 뒤에서 미리 씀) | `duration_ms`, `rewrite`(음식을 고쳐서 다시 썼는지) |
 | `dish_correction_opened` / `dish_corrected` | ③ Not right? / Rewrite | `ai_dish`, `user_dish` |
 | `post_step_completed` | ③ Make the vote | `dish_corrected`, `title_kept`, `story_kept`, 길이, `photos` |
 | `vote_generated` | ④ 투표 만들어짐 | `reason`(first/remake/update), `variant`, `topic` |
@@ -102,6 +105,17 @@
 | `notifications_clicked` | 외국인 메인 🔔 | `from` |
 | `notifications_viewed` | 알림함 열림 (열면 다 읽은 것) | `count`, `viewer` |
 | `notification_clicked` | 알림 누름 | `type`, `viewer` |
+
+## 마이 · 외국인 /my/en · 한국인 /my (송희)
+모든 이벤트에 `viewer`(foreigner/korean)
+| 이벤트 | 어디서 | 속성 |
+|---|---|---|
+| `my_page_viewed` | 마이 열림 | 외국인 `posts`·`comments` / 한국인 `votes`·`comments` (개수) |
+| `my_item_clicked` | 마이에서 누름 | `item`(profile/post/voted_post/comment/write/browse/tab_*/logout), 한마디는 `reply` |
+| `logged_out` | 로그아웃 확인 | `from` |
+| `nickname_rerolled` | 프로필 시트 🔄 (새 랜덤 닉네임) | `spins`(이번에 몇 번째) |
+| `nickname_changed` | 새 닉네임 적용 | `spins`(몇 번 돌려서 골랐는지) |
+| `account_deleted` | 계정 삭제 확인 | — |
 
 투표 로그인: `login_sheet_opened` / `login_cancelled` / `login_completed` 에 `from: "vote"` (한국인이 로그인 없이 투표하려 할 때).
 

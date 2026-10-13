@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 
 /*
   댓글 (서버가 붙기 전까지 목업 + 이 브라우저의 localStorage)
@@ -128,3 +128,45 @@ export function useComments(postId: string, authorFlag: string) {
 
   return { comments, addedCount: added.length, add, edit, remove, nextColor, ready };
 }
+
+/*
+  마이 화면용 (송희) — 이 브라우저에서 내가 남긴 한마디를 모든 글에서 모아 최신 순으로
+  한마디 id가 `${postId}-${남긴 시각}`이라 시각도 같이 꺼냅니다.
+*/
+const STORAGE_PREFIX = storageKey("");
+
+function readAllAddedKey() {
+  try {
+    return Object.keys(localStorage)
+      .filter((k) => k.startsWith(STORAGE_PREFIX))
+      .sort()
+      .map((k) => `${k}\u0000${localStorage.getItem(k) ?? ""}`)
+      .join("\u0001");
+  } catch {
+    return "";
+  }
+}
+
+export function useMyComments(): { postId: string; comment: Comment; at: number }[] {
+  const key = useSyncExternalStore(subscribe, readAllAddedKey, () => "");
+  return useMemo(() => {
+    if (!key) return [];
+    return key
+      .split("\u0001")
+      .flatMap((entry) => {
+        const [k, raw] = entry.split("\u0000");
+        const postId = k.slice(STORAGE_PREFIX.length);
+        let list: Comment[] = [];
+        try {
+          list = raw ? (JSON.parse(raw) as Comment[]) : [];
+        } catch {
+          list = [];
+        }
+        return list
+          .filter((c) => c.mine)
+          .map((c) => ({ postId, comment: c, at: Number(c.id.slice(c.id.lastIndexOf("-") + 1)) || 0 }));
+      })
+      .sort((a, b) => b.at - a.at);
+  }, [key]);
+}
+

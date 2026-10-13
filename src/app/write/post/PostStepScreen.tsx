@@ -1,58 +1,28 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowCta, IconButton } from "@/components/Buttons";
 import { TextField } from "@/components/Field";
 import { Icon } from "@/components/Icon";
-import { Screen, StepProgress, StickyBottom, Tile, Toast, TopBar } from "@/components/Layout";
-import { PhotoGrid } from "@/components/PhotoGrid";
-import { usePhotoPicker } from "@/components/PhotoPicker";
-import { MAX_PHOTOS, STORY_MAX, TITLE_MAX } from "@/lib/write-data";
+import { Screen, StepProgress, StickyBottom, Tile, TopBar } from "@/components/Layout";
+import { STORY_MAX, TITLE_MAX } from "@/lib/write-data";
 import { keptRatio, track } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
-import { usePhotoActions } from "../usePhotoActions";
 import { WriteExit } from "../WriteExit";
 
 /*
-  ③ Your post
-  - 맨 위: AI가 알아본 음식 이름. 틀렸으면 고치고 "Rewrite" → 그 이름으로 제목·본문을 다시 씀
-  - 제목·본문 수정
-  - 다음: AI가 이 글을 보고 투표를 만듦 (④)
+  ② Your post — 제목 · 본문 (담당 송희)
+  - AI가 ① 사진 화면에서 음식을 알아본 순간 뒤에서 미리 써 둠 → 보통은 들어오자마자 채워져 있음
+  - 아직 쓰는 중이면 그 자리에서 "Writing…"을 보여 주고, 다 쓰면 채워짐 (전체 로딩 화면 없음)
+  - 음식 이름 확인·사진은 ①에서 (여기선 글만)
+  - 다음: 이 글을 보고 투표 주제 추천 · 선택지 (③)
 */
 export function PostStepScreen() {
   const router = useRouter();
-  const { draft, updateDraft, applyAiDraft, saveDraftForLater } = useFlow();
-  const photo = usePhotoActions("post");
-  const [limitToast, setLimitToast] = useState(false);
-  const closeToast = useCallback(() => setLimitToast(false), []);
-  const picker = usePhotoPicker((files) => {
-    if (photo.add(files)) setLimitToast(true);
-  });
+  const { draft, ai, updateDraft, saveDraftForLater } = useFlow();
+  const writing = ai.story === "working";
 
-  // 바로 이 화면으로 들어와도 비지 않도록 (처음 한 번만)
-  const filled = useRef(false);
-  useEffect(() => {
-    if (filled.current) return;
-    filled.current = true;
-    if (!draft.title && !draft.story) applyAiDraft();
-  }, [draft.title, draft.story, applyAiDraft]);
-
-  // 음식 이름 고치기
-  const [editingDish, setEditingDish] = useState(false);
-  const [dishInput, setDishInput] = useState("");
-  const [rewriteKey, setRewriteKey] = useState(0); // 다시 쓰면 입력칸이 반짝
-  const rewrite = () => {
-    const dish = dishInput.trim();
-    if (dish) {
-      track("dish_corrected", { ai_dish: draft.ai.dish || draft.dish, user_dish: dish });
-      applyAiDraft({ dish });
-      setRewriteKey((k) => k + 1);
-    }
-    setEditingDish(false);
-  };
-
-  const canNext = draft.photos.length > 0 && draft.title.trim().length > 0;
+  const canNext = !writing && draft.title.trim().length > 0 && draft.story.trim().length > 0;
 
   return (
     <Screen className="pb-[140px]">
@@ -74,84 +44,22 @@ export function PostStepScreen() {
       <StepProgress step={2} />
 
       <div className="stagger flex flex-col gap-1 px-2">
-        {/* 글 — 맨 위. AI가 알아본 음식은 카드 첫 줄에 작게, 틀렸으면 여기서 바로잡기 */}
         <Tile>
-          <div className="flex flex-col gap-3 px-5 pt-5 pb-1">
-            {editingDish ? (
-              <form
-                className="flex items-center gap-2"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  rewrite();
-                }}
-              >
-                <input
-                  autoFocus
-                  value={dishInput}
-                  onChange={(e) => setDishInput(e.target.value)}
-                  maxLength={40}
-                  aria-label="What did you make?"
-                  placeholder="What did you make?"
-                  className="h-11 min-w-0 flex-1 rounded-full bg-surface-2 px-4 text-[15px] outline-none ring-on-dark focus:ring-2"
-                />
-                <button
-                  type="submit"
-                  className="h-11 shrink-0 rounded-full bg-on-dark px-4 text-[14px] font-bold text-on-light transition active:scale-95"
-                >
-                  Rewrite
-                </button>
-              </form>
-            ) : (
-              <p className="flex flex-wrap items-center gap-x-1.5 text-[14px] leading-[1.4] text-muted">
-                <Icon name="sparkle" size={14} className="text-content" />
-                <span>AI thinks this is</span>
-                <span key={draft.dish} className="animate-fade-in font-bold text-on-dark">
-                  {draft.dish || "…"}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    track("dish_correction_opened", { ai_dish: draft.dish });
-                    setDishInput(draft.dish);
-                    setEditingDish(true);
-                  }}
-                  className="font-semibold text-on-dark underline underline-offset-4"
-                >
-                  Not right?
-                </button>
-              </p>
-            )}
-          </div>
-          <div key={rewriteKey} className={rewriteKey ? "animate-fade-in" : ""}>
-            <TextField label="Title" value={draft.title} maxLength={TITLE_MAX} onChange={(title) => updateDraft({ title })} />
-            <TextField
-              label="Story"
-              value={draft.story}
-              maxLength={STORY_MAX}
-              rows={3}
-              onChange={(story) => updateDraft({ story })}
-            />
-          </div>
-          <div className="pb-2" />
-        </Tile>
-
-        {/* 사진 — 맨 왼쪽이 대표(Cover) */}
-        <Tile>
-          <div className="flex flex-col gap-3 px-5 pt-4 pb-5">
-            <h2 className="font-display text-[20px] leading-[1.2]">Photos</h2>
-            <PhotoGrid
-              photos={draft.photos}
-              onRemove={photo.remove}
-              onMove={photo.move}
-              onAdd={() => {
-                if (draft.photos.length >= MAX_PHOTOS) {
-                  photo.limitHit();
-                  setLimitToast(true);
-                } else picker.open();
-              }}
-            />
-            <p className="text-[13px] leading-[1.4] text-muted">Drag to reorder · The first photo is the cover</p>
-          </div>
+          {writing ? (
+            <WritingSkeleton dish={draft.dish} />
+          ) : (
+            <div className="animate-fade-in">
+              <TextField label="Title" value={draft.title} maxLength={TITLE_MAX} onChange={(title) => updateDraft({ title })} />
+              <TextField
+                label="Story"
+                value={draft.story}
+                maxLength={STORY_MAX}
+                rows={4}
+                onChange={(story) => updateDraft({ story })}
+              />
+              <div className="pb-2" />
+            </div>
+          )}
         </Tile>
 
         <p className="flex items-center gap-1.5 px-6 pt-3 text-[13px] font-medium leading-[1.3] text-muted">
@@ -162,14 +70,13 @@ export function PostStepScreen() {
 
       <StickyBottom>
         <ArrowCta
-          caption="Pick what to ask Koreans"
+          caption={writing ? "AI is writing your post…" : "Pick what to ask Koreans"}
           title="Next"
           {...(canNext
             ? {
                 href: "/write/vote",
                 onClick: () =>
                   track("post_step_completed", {
-                    dish_corrected: draft.dish !== (draft.ai.dish || draft.dish),
                     title_kept: keptRatio(draft.ai.title, draft.title),
                     story_kept: keptRatio(draft.ai.story, draft.story),
                     title_length: draft.title.length,
@@ -180,14 +87,26 @@ export function PostStepScreen() {
             : { disabled: true })}
         />
       </StickyBottom>
-
-      <Toast
-        open={limitToast}
-        onClose={closeToast}
-        title={`You can add up to ${MAX_PHOTOS} photos`}
-        body="Remove a photo first, then add a new one."
-      />
-      {picker.input}
     </Screen>
+  );
+}
+
+/** 아직 쓰는 중 — 제목·본문 자리가 반짝이며 채워질 준비 */
+function WritingSkeleton({ dish }: { dish: string }) {
+  return (
+    <div className="flex flex-col gap-4 px-5 py-5" aria-live="polite">
+      <p className="flex items-center gap-2 text-[14px] font-semibold">
+        <Icon name="sparkle" size={16} className="animate-spin text-content [animation-duration:1.4s]" />
+        Writing about your {dish || "dish"}…
+      </p>
+      <div className="flex flex-col gap-2">
+        <span className="text-[13px] font-semibold text-muted">Title</span>
+        <span className="h-[52px] animate-pulse rounded-[20px] bg-surface-2" />
+      </div>
+      <div className="flex flex-col gap-2">
+        <span className="text-[13px] font-semibold text-muted">Story</span>
+        <span className="h-[124px] animate-pulse rounded-[20px] bg-surface-2 [animation-delay:150ms]" />
+      </div>
+    </div>
   );
 }

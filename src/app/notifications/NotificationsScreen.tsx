@@ -39,7 +39,6 @@ export function NotificationsScreen({ lang }: { lang: Lang }) {
   return (
     <Screen className="pb-16">
       <TopBar
-        title={t.title}
         left={<IconButton icon="chevron-left" label={t.back} href={lang === "en" ? "/home/en" : "/home"} />}
       />
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type CSSProperties, type PointerEvent } from "react";
+import { useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { IconButton, PillButton } from "@/components/Buttons";
 import { FeedCard } from "@/components/FeedCard";
 import { Icon } from "@/components/Icon";
@@ -19,6 +19,8 @@ import { ShareSheet } from "./ShareSheet";
   카드를 손가락으로 문지르면 3D로 기울고, 탭하면 색종이가 다시 터짐
 */
 const T = { stamp: 1050, check: 1500, text: 1600, cta: 1750, float: 2000 };
+/** 카드 연출 영역 원래 높이 — 화면이 낮으면 이 영역을 통째로 줄여 스크롤 없이 한 화면에 */
+const STAGE_HEIGHT = 420;
 
 export function DoneScreen() {
   const { myPost } = useFlow();
@@ -27,6 +29,19 @@ export function DoneScreen() {
   const [tilt, setTilt] = useState({ x: 0, y: 0, active: false });
   const [burst, setBurst] = useState(0); // 탭할 때마다 +1 → 색종이 다시
   const [shareOpen, setShareOpen] = useState(false);
+
+  // 화면 높이에 맞추기: 카드 연출 영역이 남는 칸에 다 들어가도록, 모자라면 통째로 줄임
+  const stage = useRef<HTMLDivElement>(null);
+  const [fit, setFit] = useState(1);
+  useLayoutEffect(() => {
+    const el = stage.current;
+    if (!el) return;
+    const measure = () => setFit(Math.min(1, el.clientHeight / STAGE_HEIGHT));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const tilted = useRef(false); // 분석용: 카드를 문질러 봤는지
   const cardRef = useRef<HTMLDivElement>(null); // 공유 시트가 열릴 때 카드가 여기서 출발
@@ -42,7 +57,7 @@ export function DoneScreen() {
   const stampDelay = burst ? 0 : T.stamp;
 
   return (
-    <Screen className="pb-[140px]">
+    <Screen className="h-dvh overflow-hidden pb-[140px]">
       <TopBar right={<IconButton
             icon="x"
             label="Close"
@@ -50,6 +65,10 @@ export function DoneScreen() {
             onClick={() => track("posted_next_action", { action: "close", taps: burst, tilted: tilted.current })}
           />} />
 
+      {/* 남는 높이만큼 (낮은 화면이면 카드 연출 영역을 줄여서) */}
+      <div ref={stage} className="min-h-0 flex-1">
+      <div style={{ height: STAGE_HEIGHT * fit }}>
+      <div style={{ scale: fit, transformOrigin: "top center" }}>
       {/* 도장 찍힐 때 화면 흔들림 (처음 한 번) */}
       <div className="animate-jolt" style={{ animationDelay: `${T.stamp + 60}ms` }}>
         <div className="relative mx-auto h-[420px] w-full max-w-[375px] [perspective:900px]">
@@ -83,7 +102,7 @@ export function DoneScreen() {
                     author="Sam · Canada"
                     photo={coverOf(post).src}
                     votesLabel="0 votes yet"
-                    questionLabel={getQuestion(post.questionId).label}
+                    questionLabel={post.questionId === "custom" ? post.voteQuestion : getQuestion(post.questionId).label}
                     color="bg-content"
                     scale={0.72}
                     priority
@@ -109,6 +128,9 @@ export function DoneScreen() {
             <Icon name="check" size={30} strokeWidth={2.5} />
           </span>
         </div>
+      </div>
+      </div>
+      </div>
       </div>
 
       <div
