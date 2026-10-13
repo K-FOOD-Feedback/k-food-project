@@ -8,7 +8,7 @@ import { Icon } from "@/components/Icon";
 import { Screen, StepProgress, StickyBottom, Tile, Toast, TopBar } from "@/components/Layout";
 import { PhotoGrid } from "@/components/PhotoGrid";
 import { usePhotoPicker } from "@/components/PhotoPicker";
-import { MAX_PHOTOS, STORY_MAX, TITLE_MAX } from "@/lib/write-data";
+import { MAX_PHOTOS, STORY_MAX } from "@/lib/write-data";
 import { keptRatio, track } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
 import { PhotoCheckNotice, usePhotoCheck } from "../PhotoCheckNotice";
@@ -18,7 +18,7 @@ import { WriteExit } from "../WriteExit";
 /*
   ③ Your post
   - 맨 위: AI가 알아본 음식 이름. 틀렸으면 고치고 "Rewrite" → 그 이름으로 제목·본문을 다시 씀
-  - 제목·본문 수정
+  - 본문(Story) 수정 — 제목 칸은 없음. 다음 단계의 질문(Your question)이 곧 글 제목
   - 다음: AI가 이 글을 보고 투표를 만듦 (④)
 */
 export function PostStepScreen() {
@@ -54,7 +54,7 @@ export function PostStepScreen() {
     setEditingDish(false);
   };
 
-  const canNext = draft.photos.length > 0 && draft.title.trim().length > 0 && photoCheck.canGo;
+  const canNext = draft.photos.length > 0 && draft.story.trim().length > 0 && photoCheck.canGo;
 
   return (
     <Screen className="pb-[140px]">
@@ -125,7 +125,6 @@ export function PostStepScreen() {
             )}
           </div>
           <div key={rewriteKey} className={rewriteKey ? "animate-fade-in" : ""}>
-            <TextField label="Title" value={draft.title} maxLength={TITLE_MAX} onChange={(title) => updateDraft({ title })} />
             <TextField
               label="Story"
               value={draft.story}
@@ -173,9 +172,7 @@ export function PostStepScreen() {
                 onClick: () =>
                   track("post_step_completed", {
                     dish_corrected: draft.dish !== (draft.ai.dish || draft.dish),
-                    title_kept: keptRatio(draft.ai.title, draft.title),
                     story_kept: keptRatio(draft.ai.story, draft.story),
-                    title_length: draft.title.length,
                     story_length: draft.story.length,
                     photos: draft.photos.length,
                   }),

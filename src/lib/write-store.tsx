@@ -91,6 +91,8 @@ export const SAMPLE_MY_POST: MyPost = {
   dish: AI_DISH,
   ...aiPostFor(AI_DISH),
   ...aiVoteFor("line", AI_DISH, aiPostFor(AI_DISH)),
+  // 질문이 곧 글 제목
+  title: aiVoteFor("line", AI_DISH, aiPostFor(AI_DISH)).voteQuestion,
   voteBasis: "",
   votes: 0,
   comments: 0,
@@ -258,7 +260,8 @@ export function FlowProvider({ children }: { children: ReactNode }) {
           coverId: d.coverId ?? photos[0].id,
           questionId: d.questionId,
           dish: d.dish || AI_DISH,
-          title: d.title || SAMPLE_MY_POST.title,
+          // 질문이 곧 글 제목 (글 단계에 제목 칸 없음)
+          title: d.voteQuestion || d.title || SAMPLE_MY_POST.title,
           story: d.story || SAMPLE_MY_POST.story,
           voteQuestion: d.voteQuestion || SAMPLE_MY_POST.voteQuestion,
           options: d.options.filter((o) => o.trim()).length >= 2 ? d.options.filter((o) => o.trim()) : SAMPLE_MY_POST.options,
