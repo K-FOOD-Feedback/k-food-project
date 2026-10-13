@@ -15,11 +15,14 @@ const BUBBLE_COLORS = ["#ffe056", "#ffc6ff", "#c8b5ff", "#ccf54b", "#9fe7ff", "#
  *  한마디는 익명 — 이름은 글쓴이만 (뱃지에 "글쓴이 · 닉네임", 송희·지현 합의) */
 export type CommentAuthor = { kind: "korean" } | { kind: "foreigner"; flag: string } | { kind: "author"; flag: string; name?: string };
 
-/** 뱃지 글자: 내 한마디는 "나", 글쓴이는 "글쓴이 · 닉네임", 나머지(익명)는 없음 */
-export function whoOf(comment: Comment, t: { me: string; author: string }) {
+/**
+  뱃지 글자: 내 한마디는 "나", 글쓴이는 "글쓴이 · 닉네임", 나머지(익명)는 없음
+  withName=false: 닉네임 없이 "글쓴이"만 (한마디 칸 말풍선 — 지현 요청, 칸에서는 짧게)
+*/
+export function whoOf(comment: Comment, t: { me: string; author: string }, withName = true) {
   if (comment.mine) return t.me;
   if (comment.author.kind !== "author") return null;
-  return comment.author.name ? `${t.author} · ${comment.author.name}` : t.author;
+  return withName && comment.author.name ? `${t.author} · ${comment.author.name}` : t.author;
 }
 
 export type Comment = {
