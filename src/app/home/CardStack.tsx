@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { track } from "@/lib/analytics";
 import { cardShapeAt, type CardShape } from "./cardShapes";
-import { QUESTION_LABELS, QUESTION_LABELS_EN, participantsOf, type HomePost as Post } from "./mockPosts";
+import { participantsOf, type HomePost as Post } from "./mockPosts";
 
 /** ko = 한국인 메인(/home), en = 외국인 메인(/home?lang=en) */
 export type Lang = "ko" | "en";
@@ -278,6 +278,10 @@ function CardContent({ lang, post, voted, shape }: { lang: Lang; post: Post; vot
   const photo = cardPhotoOf(post);
   const { mask, scale: k } = shape;
   const m = cardMaskBox(k);
+  // 사진(모양) 영역의 카드 안 위치 → 투표 완료 표시 자리: 사진 아래끝에 걸치고, 왼쪽 아래와 가운데 사이
+  const photoLeft = CARD.width / 2 + IMAGE.dx - (IMAGE.width * k) / 2 + m.left;
+  const photoBottom = CARD.height / 2 + IMAGE.dy - (IMAGE.height * k) / 2 + m.top + m.height;
+  const badge = { left: photoLeft + m.width * 0.12, top: photoBottom - 34 };
   return (
     <>
       {photo && (
@@ -309,17 +313,21 @@ function CardContent({ lang, post, voted, shape }: { lang: Lang; post: Post; vot
         <span className="text-[11px] leading-none font-semibold">{en ? "joined" : "명 참여"}</span>
       </span>
 
-      <span className="absolute right-5 bottom-5 left-5 flex flex-col items-start gap-2 text-black">
-        <span className="flex max-w-full gap-1">
-          {voted && (
-            <span className="shrink-0 rounded-full bg-background px-2.5 py-[5px] text-[12px] leading-[1.2] font-semibold whitespace-nowrap text-white">
-              {en ? "✓ Voted" : "✓ 투표 완료"}
-            </span>
-          )}
-          <span className="max-w-full min-w-0 truncate rounded-full bg-black/8 px-2.5 py-[5px] text-[12px] leading-[1.2] font-semibold">
-            {(en ? QUESTION_LABELS_EN : QUESTION_LABELS)[post.question.id]}
-          </span>
+      {/* 투표 완료 표시 — 참여 인원 스티커처럼 사진 위에 붙임 (사진 왼쪽 아래 ~ 가운데 사이, 사진 아래 테두리에 걸치게) */}
+      {voted && (
+        <span
+          data-card-badge
+          className="absolute flex -rotate-6 items-center gap-1 rounded-full bg-background px-3 py-2 text-[13px] leading-none font-bold whitespace-nowrap text-white shadow-[0_4px_12px_rgba(0,0,0,0.18)]"
+          style={{ left: badge.left, top: badge.top }}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+          {en ? "Voted" : "투표 완료"}
         </span>
+      )}
+
+      <span className="absolute right-5 bottom-5 left-5 flex flex-col items-start gap-2 text-black">
         {/* 제목: 한국어는 상세 제목과 같은 Paperlogy, 영어는 Gilroy를 한글 크기에 맞춘 font-title-en (행간 0.15 좁게) */}
         <span
           className={`w-full text-[23px] font-extrabold tracking-[-0.69px] break-keep text-balance ${
@@ -336,7 +344,14 @@ function CardContent({ lang, post, voted, shape }: { lang: Lang; post: Post; vot
             </span>
             <span className="truncate">{post.author.name}</span>
           </span>
-          <span className="shrink-0">💬 {post.commentCount}</span>
+          {/* 한마디 수 — 채워진 말풍선 아이콘 */}
+          <span className="flex shrink-0 items-center gap-1">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+              <path d="M12 2C6.48 2 2 6.03 2 11c0 2.38 1.03 4.55 2.72 6.17L4 21.5a.5.5 0 0 0 .7.55l4.34-1.93c.94.25 1.93.38 2.96.38 5.52 0 10-4.03 10-9S17.52 2 12 2Z" />
+            </svg>
+            <span className="sr-only">{en ? "Comments" : "한마디"}</span>
+            {post.commentCount}
+          </span>
         </span>
       </span>
     </>
