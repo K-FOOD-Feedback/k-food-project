@@ -6,7 +6,7 @@ import { ArrowCta, IconButton } from "@/components/Buttons";
 import { TextField } from "@/components/Field";
 import { Icon } from "@/components/Icon";
 import { Screen, StepProgress, StickyBottom, Tile, TopBar } from "@/components/Layout";
-import { getQuestion, rankQuestions, VOTE_TITLE_MAX, voteBasisOf, type QuestionId } from "@/lib/write-data";
+import { rankQuestions, VOTE_TITLE_MAX, voteBasisOf, type QuestionId } from "@/lib/write-data";
 import { keptRatio, track } from "@/lib/analytics";
 import { currentFrom, withFrom } from "@/lib/back";
 import { useFlow } from "@/lib/write-store";
@@ -29,7 +29,6 @@ const MAKING_MS = 1400;
 export function VoteStepScreen() {
   const router = useRouter();
   const { draft, updateDraft, makeVote, saveDraftForLater, publish } = useFlow();
-  const question = getQuestion(draft.questionId);
   // 처음 들어오면(아직 투표 없음) AI 추천 1순위 질문을 골라 둠
   const ranked = useMemo(() => rankQuestions(draft), [draft]);
   const [making, setMaking] = useState(draft.options.length === 0);
@@ -137,7 +136,6 @@ export function VoteStepScreen() {
                 onChange={(id, method) => chooseQuestion(id, method)}
               />
             </div>
-            <p className="px-5 text-center text-[13px] leading-[1.4] text-muted">{question.hint}</p>
             {/* 휠 맨 끝 "Write my own" — 질문을 직접 씀 (이 문장이 투표 질문) */}
             {draft.questionId === "custom" && (
               <div className="animate-fade-in">
@@ -186,8 +184,9 @@ export function VoteStepScreen() {
 
       <StickyBottom>
         <ArrowCta
-          caption={posting ? "Translating into Korean…" : "Koreans will see it in Korean"}
+          // 작성 세 단계 모두 같은 버튼 (위 작은 글 없이, compact) — 올리는 중엔 "Posting…"
           title={posting ? "Posting…" : "Post"}
+          compact
           disabled={!canPost || posting}
           className={posting ? "animate-pulse" : ""}
           onClick={() => {

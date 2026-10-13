@@ -71,8 +71,9 @@ export function PostStepScreen() {
 
       <StickyBottom>
         <ArrowCta
-          caption={writing ? "AI is writing your post…" : "Pick what to ask Koreans"}
+          // 작성 세 단계 모두 같은 버튼 (위 작은 글 없이, compact)
           title="Next"
+          compact
           {...(canNext
             ? {
                 onClick: () => {

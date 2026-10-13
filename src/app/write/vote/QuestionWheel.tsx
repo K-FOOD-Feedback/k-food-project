@@ -187,7 +187,7 @@ export function QuestionWheel({
               opacity: Math.max(0, 1 - Math.abs(off) * 0.32),
             }}
           >
-            <Icon name={q.icon} size={on ? 18 : 16} className={on ? "" : "text-neutral-400"} />
+            {/* 질문 앞 아이콘은 뺌 (글자만 — 덜 복잡하게). AI 추천 1순위에만 AI 표시 */}
             <span
               className={`truncate ${on ? "text-[17px] font-bold text-on-dark" : "text-[15px] font-medium text-neutral-400"}`}
             >

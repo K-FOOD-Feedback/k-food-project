@@ -55,7 +55,8 @@ export function PhotosScreen({ backHref = "/home?lang=en" }: { backHref?: string
         title="Your photos"
         right={<WriteExit step="photos" exitHref={backHref} />}
       />
-      <StepProgress step={1} />
+      {/* 진행 막대는 분석 화면에선 숨김 (분석이 끝나고 ① 화면이 보일 때부터) */}
+      {!dishFlow.analyzing && <StepProgress step={1} />}
 
       {/* 사진을 고른 직후: 분석이 끝날 때까지 분석 화면 → 끝나면 결과와 함께 이 화면 */}
       {dishFlow.analyzing ? (
@@ -122,9 +123,9 @@ export function PhotosScreen({ backHref = "/home?lang=en" }: { backHref?: string
       {!dishFlow.analyzing && (
         <StickyBottom>
           <ArrowCta
+            // 작성 세 단계 모두 같은 버튼 (위 작은 글 없이 Next/Post만, compact)
             title="Next"
             compact
-            caption={dishFlow.working ? "Looking at your photos…" : undefined}
             {...(dishFlow.canGo && !editingDish
               ? {
                   // 들어온 곳(?from=)은 누를 때 읽어서 이어 붙임 (그리기 전엔 주소를 몰라서 링크 대신 이동)
