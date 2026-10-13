@@ -74,7 +74,10 @@ export function LandingScreen() {
   // 언어: 처음엔 브라우저 언어, 이후엔 고른 언어
   const browserLang = useSyncExternalStore<LandingLang>(
     subscribeNone,
-    () => (navigator.language.toLowerCase().startsWith("ko") ? "ko" : "en"),
+    () => {
+      const l = navigator.language.toLowerCase();
+      return l.startsWith("ko") ? "ko" : l.startsWith("zh") ? "zh" : l.startsWith("ja") ? "ja" : "en";
+    },
     () => "ko",
   );
   const [chosen, setChosen] = useState<LandingLang | null>(null);
@@ -256,7 +259,7 @@ export function LandingScreen() {
           // 랜딩 상단 높이(56)에 맞춰 메인보다 작게
           className="flex size-11 shrink-0 items-center justify-center rounded-full bg-surface/85 backdrop-blur-xl transition-transform active:scale-95"
           onPick={(l) => {
-            setChosen(l);
+            setChosen(l as LandingLang);
             track("language_clicked", { from: "landing", to: l });
           }}
         />
@@ -556,7 +559,7 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
               className="relative z-20"
               style={{
                 animation: hinting
-                  ? "token-drop 700ms cubic-bezier(0.3, 1.4, 0.5, 1) 650ms both, token-hint 3.6s ease-in-out 2200ms infinite"
+                  ? "token-drop 700ms cubic-bezier(0.3, 1.4, 0.5, 1) 650ms both, token-hint 3.6s ease-in-out 1350ms infinite"
                   : active && !touched
                     ? "token-drop 700ms cubic-bezier(0.3, 1.4, 0.5, 1) 650ms both"
                     : undefined,
@@ -623,7 +626,7 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
                   <span
                     className={`wave-fill absolute inset-x-0 bottom-0 overflow-hidden ${role.fill}`}
                     style={{
-                      animation: `${i === 0 ? "col-peek-l" : "col-peek-r"} 3.6s ease-in-out 2200ms infinite, wave-flow 1.4s linear infinite`,
+                      animation: `${i === 0 ? "col-peek-l" : "col-peek-r"} 3.6s ease-in-out 1350ms infinite, wave-flow 1.4s linear infinite`,
                       height: 0,
                     }}
                   >
@@ -658,7 +661,7 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
       {loginOpen &&
         createPortal(
           <LoginSheet
-            lang={lang}
+            lang={lang === "ko" ? "ko" : "en"}
             open
             title={t.loginTitle}
             body={t.loginBody}
@@ -670,7 +673,8 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
               track("login_completed", { from: "landing", method: "google" });
               logIn();
               setLoginOpen(false);
-              rememberRole(lang);
+              // 중국어·일본어도 이후 화면은 아직 영어 외국인 화면으로
+              rememberRole(lang === "ko" ? "ko" : "en");
               router.push(lang === "ko" ? "/home" : "/home/en");
             }}
           />,
@@ -705,7 +709,7 @@ function Bubble({
   style,
 }: {
   lang: LandingLang;
-  r: { ko: string; en: string };
+  r: { ko: string; en: string; zh: string; ja: string };
   className: string;
   style: CSSProperties;
 }) {
@@ -715,7 +719,7 @@ function Bubble({
       style={style}
     >
       <span className="break-keep text-[15px] font-bold leading-[1.35] tracking-[-0.3px]">{r.ko}</span>
-      {lang === "en" && <span className="text-[11px] font-semibold leading-[1.3] opacity-60">{r.en}</span>}
+      {lang !== "ko" && <span className="text-[11px] font-semibold leading-[1.3] opacity-60">{r[lang]}</span>}
     </div>
   );
 }

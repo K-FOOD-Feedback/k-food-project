@@ -16,6 +16,8 @@ import { rememberRole } from "@/lib/role";
 */
 
 export type ServiceLang = "ko" | "en";
+/** 고를 수 있는 언어 전체 (중국어·일본어는 지금 랜딩에서만, 송희) */
+export type PickLang = ServiceLang | "zh" | "ja";
 
 type Option = { id: string; flag: string; ko: string; en: string; href?: string };
 
@@ -33,14 +35,14 @@ export function LanguageButton({
   className = HEADER_BUTTON,
   onPick,
 }: {
-  lang: ServiceLang;
+  lang: PickLang;
   from: string;
   className?: string;
-  /** 메인으로 이동하는 대신 그 자리에서 언어만 바꿀 때 (랜딩 등, 송희) */
-  onPick?: (lang: ServiceLang) => void;
+  /** 메인으로 이동하는 대신 그 자리에서 언어만 바꿀 때 (랜딩 등, 송희) — 중국어·일본어도 고를 수 있음 */
+  onPick?: (lang: PickLang) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const en = lang === "en";
+  const en = lang !== "ko"; // 중국어·일본어 화면에서도 영어 문구
   return (
     <>
       <button
@@ -67,13 +69,13 @@ function LanguagePicker({
   onPick,
   onClose,
 }: {
-  lang: ServiceLang;
+  lang: PickLang;
   from: string;
-  onPick?: (lang: ServiceLang) => void;
+  onPick?: (lang: PickLang) => void;
   onClose: () => void;
 }) {
   const router = useRouter();
-  const en = lang === "en";
+  const en = lang !== "ko"; // 중국어·일본어 화면에서도 영어 문구
   const [soon, setSoon] = useState(false);
 
   useEffect(() => {
@@ -96,12 +98,13 @@ function LanguagePicker({
       selected: o.id,
       available: !!o.href,
     });
-    if (!o.href) return setSoon(true);
     if (o.id === lang) return onClose();
+    // 그 자리에서 언어만 바꾸는 곳(랜딩)은 네 언어 모두 바로
     if (onPick) {
-      onPick(o.id === "ko" ? "ko" : "en");
+      onPick(o.id as PickLang);
       return onClose();
     }
+    if (!o.href) return setSoon(true);
     rememberRole(o.id === "ko" ? "ko" : "en"); // 다음에 첫 화면(/)으로 와도 이 언어 메인으로 (송희)
     router.push(o.href);
   };
