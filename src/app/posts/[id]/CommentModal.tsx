@@ -364,8 +364,16 @@ export function CommentModal({
         aria-hidden
       />
 
-      {/* 내용: 빈 곳을 누르면 아래 배경이 눌려 닫히도록 통과시킵니다. */}
-      <div className="pointer-events-none relative flex h-full flex-col transition-opacity duration-200 ease-out starting:opacity-0 [&>*]:pointer-events-auto">
+      {/* 내용: 빈 곳을 누르면 아래 배경이 눌려 닫히도록 통과시킵니다.
+          답글 목록 칸처럼 화면을 덮는 칸의 빈 곳도 — 버튼·입력칸·원글 카드가 아닌 곳을 누르면 닫힘 (송희) */}
+      <div
+        className="pointer-events-none relative flex h-full flex-col transition-opacity duration-200 ease-out starting:opacity-0 [&>*]:pointer-events-auto"
+        onClick={(e) => {
+          if (editing || reporting) return;
+          if ((e.target as Element).closest("button, a, input, textarea, label, form, [data-keep-open]")) return;
+          onClose();
+        }}
+      >
         {/* 수정 중에도 위 버튼(취소·완료)은 어두운 막 위에 */}
         <div className="relative z-30">
         <PageHeader
@@ -401,7 +409,7 @@ export function CommentModal({
         </div>
 
         {/* 원글 카드 — 수정하면 이 카드가 화면 가운데로 날아가 뒤집힙니다 (EditCard). 그동안 제자리는 비워 둠 */}
-        <div className="mx-5 mt-4 h-[130px] shrink-0 transition-[opacity,scale] duration-250 ease-out starting:scale-95 starting:opacity-0">
+        <div data-keep-open className="mx-5 mt-4 h-[130px] shrink-0 transition-[opacity,scale] duration-250 ease-out starting:scale-95 starting:opacity-0">
           <div
             ref={rootCard}
             className={`relative flex size-full flex-col items-center justify-center rounded-[32px] px-10 py-[30px] ${
