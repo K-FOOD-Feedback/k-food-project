@@ -88,7 +88,7 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
       </div>
 
       {returning && (
-        <ReturnGhosts transition={returning} cardPhoto={current.cardPhoto} shape={cardShapeAt(index)} onDone={() => setReturning(null)} />
+        <ReturnGhosts transition={returning} cardPhoto={current.cardPhoto} post={current} shape={cardShapeAt(index)} onDone={() => setReturning(null)} />
       )}
 
       {lang === "en" ? (

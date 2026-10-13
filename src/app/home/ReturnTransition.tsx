@@ -3,16 +3,20 @@
 import { useLayoutEffect, useRef } from "react";
 import { CARD_PHOTO_IN_MASK, cardMaskBox } from "./CardStack";
 import type { CardShape } from "./cardShapes";
+import type { HomePost } from "./mockPosts";
 import { clearReturnTransition, measureCard, type Box, type ReturnTransition } from "./cardTransition";
 
-const RETURN_MS = 600;
+const RETURN_MS = 490;
 const EASING = "cubic-bezier(0.2, 0.8, 0.2, 1)";
 /*
   두 단계로 이어집니다.
-  ① 합치기 (0 ~ MERGE): 본문 카드가 위로 늘어나 사진 밑까지 받치고, 사진 아래 모서리가 펴지며 둘이 한 장의 카드가 됨
-  ② 줄어들기 (MERGE ~ 1): 한 장이 된 카드가 그대로 메인 맨 앞 카드로 줄어들고, 사진은 카드 속 모양 사진 자리로 들어감
+  ① 합치기 (0 ~ MERGE, 약 0.11초): 상세 디자인 그대로, 사진이 살짝 작아지고 본문 카드가 위로 늘어나 사진을 감싸며 한 장이 됨
+  ② 줄어들기 (MERGE ~ 1): 한 장이 된 카드가 메인 맨 앞 카드로 줄어들고, 사진은 카드 속 모양 사진으로,
+     상세 본문 글은 사라지고 카드 글이 떠오름
 */
-const MERGE = 0.38;
+const MERGE = 0.235;
+/** 합칠 때 사진이 안쪽으로 줄어드는 여백 (본문 카드 색이 사진 둘레로 보임) */
+const INSET = 14;
 const MERGE_EASE = "cubic-bezier(0.4, 0, 0.2, 1)";
 const SHRINK_EASE = "cubic-bezier(0.25, 0.8, 0.25, 1)";
 /** 카드 스티커 크기 (CardStack의 size-[68px]) — 회전된 요소의 바깥 상자 대신 이 크기로 가운데를 맞춥니다 */
@@ -38,16 +42,21 @@ const pct = (v: number) => `${v * 100}%`;
 export function ReturnGhosts({
   transition: t,
   cardPhoto,
+  post,
   shape,
   onDone,
 }: {
   transition: ReturnTransition;
   cardPhoto?: string;
+  /** 상세 본문 글을 전환 중에 그대로 보여 주려고 씀 */
+  post: HomePost;
   /** 맨 앞 카드의 사진 모양 (cardShapes) */
   shape: CardShape;
   onDone: () => void;
 }) {
   const cardGhost = useRef<HTMLDivElement>(null);
+  const cardText = useRef<HTMLDivElement>(null);
+  const detailText = useRef<HTMLDivElement>(null);
   const photoGhost = useRef<HTMLDivElement>(null);
   const detailPhoto = useRef<HTMLDivElement>(null);
   const wavePhoto = useRef<HTMLDivElement>(null);
@@ -85,7 +94,7 @@ export function ReturnGhosts({
       transition: "none",
       background: "transparent",
     });
-    cardGhost.current.replaceChildren(clone);
+    cardText.current?.replaceChildren(clone);
 
     const timing = { duration: RETURN_MS, easing: EASING, fill: "forwards" as const };
     // 단계별 easing은 각 키프레임에 두고 전체는 고르게 흘러가게 함
@@ -95,16 +104,19 @@ export function ReturnGhosts({
     const reveal = [{ opacity: 0 }, { opacity: 0, offset: 0.84 }, { opacity: 1, offset: 0.86 }, { opacity: 1 }];
     const vanish = [{ opacity: 1 }, { opacity: 1, offset: 0.87 }, { opacity: 0, offset: 0.97 }, { opacity: 0 }];
 
-    // ① 합쳐진 한 장: 사진과 본문 카드를 감싸는 상자
-    const top = Math.min(t.photo.top, t.card.top);
-    const left = Math.min(t.photo.left, t.card.left);
+    // ① 합쳐진 한 장: 본문 카드가 사진 자리 위끝까지 늘어나고, 사진은 그 안에서 INSET만큼 작아짐
     const merged = {
-      left,
-      top,
-      width: Math.max(t.photo.left + t.photo.width, t.card.left + t.card.width) - left,
-      height: Math.max(t.photo.top + t.photo.height, t.card.top + t.card.height) - top,
+      left: t.card.left,
+      top: Math.min(t.photo.top, t.card.top),
+      width: t.card.width,
+      height: t.card.top + t.card.height - Math.min(t.photo.top, t.card.top),
     };
-    const mergedPhoto = { left: merged.left, top: t.photo.top, width: merged.width, height: t.photo.height };
+    const mergedPhoto = {
+      left: t.photo.left + INSET,
+      top: t.photo.top + INSET,
+      width: t.photo.width - INSET * 2,
+      height: t.photo.height - INSET * 2,
+    };
 
     const fade = (el: HTMLElement | null, frames: Keyframe[]) =>
       el ? [el.animate(frames, { duration: RETURN_MS, easing: "linear", fill: "forwards" as const })] : [];
@@ -119,7 +131,7 @@ export function ReturnGhosts({
         ],
         staged,
       ),
-      // 사진: 합치는 동안은 제자리에서 카드 폭에 맞추고, 그다음 카드 속 사진 자리로
+      // 사진: 합치는 동안 살짝 작아져 본문 카드 안으로, 그다음 카드 속 사진 자리로
       photoGhost.current.animate(
         [
           { ...boxOnly(t.photo), easing: MERGE_EASE },
@@ -128,13 +140,13 @@ export function ReturnGhosts({
         ],
         staged,
       ),
-      // 사진 아래 모서리가 펴져 본문과 이어짐 → 줄어들며 카드 속 모양으로
+      // 모서리: 카드 안에 들어간 사진답게 조금 덜 둥글게 → 줄어들며 카드 속 모양으로
       ...(detailPhoto.current
         ? [
             detailPhoto.current.animate(
               [
                 { borderRadius: "32px", easing: MERGE_EASE },
-                { borderRadius: "32px 32px 0px 0px", offset: MERGE, easing: SHRINK_EASE },
+                { borderRadius: "22px", offset: MERGE, easing: SHRINK_EASE },
                 { borderRadius: "45%" },
               ],
               staged,
@@ -142,10 +154,12 @@ export function ReturnGhosts({
           ]
         : []),
       // 줄어드는 동안 카드와 똑같은 모양·구도의 사진이 겹쳐 나타남
-      ...fade(wavePhoto.current, [{ opacity: 0 }, { opacity: 0, offset: MERGE }, { opacity: 1, offset: 0.72 }, { opacity: 1 }]),
-      ...fade(detailPhoto.current, [{ opacity: 1 }, { opacity: 1, offset: 0.5 }, { opacity: 0, offset: 0.82 }, { opacity: 0 }]),
-      // 카드 글은 합쳐지는 동안 떠오름
-      ...fade(clone, [{ opacity: 0 }, { opacity: 0, offset: 0.12 }, { opacity: 1, offset: MERGE }, { opacity: 1 }]),
+      ...fade(wavePhoto.current, [{ opacity: 0 }, { opacity: 0, offset: MERGE }, { opacity: 1, offset: 0.7 }, { opacity: 1 }]),
+      ...fade(detailPhoto.current, [{ opacity: 1 }, { opacity: 1, offset: 0.45 }, { opacity: 0, offset: 0.8 }, { opacity: 0 }]),
+      // 글: 합칠 때까지는 상세 본문 그대로 → 줄어들기 시작하면 상세 글은 사라지고 카드 글이 떠오름
+      // 두 글이 겹쳐 보이지 않게 상세 글이 먼저 다 사라진 뒤 카드 글이 떠오름
+      ...fade(detailText.current, [{ opacity: 1 }, { opacity: 1, offset: MERGE }, { opacity: 0, offset: 0.36 }, { opacity: 0 }]),
+      ...fade(cardText.current, [{ opacity: 0 }, { opacity: 0, offset: 0.4 }, { opacity: 1, offset: 0.6 }, { opacity: 1 }]),
       front.animate(reveal, { duration: RETURN_MS, easing: "linear" }),
       ...(ghosts.current ? [ghosts.current.animate(vanish, { duration: RETURN_MS, easing: "linear", fill: "forwards" as const })] : []),
     ];
@@ -169,9 +183,14 @@ export function ReturnGhosts({
       animations.push(
         chipGhost.current.animate(
           [
-            // 사진에 붙어 있다가, 한 장이 된 뒤 스티커 자리로
-            { ...place(t.chip, `${t.chip.height / 2}px`), rotate: "0deg" },
-            { ...place(t.chip, `${t.chip.height / 2}px`), rotate: "0deg", offset: MERGE, easing: SHRINK_EASE },
+            // 사진과 함께 안쪽으로 살짝 들어갔다가, 한 장이 된 뒤 스티커 자리로
+            { ...place(t.chip, `${t.chip.height / 2}px`), rotate: "0deg", easing: MERGE_EASE },
+            {
+              ...place({ ...t.chip, left: t.chip.left + INSET, top: t.chip.top + INSET }, `${t.chip.height / 2}px`),
+              rotate: "0deg",
+              offset: MERGE,
+              easing: SHRINK_EASE,
+            },
             { ...place(sticker, `${STICKER / 2}px`), rotate: "12deg" },
           ],
           staged,
@@ -217,7 +236,18 @@ export function ReturnGhosts({
 
   return (
     <div ref={ghosts} aria-hidden className="pointer-events-none relative z-30">
-      <div ref={cardGhost} className="fixed z-30 overflow-hidden" style={{ ...boxStyle(t.card), borderRadius: 32, background: t.color }} />
+      <div ref={cardGhost} className="fixed z-30 overflow-hidden" style={{ ...boxStyle(t.card), borderRadius: 32, background: t.color }}>
+        {/* 상세 본문 글 — 본문 카드 원래 자리(아래쪽 기준)에 그대로 두어, 카드가 위로 늘어나도 움직이지 않음 */}
+        <div
+          ref={detailText}
+          className="absolute bottom-0 left-0 flex flex-col gap-5 px-7 py-[30px] text-on-light"
+          style={{ width: t.card.width, height: t.card.height }}
+        >
+          <DetailArticleBody post={post} />
+        </div>
+        {/* 메인 카드 글 (맨 앞 카드를 복사해 넣음) */}
+        <div ref={cardText} className="absolute inset-0 opacity-0" />
+      </div>
       <div ref={photoGhost} className="fixed z-30" style={boxStyle(t.photo)}>
         <div ref={detailPhoto} className="absolute inset-0 overflow-hidden" style={{ borderRadius: 32 }}>
           {/* eslint-disable-next-line @next/next/no-img-element -- 전환용 사진 */}
@@ -271,5 +301,18 @@ export function ReturnGhosts({
         </div>
       )}
     </div>
+  );
+}
+
+/** 상세 본문 카드 안 글 — 상세 화면(src/app/posts/[id]/DetailScreen.tsx의 ArticleBody)과 같은 모양 */
+function DetailArticleBody({ post }: { post: HomePost }) {
+  return (
+    <>
+      <p className="text-[14px] leading-none font-medium tracking-[-0.28px] text-[#696969]">from. {post.author.country}</p>
+      <h1 className="max-w-[204px] font-(family-name:--font-paperlogy) text-[31px] leading-[1.2] tracking-[-0.62px] break-keep">
+        {post.title}
+      </h1>
+      <p className="text-[16px] leading-[1.55] font-medium tracking-[-0.32px] whitespace-pre-line text-[#444]">{post.body}</p>
+    </>
   );
 }
