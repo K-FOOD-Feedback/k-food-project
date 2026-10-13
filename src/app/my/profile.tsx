@@ -139,7 +139,6 @@ const COPY = {
     edit: "Edit profile",
     sheet: "Profile",
     title: "Your nickname",
-    hint: "Tap ↻ to get a new random nickname.",
     reroll: "New nickname",
     apply: "Use this nickname",
     same: "This is your nickname",
@@ -157,7 +156,6 @@ const COPY = {
     edit: "프로필 수정",
     sheet: "프로필",
     title: "내 닉네임",
-    hint: "↻를 누르면 새 닉네임이 나와요.",
     reroll: "새 닉네임",
     apply: "이 닉네임으로 할래요",
     same: "지금 쓰는 닉네임이에요",
@@ -333,7 +331,6 @@ export function ProfileSheet({
       <div className="flex w-full flex-col gap-3 px-4 pt-2">
         <h2 className="px-2 font-display text-[22px] leading-[1.25]">{t.title}</h2>
         <NicknameSlot lang={lang} value={candidate} onChange={setCandidate} onSpinningChange={setSpinning} from="profile" />
-        <p className="px-2 text-[13px] leading-[1.4] text-muted break-keep">{t.hint}</p>
       </div>
 
       <div className="flex w-full">
