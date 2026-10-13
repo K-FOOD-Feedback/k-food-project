@@ -88,7 +88,6 @@ export type EventName =
   | "my_page_viewed"
   | "my_item_clicked"
   | "logged_out"
-  | "account_deleted"
   | "notification_clicked"
   // ── 내 글 관리 (송희)
   | "my_post_viewed"

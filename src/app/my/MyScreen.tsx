@@ -19,7 +19,7 @@ import { coverOf, useFlow } from "@/lib/write-store";
   - Posts / Comments 탭
     · Posts: 2열 사진 타일 (음식 사진이 주인공) + 받은 투표 칩 → 상세
     · Comments: 상세 화면 한마디와 같은 말풍선 + 어느 글에 썼는지 → 상세
-  - 설정(알림 · 로그아웃 · 계정 삭제)은 오른쪽 위 ⚙️ 시트로
+  - 설정(알림 · 로그아웃)은 오른쪽 위 ⚙️ 시트로
   - 쓰다 만 글은 여기 없음 (글 쓰기를 시작할 때 이어 쓰기로 보여 줌)
   서버 전까지: 프로필은 목업(Sam · Canada), 내 글은 이 브라우저의 글 1개, 한마디는 목업
 */
@@ -39,9 +39,9 @@ type Tab = "posts" | "comments";
 
 export function MyScreen() {
   const router = useRouter();
-  const { myPost, logOut, deleteMyPost, discardDraft } = useFlow();
+  const { myPost, logOut } = useFlow();
   const [tab, setTab] = useState<Tab>("posts");
-  const [sheet, setSheet] = useState<"settings" | "logout" | "delete" | null>(null);
+  const [sheet, setSheet] = useState<"settings" | "logout" | null>(null);
 
   const posts = myPost ? [{ id: MY_POST_ID, title: myPost.title, photo: coverOf(myPost)?.src, votes: myPost.votes }] : [];
 
@@ -196,7 +196,6 @@ export function MyScreen() {
             onClick={() => track("my_item_clicked", { item: "notifications" })}
           />
           <SettingRow icon="log-out" label="Log out" onClick={() => setSheet("logout")} />
-          <SettingRow icon="trash" label="Delete account" danger onClick={() => setSheet("delete")} />
         </div>
       </BottomSheet>
 
@@ -223,32 +222,6 @@ export function MyScreen() {
         </div>
       </BottomSheet>
 
-      {/* 계정 삭제 확인 */}
-      <BottomSheet open={sheet === "delete"} onClose={() => setSheet(null)} label="Delete account">
-        <div className="flex w-full flex-col gap-2 px-6 pt-2">
-          <h2 className="font-display text-[22px] leading-[1.25]">Delete your account?</h2>
-          <p className="text-[15px] leading-[1.5] text-muted">
-            Your posts and comments will be deleted. This can&apos;t be undone.
-          </p>
-        </div>
-        <div className="flex w-full gap-1">
-          <PillButton tone="soft" onClick={() => setSheet(null)}>
-            Cancel
-          </PillButton>
-          <PillButton
-            tone="error"
-            onClick={() => {
-              track("account_deleted", { posts: posts.length });
-              deleteMyPost();
-              discardDraft();
-              logOut();
-              router.push("/");
-            }}
-          >
-            Delete
-          </PillButton>
-        </div>
-      </BottomSheet>
     </Screen>
   );
 }
@@ -270,17 +243,14 @@ function SettingRow({
   label,
   href,
   onClick,
-  danger = false,
 }: {
   icon: IconName;
   label: string;
   href?: string;
   onClick: () => void;
-  danger?: boolean;
 }) {
-  const cls = `flex h-14 w-full items-center gap-3 px-5 text-left text-[15px] font-semibold transition active:bg-white/5 [&+&]:border-t [&+&]:border-white/5 ${
-    danger ? "text-error" : ""
-  }`;
+  const cls =
+    "flex h-14 w-full items-center gap-3 px-5 text-left text-[15px] font-semibold transition active:bg-white/5 [&+&]:border-t [&+&]:border-white/5";
   const inner = (
     <>
       <Icon name={icon} size={20} />
