@@ -49,6 +49,8 @@ export function CommentPile({
   variant = "preview",
   lang = "ko",
   fullHref,
+  writeLocked = false,
+  onLockedWrite,
 }: {
   postId: string;
   commentCount: number;
@@ -60,6 +62,9 @@ export function CommentPile({
   variant?: "preview" | "full";
   /** 화면 문구 언어 — 한마디 전체 화면에서 지구본으로 바꿀 수 있음 */
   lang?: Lang;
+  /** 로그인 전 외국인: 입력칸·이모지·답글 칸을 누르면 쓰는 대신 onLockedWrite (로그인 시트) */
+  writeLocked?: boolean;
+  onLockedWrite?: () => void;
 }) {
   const full = variant === "full";
   const scrolledOld = useRef(false); // 분석: 전체 화면에서 예전 댓글까지 스크롤했는지
@@ -249,7 +254,7 @@ export function CommentPile({
         <button
           key={emoji}
           type="button"
-          onClick={(e) => launch("emoji", emoji, e.currentTarget)}
+          onClick={(e) => (writeLocked ? onLockedWrite?.() : launch("emoji", emoji, e.currentTarget))}
           aria-label={t.leaveEmoji(emoji)}
           className="flex aspect-square min-w-0 flex-1 items-center justify-center rounded-full bg-white/10 text-[20px] transition-transform active:scale-90"
         >
@@ -270,7 +275,10 @@ export function CommentPile({
             {t.title} <span className="text-neutral-400">{count}</span>
           </h2>
           {postTitle && (
-            <p className="font-(family-name:--font-paperlogy) text-[24px] leading-[1.4] tracking-[-0.48px] break-keep text-neutral-400">
+            // 한국어는 Paperlogy, 영어는 Gilroy(font-display) — 메인 카드 제목과 같은 규칙
+            <p
+              className={`${lang === "en" ? "font-display" : "font-(family-name:--font-paperlogy)"} text-[24px] leading-[1.4] tracking-[-0.48px] break-keep text-neutral-400`}
+            >
               {postTitle}
             </p>
           )}
@@ -301,14 +309,16 @@ export function CommentPile({
             />
           </div>
           <div
-            className={`pointer-events-none absolute inset-x-0 top-0 h-[92px] bg-linear-to-b from-background to-background/0 transition-opacity duration-300 ${
+            className={`pointer-events-none absolute inset-x-0 top-0 h-[120px] transition-opacity duration-300 ${
               fades.top ? "opacity-100" : "opacity-0"
             }`}
+            style={{ background: scrim("to bottom") }}
           />
           <div
-            className={`pointer-events-none absolute inset-x-0 bottom-0 h-[92px] bg-linear-to-b from-background/0 to-background transition-opacity duration-300 ${
+            className={`pointer-events-none absolute inset-x-0 bottom-0 h-[120px] transition-opacity duration-300 ${
               fades.bottom ? "opacity-100" : "opacity-0"
             }`}
+            style={{ background: scrim("to top") }}
           />
         </section>
 
@@ -325,6 +335,8 @@ export function CommentPile({
             <span className="sr-only">{t.leaveLabel}</span>
             <input
               value={draft}
+              readOnly={writeLocked}
+              onClick={writeLocked ? onLockedWrite : undefined}
               onChange={(e) => setDraft(limitDraft(e.target.value.replace(/\n/g, "")))}
               placeholder={t.leave}
               enterKeyHint="send"
@@ -365,6 +377,8 @@ export function CommentPile({
             onReport={(id) => hide(id)}
             hiddenIds={hidden}
             lang={lang}
+            writeLocked={writeLocked}
+            onLockedWrite={onLockedWrite}
             onEdit={(text) => edit(opened.id, text)}
             onDelete={() => {
               remove(opened.id);
@@ -381,11 +395,11 @@ export function CommentPile({
     <div className="flex flex-col items-center gap-8">
       <section
         className="relative flex w-full flex-col gap-1 overflow-hidden rounded-[32px] bg-white/10 p-1"
-        aria-label="댓글"
+        aria-label={t.section}
       >
         <div ref={titleRow} className="flex h-16 items-center gap-10 pl-5">
           <h2 className="flex flex-1 items-center gap-1.5 text-[18px] leading-[1.3] font-bold tracking-[-0.54px]">
-            한마디 <span className="text-neutral-400">{commentCount + addedCount}</span>
+            {t.title} <span className="text-neutral-400">{commentCount + addedCount}</span>
           </h2>
           {/* 상세 화면(DetailScreen)이 이 주소로 가는 링크 클릭을 감지해 돌아올 때의 전환·스크롤 위치를 씁니다.
               href를 바꾸면 상세 화면 담당 세션에 알려 주세요. */}
@@ -393,7 +407,7 @@ export function CommentPile({
               href={fullHref ?? `/posts/${postId}/comments`}
               event="comments_opened"
               props={{ post_id: postId, comment_count: commentCount + addedCount }}
-              aria-label="댓글 전체 보기"
+              aria-label={t.openAll}
               className="flex size-16 items-center justify-center rounded-full bg-[#242424]"
             >
               <ArrowUpRightIcon />
@@ -402,7 +416,7 @@ export function CommentPile({
 
         <div ref={zone}>
           {/* 칸이 작아서 맨 위에 쌓일 최신 6개만 쏟아집니다 (많아도 금방 끝나게) */}
-          <GravityPile ref={pile} comments={comments} ready={ready} rainOnOpen={6} />
+          <GravityPile ref={pile} comments={comments} ready={ready} rainOnOpen={6} lang={lang} />
         </div>
         {/* data-fade: 상세 화면이 잠금 상태에서 칸 내용을 흐릴 때 이 그라데이션은 흐리지 않도록 (흐리면 아래 끝이 비쳐 보임) */}
         <div data-fade className="pointer-events-none absolute inset-x-0 bottom-0 h-[92px] bg-linear-to-b from-[#292929]/0 to-[#292929]" />
@@ -414,17 +428,19 @@ export function CommentPile({
       {/* 한마디 입력 카드 + 보내기 */}
       <form onSubmit={onSubmit} className="relative h-[181px] w-[270px]">
         <label className="absolute inset-x-0 top-0 flex h-[152px] items-center justify-center">
-          <span className="sr-only">한마디 남기기</span>
+          <span className="sr-only">{t.leaveLabel}</span>
           <span ref={card} className="relative flex h-[130px] w-[260px] -rotate-[4.91deg] items-center justify-center rounded-[26px] bg-[#292929] px-6 py-[30px]">
             <textarea
               value={draft}
+              readOnly={writeLocked}
+              onClick={writeLocked ? onLockedWrite : undefined}
               onChange={(e) => setDraft(fitTwoLines(e.target, limitDraft(e.target.value)))}
               onKeyDown={(e) => {
                 // Enter는 줄바꿈만 합니다 (최대 2줄). 보내기는 버튼으로만.
                 if (e.key === "Enter" && draft.includes("\n")) e.preventDefault();
               }}
               rows={2}
-              placeholder={"한마디를\n남겨보세요"}
+              placeholder={t.leaveCard}
               className="w-full resize-none overflow-hidden bg-transparent text-center text-[20px] leading-[1.45] font-bold tracking-[-0.4px] text-on-dark outline-none placeholder:text-white/70"
             />
             <span className="absolute right-4 bottom-[26px] text-[10px] font-bold text-white/70">
@@ -440,7 +456,7 @@ export function CommentPile({
           >
             {/* eslint-disable-next-line @next/next/no-img-element -- 작은 SVG 아이콘 */}
             <img src="/images/icon-send.svg" width={22} height={22} alt="" />
-            보내기
+            {t.send}
           </button>
         </span>
       </form>
@@ -531,6 +547,27 @@ function FlyingCircle({ flight, onArrive }: { flight: Flight; onArrive: (vy: num
     </div>
   );
 }
+
+/**
+  칸 위·아래 그라데이션 — 직선 그라데이션은 다 어두워지는 지점에서 띠처럼 끊겨 보여서,
+  천천히 어두워지다 끝에서 부드럽게 멈추는 곡선(ease-in-out, "scrim")으로 칠합니다.
+  direction: 어두운 쪽 → 투명한 쪽 ("to bottom": 위가 어두움)
+*/
+const SCRIM_STOPS: [number, number][] = [
+  [0, 1],
+  [0.14, 0.95],
+  [0.28, 0.85],
+  [0.42, 0.69],
+  [0.56, 0.5],
+  [0.7, 0.31],
+  [0.82, 0.15],
+  [0.92, 0.05],
+  [1, 0],
+];
+const scrim = (direction: "to top" | "to bottom") =>
+  `linear-gradient(${direction}, ${SCRIM_STOPS.map(
+    ([at, alpha]) => `color-mix(in srgb, var(--color-background) ${Math.round(alpha * 100)}%, transparent) ${at * 100}%`,
+  ).join(", ")})`;
 
 type Burst = { id: number; emoji: string; x: number; y: number };
 

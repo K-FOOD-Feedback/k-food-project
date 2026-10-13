@@ -15,6 +15,7 @@ import { MainHeader } from "./MainHeader";
 import { ReturnGhosts } from "./ReturnTransition";
 import { HOME_POSTS, type HomePost } from "./mockPosts";
 import { useVotedIds } from "./votes";
+import { useViewerLang } from "../posts/[id]/viewerLang";
 
 /** 카드 더미(CardStack) 원래 높이 — 화면이 낮으면 이 높이가 들어가도록 통째로 줄임 */
 const STACK_HEIGHT = 480;
@@ -46,6 +47,9 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
       : null;
   });
   const votedIds = useVotedIds();
+  // 상세에서 돌아오는 전환의 상세 글 언어: 한국인 메인이면 늘 한국어, 외국인 메인이면 상세에서 고른 언어(기본 영어)
+  const viewerLang = useViewerLang();
+  const detailLang = lang === "en" ? viewerLang : "ko";
   const current = posts[index];
 
   // 화면 높이에 맞추기: 헤더와 하단 버튼 사이 빈 칸에 카드 더미가 다 들어가도록, 모자라면 통째로 줄임 (스크롤 없음)
@@ -105,7 +109,9 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
         color: post.color,
       });
     // 외국인 메인에서 열면 상세의 ← 가 외국인 메인으로 (src/lib/back.ts)
-    router.push(lang === "en" ? `/posts/${post.id}?from=home-en` : `/posts/${post.id}`);
+    router.push(
+      lang === "en" ? `/posts/${post.id}?from=home-en` : `/posts/${post.id}`,
+    );
   };
 
   return (
@@ -140,6 +146,7 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
           post={current}
           shape={cardShapeAt(index)}
           fit={scale}
+          detailLang={detailLang}
           onDone={() => setReturning(null)}
         />
       )}

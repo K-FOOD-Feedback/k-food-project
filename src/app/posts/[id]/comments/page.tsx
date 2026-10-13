@@ -3,6 +3,7 @@ import { getHomePost } from "@/app/home/mockPosts";
 import { MyPostComments } from "@/app/write/MyPostDetail";
 import { MY_POST_ID } from "@/lib/write-data";
 import { backHrefFrom, fromKey, withFrom } from "@/lib/back";
+import { isForeignFrom, withViewer } from "../viewer";
 import { paperlogy } from "../font";
 import { CommentsScreen } from "./CommentsScreen";
 import { VoteGate } from "./VoteGate";
@@ -21,16 +22,18 @@ export default async function Page(props: PageProps<"/posts/[id]/comments">) {
   // 뒤로가기: 상세에서 왔으면(?via=detail) 상세로 — 그 상세가 처음 들어온 곳(from)을 이어 붙여서
   // 그 밖에는 들어온 곳(알림·마이 등, src/lib/back.ts)으로, 없으면 상세로
   const from = fromKey(sp.from);
-  const backHref = sp.via === "detail" ? withFrom(`/posts/${id}`, from) : backHrefFrom(from, `/posts/${id}`);
+  // 외국인은 투표를 못 해서 투표 없이 한마디를 봄 (송희·지현 합의) — 외국인 화면에서 왔거나 ?viewer=en
+  const foreigner = sp.viewer === "en" || isForeignFrom(from);
+  // 외국인인데 들어온 곳으로 알 수 없으면(?viewer=en) 상세도 외국인 상세로
+  const detailHref = withViewer(withFrom(`/posts/${id}`, from), sp.viewer === "en" && !isForeignFrom(from));
+  const backHref = sp.via === "detail" ? detailHref : backHrefFrom(from, detailHref);
   const backTo = backHref.startsWith(`/posts/${id}`) ? "detail" : from?.startsWith("notifications") ? "notifications" : "other";
-  // 외국인은 투표를 못 해서 투표 없이 한마디를 봄 (송희·지현 합의) — 외국인 화면에서 온 링크는 ?viewer=en
-  const foreigner = sp.viewer === "en" || from === "notifications-en" || from === "my-en";
   // 내가 올린 글(송희) — 같은 댓글 화면 모양으로
   if (id === MY_POST_ID) return <MyPostComments backHref={backHref} backTo={backTo} />;
   const post = getHomePost(id);
   if (!post) notFound();
-  // 화면 언어: 지구본으로 고른 언어(?lang=)가 있으면 그것, 없으면 외국인은 영어
-  const lang = sp.lang === "en" || sp.lang === "ko" ? sp.lang : foreigner ? "en" : "ko";
+  // 화면 언어: 지구본으로 고른 언어(?lang=). 외국인은 상세에서 고른 언어를 따름 (CommentsScreen)
+  const lang = sp.lang === "en" || sp.lang === "ko" ? sp.lang : "ko";
 
   return (
     // 답글 알림에서 왔으면 이미 한마디를 남긴(= 투표한) 사람이라 바로 보여 줌 — 서버 전엔 이 브라우저에 투표 기록이 없을 수 있어서
@@ -40,6 +43,7 @@ export default async function Page(props: PageProps<"/posts/[id]/comments">) {
       >
         <CommentsScreen
           initialLang={lang}
+          foreigner={foreigner}
           backHref={backHref}
           backTo={backTo}
           postId={post.id}
