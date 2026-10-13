@@ -59,6 +59,7 @@ export function ReturnGhosts({
   const detailText = useRef<HTMLDivElement>(null);
   const photoGhost = useRef<HTMLDivElement>(null);
   const detailPhoto = useRef<HTMLDivElement>(null);
+  const waveDetail = useRef<HTMLDivElement>(null);
   const wavePhoto = useRef<HTMLDivElement>(null);
   const chipFrom = useRef<HTMLSpanElement>(null);
   const chipTo = useRef<HTMLSpanElement>(null);
@@ -147,15 +148,19 @@ export function ReturnGhosts({
               [
                 { borderRadius: "32px", easing: MERGE_EASE },
                 { borderRadius: "22px", offset: MERGE, easing: SHRINK_EASE },
+                { borderRadius: "45%", offset: 0.6 },
                 { borderRadius: "45%" },
               ],
               staged,
             ),
           ]
         : []),
-      // 줄어드는 동안 카드와 똑같은 모양·구도의 사진이 겹쳐 나타남
-      ...fade(wavePhoto.current, [{ opacity: 0 }, { opacity: 0, offset: MERGE }, { opacity: 1, offset: 0.7 }, { opacity: 1 }]),
-      ...fade(detailPhoto.current, [{ opacity: 1 }, { opacity: 1, offset: 0.45 }, { opacity: 0, offset: 0.8 }, { opacity: 0 }]),
+      // 사진 바뀜은 두 번에 나눠 깜빡임 없이: (모양과 사진이 한꺼번에 바뀌면 두 사진이 반투명하게 겹쳐 깜빡여 보임)
+      //  ① 모양만: 같은 상세 사진이 카드 모양으로 — 카드 모양 사진이 위에 떠오른 뒤 아래 사각형 사진이 걷힘
+      //  ② 사진만: 같은 카드 모양 안에서 카드 사진이 위에 덮이듯 떠오름 (아래 사진은 그대로라 어두워지지 않음)
+      ...fade(waveDetail.current, [{ opacity: 0 }, { opacity: 0, offset: MERGE }, { opacity: 1, offset: 0.42 }, { opacity: 1 }]),
+      ...fade(detailPhoto.current, [{ opacity: 1 }, { opacity: 1, offset: 0.4 }, { opacity: 0, offset: 0.58 }, { opacity: 0 }]),
+      ...fade(wavePhoto.current, [{ opacity: 0 }, { opacity: 0, offset: 0.5 }, { opacity: 1, offset: 0.76 }, { opacity: 1 }]),
       // 글: 합칠 때까지는 상세 본문 그대로 → 줄어들기 시작하면 상세 글은 사라지고 카드 글이 떠오름
       // 두 글이 겹쳐 보이지 않게 상세 글이 먼저 다 사라진 뒤 카드 글이 떠오름
       ...fade(detailText.current, [{ opacity: 1 }, { opacity: 1, offset: MERGE }, { opacity: 0, offset: 0.36 }, { opacity: 0 }]),
@@ -250,6 +255,11 @@ export function ReturnGhosts({
       </div>
       <div ref={photoGhost} className="fixed z-30" style={boxStyle(t.photo)}>
         <div ref={detailPhoto} className="absolute inset-0 overflow-hidden" style={{ borderRadius: 32 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- 전환용 사진 */}
+          <img src={t.photoSrc} alt="" className="absolute inset-0 size-full object-cover" />
+        </div>
+        {/* 상세 사진을 카드 모양으로 (모양만 바뀌는 단계) */}
+        <div ref={waveDetail} className="absolute inset-0 opacity-0" style={{ maskImage: shape.mask, WebkitMaskImage: shape.mask, maskSize: "100% 100%", WebkitMaskSize: "100% 100%", maskRepeat: "no-repeat", WebkitMaskRepeat: "no-repeat" }}>
           {/* eslint-disable-next-line @next/next/no-img-element -- 전환용 사진 */}
           <img src={t.photoSrc} alt="" className="absolute inset-0 size-full object-cover" />
         </div>
