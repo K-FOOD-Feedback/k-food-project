@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { memo, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { LanguageButton } from "@/components/LanguagePicker";
 import { LoginSheet } from "@/components/LoginSheet";
@@ -106,6 +106,7 @@ export function LandingScreen() {
     let target = 0;
     let shown = 0;
     let frame = 0;
+    let last = 0; // 지난 프레임 시각 — 따라가는 속도를 "프레임당"이 아니라 "시간당"으로 (폰에서 프레임이 적어도 같은 속도)
     const read = () => {
       const el = story.current;
       if (!el) return;
@@ -117,17 +118,22 @@ export function LandingScreen() {
         track("landing_scrolled", { step });
       }
     };
-    const tick = () => {
+    const tick = (now: number) => {
+      const dt = last ? Math.min(now - last, 64) : 16; // 탭을 다녀오는 등 오래 멈췄으면 한 번에 튀지 않게
+      last = now;
       const gap = target - shown;
       if (Math.abs(gap) < 0.0005) {
         shown = target;
         setP(shown);
         frame = 0;
+        last = 0;
         jump.current = false;
         return;
       }
-      // 천천히 따라감: 남은 거리의 6%씩, 한 프레임 최대 0.005 (한 단계 ≈ 1초)
-      shown += noMotion() || jump.current ? gap : clamp(gap * 0.06, -0.005, 0.005);
+      // 천천히 따라감: 남은 거리의 6%씩(60fps 기준), 1초에 최대 0.3 (한 단계 ≈ 1초) — 시간 기준이라 폰에서도 같은 속도
+      const k = 1 - Math.pow(1 - 0.06, dt / 16.7);
+      const max = 0.3 * (dt / 1000);
+      shown += noMotion() || jump.current ? gap : clamp(gap * k, -max, max);
       setP(shown);
       frame = requestAnimationFrame(tick);
     };
@@ -257,7 +263,7 @@ export function LandingScreen() {
           lang={lang}
           from="landing"
           // 랜딩 상단 높이(56)에 맞춰 메인보다 작게
-          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-surface/85 backdrop-blur-xl transition-transform active:scale-95"
+          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-surface/85 backdrop-blur-xl pointer-coarse:backdrop-blur-md transition-transform active:scale-95"
           onPick={(l) => {
             setChosen(l as LandingLang);
             track("language_clicked", { from: "landing", to: l });
@@ -280,22 +286,7 @@ export function LandingScreen() {
         <div className="sticky top-0 flex h-[100svh] flex-col overflow-hidden px-5 pt-[calc(100px+env(safe-area-inset-top))]">
           {/* 카드 뒤에 흩어진 작은 도형 6개 (구글 랩스 레퍼런스: 물결 원·클로버·꽃·알약·원·겹친 알약) — 35% 투명도로 은은하게, 천천히 둥둥
               스크롤해도 자리는 고정, 제자리에서 천천히 둥둥 */}
-          <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-            {DECOR.map((d, i) => {
-              const [x, y, r] = d.at;
-              return (
-                <div
-                  key={i}
-                  className="absolute -translate-x-1/2 -translate-y-1/2"
-                  style={{ left: `${x}%`, top: `${y}%`, rotate: `${r}deg`, width: d.size, height: d.size }}
-                >
-                  <div className="size-full animate-drift opacity-35" style={{ animationDelay: `${i * -1.7}s`, animationDuration: `${7 + i}s` }}>
-                    <Shape kind={d.kind} color={d.color} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <Decor />
 
           {/* 제목 — 스크롤 단계마다 바뀜 (첫 화면은 서비스 한 줄 소개) */}
           <h1
@@ -322,7 +313,7 @@ export function LandingScreen() {
             <div ref={postRef} className="relative isolate rounded-[32px] px-5 pt-7 pb-6 text-on-dark">
               <span
                 aria-hidden="true"
-                className="absolute inset-0 -z-10 animate-[fade-in_500ms_ease-out_1300ms_both] rounded-[32px] bg-surface/70 backdrop-blur-xl"
+                className="absolute inset-0 -z-10 animate-[fade-in_500ms_ease-out_1300ms_both] rounded-[32px] bg-surface/70 backdrop-blur-xl pointer-coarse:backdrop-blur-md"
               />
               <div
                 className="relative mx-auto animate-photo-frame overflow-hidden [animation-delay:250ms]"
@@ -396,7 +387,7 @@ export function LandingScreen() {
                 style={{ top: box.author.y - 2, rotate: `${REPLY_TILT}deg`, transformOrigin: "16px 19px" }}
               >
                 <span
-                  className="flex max-w-[240px] flex-col gap-1 rounded-[24px] bg-surface-2/80 px-4 pt-2.5 pb-3 text-on-dark backdrop-blur-xl"
+                  className="flex max-w-[240px] flex-col gap-1 rounded-[24px] bg-surface-2/80 px-4 pt-2.5 pb-3 text-on-dark backdrop-blur-xl pointer-coarse:backdrop-blur-md"
                   style={fly(p, 0.72, 0.79, { y: 40, s: 0.6 })}
                 >
                   <span ref={slotRef} className="invisible flex items-center gap-[5px] whitespace-nowrap text-[13px] font-semibold" aria-hidden="true">
@@ -410,7 +401,7 @@ export function LandingScreen() {
 
             {/* 투표 (앱 상세와 같은 모양: 세로 칸이 아래에서 차오름) */}
             <div className="mt-3" style={{ opacity: 1 - voteOut, translate: `0 ${voteOut * 60}px` }} aria-hidden={voteOut >= 1}>
-            <div className="relative rounded-[32px] bg-surface-2/75 px-4 pt-5 pb-4 backdrop-blur-xl" style={fly(p, 0.1, 0.17, { y: 260, r: -6 })}>
+            <div className="relative rounded-[32px] bg-surface-2/75 px-4 pt-5 pb-4 backdrop-blur-xl pointer-coarse:backdrop-blur-md" style={fly(p, 0.1, 0.17, { y: 260, r: -6 })}>
               <p className="text-center font-display text-[18px] leading-[1.3]">{t.voteTitle}</p>
               <div className="mt-3 flex h-[min(128px,15svh)] gap-1.5">
                 {t.options.map((opt, i) => {
@@ -779,3 +770,25 @@ function Shape({ kind, color }: { kind: ShapeKind; color: string }) {
     </svg>
   );
 }
+
+/** 배경 도형 — 스크롤과 상관없어서 스크롤할 때마다 다시 그리지 않음 (폰에서 느려지지 않게) */
+const Decor = memo(function Decor() {
+  return (
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+      {DECOR.map((d, i) => {
+        const [x, y, r] = d.at;
+        return (
+          <div
+            key={i}
+            className="absolute -translate-x-1/2 -translate-y-1/2"
+            style={{ left: `${x}%`, top: `${y}%`, rotate: `${r}deg`, width: d.size, height: d.size }}
+          >
+            <div className="size-full animate-drift opacity-35" style={{ animationDelay: `${i * -1.7}s`, animationDuration: `${7 + i}s` }}>
+              <Shape kind={d.kind} color={d.color} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+});
