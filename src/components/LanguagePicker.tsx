@@ -9,6 +9,7 @@ import { track } from "@/lib/analytics";
 /*
   언어 변경 (Figma 378:10854) — 모든 화면 상단의 지구본 버튼과, 누르면 뜨는 언어 고르기 창.
   사용: 헤더에 <LanguageButton lang="ko" from="detail" /> 하나만 넣으면 됩니다.
+  그 화면 글자만 바꾸려면 onChange를 주세요 → 메인으로 가지 않고 onChange(고른 언어)를 부른 뒤 창을 닫습니다.
   - 한국어·영어를 고르면 그 언어의 메인(/home, /home/en)으로 갑니다. 지금 언어를 고르면 창만 닫힙니다.
   - 중국어·일본어는 아직 화면이 없어서 "곧 지원할게요"를 잠깐 보여 줍니다.
   - 창은 다른 화면처럼 가운데 430px 틀 안에만 뜹니다.
@@ -66,10 +67,13 @@ export function LanguageButton({
   lang,
   from,
   className = HEADER_BUTTON,
+  onChange,
 }: {
   lang: ServiceLang;
   from: string;
   className?: string;
+  /** 있으면 언어를 골랐을 때 메인으로 가지 않고 이걸 부름 (그 화면 글자만 바꿀 때) */
+  onChange?: (lang: ServiceLang) => void;
 }) {
   const [open, setOpen] = useState(false);
   const en = lang === "en";
@@ -88,12 +92,22 @@ export function LanguageButton({
         {/* eslint-disable-next-line @next/next/no-img-element -- 작은 SVG 아이콘 */}
         <img src="/images/icon-world.svg" width={24} height={24} alt="" />
       </button>
-      {open && <LanguagePicker lang={lang} from={from} onClose={() => setOpen(false)} />}
+      {open && <LanguagePicker lang={lang} from={from} onChange={onChange} onClose={() => setOpen(false)} />}
     </>
   );
 }
 
-function LanguagePicker({ lang, from, onClose }: { lang: ServiceLang; from: string; onClose: () => void }) {
+function LanguagePicker({
+  lang,
+  from,
+  onChange,
+  onClose,
+}: {
+  lang: ServiceLang;
+  from: string;
+  onChange?: (lang: ServiceLang) => void;
+  onClose: () => void;
+}) {
   const router = useRouter();
   const en = lang === "en";
   const [soon, setSoon] = useState(false);
@@ -121,6 +135,11 @@ function LanguagePicker({ lang, from, onClose }: { lang: ServiceLang; from: stri
     });
     if (!o.href) return setSoon(true);
     if (o.id === lang) return onClose();
+    // 화면이 직접 언어를 바꾸는 경우(예: 한마디 화면) — 이동하지 않고 알려 준 뒤 창을 닫음
+    if (onChange) {
+      onChange(o.id as ServiceLang);
+      return onClose();
+    }
     router.push(o.href);
   };
 
