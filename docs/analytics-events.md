@@ -30,7 +30,7 @@
 |---|---|---|
 | `feed_viewed` | 메인 진입 | `viewer`, `posts` |
 | `card_swiped` | 카드 넘김 | `direction`(next/prev), `post_id`, `position`, `viewer` |
-| `post_opened` | 카드 탭 / 하단 CTA / 상세 맨 아래 "다음 훈수 거리" | `post_id`, `from`(card/cta/next), `viewer`, `position`, `already_voted` · next일 때는 `post_id`(다음 글), `from_post_id`(보던 글)만 |
+| `post_opened` | 카드 탭 / 하단 CTA / 상세 맨 아래 "다음 훈수 거리" / 상세 좌우 넘기기 | `post_id`, `from`(card/cta/next/swipe), `viewer`, `position`, `already_voted` · next·swipe일 때는 `post_id`(넘어간 글), `from_post_id`(보던 글)만, swipe는 `direction`(next/prev)도 |
 | `feed_cta_clicked` | 투표하러 가기 / 투표 결과 보기 | `post_id`, `voted` |
 | `share_clicked` | Share your K-food | `logged_in` |
 

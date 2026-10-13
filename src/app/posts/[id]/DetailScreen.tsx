@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type Ref } from "react";
 import { clearCardTransition, peekCardTransition, setReturnTransition, type Box } from "@/app/home/cardTransition";
 import { HOME_POSTS, participantsOf, type HomePost } from "@/app/home/mockPosts";
@@ -132,8 +133,10 @@ export function DetailScreen({ post }: { post: HomePost }) {
   const showCta = !voted && !seenVote;
 
 
-  // 다음 훈수 거리: 메인 카드 순서상 다음 게시글 (마지막이면 처음으로)
-  const next = HOME_POSTS[(HOME_POSTS.findIndex((p) => p.id === post.id) + 1) % HOME_POSTS.length];
+  // 다음 훈수 거리: 메인 카드 순서상 다음 게시글 (마지막이면 처음으로), 이전은 그 반대
+  const order = HOME_POSTS.findIndex((p) => p.id === post.id);
+  const next = HOME_POSTS[(order + 1) % HOME_POSTS.length];
+  const prev = HOME_POSTS[(order - 1 + HOME_POSTS.length) % HOME_POSTS.length];
 
   // 메인 카드에서 넘어왔으면: 카드 속 사진은 위쪽 사진 영역으로, 카드는 아래쪽 본문 카드로,
   // "00명 참여" 스티커는 참여 칩으로, "투표하러 가기"는 플로팅 "투표하기"로 이어지게 움직입니다. 헤더는 그대로.
@@ -311,6 +314,22 @@ export function DetailScreen({ post }: { post: HomePost }) {
     if (!nextIn || !content) return;
     window.scrollTo(0, 0);
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    // 옆으로 넘겨서 왔으면: 넘긴 쪽 반대편에서 화면 전체가 미끄러져 들어옴
+    if (nextIn.swipe) {
+      const from = nextIn.swipe === "next" ? 1 : -1;
+      const slide = content.animate(
+        [
+          { opacity: 0, transform: `translateX(${from * SWIPE_IN_PX}px)` },
+          { opacity: 1, transform: "none" },
+        ],
+        { duration: SWIPE_IN_MS, easing: NEXT_EASE, fill: "backwards" },
+      );
+      const done = window.setTimeout(() => slide.finish(), SWIPE_IN_MS + 300);
+      return () => {
+        clearTimeout(done);
+        slide.cancel();
+      };
+    }
     // 아래에서 살짝 떠올라 자리 잡음 (처음엔 조금 작고 흐릿하다가 부드럽게 감속)
     const anims = [...content.children].map((el, i) =>
       el.animate(
@@ -331,6 +350,71 @@ export function DetailScreen({ post }: { post: HomePost }) {
       anims.forEach((a) => a.cancel());
     };
   }, [nextIn]);
+
+  // 좌우로 밀면 이전·다음 훈수 거리로: 손가락을 따라 화면이 옆으로 밀리다가,
+  // 충분히 밀었으면 그 방향으로 빠져나가고 새 글이 반대편에서 들어옴. 덜 밀면 제자리로.
+  const router = useRouter();
+  useEffect(() => {
+    const content = articleRef.current?.parentElement;
+    if (!content) return;
+    let start: { x: number; y: number; t: number } | null = null;
+    let mode: "undecided" | "swipe" | "scroll" = "undecided";
+    let dx = 0;
+    const setOffset = (x: number) => {
+      content.style.transform = x ? `translateX(${x}px)` : "";
+      content.style.opacity = x ? `${1 - Math.min(Math.abs(x) / 600, 0.4)}` : "";
+    };
+    const onStart = (e: TouchEvent) => {
+      const target = e.target as Element;
+      // 사진 넘기기·토큰 끌기·입력칸·열린 창 안에서는 화면 넘기기를 하지 않음
+      if (e.touches.length !== 1 || target.closest("[data-photo-scroller], .touch-none, input, textarea, [role=dialog]")) {
+        start = null;
+        return;
+      }
+      start = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: performance.now() };
+      mode = "undecided";
+      dx = 0;
+      content.style.transition = "";
+    };
+    const onMove = (e: TouchEvent) => {
+      if (!start) return;
+      const x = e.touches[0].clientX - start.x;
+      const y = e.touches[0].clientY - start.y;
+      if (mode === "undecided" && Math.hypot(x, y) > 10) mode = Math.abs(x) > Math.abs(y) * 1.4 ? "swipe" : "scroll";
+      if (mode !== "swipe") return;
+      dx = x;
+      setOffset(x * 0.6); // 살짝 무겁게 따라옴
+    };
+    const onEnd = () => {
+      if (!start || mode !== "swipe") return (start = null);
+      const speed = Math.abs(dx) / Math.max(1, performance.now() - start.t); // px/ms
+      start = null;
+      const go = Math.abs(dx) > SWIPE_GO_PX || (speed > 0.5 && Math.abs(dx) > 30);
+      if (!go) {
+        content.style.transition = "transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 300ms";
+        setOffset(0);
+        return;
+      }
+      const dir = dx < 0 ? "next" : "prev";
+      const target = dir === "next" ? next : prev;
+      content.style.transition = `transform ${SWIPE_OUT_MS}ms ease-in, opacity ${SWIPE_OUT_MS}ms ease-in`;
+      content.style.transform = `translateX(${dx < 0 ? -SWIPE_OUT_PX : SWIPE_OUT_PX}px)`;
+      content.style.opacity = "0";
+      track("post_opened", { post_id: target.id, from: "swipe", from_post_id: post.id, direction: dir });
+      nextTrip = { postId: target.id, at: Date.now(), swipe: dir };
+      window.setTimeout(() => router.push(`/posts/${target.id}`), SWIPE_OUT_MS - 40);
+    };
+    document.addEventListener("touchstart", onStart, { passive: true });
+    document.addEventListener("touchmove", onMove, { passive: true });
+    document.addEventListener("touchend", onEnd);
+    document.addEventListener("touchcancel", onEnd);
+    return () => {
+      document.removeEventListener("touchstart", onStart);
+      document.removeEventListener("touchmove", onMove);
+      document.removeEventListener("touchend", onEnd);
+      document.removeEventListener("touchcancel", onEnd);
+    };
+  }, [router, next, prev, post.id]);
 
   // 한마디 전체 화면에서 돌아오면: ↗를 눌렀던 스크롤 위치로 돌려 놓고,
   // 화면에 보이는 카드들이 위에서부터 하나씩 살짝 떠오르며 나타납니다.
@@ -463,7 +547,9 @@ export function DetailScreen({ post }: { post: HomePost }) {
             className={
               voted
                 ? "[&>div>*:not(section)]:transition-opacity [&>div>*:not(section)]:duration-500 [&>div>*:not(section)]:starting:opacity-0"
-                : "[&>div>*:not(section)]:hidden"
+                : // 잠금 레이어 아래 한마디 칸은 칸 안 내용 자체를 흐리게 (위에 backdrop-blur를 얹으면
+                  // 움직이는 말풍선 위에서 블러가 매 프레임 다시 그려지며 세로 줄·깜빡임이 생김)
+                  "[&>div>*:not(section)]:hidden [&>div>section>*]:blur-[8px]"
             }
           >
             <CommentPile postId={post.id} commentCount={post.commentCount} authorFlag={post.author.flag} />
@@ -489,6 +575,8 @@ export function DetailScreen({ post }: { post: HomePost }) {
             title={next.title}
             // 넘어갈 글의 카드 색 (게시글 데이터 색이라 토큰 대신 그대로)
             style={{ backgroundColor: next.color }}
+            // 제목 글자만 Paperlogy로 (ArrowCta는 공통 부품이라 바깥에서 지정)
+            className="[&>span>span:last-child]:font-(family-name:--font-paperlogy) [&>span>span:last-child]:truncate [&>span>span:last-child]:font-normal"
             onClick={() => {
               track("post_opened", { post_id: next.id, from: "next", from_post_id: post.id });
               // 다음 상세 화면이 위에서부터 차례로 나타나도록 표시를 남김
@@ -573,7 +661,7 @@ function CommentLock({ locked, onVote }: { locked: boolean; onVote: () => void }
   return (
     <div
       aria-hidden={!locked}
-      className={`absolute inset-x-0 top-0 z-10 flex h-[362px] items-center justify-center overflow-hidden rounded-[32px] bg-background/50 backdrop-blur-[8px] transition-opacity duration-500 ${
+      className={`absolute inset-x-0 top-0 z-10 flex h-[362px] items-center justify-center overflow-hidden rounded-[32px] bg-background/50 transition-opacity duration-500 ${
         locked ? "opacity-100" : "pointer-events-none opacity-0"
       }`}
     >
@@ -583,7 +671,7 @@ function CommentLock({ locked, onVote }: { locked: boolean; onVote: () => void }
             {/* eslint-disable-next-line @next/next/no-img-element -- 작은 SVG 아이콘 */}
             <img src="/images/icon-lock.svg" width={32} height={32} alt="" />
           </span>
-          <p className="text-center text-[20px] leading-[1.45] font-extrabold tracking-[-0.4px] whitespace-nowrap text-white">
+          <p className="text-center font-(family-name:--font-paperlogy) text-[20px] leading-[1.45] tracking-[-0.4px] whitespace-nowrap text-white">
             투표하고 다른 사람들과
             <br />
             한마디를 나눠보세요!
@@ -593,7 +681,7 @@ function CommentLock({ locked, onVote }: { locked: boolean; onVote: () => void }
           type="button"
           onClick={onVote}
           tabIndex={locked ? 0 : -1}
-          className="rounded-full bg-primary px-5 py-3.5 text-[18px] leading-[1.45] font-extrabold tracking-[-0.36px] text-white transition-transform active:scale-95"
+          className="rounded-full bg-primary px-5 py-3.5 font-(family-name:--font-paperlogy) text-[18px] leading-[1.45] tracking-[-0.36px] text-white transition-transform active:scale-95"
         >
           투표하기
         </button>
@@ -606,7 +694,13 @@ const INTRO_MS = 420;
 // 한마디 전체 화면에 다녀오는 중 (↗를 누를 때 남김 → 상세로 돌아와 그려질 때 씀). 화면을 바꿔도 남는 모듈 값.
 let commentsTrip: { postId: string; scrollY: number; at: number } | null = null;
 // "다음 훈수 거리" 버튼으로 넘어가는 중 (다음 글 상세가 그려질 때 씀)
-let nextTrip: { postId: string; at: number } | null = null;
+let nextTrip: { postId: string; at: number; swipe?: "next" | "prev" } | null = null;
+// 좌우 넘기기: 넘어가는 기준 거리, 빠져나가는/들어오는 거리·시간
+const SWIPE_GO_PX = 90;
+const SWIPE_OUT_PX = 140;
+const SWIPE_OUT_MS = 200;
+const SWIPE_IN_PX = 120;
+const SWIPE_IN_MS = 460;
 const NEXT_MS = 700;
 const NEXT_STAGGER_MS = 130;
 const NEXT_EASE = "cubic-bezier(0.22, 1, 0.36, 1)"; // 빠르게 출발해 길게 감속
@@ -774,6 +868,7 @@ function PhotoTile({
     <div className="relative aspect-square w-full overflow-hidden rounded-[32px] border border-black/4 bg-[#1e1e1e]">
       <div
         ref={scroller}
+        data-photo-scroller={many ? "" : undefined}
         className={`flex size-full snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
           many ? "cursor-grab overflow-x-auto active:cursor-grabbing" : "overflow-hidden"
         }`}
