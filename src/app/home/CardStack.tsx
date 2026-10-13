@@ -9,6 +9,7 @@ import {
   type PointerEvent,
 } from "react";
 import { track } from "@/lib/analytics";
+import { compactCount } from "@/lib/format";
 import { cardShapeAt, type CardShape } from "./cardShapes";
 import { participantsOf, type HomePost as Post } from "./mockPosts";
 
@@ -432,7 +433,7 @@ function CardContent({
         className="absolute top-[14px] right-[14px] flex size-[68px] rotate-12 flex-col items-center justify-center gap-0.5 rounded-full bg-background text-white shadow-[0_4px_12px_rgba(0,0,0,0.18)]"
       >
         <span className="text-[20px] leading-none font-extrabold tracking-[-0.4px]">
-          {participantsOf(post)}
+          {compactCount(participantsOf(post), lang)}
         </span>
         <span className="text-[11px] leading-none font-semibold">
           {en ? "joined" : "명 참여"}
@@ -467,15 +468,17 @@ function CardContent({
         {/* 제목 — 줄 수 제한(line-clamp)에 g·p 같은 글자 아래가 잘리지 않게 아래 8px 여유(pb-2), 배치는 그대로(-mb-2)
             한국어는 상세 제목과 같은 Paperlogy, 영어는 Gilroy를 한글 크기에 맞춘 font-title-en (행간 0.15 좁게) */}
         <span
-          className={`-mb-2 w-full pb-2 text-[23px] font-extrabold tracking-[-0.69px] break-keep text-balance ${
+          // 띄어쓰기 없는 긴 단어도 칸 안에서 줄을 바꾸고, 3줄을 넘으면 … (제목 글자 수 한도 TITLE_MAX가 3줄에 맞춰져 있음 — …는 번역이 길어질 때의 안전장치, 점검 화면 /dev/edge-cases)
+          className={`-mb-2 w-full pb-2 text-[23px] font-extrabold tracking-[-0.69px] break-keep text-balance [overflow-wrap:anywhere] ${
             enTitle
               ? "line-clamp-3 font-title-en leading-[1.03]"
-              : "line-clamp-2 font-(family-name:--font-paperlogy) leading-[1.18]"
+              : "line-clamp-3 font-(family-name:--font-paperlogy) leading-[1.18]"
           }`}
         >
           {enTitle ? post.en.title : post.title}
         </span>
-        <span className="flex w-full items-center justify-between text-[13px] font-semibold text-black/60">
+        {/* 닉네임이 길면 … (한마디 수와 겹치지 않게 사이 12px) */}
+        <span className="flex w-full items-center justify-between gap-3 text-[13px] font-semibold text-black/60">
           {/* 작성자: 하얀 원 속 국기 + 닉네임 (상세 화면 작성자와 같은 디자인, 언어 상관없이) */}
           <span className="flex min-w-0 items-center gap-1.5 font-sans text-[14px] leading-none font-semibold tracking-[-0.28px] text-[#242424]">
             <span
@@ -498,7 +501,7 @@ function CardContent({
               <path d="M12 2C6.48 2 2 6.03 2 11c0 2.38 1.03 4.55 2.72 6.17L4 21.5a.5.5 0 0 0 .7.55l4.34-1.93c.94.25 1.93.38 2.96.38 5.52 0 10-4.03 10-9S17.52 2 12 2Z" />
             </svg>
             <span className="sr-only">{en ? "Comments" : "한마디"}</span>
-            {post.commentCount}
+            {compactCount(post.commentCount, lang)}
           </span>
         </span>
       </span>

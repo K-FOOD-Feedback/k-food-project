@@ -68,7 +68,7 @@ export function NotificationsScreen({ lang }: { lang: Lang }) {
                 }}
                 className="block transition active:scale-[0.99]"
               >
-                <Card lang={lang} n={n} translate={translate} className={n.id === INCOMING.id ? "animate-arrive" : ""} />
+                <NotificationCard lang={lang} n={n} translate={translate} className={n.id === INCOMING.id ? "animate-arrive" : ""} />
               </Link>
             ))}
           </section>
@@ -78,7 +78,7 @@ export function NotificationsScreen({ lang }: { lang: Lang }) {
   );
 }
 
-function Card({ lang, n, translate, className = "" }: { lang: Lang; n: Notif; translate: boolean; className?: string }) {
+export function NotificationCard({ lang, n, translate, className = "" }: { lang: Lang; n: Notif; translate: boolean; className?: string }) {
   return (
     <span className={`flex items-start gap-3.5 rounded-[24px] bg-surface p-5 ${className}`}>
       {/* 그 글의 음식 사진 (앱의 물결 모양) */}
