@@ -11,16 +11,14 @@ import {
   type ReturnTransition,
 } from "./cardTransition";
 
-const RETURN_MS = 720;
-const EASING = "cubic-bezier(0.2, 0.8, 0.2, 1)";
+const RETURN_MS = 560;
+const EASING = "cubic-bezier(0.3, 0.7, 0.2, 1)";
 /*
-  세 단계로 이어집니다. (상세 글은 ①② 동안 그대로)
-  ① 모양 자르기 (0 ~ CROP): 상세 사진이 제자리에서 카드 모양으로 오므라듦 (랜딩과 같은 방식, 둥근 모서리 그대로)
-  ② 넓히기 (CROP ~ GROW): 아래 본문 카드가 위로 넓어져 모양 사진을 감싸 한 장의 큰 카드가 됨 · 참여 칩은 스티커로
-  ③ 줄어들기 (GROW ~ 1): 그 카드가 통째로 메인 맨 앞 카드로 줄어들고, 상세 글은 카드 글로 바뀜
+  한 번에 같이 움직입니다 (따로 놀지 않게 같은 시간·같은 곡선):
+  - 상세 사진이 카드 모양으로 오므라들며(랜딩과 같은 방식) 메인 카드 사진 자리로 줄어듦
+  - 아래 본문 카드가 메인 카드 자리로 넓어지며 사진을 감쌈
+  - 상세 글이 사라지고 카드 글이 떠오름 · 참여 칩은 스티커로 · 뒤 카드들이 나타남
 */
-const CROP = 0.32;
-const GROW = 0.58;
 /** 상세에서 첫 사진이 아닌 사진을 보고 있었으면, 먼저 첫 사진으로 넘기는 시간 */
 const SWIPE_MS = 220;
 const SWIPE_EASE = "cubic-bezier(0.3, 0, 0.2, 1)";
@@ -28,10 +26,6 @@ const SWIPE_EASE = "cubic-bezier(0.3, 0, 0.2, 1)";
 const SETTLE_MS = 420;
 /** 모양 마스크를 이만큼 크게 씌우면 사진 칸 전체가 보여 네모처럼 보임 (랜딩 photo-frame과 같은 값) */
 const MASK_OPEN = "340% 340%";
-/** 마스크가 오므라드는 움직임 — 튕기지 않고 부드럽게 감속하며 닫힘 */
-const MASK_EASE = "cubic-bezier(0.45, 0, 0.2, 1)";
-const MORPH_EASE = "cubic-bezier(0.45, 0, 0.2, 1)";
-const SHRINK_EASE = "cubic-bezier(0.25, 0.8, 0.25, 1)";
 /** 카드 스티커 크기 (CardStack의 size-[68px]) — 회전된 요소의 바깥 상자 대신 이 크기로 가운데를 맞춥니다 */
 const STICKER = 68;
 
@@ -162,35 +156,6 @@ export function ReturnGhosts({
       { opacity: 0 },
     ];
 
-    // ① 다 합쳐진 큰 카드: 본문 카드가 사진 자리 위끝 근처까지 늘어남 (상세 글 자리는 그대로)
-    const mergedTop = t.photo.top + 8;
-    const merged = {
-      left: t.card.left,
-      top: mergedTop,
-      width: t.card.width,
-      height: t.card.top + t.card.height - mergedTop,
-    };
-    // ② 큰 카드 안의 카드 모양 사진·스티커: 메인 카드 속 배치를 큰 카드 폭에 맞게 키운 자리
-    //    (상세 글을 가리지 않도록, 사진 아래끝이 상세 글 위에 오게 비율을 줄임)
-    const rel = (b: Box) => ({
-      left: b.left - to.card.left,
-      top: b.top - to.card.top,
-      width: b.width,
-      height: b.height,
-    });
-    const photoRel = rel(to.photo);
-    const k = Math.min(
-      merged.width / to.card.width,
-      (t.card.top - 6 - merged.top) / (photoRel.top + photoRel.height),
-    );
-    const grow = (r: Box): Box => ({
-      left: merged.left + merged.width / 2 + (r.left - to.card.width / 2) * k,
-      top: merged.top + r.top * k,
-      width: r.width * k,
-      height: r.height * k,
-    });
-    const bigPhoto = grow(photoRel);
-
     const fade = (el: HTMLElement | null, frames: Keyframe[]) =>
       el ? [el.animate(frames, staged)] : [];
 
@@ -202,9 +167,11 @@ export function ReturnGhosts({
       width: pct(CARD_PHOTO_IN_MASK.width),
       height: pct(CARD_PHOTO_IN_MASK.height),
     };
+    // 모양 오므라들기는 조금 일찍 끝내 줄어드는 끝 무렵엔 이미 카드 모양 (전체 움직임과 같은 시간대)
+    const SHAPED = 0.7;
     const frameKeys: Keyframe[] = [
-      { ...fullFrame, easing: MASK_EASE },
-      { ...cardFrame, offset: CROP },
+      { ...fullFrame },
+      { ...cardFrame, offset: SHAPED },
       cardFrame,
     ];
 
@@ -222,74 +189,55 @@ export function ReturnGhosts({
           ...(ghosts.current ? [ghosts.current.animate(vanish, staged)] : []),
         ]
       : [
-          // 본문 카드: 사진이 모양으로 잘린 뒤 위로 넓어져 사진을 감싸 한 장이 됨 → 그 한 장이 메인 카드로 줄어듦
+          // 본문 카드: 메인 카드 자리로 (위로 넓어지며 사진을 감쌈)
           card!.animate(
-            [
-              { ...place(t.card, "32px") },
-              { ...place(t.card, "32px"), offset: CROP, easing: MORPH_EASE },
-              { ...place(merged, "32px"), offset: GROW, easing: SHRINK_EASE },
-              place(to.card, "34.8px"),
-            ],
-            staged,
+            [place(t.card, "32px"), place(to.card, "34.8px")],
+            timing,
           ),
-          // 사진: 제자리에서 모양으로 잘린 뒤 큰 카드 속 사진 자리로, 그다음 메인 카드 사진 자리로
-          photo!.animate(
-            [
-              { ...boxOnly(t.photo) },
-              { ...boxOnly(t.photo), offset: CROP, easing: MORPH_EASE },
-              { ...boxOnly(bigPhoto), offset: GROW, easing: SHRINK_EASE },
-              boxOnly(to.photo),
-            ],
-            staged,
-          ),
+          // 사진: 카드 모양으로 오므라들며 메인 카드 사진 자리로
+          photo!.animate([boxOnly(t.photo), boxOnly(to.photo)], timing),
           // 깜빡임 없이: 그림은 처음부터 끝까지 같은 사진(첫 사진) 한 장이고, 자리·구도만 이어서 바뀜.
           // 모양은 랜딩과 같은 방식 — 아주 크게 씌워 둔 카드 모양 마스크가 오므라들며 네모 사진이 카드 모양이 됨
           ...(rectFrame.current
-            ? [rectFrame.current.animate(frameKeys, staged)]
+            ? [rectFrame.current.animate(frameKeys, timing)]
             : []),
           ...(rectLayer.current
             ? [
                 rectLayer.current.animate(
                   [
-                    {
-                      maskSize: MASK_OPEN,
-                      webkitMaskSize: MASK_OPEN,
-                      easing: MASK_EASE,
-                    },
+                    { maskSize: MASK_OPEN, webkitMaskSize: MASK_OPEN },
                     {
                       maskSize: "100% 100%",
                       webkitMaskSize: "100% 100%",
-                      offset: CROP,
+                      offset: SHAPED,
                     },
                     { maskSize: "100% 100%", webkitMaskSize: "100% 100%" },
                   ],
-                  staged,
+                  timing,
                 ),
               ]
             : []),
-          // 글: 합칠 때까지는 상세 본문 그대로 → 줄어들기 시작하면 상세 글은 사라지고 카드 글이 떠오름
-          // 두 글이 겹쳐 보이지 않게 상세 글이 먼저 다 사라진 뒤 카드 글이 떠오름
+          // 글: 움직이는 동안 상세 글이 사라지고 카드 글이 떠오름 (겹쳐 보이지 않게 살짝 엇갈림)
           ...fade(detailText.current, [
             { opacity: 1 },
-            { opacity: 1, offset: GROW },
-            { opacity: 0, offset: GROW + 0.08 },
+            { opacity: 0, offset: 0.22 },
             { opacity: 0 },
           ]),
           ...fade(cardText.current, [
             { opacity: 0 },
-            { opacity: 0, offset: GROW + 0.1 },
-            { opacity: 1, offset: GROW + 0.26 },
+            { opacity: 0, offset: 0.2 },
+            { opacity: 1, offset: 0.5 },
             { opacity: 1 },
           ]),
           front.animate(reveal, staged),
-          // 뒤에 깔린 카드들: 사진이 잘리고 넓어지는 동안엔 감춰 두었다가(모양 사진 둘레로 비치지 않게) 줄어들며 나타남
+          // 뒤에 깔린 카드들: 처음엔 감춰 두었다가(모양 사진 둘레로 비치지 않게) 움직이며 나타남
           ...[
             ...document.querySelectorAll<HTMLElement>(
               "[aria-roledescription='carousel'] > button:not([data-front-card])",
             ),
           ].map((el) =>
             el.animate(
-              [{ opacity: 0 }, { opacity: 0, offset: GROW }, { opacity: 1 }],
+              [{ opacity: 0 }, { opacity: 0, offset: 0.25 }, { opacity: 1 }],
               staged,
             ),
           ),
@@ -326,8 +274,6 @@ export function ReturnGhosts({
         width: size,
         height: size,
       };
-      // ② 큰 카드 안의 스티커 자리
-      const bigSticker = grow(rel(sticker));
       // 글자도 "00명 참여 중!" → 스티커의 "00 / 명 참여"로 바뀜 (스티커 내용을 복사, 기울기는 유령이 맡음)
       const stickerEl = front.querySelector("[data-card-sticker]");
       if (stickerEl && chipFrom.current && chipTo.current) {
@@ -337,14 +283,13 @@ export function ReturnGhosts({
         animations.push(
           ...fade(chipFrom.current, [
             { opacity: 1 },
-            { opacity: 1, offset: CROP },
-            { opacity: 0, offset: CROP + 0.08 },
+            { opacity: 0, offset: 0.2 },
             { opacity: 0 },
           ]),
           ...fade(chipTo.current, [
             { opacity: 0 },
-            { opacity: 0, offset: CROP + 0.06 },
-            { opacity: 1, offset: GROW - 0.04 },
+            { opacity: 0, offset: 0.15 },
+            { opacity: 1, offset: 0.45 },
             { opacity: 1 },
           ]),
         );
@@ -352,23 +297,11 @@ export function ReturnGhosts({
       animations.push(
         chipGhost.current.animate(
           [
-            // 사진이 잘리는 동안은 제자리(①), 넓어질 때 큰 카드의 스티커가 되고(②), 같이 줄어듦(③)
+            // 사진과 함께 움직이며 스티커가 됨
             { ...place(t.chip, `${t.chip.height / 2}px`), rotate: "0deg" },
-            {
-              ...place(t.chip, `${t.chip.height / 2}px`),
-              rotate: "0deg",
-              offset: CROP,
-              easing: MORPH_EASE,
-            },
-            {
-              ...place(bigSticker, `${bigSticker.height / 2}px`),
-              rotate: "12deg",
-              offset: GROW,
-              easing: SHRINK_EASE,
-            },
             { ...place(sticker, `${size / 2}px`), rotate: "12deg" },
           ],
-          staged,
+          timing,
         ),
       );
     }
