@@ -6,7 +6,7 @@ import { CommentPile } from "@/app/posts/[id]/CommentPile";
 import { DetailScreen } from "@/app/posts/[id]/DetailScreen";
 import { paperlogy } from "@/app/posts/[id]/font";
 import { VoteGate } from "@/app/posts/[id]/comments/VoteGate";
-import { TrackedLink } from "@/components/Track";
+import { LanguageButton } from "@/components/LanguagePicker";
 import { MY_POST_ID } from "@/lib/write-data";
 import { coverOf, SAMPLE_MY_POST, useFlow, type MyPost } from "@/lib/write-store";
 
@@ -61,10 +61,8 @@ export function MyPostComments({ backHref }: { backHref: string }) {
               <path d="m15 18-6-6 6-6" />
             </svg>
           </Link>
-          <TrackedLink href="/" event="language_clicked" props={{ from: "comments" }} className={circle} aria-label="언어 선택">
-            {/* eslint-disable-next-line @next/next/no-img-element -- 작은 SVG 아이콘 */}
-            <img src="/images/icon-world.svg" width={24} height={24} alt="" />
-          </TrackedLink>
+          {/* 언어 변경 창 (공통) — 내 글은 글쓴이(외국인)가 보는 화면이라 영어 */}
+          <LanguageButton lang="en" from="my_post_comments" className={circle} />
         </header>
         <div className="flex min-h-0 flex-1 flex-col pb-[calc(24px+env(safe-area-inset-bottom))]">
           <CommentPile
