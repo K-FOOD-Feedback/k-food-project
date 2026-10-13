@@ -674,10 +674,10 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
             // 넘어갈 글의 카드 색 (게시글 데이터 색이라 토큰 대신 그대로)
             style={{ backgroundColor: next.color }}
             // 제목 글자만 Paperlogy로 (ArrowCta는 공통 부품이라 바깥에서 지정)
-            // (영어면 Gilroy ExtraBold — font-display와 같은 글꼴·굵기)
+            // (영어면 Gilroy — font-title-en)
             className={
               contentLang === "en"
-                ? "[&>span>span:last-child]:font-(family-name:--font-gilroy) [&>span>span:last-child]:truncate [&>span>span:last-child]:font-extrabold"
+                ? "[&>span>span:last-child]:font-title-en [&>span>span:last-child]:truncate"
                 : "[&>span>span:last-child]:font-(family-name:--font-paperlogy) [&>span>span:last-child]:truncate [&>span>span:last-child]:font-normal"
             }
             onClick={() => {
@@ -914,7 +914,10 @@ function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: HomePost
       <p className="text-[14px] leading-none font-medium tracking-[-0.28px] text-[#696969]">
         {DETAIL_COPY[lang].from(en ? post.en.country : post.author.country)}
       </p>
-      <h1 className={`max-w-[204px] ${titleFont(contentLang)} text-[31px] leading-[1.2] tracking-[-0.62px] break-keep`}>
+      {/* 영어는 소문자가 낮아 같은 행간이면 줄 사이가 비어 보여서 좁게 (한국어 1.2 → 영어 1.05) */}
+      <h1
+        className={`max-w-[204px] ${titleFont(contentLang)} text-[31px] ${enText ? "leading-[1.05]" : "leading-[1.2]"} tracking-[-0.62px] break-keep`}
+      >
         {enText ? post.en.title : post.title}
       </h1>
       <p className="text-[16px] leading-[1.55] font-medium tracking-[-0.32px] whitespace-pre-line text-[#444]">

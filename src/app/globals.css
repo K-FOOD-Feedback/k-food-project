@@ -395,6 +395,21 @@
   font-weight: 800;
 }
 
+/*
+  한국어 Paperlogy 자리에 들어가는 영어 제목 — 같은 글자 크기·행간 클래스를 그대로 쓰면서 한글과 크기가 맞아 보이게 보정
+  (상세 제목·투표 카드·메인 카드 제목 등: 한국어면 font-(family-name:--font-paperlogy), 영어면 font-title-en)
+  Gilroy 대문자 높이는 글자 크기의 0.70배라, 같은 크기의 한글(0.85배)보다 작아 보이고 줄 사이가 넓어 보입니다.
+  Paperlogy가 한글 옆에 쓰는 영문 대문자 높이(0.78배)에 맞춰 Gilroy를 키웁니다 (약 1.11배).
+  글자 크기 값 자체는 그대로라 줄 간격(px)은 한국어와 같습니다. 이 기능을 모르는 브라우저는 보정 없이 Gilroy.
+  행간: 영어는 소문자가 낮아 같은 행간이면 줄 사이가 비어 보이므로, 각 자리에서 한국어 행간보다 0.15 좁게 씁니다
+  (예: 한국어 leading-[1.2] → 영어 leading-[1.05], 1.3 → 1.15, 1.4 → 1.25).
+*/
+@utility font-title-en {
+  font-family: var(--font-gilroy);
+  font-weight: 800;
+  font-size-adjust: cap-height 0.78;
+}
+
 /* 자식 요소가 위에서부터 차례로 올라오며 등장 (타일 목록 등) */
 @utility stagger {
   & > * {
