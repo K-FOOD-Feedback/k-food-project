@@ -130,7 +130,7 @@ export function PostMenu({
         voteQuestion: p.voteQuestion,
         options: p.options.filter((o) => o.trim()),
         // 글쓴이 = 나 (가입 때 정한 닉네임 · 나라)
-        author: `${me.name || "Sam"} · ${me.country[lang]}`,
+        author: `${me.flag} ${me.name}`,
       };
     }
     const p = getHomePost(postId);
@@ -142,7 +142,7 @@ export function PostMenu({
       photo: p.cardPhoto,
       voteQuestion: p.question.text,
       options: ((en && p.en.options) || p.question.options).map((o) => o.replace(/\n/g, " ")),
-      author: `${p.author.name} · ${en ? p.en.country : p.author.country}`,
+      author: `${p.author.flag} ${p.author.name}`,
     };
   };
   const card = sharePost();

@@ -28,7 +28,8 @@ export function DoneScreen() {
   const post = myPost ?? SAMPLE_MY_POST;
   // 글쓴이 = 나 (가입 때 정한 닉네임 · 나라)
   const me = useMyAuthor();
-  const byline = `${me.name || "Sam"} · ${me.country.en}`;
+  // 작성자 표시는 국기 + 닉네임만 (메인·상세와 같은 규칙)
+  const byline = `${me.flag} ${me.name}`;
 
   const [tilt, setTilt] = useState({ x: 0, y: 0, active: false });
   const [burst, setBurst] = useState(0); // 탭할 때마다 +1 → 색종이 다시
