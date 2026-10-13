@@ -318,10 +318,10 @@ function CardContent({ lang, post, voted, shape }: { lang: Lang; post: Post; vot
             {(en ? QUESTION_LABELS_EN : QUESTION_LABELS)[post.question.id]}
           </span>
         </span>
-        {/* 제목: 한국어는 상세 제목과 같은 Paperlogy, 영어는 Gilroy (font-display) */}
+        {/* 제목: 한국어는 상세 제목과 같은 Paperlogy, 영어는 Gilroy를 한글 크기에 맞춘 font-title-en (행간 0.15 좁게) */}
         <span
-          className={`line-clamp-2 w-full text-[23px] leading-[1.18] font-extrabold tracking-[-0.69px] break-keep text-balance ${
-            en ? "font-display" : "font-(family-name:--font-paperlogy)"
+          className={`w-full text-[23px] font-extrabold tracking-[-0.69px] break-keep text-balance ${
+            en ? "line-clamp-3 font-title-en leading-[1.03]" : "line-clamp-2 font-(family-name:--font-paperlogy) leading-[1.18]"
           }`}
         >
           {en ? post.en.title : post.title}
