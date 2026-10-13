@@ -10,12 +10,13 @@ import { Screen, TopBar } from "@/components/Layout";
 import { track, useTrackOnce } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
 import { CommentCard, Empty, LogoutSheet, MyTabs, PhotoTile, timeAgo } from "./parts";
-import { ProfileHeader, ProfileSheet, useNickname } from "./profile";
+import { AccountFooter, ProfileHeader, ProfileSheet, useNickname } from "./profile";
 
 /*
   7. 마이 · 한국인 /my (담당 송희)
   외국인 마이와 같은 구조 — "내가 한 참견을 빠르게 확인"
-  - 프로필: 랜덤 닉네임 › (› 누르면 닉네임 바꾸기 · Google 계정 · 계정 삭제 시트)
+  - 프로필: 랜덤 닉네임 › (› 누르면 닉네임 바꾸기 시트)
+  - 맨 아래 회색 작은 글씨: Google 계정 · 계정 삭제
   - 투표 / 한마디 탭
     · 투표: 내가 투표한 글을 2열 사진 타일로, 칩은 내가 고른 선택지 → 상세
     · 한마디: 내가 남긴 한마디(답글 포함)를 알림함과 같은 카드로, 최신 순 → 그 한마디 상세(레이어)
@@ -152,16 +153,20 @@ export function KoMyScreen() {
           ))}
       </div>
 
-      <ProfileSheet
+      <AccountFooter
         lang="ko"
-        open={profileOpen}
-        onClose={() => setProfileOpen(false)}
-        nickname={nickname}
         email={PROFILE.email}
         onDelete={() => {
           logOut();
           router.push("/");
         }}
+      />
+
+      <ProfileSheet
+        lang="ko"
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        nickname={nickname}
       />
 
       <LogoutSheet

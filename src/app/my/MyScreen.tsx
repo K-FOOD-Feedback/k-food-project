@@ -9,12 +9,13 @@ import { track, useTrackOnce } from "@/lib/analytics";
 import { MY_POST_ID } from "@/lib/write-data";
 import { coverOf, useFlow } from "@/lib/write-store";
 import { CommentCard, Empty, LogoutSheet, MyTabs, PhotoTile, TIME, timeAgo } from "./parts";
-import { ProfileHeader, ProfileSheet, useNickname } from "./profile";
+import { AccountFooter, ProfileHeader, ProfileSheet, useNickname } from "./profile";
 
 /*
   7. 마이 · 외국인 /my/en (담당 송희)
   재미 요소 없이 "내 글 · 내 한마디를 빠르게 확인"하는 화면
-  - 프로필: 랜덤 닉네임 › · 나라 (프로필 사진 없음). › 누르면 닉네임 바꾸기 · Google 계정 · 계정 삭제 시트
+  - 프로필: 랜덤 닉네임 › · 나라 (프로필 사진 없음). › 누르면 닉네임 바꾸기 시트
+  - 맨 아래 회색 작은 글씨: Google 계정 · 계정 삭제
   - Posts / Comments 탭
     · Posts: 2열 사진 타일 (음식 사진이 주인공) + 받은 투표 칩 → 상세
     · Comments: 알림함과 같은 카드 (왼쪽 그 글 사진 · 한마디 · 어느 글에 썼는지 · 시간) → 그 한마디 상세(레이어)
@@ -204,11 +205,8 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
           ))}
       </div>
 
-      <ProfileSheet
+      <AccountFooter
         lang="en"
-        open={profileOpen}
-        onClose={() => setProfileOpen(false)}
-        nickname={nickname}
         email={PROFILE.email}
         onDelete={() => {
           deleteMyPost();
@@ -216,6 +214,13 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
           logOut();
           router.push("/");
         }}
+      />
+
+      <ProfileSheet
+        lang="en"
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        nickname={nickname}
       />
 
       <LogoutSheet
