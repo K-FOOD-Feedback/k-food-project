@@ -112,6 +112,8 @@
 | `my_page_viewed` | 마이 열림 | 외국인 `posts`·`comments` / 한국인 `votes`·`comments` (개수) |
 | `my_item_clicked` | 마이에서 누름 | `item`(profile/post/voted_post/comment/write/browse/tab_*/logout), 한마디는 `reply` |
 | `logged_out` | 로그아웃 확인 | `from` |
+| `signup_shown` · `signup_closed` · `signup_completed` | 처음 가입 환영 화면 (닉네임 · 나라 · 약관) | `viewer`, `from`(share/vote), 완료 시 외국인은 `country`(나라 코드) |
+| `draft_resume_shown` · `draft_resumed` | Share your K-food → 쓰다 만 글 이어 쓸지 | `step` (새로 시작은 `draft_discarded` from: resume) |
 | `nickname_rerolled` | 프로필 시트 🔄 (새 랜덤 닉네임) | `spins`(이번에 몇 번째) |
 | `nickname_changed` | 새 닉네임 적용 | `spins`(몇 번 돌려서 골랐는지) |
 | `account_deleted` | 계정 삭제 확인 | — |
