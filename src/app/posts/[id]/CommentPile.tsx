@@ -47,6 +47,7 @@ export function CommentPile({
   commentCount,
   authorFlag,
   authorName,
+  authorColor,
   postTitle,
   variant = "preview",
   lang = "ko",
@@ -60,6 +61,8 @@ export function CommentPile({
   authorFlag: string;
   /** 글쓴이 닉네임 — 글쓴이 한마디 뱃지에 (한마디는 익명, 이름은 글쓴이만) */
   authorName?: string;
+  /** 글쓴이 한마디·답글 말풍선 색 — 그 글의 카드 색(post.color)으로 맞춤. 없으면 저장된 색 그대로 */
+  authorColor?: string;
   /** ↗(한마디 전체 보기) 주소 — 상세가 들어온 곳(?from=)을 이어 붙일 때 (없으면 기본 주소) */
   fullHref?: string;
   /** 전체 화면 제목 아래에 보이는 게시글 제목 */
@@ -84,14 +87,14 @@ export function CommentPile({
   const translate = lang === "en" && autoTranslate;
   // 내가 신고해서 가린 한마디는 빼지 않고 회색 "가려진 한마디예요"로 보여 줍니다 (숫자도 그대로).
   const { hidden, hide } = useHiddenComments(postId);
+  // 글쓴이가 남긴 한마디(글·이모지)는 그 글의 카드 색으로 (색이 너무 많지 않게 — 지현 요청)
+  const recolor = (c: Comment) => (authorColor && c.author.kind === "author" ? { ...c, color: authorColor } : c);
   const comments =
-    hidden.size || translate
+    hidden.size || translate || authorColor
       ? all.map((c) =>
           hidden.has(c.id)
             ? { ...c, kind: "text" as const, text: t.hidden, color: HIDDEN_COLOR }
-            : translate
-              ? translateToEnglish(c)
-              : c,
+            : recolor(translate ? translateToEnglish(c) : c),
         )
       : all;
   const [draft, setDraft] = useState("");
