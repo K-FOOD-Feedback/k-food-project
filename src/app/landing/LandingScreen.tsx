@@ -713,13 +713,19 @@ function Bubble({
   className: string;
   style: CSSProperties;
 }) {
+  const cjk = lang === "zh" || lang === "ja";
   return (
     <div
-      className={`absolute z-10 flex flex-col items-center rounded-[32px] px-5 py-3 text-center text-on-light ${className}`}
+      className={`absolute z-10 flex max-w-[220px] flex-col items-center rounded-[32px] px-5 py-3 text-center text-on-light ${className}`}
       style={style}
     >
       {/* 보는 사람의 모국어를 크게, 한국어 원문은 작게 아래 (한국어 화면은 한국어만) */}
-      <span className="break-keep text-[15px] font-bold leading-[1.35] tracking-[-0.3px]">{lang === "ko" ? r.ko : r[lang]}</span>
+      {/* 한국어·영어는 단어 단위로 줄바꿈, 띄어쓰기가 없는 중국어·일본어는 글자 단위로 (안 그러면 한 줄로 쭉 늘어남) */}
+      <span
+        className={`whitespace-pre-line text-[15px] font-bold leading-[1.35] tracking-[-0.3px] ${cjk ? "break-all" : "break-keep"}`}
+      >
+        {lang === "ko" ? r.ko : r[lang]}
+      </span>
       {lang !== "ko" && <span className="break-keep text-[11px] font-semibold leading-[1.3] opacity-60">{r.ko}</span>}
     </div>
   );

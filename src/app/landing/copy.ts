@@ -102,7 +102,7 @@ export const COPY = {
       ["次は", "あなたの番"],
     ],
     korean: { role: "韓国人です", action: "投票してコメント" },
-    foreigner: { role: "韓国人じゃないです", action: "見て回って投稿" },
+    foreigner: { role: "外国人です", action: "見て回って投稿" },
     loginLead: "アカウントをお持ちですか？",
     loginAction: "ログイン",
     loginTitle: "おかえりなさい",
@@ -123,9 +123,9 @@ export const COPY = {
 /** 예시 투표 비율 */
 export const SAMPLE_PCTS = [58, 31, 11];
 
-/** 한국인 반응 — 한국어가 아닌 화면에서는 번역을 크게, 한국어 원문을 작게 */
+/** 한국인 반응 — 한국어가 아닌 화면에서는 번역을 크게, 한국어 원문을 작게 (\n은 말풍선 줄바꿈 자리) */
 export const REACTIONS = [
   { ko: "면이 어디 있는데요", en: "Where are the noodles?", zh: "面在哪儿？", ja: "麺はどこ？" },
-  { ko: "이 정도면 치즈가 불닭을 먹는 중", en: "The cheese is eating the buldak", zh: "这芝士都快把火鸡面吃了", ja: "チーズがブルダックを食べてる" },
+  { ko: "이 정도면 치즈가 불닭을 먹는 중", en: "The cheese is eating\nthe buldak", zh: "这芝士都快\n把火鸡面吃了", ja: "チーズが\nブルダックを食べてる" },
   { ko: "일단 한입만 줘봐요", en: "Just give me one bite", zh: "先给我尝一口", ja: "とりあえず一口ちょうだい" },
 ] as const;
