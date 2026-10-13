@@ -195,11 +195,17 @@ export function FlowProvider({ children }: { children: ReactNode }) {
           700 + i * 250,
         );
       });
+      if (fresh) {
+        // 새로 시작하면 이전 글의 AI 결과(음식·미리 쓴 글)는 버림
+        dishRun.current++;
+        storyRun.current++;
+      }
       setState((s) => {
         const base = fresh ? emptyDraft() : s.draft;
         const photos = [...base.photos, ...accepted];
         return {
           ...s,
+          ...(fresh && { ai: { dish: "idle" as AiStatus, story: "idle" as AiStatus } }),
           draft: {
             ...base,
             photos,
@@ -347,8 +353,11 @@ export function FlowProvider({ children }: { children: ReactNode }) {
           views: 0,
         },
         draft: emptyDraft(),
+        ai: { dish: "idle", story: "idle" }, // 다음 글은 처음부터 다시 알아봄
       };
     });
+    dishRun.current++;
+    storyRun.current++;
   }, []);
 
   const updateMyPost = useCallback((patch: Partial<MyPost>) => {
@@ -373,7 +382,8 @@ export function FlowProvider({ children }: { children: ReactNode }) {
         if (state.ai.dish !== "idle" || state.draft.dish) resetAi();
         return;
       }
-      if (photosChecked && state.ai.dish === "idle" && !state.draft.dish) recognizeDish();
+      // 음식을 아직 모르면(진행 중이 아니면) 알아보기 — 이전 글의 상태가 남아 있어도 다시
+      if (photosChecked && !state.draft.dish && state.ai.dish !== "working") recognizeDish();
       else if (state.ai.dish === "ready" && state.ai.story === "idle" && !state.draft.story) writeStory();
     }, 0);
     return () => window.clearTimeout(t);

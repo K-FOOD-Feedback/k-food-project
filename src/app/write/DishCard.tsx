@@ -8,7 +8,7 @@ import { useFlow } from "@/lib/write-store";
 import { usePhotoCheck } from "./PhotoCheckNotice";
 
 /**
- * ① 사진 화면 맨 위 — AI가 알아본 음식 "Is this right?" (담당 송희)
+ * ① 사진 화면 맨 위 — AI가 알아본 음식 + Edit (담당 송희)
  * - 음식 인식은 사진을 고른 순간부터 (write-store) → 이 화면에 들어올 땐 보통 이미 끝나 있음
  * - Edit로 고치면 미리 쓰던 글은 버리고 고친 이름으로 다시 씀
  */
@@ -22,7 +22,7 @@ export function useDishFlow() {
     working: hasPhotos && ai.dish === "working",
     canGo: hasPhotos && check.canGo && dishReady,
     // 처음 사진을 고른 뒤 분석 중 (검사 중이거나 음식 인식 중, 아직 음식 모름) → 분석 화면
-    analyzing: hasPhotos && !draft.dish && check.notFood === 0 && (check.checking || ai.dish !== "ready"),
+    analyzing: hasPhotos && !draft.dish && check.notFood === 0,
   };
 }
 
@@ -85,7 +85,6 @@ export function DishCard({ onEditingChange }: { onEditingChange?: (editing: bool
               {draft.dish}
             </p>
             <p className="flex items-center gap-2 text-[14px] text-muted">
-              Is this right?
               <button
                 type="button"
                 onClick={() => {
