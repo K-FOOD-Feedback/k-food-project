@@ -17,6 +17,12 @@ import { HOME_POSTS, type HomePost } from "./mockPosts";
 import { useVotedIds } from "./votes";
 import { useViewerLang } from "../posts/[id]/viewerLang";
 
+/** 메인 상단 두 줄 — 참여를 부르는 한마디 (한국인: 참견하러 오세요 / 외국인: 한식 올려 보세요) */
+const HEADLINE = {
+  ko: ["외국인 친구가 만든 한식,", "참견할 준비 됐나요? 👀"],
+  en: ["Cooked some K-food?", "Let Koreans judge it 👀"],
+} as const;
+
 /** 카드 더미(CardStack) 원래 높이 — 화면이 낮으면 이 높이가 들어가도록 통째로 줄임 */
 const STACK_HEIGHT = 480;
 
@@ -65,7 +71,6 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
     return () => ro.disconnect();
   }, []);
   const scale = fit ?? 1;
-  const voted = votedIds.has(current.id);
 
   const changeIndex = (next: number) => {
     lastIndex = next;
@@ -118,11 +123,29 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
     // 랜딩(src/app/page.tsx)과 같은 틀: 가운데 430px 폭의 어두운 화면
     <main className="relative mx-auto flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-background text-on-dark">
       <MainHeader lang={lang} />
-      {/* 헤더 아래 ~ 하단 버튼 위: 카드 더미를 가운데에 (화면이 낮으면 줄여서) */}
+      {/* 상단 두 줄 (왼쪽 정렬) */}
+      <h1
+        className={`shrink-0 px-6 pt-1 text-[24px] tracking-[-0.48px] text-white break-keep ${
+          lang === "en"
+            ? "font-title-en leading-[1.15]"
+            : "font-(family-name:--font-paperlogy) leading-[1.3]"
+        }`}
+      >
+        {HEADLINE[lang].map((line) => (
+          <span key={line} className="block">
+            {line}
+          </span>
+        ))}
+      </h1>
+      {/* 제목 아래 ~ 하단 버튼 위(한국인은 버튼이 없어 화면 아래까지): 카드 더미를 가운데에 (화면이 낮으면 줄여서) */}
       <div className="relative min-h-0 flex-1">
         <div
           ref={stage}
-          className="absolute inset-x-0 top-0 bottom-[calc(166px+env(safe-area-inset-bottom))] flex items-center justify-center"
+          className={`absolute inset-x-0 top-0 flex items-center justify-center ${
+            lang === "en"
+              ? "bottom-[calc(166px+env(safe-area-inset-bottom))]"
+              : "bottom-[calc(24px+env(safe-area-inset-bottom))]"
+          }`}
         >
           <div style={{ height: STACK_HEIGHT * scale }}>
             <div style={{ scale, transformOrigin: "top center" }}>
@@ -151,32 +174,11 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
         />
       )}
 
-      {lang === "en" ? (
+      {lang === "en" && (
         // 외국인 메인 하단 CTA (Figma 259:7823): 로그인 시트 → 사진 선택 → /write (동작은 송희 담당 ShareKfoodButton)
         <ShareKfoodButton className="fixed bottom-[calc(60px+env(safe-area-inset-bottom))] left-1/2 z-10 flex h-[80px] w-[259px] -translate-x-1/2 items-center justify-center rounded-full bg-primary text-[20px] font-extrabold tracking-[-0.4px] whitespace-nowrap text-white drop-shadow-[0_10px_12px_rgba(255,135,196,0.45)] transition-transform active:scale-[0.97]">
           Share your K-food
         </ShareKfoodButton>
-      ) : (
-        // 하단 CTA (Figma: KF/CTA Pill — 투표 전 Primary, 투표 후 Done)
-        <button
-          type="button"
-          data-main-cta
-          onClick={() => {
-            track("feed_cta_clicked", { post_id: current.id, voted });
-            openPost(
-              current,
-              document.querySelector("[data-front-card]"),
-              "cta",
-            );
-          }}
-          className={`fixed bottom-[calc(60px+env(safe-area-inset-bottom))] left-1/2 z-10 flex h-[90px] w-[259px] -translate-x-1/2 items-center justify-center rounded-full text-[20px] font-extrabold tracking-[-0.4px] whitespace-nowrap transition-transform active:scale-[0.97] ${
-            voted
-              ? "bg-white text-background"
-              : "bg-primary text-white drop-shadow-[0_10px_12px_rgba(255,135,196,0.45)]"
-          }`}
-        >
-          {voted ? "투표 결과 보기" : "투표하러 가기"}
-        </button>
       )}
     </main>
   );
