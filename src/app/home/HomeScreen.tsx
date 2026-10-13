@@ -9,7 +9,13 @@ import {
   peekReturnTransition,
   setCardTransition,
 } from "./cardTransition";
-import { CardStack, cardMaskBox, cardPhotoOf, type Lang } from "./CardStack";
+import {
+  CARD_TOP,
+  CardStack,
+  cardMaskBox,
+  cardPhotoOf,
+  type Lang,
+} from "./CardStack";
 import { cardShapeAt } from "./cardShapes";
 import { MainHeader } from "./MainHeader";
 import { ReturnGhosts } from "./ReturnTransition";
@@ -25,6 +31,8 @@ const HEADLINE = {
 
 /** 카드 더미(CardStack) 원래 높이 — 화면이 낮으면 이 높이가 들어가도록 통째로 줄임 */
 const STACK_HEIGHT = 480;
+/** 제목 아래끝 ~ 맨 앞 카드 위끝 간격 */
+const TITLE_GAP = 40;
 
 // 상세에 다녀와도 보던 카드에서 다시 시작하도록 기억해 둡니다 (새로고침하면 처음부터).
 let lastIndex = 0;
@@ -59,15 +67,27 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
   const current = posts[index];
 
   // 화면 높이에 맞추기: 헤더와 하단 버튼 사이 빈 칸에 카드 더미가 다 들어가도록, 모자라면 통째로 줄임 (스크롤 없음)
+  // 제목 + (40px) + 카드 더미를 한 덩어리로 가운데에 — 남는 높이에 다 들어가도록, 모자라면 카드 더미를 줄임
   const stage = useRef<HTMLDivElement>(null);
+  const headline = useRef<HTMLHeadingElement>(null);
   const [fit, setFit] = useState<number | null>(null);
   useLayoutEffect(() => {
     const el = stage.current;
-    if (!el) return;
-    const measure = () => setFit(Math.min(1, el.clientHeight / STACK_HEIGHT));
+    const h1 = headline.current;
+    if (!el || !h1) return;
+    // 카드 더미 틀 맨 위엔 뒤 카드 자리(CARD_TOP)가 있어서, 보이는 카드까지 40px이 되도록 그만큼은 간격에 겹쳐 씀
+    const measure = () =>
+      setFit(
+        Math.min(
+          1,
+          (el.clientHeight - h1.offsetHeight - TITLE_GAP) /
+            (STACK_HEIGHT - CARD_TOP),
+        ),
+      );
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
+    ro.observe(h1);
     return () => ro.disconnect();
   }, []);
   const scale = fit ?? 1;
@@ -123,31 +143,38 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
     // 랜딩(src/app/page.tsx)과 같은 틀: 가운데 430px 폭의 어두운 화면
     <main className="relative mx-auto flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-background text-on-dark">
       <MainHeader lang={lang} />
-      {/* 상단 두 줄 (왼쪽 정렬) */}
-      <h1
-        className={`shrink-0 px-6 pt-1 text-[24px] tracking-[-0.48px] text-white break-keep ${
-          lang === "en"
-            ? "font-title-en leading-[1.15]"
-            : "font-(family-name:--font-paperlogy) leading-[1.3]"
-        }`}
-      >
-        {HEADLINE[lang].map((line) => (
-          <span key={line} className="block">
-            {line}
-          </span>
-        ))}
-      </h1>
-      {/* 제목 아래 ~ 하단 버튼 위(한국인은 버튼이 없어 화면 아래까지): 카드 더미를 가운데에 (화면이 낮으면 줄여서) */}
+      {/* 헤더 아래 ~ 하단 버튼 위(한국인은 버튼이 없어 화면 아래까지): 제목 + 카드 더미를 한 덩어리로 가운데에 */}
       <div className="relative min-h-0 flex-1">
         <div
           ref={stage}
-          className={`absolute inset-x-0 top-0 flex items-center justify-center ${
+          className={`absolute inset-x-0 top-0 flex flex-col items-center justify-center ${
             lang === "en"
               ? "bottom-[calc(166px+env(safe-area-inset-bottom))]"
               : "bottom-[calc(24px+env(safe-area-inset-bottom))]"
           }`}
         >
-          <div style={{ height: STACK_HEIGHT * scale }}>
+          {/* 두 줄 한마디 (가운데 정렬) */}
+          <h1
+            ref={headline}
+            className={`shrink-0 px-6 text-center text-[24px] tracking-[-0.48px] text-white break-keep ${
+              lang === "en"
+                ? "font-title-en leading-[1.15]"
+                : "font-(family-name:--font-paperlogy) leading-[1.3]"
+            }`}
+          >
+            {HEADLINE[lang].map((line) => (
+              <span key={line} className="block">
+                {line}
+              </span>
+            ))}
+          </h1>
+          <div
+            className="shrink-0"
+            style={{
+              height: STACK_HEIGHT * scale,
+              marginTop: TITLE_GAP - CARD_TOP * scale,
+            }}
+          >
             <div style={{ scale, transformOrigin: "top center" }}>
               <CardStack
                 lang={lang}

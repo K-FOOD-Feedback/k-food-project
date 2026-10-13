@@ -25,6 +25,8 @@ export const cardMaskBox = (scale: number) => ({
   height: MASK.height * scale,
 });
 /** 물결 영역을 기준(1 = 물결 영역 크기)으로 본 카드 사진의 위치·크기 — 전환 유령이 카드와 똑같이 사진을 보여 줄 때 씀 */
+/** 카드 더미 틀 위끝에서 맨 앞 카드 위끝까지 거리 (틀 위로 뒤 카드가 비져 나올 자리) */
+export const CARD_TOP = CARD.top;
 export const CARD_PHOTO_IN_MASK = {
   left: -MASK.x / MASK.width,
   top: -MASK.y / MASK.height,
@@ -327,10 +329,12 @@ function CardContent({ lang, post, voted, shape }: { lang: Lang; post: Post; vot
           {en ? post.en.title : post.title}
         </span>
         <span className="flex w-full items-center justify-between text-[13px] font-semibold text-black/60">
-          {/* 작성자: 영어는 국기 + 닉네임, 한국어는 국기 + "국가명에서 온 닉네임" · 글자는 흐리지 않게 */}
-          <span className="flex min-w-0 items-center gap-[5px] truncate text-black">
-            <span className="text-[15px]">{post.author.flag}</span>
-            {en ? post.author.name : `${post.author.country}에서 온 ${post.author.name}`}
+          {/* 작성자: 하얀 원 속 국기 + 닉네임 (상세 화면 작성자와 같은 디자인, 언어 상관없이) */}
+          <span className="flex min-w-0 items-center gap-1.5 font-sans text-[14px] leading-none font-semibold tracking-[-0.28px] text-[#242424]">
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-white text-[14px]" aria-hidden>
+              {post.author.flag}
+            </span>
+            <span className="truncate">{post.author.name}</span>
           </span>
           <span className="shrink-0">💬 {post.commentCount}</span>
         </span>
