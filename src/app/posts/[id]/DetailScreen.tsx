@@ -668,10 +668,10 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
             // 넘어갈 글의 카드 색 (게시글 데이터 색이라 토큰 대신 그대로)
             style={{ backgroundColor: next.color }}
             // 제목 글자만 Paperlogy로 (ArrowCta는 공통 부품이라 바깥에서 지정)
-            // (영어면 Gilroy ExtraBold — font-display와 같은 글꼴·굵기)
+            // (영어면 Gilroy — font-title-en)
             className={
               lang === "en"
-                ? "[&>span>span:last-child]:font-(family-name:--font-gilroy) [&>span>span:last-child]:truncate [&>span>span:last-child]:font-extrabold"
+                ? "[&>span>span:last-child]:font-title-en [&>span>span:last-child]:truncate"
                 : "[&>span>span:last-child]:font-(family-name:--font-paperlogy) [&>span>span:last-child]:truncate [&>span>span:last-child]:font-normal"
             }
             onClick={() => {
