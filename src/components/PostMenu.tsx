@@ -7,6 +7,7 @@ import { getHomePost } from "@/app/home/mockPosts";
 import { ShareSheet } from "@/app/write/done/ShareSheet";
 import type { ShareCardPost } from "@/app/write/done/ShareCard";
 import { track } from "@/lib/analytics";
+import { currentFrom, withFrom } from "@/lib/back";
 import { coverOf, SAMPLE_MY_POST, useFlow } from "@/lib/write-store";
 import { PillButton } from "./Buttons";
 import { Icon } from "./Icon";
@@ -115,7 +116,7 @@ export function PostMenu({
           danger: false,
           onClick: () => {
             track("post_edit_started", { post_id: postId, from: "detail_menu" });
-            router.push(`/posts/${postId}/edit`);
+            router.push(withFrom(`/posts/${postId}/edit`, currentFrom())); // 수정 뒤 상세의 ← 가 처음 들어온 곳으로 가게
           },
         },
         {
