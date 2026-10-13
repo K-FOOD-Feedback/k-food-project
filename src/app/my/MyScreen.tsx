@@ -8,12 +8,13 @@ import { Screen, TopBar } from "@/components/Layout";
 import { track, useTrackOnce } from "@/lib/analytics";
 import { MY_POST_ID } from "@/lib/write-data";
 import { coverOf, useFlow } from "@/lib/write-store";
-import { CommentCard, Empty, LogoutSheet, MyTabs, PhotoTile, Profile, TIME, timeAgo } from "./parts";
+import { CommentCard, Empty, LogoutSheet, MyTabs, PhotoTile, TIME, timeAgo } from "./parts";
+import { ProfileHeader, ProfileSheet, useNickname } from "./profile";
 
 /*
   7. 마이 · 외국인 /my/en (담당 송희)
   재미 요소 없이 "내 글 · 내 한마디를 빠르게 확인"하는 화면
-  - 프로필: 이름 · 나라만 (프로필 사진은 받지 않음)
+  - 프로필: 랜덤 닉네임 › · 나라 (프로필 사진 없음). › 누르면 닉네임 바꾸기 · Google 계정 · 계정 삭제 시트
   - Posts / Comments 탭
     · Posts: 2열 사진 타일 (음식 사진이 주인공) + 받은 투표 칩 → 상세
     · Comments: 알림함과 같은 카드 (왼쪽 그 글 사진 · 한마디 · 어느 글에 썼는지 · 시간) → 그 한마디 상세(레이어)
@@ -38,7 +39,7 @@ import { CommentCard, Empty, LogoutSheet, MyTabs, PhotoTile, Profile, TIME, time
       · 7일 안 "3d" · 올해 "Oct 10" · 작년 이전 "Oct 10, 2025"
 */
 
-const PROFILE = { name: "Sam", country: "Canada", flag: "🇨🇦" };
+const PROFILE = { country: "Canada", flag: "🇨🇦", email: "sam.taylor@gmail.com" };
 
 /**
  * 내가 쓴 한마디 — 목업 (외국인 화면에서 한마디 쓰기가 붙으면 실제 기록으로). 위 경우들이 다 보이게 구성
@@ -70,7 +71,9 @@ type Tab = "posts" | "comments";
 
 export function MyScreen({ noComments = false }: { noComments?: boolean }) {
   const router = useRouter();
-  const { myPost, logOut } = useFlow();
+  const { myPost, logOut, deleteMyPost, discardDraft } = useFlow();
+  const nickname = useNickname("en");
+  const [profileOpen, setProfileOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("posts");
   const [logoutOpen, setLogoutOpen] = useState(false);
 
@@ -109,7 +112,15 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
         }
       />
 
-      <Profile name={PROFILE.name} line={`${PROFILE.flag} ${PROFILE.country} · Google account`} />
+      <ProfileHeader
+        lang="en"
+        nickname={nickname}
+        line={`${PROFILE.flag} ${PROFILE.country}`}
+        onOpen={() => {
+          track("my_item_clicked", { item: "profile", viewer: "foreigner" });
+          setProfileOpen(true);
+        }}
+      />
 
       <MyTabs
         label="My activity"
@@ -193,6 +204,20 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
             </div>
           ))}
       </div>
+
+      <ProfileSheet
+        lang="en"
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        nickname={nickname}
+        email={PROFILE.email}
+        onDelete={() => {
+          deleteMyPost();
+          discardDraft();
+          logOut();
+          router.push("/");
+        }}
+      />
 
       <LogoutSheet
         lang="en"

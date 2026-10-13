@@ -42,16 +42,6 @@ export function timeAgo(at: number, now: number, lang: MyLang) {
   });
 }
 
-/** 프로필 — 사진 없이 이름 · 나라만 */
-export function Profile({ name, line }: { name: string; line: string }) {
-  return (
-    <div className="flex flex-col gap-1.5 px-6 pt-2 pb-6">
-      <p className="font-display text-[32px] leading-[1.1]">{name}</p>
-      <p className="text-[15px] text-muted">{line}</p>
-    </div>
-  );
-}
-
 /** 탭 2개 (이름 + 개수) */
 export function MyTabs<T extends string>({
   tabs,

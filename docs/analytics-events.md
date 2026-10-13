@@ -107,8 +107,11 @@
 | 이벤트 | 어디서 | 속성 |
 |---|---|---|
 | `my_page_viewed` | 마이 열림 | 외국인 `posts`·`comments` / 한국인 `votes`·`comments` (개수) |
-| `my_item_clicked` | 마이에서 누름 | `item`(post/voted_post/comment/write/browse/tab_*/logout), 한마디는 `reply` |
+| `my_item_clicked` | 마이에서 누름 | `item`(profile/post/voted_post/comment/write/browse/tab_*/logout), 한마디는 `reply` |
 | `logged_out` | 로그아웃 확인 | `from` |
+| `nickname_rerolled` | 프로필 시트 🔄 (새 랜덤 닉네임) | `spins`(이번에 몇 번째) |
+| `nickname_changed` | 새 닉네임 적용 | `spins`(몇 번 돌려서 골랐는지) |
+| `account_deleted` | 계정 삭제 확인 | — |
 
 투표 로그인: `login_sheet_opened` / `login_cancelled` / `login_completed` 에 `from: "vote"` (한국인이 로그인 없이 투표하려 할 때).
 

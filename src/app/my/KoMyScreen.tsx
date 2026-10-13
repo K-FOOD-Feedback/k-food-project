@@ -9,12 +9,13 @@ import { IconButton, PillButton } from "@/components/Buttons";
 import { Screen, TopBar } from "@/components/Layout";
 import { track, useTrackOnce } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
-import { CommentCard, Empty, LogoutSheet, MyTabs, PhotoTile, Profile, timeAgo } from "./parts";
+import { CommentCard, Empty, LogoutSheet, MyTabs, PhotoTile, timeAgo } from "./parts";
+import { ProfileHeader, ProfileSheet, useNickname } from "./profile";
 
 /*
   7. 마이 · 한국인 /my (담당 송희)
   외국인 마이와 같은 구조 — "내가 한 참견을 빠르게 확인"
-  - 프로필: 이름 · 나라만
+  - 프로필: 랜덤 닉네임 › (› 누르면 닉네임 바꾸기 · Google 계정 · 계정 삭제 시트)
   - 투표 / 한마디 탭
     · 투표: 내가 투표한 글을 2열 사진 타일로, 칩은 내가 고른 선택지 → 상세
     · 한마디: 내가 남긴 한마디(답글 포함)를 알림함과 같은 카드로, 최신 순 → 그 한마디 상세(레이어)
@@ -33,13 +34,15 @@ import { CommentCard, Empty, LogoutSheet, MyTabs, PhotoTile, Profile, timeAgo } 
   - 글이 지워졌으면: "삭제된 글", 누를 수 없음
   - 시간: 방금 · 5분 전 · 3시간 전 · 어제 · 3일 전 · 9월 3일 · 2025년 9월 8일
 */
-const PROFILE = { name: "민준", line: "🇰🇷 한국 · Google 계정" };
+const PROFILE = { email: "minjun.kim@gmail.com" };
 
 type Tab = "votes" | "comments";
 
 export function KoMyScreen() {
   const router = useRouter();
   const { logOut } = useFlow();
+  const nickname = useNickname("ko");
+  const [profileOpen, setProfileOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("votes");
   const [logoutOpen, setLogoutOpen] = useState(false);
 
@@ -67,7 +70,14 @@ export function KoMyScreen() {
         }
       />
 
-      <Profile name={PROFILE.name} line={PROFILE.line} />
+      <ProfileHeader
+        lang="ko"
+        nickname={nickname}
+        onOpen={() => {
+          track("my_item_clicked", { item: "profile", viewer: "korean" });
+          setProfileOpen(true);
+        }}
+      />
 
       <MyTabs
         label="내 활동"
@@ -142,6 +152,18 @@ export function KoMyScreen() {
             </div>
           ))}
       </div>
+
+      <ProfileSheet
+        lang="ko"
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        nickname={nickname}
+        email={PROFILE.email}
+        onDelete={() => {
+          logOut();
+          router.push("/");
+        }}
+      />
 
       <LogoutSheet
         lang="ko"
