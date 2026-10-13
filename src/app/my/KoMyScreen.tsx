@@ -11,17 +11,17 @@ import { track, useTrackOnce } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
 import { CommentCard, Empty, LogoutSheet, MyTabs, PhotoTile, timeAgo } from "./parts";
 import { forgetRole } from "@/lib/role";
-import { AccountFooter, ProfileHeader, ProfileSheet, useNickname } from "./profile";
+import { AccountFooter, AccountMenu, ProfileHeader, ProfileSheet, useNickname } from "./profile";
 
 /*
   7. 마이 · 한국인 /my (담당 송희)
   외국인 마이와 같은 구조 — "내가 한 참견을 빠르게 확인"
   - 프로필: 랜덤 닉네임 › (› 누르면 닉네임 바꾸기 시트)
-  - 맨 아래 회색 작은 글씨: Google 계정 · 계정 삭제
+  - 맨 아래 회색 작은 글씨: Google 계정
   - 투표 / 한마디 탭
     · 투표: 내가 투표한 글을 2열 사진 타일로, 칩은 내가 고른 선택지 → 상세
     · 한마디: 내가 남긴 한마디(답글 포함)를 알림함과 같은 카드로, 최신 순 → 그 한마디 상세(레이어)
-  - 오른쪽 위 로그아웃
+  - 오른쪽 위 ⋯: 로그아웃 · 계정 삭제
   실제 기록: 이 브라우저에 저장된 투표·한마디 (서버 전까지). 프로필만 목업
 
   ── 경우별 정의 ─────────────────────────────
@@ -55,20 +55,23 @@ export function KoMyScreen() {
 
   useTrackOnce("my_page_viewed", { viewer: "korean", votes: votedPosts.length, comments: mine.length });
 
+  // 계정 삭제 (⋯ 메뉴에서 한 번 더 물은 뒤)
+  const deleteAccount = () => {
+    // 서버 전까지: 이 브라우저에 남은 내 투표·한마디도 지움 (안 지우면 삭제 직후에도 마이에 그대로 보임)
+    for (const k of Object.keys(localStorage)) {
+      if (k.startsWith("kfood:vote:") || k.startsWith("kfood:comments:")) localStorage.removeItem(k);
+    }
+    forgetRole();
+    logOut();
+    router.push("/");
+  };
+
   return (
     <Screen className="pb-16">
       <TopBar
         left={<IconButton icon="chevron-left" label="뒤로" href="/home" />}
-        right={
-          <IconButton
-            icon="log-out"
-            label="로그아웃"
-            onClick={() => {
-              track("my_item_clicked", { item: "logout", viewer: "korean" });
-              setLogoutOpen(true);
-            }}
-          />
-        }
+        // ⋯ — 로그아웃 · 계정 삭제
+        right={<AccountMenu lang="ko" onLogout={() => setLogoutOpen(true)} onDelete={deleteAccount} />}
       />
 
       <ProfileHeader
@@ -154,19 +157,7 @@ export function KoMyScreen() {
           ))}
       </div>
 
-      <AccountFooter
-        lang="ko"
-        email={PROFILE.email}
-        onDelete={() => {
-          // 서버 전까지: 이 브라우저에 남은 내 투표·한마디도 지움 (안 지우면 삭제 직후에도 마이에 그대로 보임)
-          for (const k of Object.keys(localStorage)) {
-            if (k.startsWith("kfood:vote:") || k.startsWith("kfood:comments:")) localStorage.removeItem(k);
-          }
-          forgetRole();
-          logOut();
-          router.push("/");
-        }}
-      />
+      <AccountFooter lang="ko" email={PROFILE.email} />
 
       <ProfileSheet
         lang="ko"

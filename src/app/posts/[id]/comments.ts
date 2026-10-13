@@ -11,8 +11,16 @@ export const COMMENT_MAX = 20;
 export const QUICK_EMOJIS = ["🔥", "👍", "❤️", "🤤", "🥵", "😱"];
 const BUBBLE_COLORS = ["#ffe056", "#ffc6ff", "#c8b5ff", "#ccf54b", "#9fe7ff", "#ffae8f", "#7144ff", "#4ae9ff"];
 
-/** 한국인 댓글은 표시 없음, 외국인·작성자 댓글은 국기를 붙입니다. */
-export type CommentAuthor = { kind: "korean" } | { kind: "foreigner"; flag: string } | { kind: "author"; flag: string };
+/** 한국인 댓글은 표시 없음, 외국인·작성자 댓글은 국기를 붙입니다.
+ *  한마디는 익명 — 이름은 글쓴이만 (뱃지에 "글쓴이 · 닉네임", 송희·지현 합의) */
+export type CommentAuthor = { kind: "korean" } | { kind: "foreigner"; flag: string } | { kind: "author"; flag: string; name?: string };
+
+/** 뱃지 글자: 내 한마디는 "나", 글쓴이는 "글쓴이 · 닉네임", 나머지(익명)는 없음 */
+export function whoOf(comment: Comment, t: { me: string; author: string }) {
+  if (comment.mine) return t.me;
+  if (comment.author.kind !== "author") return null;
+  return comment.author.name ? `${t.author} · ${comment.author.name}` : t.author;
+}
 
 export type Comment = {
   id: string;
@@ -31,7 +39,8 @@ export type Comment = {
 const KOREAN: CommentAuthor = { kind: "korean" };
 
 /** 처음부터 달려 있는 댓글 (오래된 순, Figma 상세 화면 기준) */
-function seedsFor(postId: string, authorFlag: string): Comment[] {
+function seedsFor(postId: string, authorFlag: string, authorName?: string): Comment[] {
+  const AUTHOR: CommentAuthor = { kind: "author", flag: authorFlag, ...(authorName && { name: authorName }) };
   const id = (n: number) => `${postId}-seed-${n}`;
   return [
     { id: id(1), kind: "emoji", text: "🔥", color: "#ccf54b", author: KOREAN },
@@ -43,8 +52,8 @@ function seedsFor(postId: string, authorFlag: string): Comment[] {
     { id: id(7), kind: "text", text: "소시지 칼집 미쳤다", color: "#c8b5ff", author: KOREAN },
     // 답글 예시 (Figma 344:3209): 참치마요 한마디에 답글 2개
     { id: id(8), kind: "text", text: "치즈는 많을수록\n맛있죠!", color: "#ffe056", author: { kind: "foreigner", flag: "🇺🇸" }, replyTo: id(5) },
-    { id: id(9), kind: "text", text: "고마워요 다음에\n시도해볼게요!", color: "#ffab8a", author: { kind: "author", flag: authorFlag }, replyTo: id(5) },
-    { id: id(10), kind: "emoji", text: "❤️", color: "#ffae8f", author: { kind: "author", flag: authorFlag } },
+    { id: id(9), kind: "text", text: "고마워요 다음에\n시도해볼게요!", color: "#ffab8a", author: AUTHOR, replyTo: id(5) },
+    { id: id(10), kind: "emoji", text: "❤️", color: "#ffae8f", author: AUTHOR },
   ];
 }
 
@@ -103,11 +112,11 @@ function subscribe(onChange: () => void) {
 const noopSubscribe = () => () => {};
 
 /** 이 게시글의 댓글 (오래된 순)과 댓글 추가 함수 */
-export function useComments(postId: string, authorFlag: string) {
+export function useComments(postId: string, authorFlag: string, authorName?: string) {
   const added = useSyncExternalStore(subscribe, () => readAdded(postId), () => EMPTY);
   // 서버에서 그린 첫 화면에는 이 브라우저에 저장된 댓글이 아직 없습니다. 읽어 온 뒤에 true.
   const ready = useSyncExternalStore(noopSubscribe, () => true, () => false);
-  const comments = [...seedsFor(postId, authorFlag), ...added];
+  const comments = [...seedsFor(postId, authorFlag, authorName), ...added];
 
   // 앞으로 달 댓글의 색 (보내기 애니메이션이 미리 같은 색으로 날아가도록). ahead: 이미 날아가는 중인 개수
   const nextColor = (ahead = 0) => BUBBLE_COLORS[(added.length + ahead + 9) % BUBBLE_COLORS.length];

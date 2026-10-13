@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
-import { PillButton } from "@/components/Buttons";
+import { createPortal } from "react-dom";
+import { IconButton, PillButton } from "@/components/Buttons";
 import { Icon } from "@/components/Icon";
 import { BottomSheet } from "@/components/Layout";
 import { track } from "@/lib/analytics";
@@ -143,6 +144,9 @@ const COPY = {
     apply: "Use this nickname",
     same: "This is your nickname",
     account: "Google account",
+    more: "More",
+    closeMenu: "Close menu",
+    logout: "Log out",
     delete: "Delete account",
     delTitle: "Delete your account?",
     delBody: "Your posts and comments will be deleted. This can't be undone.",
@@ -158,6 +162,9 @@ const COPY = {
     apply: "이 닉네임으로 할래요",
     same: "지금 쓰는 닉네임이에요",
     account: "Google 계정",
+    more: "더보기",
+    closeMenu: "메뉴 닫기",
+    logout: "로그아웃",
     delete: "계정 삭제",
     delTitle: "계정을 삭제할까요?",
     delBody: "투표와 한마디가 모두 사라지고, 되돌릴 수 없어요.",
@@ -347,23 +354,91 @@ export function ProfileSheet({
 }
 
 /** 마이 맨 아래 — Google 계정 · 계정 삭제 (회색 작은 글씨, 잘 안 보이게) */
-export function AccountFooter({ lang, email, onDelete }: { lang: MyLang; email: string; onDelete: () => void }) {
+/** 마이 맨 아래 회색 작은 글씨 — 로그인한 Google 계정 (계정 삭제는 오른쪽 위 ⋯ 메뉴로) */
+export function AccountFooter({ lang, email }: { lang: MyLang; email: string }) {
   const t = COPY[lang];
+  return (
+    <p className="mt-16 px-6 text-center text-[12px] text-neutral-400">
+      {t.account} · {email}
+    </p>
+  );
+}
+
+/**
+ * 마이 오른쪽 위 ⋯ — 로그아웃 · 계정 삭제
+ * 로그아웃은 쓰는 화면의 확인 시트(onLogout), 계정 삭제는 여기서 한 번 더 묻고 onDelete
+ */
+export function AccountMenu({ lang, onLogout, onDelete }: { lang: MyLang; onLogout: () => void; onDelete: () => void }) {
+  const t = COPY[lang];
+  const viewer = lang === "en" ? "foreigner" : "korean";
+  const [open, setOpen] = useState(false);
   const [confirm, setConfirm] = useState(false);
+
+  // 메뉴는 Esc로 닫힘
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  const items = [
+    { icon: "log-out" as const, label: t.logout, danger: false, onClick: onLogout, item: "logout" },
+    { icon: "trash" as const, label: t.delete, danger: true, onClick: () => setConfirm(true), item: "delete_account" },
+  ];
+
   return (
     <>
-      <div className="mt-16 flex flex-col items-center gap-2 px-6 text-center text-[12px] text-neutral-400">
-        <p>
-          {t.account} · {email}
-        </p>
-        <button
-          type="button"
-          onClick={() => setConfirm(true)}
-          className="px-2 py-1 underline underline-offset-2 transition active:opacity-70"
-        >
-          {t.delete}
-        </button>
-      </div>
+      <IconButton
+        icon="more"
+        label={t.more}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => {
+          track("my_item_clicked", { item: "more", viewer });
+          setOpen(true);
+        }}
+      />
+
+      {open &&
+        createPortal(
+          <>
+            <button
+              type="button"
+              aria-label={t.closeMenu}
+              tabIndex={-1}
+              onClick={() => setOpen(false)}
+              className="fixed inset-0 z-40 animate-fade-in bg-black/50"
+            />
+            {/* 상세 화면 ⋯ 메뉴(PostMenu)와 같은 모양 */}
+            <div className="pointer-events-none fixed inset-x-0 top-[calc(env(safe-area-inset-top)+64px)] z-50 mx-auto flex w-full max-w-[430px] justify-end px-2">
+              <div
+                role="menu"
+                className="pointer-events-auto flex w-fit origin-top-right animate-menu flex-col gap-0.5 rounded-[24px] bg-surface p-1.5 text-on-dark shadow-[0_12px_32px_rgba(0,0,0,0.4)]"
+              >
+                {items.map((it) => (
+                  <button
+                    key={it.label}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      track("my_item_clicked", { item: it.item, viewer });
+                      setOpen(false);
+                      it.onClick();
+                    }}
+                    className={`flex h-12 w-[184px] items-center gap-3 rounded-[18px] px-3 text-[14px] font-bold leading-[1.3] hover:bg-surface-2 ${
+                      it.danger ? "text-error" : ""
+                    }`}
+                  >
+                    <Icon name={it.icon} size={20} />
+                    {it.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>,
+          document.body,
+        )}
 
       {/* 계정 삭제 확인 */}
       <BottomSheet open={confirm} onClose={() => setConfirm(false)} label={t.delete}>
@@ -378,7 +453,7 @@ export function AccountFooter({ lang, email, onDelete }: { lang: MyLang; email: 
           <PillButton
             tone="error"
             onClick={() => {
-              track("account_deleted", { viewer: lang === "en" ? "foreigner" : "korean" });
+              track("account_deleted", { viewer });
               saveNickname(lang, null);
               markOnboarded(lang, false);
               if (lang === "en") saveCountry(null);

@@ -72,6 +72,7 @@ export function MyPostComments({ backHref, backTo }: { backHref: string; backTo:
           postId={post.id}
           commentCount={post.commentCount}
           authorFlag={post.author.flag}
+          authorName={post.author.name}
           title={{ ko: post.title, en: post.title }}
         />
       </main>

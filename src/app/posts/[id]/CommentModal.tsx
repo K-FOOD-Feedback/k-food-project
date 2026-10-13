@@ -4,7 +4,7 @@ import { PillButton } from "@/components/Buttons";
 import { Icon } from "@/components/Icon";
 import { HEADER_BUTTON, PageHeader } from "@/components/PageHeader";
 import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type FormEvent, type Ref } from "react";
-import { COMMENT_MAX, type Comment } from "./comments";
+import { COMMENT_MAX, whoOf, type Comment } from "./comments";
 import { COMMENTS_COPY, type CommentsCopy, type Lang } from "./copy";
 import { HIDDEN_COLOR } from "./hidden";
 import { splitLines } from "./GravityPile";
@@ -862,7 +862,7 @@ const EDIT_H = 130;
   card: 원글 카드 — 카드 안쪽 위에 붙임
 */
 function Badges({ comment, replies, t, card = false }: { comment: Comment; replies: number; t: CommentsCopy; card?: boolean }) {
-  const who = comment.mine ? t.me : comment.author.kind === "author" ? t.author : null;
+  const who = whoOf(comment, t);
   if (!who && !replies) return null;
   return (
     <span className={`absolute flex gap-1 ${card ? "top-3 left-1/2 -translate-x-1/2" : "-top-2.5 left-6"}`}>

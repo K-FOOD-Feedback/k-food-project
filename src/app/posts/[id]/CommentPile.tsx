@@ -46,6 +46,7 @@ export function CommentPile({
   postId,
   commentCount,
   authorFlag,
+  authorName,
   postTitle,
   variant = "preview",
   lang = "ko",
@@ -56,6 +57,8 @@ export function CommentPile({
   postId: string;
   commentCount: number;
   authorFlag: string;
+  /** 글쓴이 닉네임 — 글쓴이 한마디 뱃지에 (한마디는 익명, 이름은 글쓴이만) */
+  authorName?: string;
   /** ↗(한마디 전체 보기) 주소 — 상세가 들어온 곳(?from=)을 이어 붙일 때 (없으면 기본 주소) */
   fullHref?: string;
   /** 전체 화면 제목 아래에 보이는 게시글 제목 */
@@ -69,7 +72,7 @@ export function CommentPile({
 }) {
   const full = variant === "full";
   const scrolledOld = useRef(false); // 분석: 전체 화면에서 예전 댓글까지 스크롤했는지
-  const { comments: all, addedCount, add, edit, remove, nextColor, ready } = useComments(postId, authorFlag);
+  const { comments: all, addedCount, add, edit, remove, nextColor, ready } = useComments(postId, authorFlag, authorName);
   const t = COMMENTS_COPY[lang];
   // 영어 화면에서 자동 번역이 켜져 있으면 한마디도 영어로 보여 줍니다 (언어 창 아래 켬/끔).
   const autoTranslate = useAutoTranslate();

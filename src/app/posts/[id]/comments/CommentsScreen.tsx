@@ -24,6 +24,7 @@ export function CommentsScreen({
   postId,
   commentCount,
   authorFlag,
+  authorName,
   title,
 }: {
   /** 주소 ?lang= 으로 정해진 언어 (없으면 null → 저장된 언어) */
@@ -36,6 +37,8 @@ export function CommentsScreen({
   postId: string;
   commentCount: number;
   authorFlag: string;
+  /** 글쓴이 닉네임 (글쓴이 한마디 뱃지) */
+  authorName?: string;
   title: Record<Lang, string>;
 }) {
   // 한국인도 상세 화면과 같은 언어 설정(koreanLang, 기본 한국어)을 함께 씁니다 — 상세에서 고른 언어가 여기서도 이어짐.
@@ -75,6 +78,7 @@ export function CommentsScreen({
           postId={postId}
           commentCount={commentCount}
           authorFlag={authorFlag}
+          authorName={authorName}
           postTitle={title[lang]}
           variant="full"
           lang={lang}

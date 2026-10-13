@@ -2,7 +2,7 @@
 
 import Matter from "matter-js";
 import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type Ref } from "react";
-import type { Comment } from "./comments";
+import { whoOf, type Comment } from "./comments";
 import { COMMENTS_COPY, type CommentsCopy, type Lang } from "./copy";
 
 const { Engine, Bodies, Body, Composite, Events, Sleeping } = Matter;
@@ -626,7 +626,7 @@ type Tags = {
 // 답글이 어느 글에 단 것인지("↩ 원글") 태그는 뱃지가 너무 많아 지저분해서 뺐습니다.
 function tagsOf(comment: Comment, replyCounts: Map<string, number>, t: CommentsCopy): Tags {
   return {
-    who: comment.mine ? t.me : comment.author.kind === "author" ? t.author : null,
+    who: whoOf(comment, t),
     replies: replyCounts.get(comment.id) ?? 0,
   };
 }

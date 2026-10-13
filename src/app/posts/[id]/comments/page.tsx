@@ -50,6 +50,7 @@ export default async function Page(props: PageProps<"/posts/[id]/comments">) {
           postId={post.id}
           commentCount={post.commentCount}
           authorFlag={post.author.flag}
+          authorName={post.author.name}
           title={{ ko: post.title, en: post.en.title }}
         />
       </main>

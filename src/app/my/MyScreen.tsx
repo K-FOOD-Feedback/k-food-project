@@ -11,17 +11,17 @@ import { MY_POST_ID } from "@/lib/write-data";
 import { coverOf, useFlow } from "@/lib/write-store";
 import { CommentCard, Empty, LogoutSheet, MyTabs, PhotoTile, TIME, timeAgo } from "./parts";
 import { forgetRole } from "@/lib/role";
-import { AccountFooter, countryFlag, countryName, ProfileHeader, ProfileSheet, useCountry, useNickname } from "./profile";
+import { AccountFooter, AccountMenu, countryFlag, countryName, ProfileHeader, ProfileSheet, useCountry, useNickname } from "./profile";
 
 /*
   7. 마이 · 외국인 /my/en (담당 송희)
   재미 요소 없이 "내 글 · 내 한마디를 빠르게 확인"하는 화면
   - 프로필: 랜덤 닉네임 › · 나라 (프로필 사진 없음). › 누르면 닉네임 바꾸기 시트
-  - 맨 아래 회색 작은 글씨: Google 계정 · 계정 삭제
+  - 맨 아래 회색 작은 글씨: Google 계정
   - Posts / Comments 탭
     · Posts: 2열 사진 타일 (음식 사진이 주인공) + 받은 투표 칩 → 상세
     · Comments: 알림함과 같은 카드 (왼쪽 그 글 사진 · 한마디 · 어느 글에 썼는지 · 시간) → 그 한마디 상세(레이어)
-  - 오른쪽 위는 로그아웃만 (알림은 메인 🔔에 있어서 여기엔 두지 않음)
+  - 오른쪽 위 ⋯: 로그아웃 · 계정 삭제 (알림은 메인 🔔에 있어서 여기엔 두지 않음)
   - 쓰다 만 글은 여기 없음 (글 쓰기를 시작할 때 이어 쓰기로 보여 줌)
   서버 전까지: 프로필은 목업(Sam · Canada), 내 글은 이 브라우저의 글 1개, 한마디는 목업
   리뷰용: /my/en?comments=none 으로 열면 한마디가 없는 상태
@@ -99,20 +99,21 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
 
   useTrackOnce("my_page_viewed", { viewer: "foreigner", posts: posts.length, comments: comments.length });
 
+  // 계정 삭제 (⋯ 메뉴에서 한 번 더 물은 뒤)
+  const deleteAccount = () => {
+    deleteMyPost();
+    discardDraft();
+    forgetRole(); // 다음에 / 로 오면 메인이 아니라 랜딩부터
+    logOut();
+    router.push("/");
+  };
+
   return (
     <Screen className="pb-16">
       <TopBar
         left={<IconButton icon="chevron-left" label="Back" href="/home?lang=en" />}
-        right={
-          <IconButton
-            icon="log-out"
-            label="Log out"
-            onClick={() => {
-              track("my_item_clicked", { item: "logout", viewer: "foreigner" });
-              setLogoutOpen(true);
-            }}
-          />
-        }
+        // ⋯ — 로그아웃 · 계정 삭제
+        right={<AccountMenu lang="en" onLogout={() => setLogoutOpen(true)} onDelete={deleteAccount} />}
       />
 
       <ProfileHeader
@@ -207,17 +208,7 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
           ))}
       </div>
 
-      <AccountFooter
-        lang="en"
-        email={PROFILE.email}
-        onDelete={() => {
-          deleteMyPost();
-          discardDraft();
-          forgetRole(); // 다음에 / 로 오면 메인이 아니라 랜딩부터
-          logOut();
-          router.push("/");
-        }}
-      />
+      <AccountFooter lang="en" email={PROFILE.email} />
 
       <ProfileSheet
         lang="en"
