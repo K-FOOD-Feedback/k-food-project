@@ -22,7 +22,7 @@ let editSeq = 0;
     (메인 카드에 주제가 이미 보이고, 투표 중간에 질문이 바뀌면 공정하지 않으니까)
 */
 
-export function EditScreen() {
+export function EditScreen({ detailHref = `/posts/${MY_POST_ID}` }: { detailHref?: string }) {
   const router = useRouter();
   const { myPost, updateMyPost } = useFlow();
   const initial = myPost ?? SAMPLE_MY_POST;
@@ -74,7 +74,7 @@ export function EditScreen() {
           <IconButton
             icon="x"
             label="Discard changes"
-            href={`/posts/${MY_POST_ID}`}
+            href={detailHref}
             onClick={() => {
               const changed = Object.values(changedFields()).some(Boolean);
               track("post_edit_discarded", { had_changes: changed, locked });
@@ -159,7 +159,7 @@ export function EditScreen() {
             onClick={() => {
               track("post_edit_saved", { ...changedFields(), locked, votes: initial.votes });
               updateMyPost(form);
-              router.push(`/posts/${MY_POST_ID}`);
+              router.push(detailHref);
             }}
           >
             Save changes

@@ -14,12 +14,21 @@ import { PostMenu } from "@/components/PostMenu";
 import { TrackedLink } from "@/components/Track";
 import { MY_POST_ID } from "@/lib/write-data";
 import { track } from "@/lib/analytics";
+import { backHrefFrom, withFrom, type BackFrom } from "@/lib/back";
 import { CommentPile } from "./CommentPile";
 import { paperlogy } from "./font";
 import { VoteBowl } from "./VoteBowl";
 
 /** 상세 화면 · 한국인 (Figma 263:10329 전체, 263:10251 기기 화면의 플로팅 버튼) */
-export function DetailScreen({ post }: { post: HomePost }) {
+/**
+ * from: 이 상세에 들어온 곳 (?from=, src/lib/back.ts) — ← 목적지.
+ * 다음 글로 넘기거나 한마디로 갔다 와도 그대로 이어 붙여서, 처음 들어온 곳으로 돌아감
+ */
+export function DetailScreen({ post, from }: { post: HomePost; from?: BackFrom }) {
+  // 들어온 곳이 없으면 메인 (내 글은 외국인이 보는 화면이라 외국인 메인)
+  const backHref = backHrefFrom(from, post.id === MY_POST_ID ? "/home?lang=en" : "/home");
+  // 한마디 전체 화면 — ← 가 이 상세로 오도록 via=detail, 들어온 곳(from)은 이어 붙임
+  const commentsHref = withFrom(`/posts/${post.id}/comments?via=detail`, from);
   const voted = useMyVote(post.id) !== null;
   const voteRef = useRef<HTMLDivElement>(null);
   // 투표 영역을 한 번이라도 봤으면(스크롤 또는 버튼) 플로팅 버튼을 다시 띄우지 않습니다.
@@ -426,7 +435,7 @@ export function DetailScreen({ post }: { post: HomePost }) {
       content.style.opacity = "0";
       track("post_opened", { post_id: target.id, from: "swipe", from_post_id: post.id, direction: dir });
       nextTrip = { postId: target.id, at: Date.now(), swipe: dir };
-      window.setTimeout(() => router.push(`/posts/${target.id}`), SWIPE_OUT_MS - 40);
+      window.setTimeout(() => router.push(withFrom(`/posts/${target.id}`, from)), SWIPE_OUT_MS - 40);
     };
     const onTouchStart = (e: TouchEvent) => {
       if (e.touches.length !== 1) return void (start = null);
@@ -462,7 +471,7 @@ export function DetailScreen({ post }: { post: HomePost }) {
       document.removeEventListener("pointerup", onMouseUp);
       document.removeEventListener("pointercancel", onMouseUp);
     };
-  }, [router, next, prev, post.id]);
+  }, [router, next, prev, post.id, from]);
 
   // 한마디 전체 화면에서 돌아오면: ↗를 눌렀던 스크롤 위치로 돌려 놓고,
   // 화면에 보이는 카드들이 위에서부터 하나씩 살짝 떠오르며 나타납니다.
@@ -475,7 +484,7 @@ export function DetailScreen({ post }: { post: HomePost }) {
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
       const link = (e.target as Element | null)?.closest?.("a");
-      if (link?.getAttribute("href") === `/posts/${post.id}/comments`) {
+      if (link?.getAttribute("href")?.split("?")[0] === `/posts/${post.id}/comments`) {
         commentsTrip = { postId: post.id, scrollY: window.scrollY, at: Date.now() };
       }
     };
@@ -526,7 +535,7 @@ export function DetailScreen({ post }: { post: HomePost }) {
       {/* 공통 상단 바 (src/components/PageHeader — 모든 화면이 같은 위치·크기·디자인) */}
       <PageHeader
         left={
-          <Link href="/home" className={HEADER_BUTTON} aria-label="뒤로 가기">
+          <Link href={backHref} className={HEADER_BUTTON} aria-label="뒤로 가기">
             <ChevronLeftIcon />
           </Link>
         }
@@ -604,13 +613,13 @@ export function DetailScreen({ post }: { post: HomePost }) {
                   "[&>div>*:not(section)]:hidden [&>div>section>*:not([data-fade])]:blur-[8px]"
             }
           >
-            <CommentPile postId={post.id} commentCount={post.commentCount} authorFlag={post.author.flag} />
+            <CommentPile postId={post.id} commentCount={post.commentCount} authorFlag={post.author.flag} fullHref={commentsHref} />
           </div>
           <CommentLock locked={!voted} onVote={goToVote} />
           {/* 투표 후: 한마디 칸 어디를 눌러도 한마디 전체 화면으로 (상세에서는 말풍선 호버·모달 없이 칸 전체가 하나의 링크) */}
           {voted && (
             <TrackedLink
-              href={`/posts/${post.id}/comments`}
+              href={commentsHref}
               event="comments_opened"
               props={{ post_id: post.id, comment_count: post.commentCount, from: "detail" }}
               aria-label="한마디 전체 보기"
@@ -622,7 +631,7 @@ export function DetailScreen({ post }: { post: HomePost }) {
         {/* 화면 맨 아래 "다음 훈수 거리" (Figma 332:3426 Question CTA) — 떠 있지 않고 내용 끝에 놓임 */}
         <div className="mt-[46px]">
           <ArrowCta
-            href={`/posts/${next.id}`}
+            href={withFrom(`/posts/${next.id}`, from)}
             caption="다음 훈수 거리"
             title={next.title}
             // 넘어갈 글의 카드 색 (게시글 데이터 색이라 토큰 대신 그대로)

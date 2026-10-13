@@ -140,7 +140,7 @@ export function KoMyScreen() {
                 return (
                   <CommentCard
                     key={c.id}
-                    href={post ? `/posts/${postId}/comments?comment=${encodeURIComponent(c.id)}` : undefined}
+                    href={post ? `/posts/${postId}/comments?comment=${encodeURIComponent(c.id)}&from=my` : undefined}
                     onClick={() => track("my_item_clicked", { item: "comment", reply: !!c.replyTo, viewer: "korean" })}
                     photo={post?.cardPhoto}
                     text={c.text}
@@ -189,7 +189,7 @@ function VotedTile({ post }: { post: HomePost }) {
   const picked = choice === null ? null : post.question.options[choice]?.replace(/\n/g, " ");
   return (
     <PhotoTile
-      href={`/posts/${post.id}`}
+      href={`/posts/${post.id}?from=my`}
       onClick={() => track("my_item_clicked", { item: "voted_post", viewer: "korean" })}
       photo={post.cardPhoto}
       chip={picked ? `내 선택 · ${picked}` : "투표함"}

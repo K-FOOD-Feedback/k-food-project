@@ -48,10 +48,13 @@ export function CommentPile({
   postTitle,
   variant = "preview",
   lang = "ko",
+  fullHref,
 }: {
   postId: string;
   commentCount: number;
   authorFlag: string;
+  /** ↗(한마디 전체 보기) 주소 — 상세가 들어온 곳(?from=)을 이어 붙일 때 (없으면 기본 주소) */
+  fullHref?: string;
   /** 전체 화면 제목 아래에 보이는 게시글 제목 */
   postTitle?: string;
   variant?: "preview" | "full";
@@ -387,7 +390,7 @@ export function CommentPile({
           {/* 상세 화면(DetailScreen)이 이 주소로 가는 링크 클릭을 감지해 돌아올 때의 전환·스크롤 위치를 씁니다.
               href를 바꾸면 상세 화면 담당 세션에 알려 주세요. */}
           <TrackedLink
-              href={`/posts/${postId}/comments`}
+              href={fullHref ?? `/posts/${postId}/comments`}
               event="comments_opened"
               props={{ post_id: postId, comment_count: commentCount + addedCount }}
               aria-label="댓글 전체 보기"

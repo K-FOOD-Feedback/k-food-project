@@ -23,6 +23,7 @@ export const COMMENTS_COPY = {
     hidden: "가려진 한마디예요",
     backToDetail: "상세로 돌아가기",
     backToNotifications: "알림으로 돌아가기",
+    back: "뒤로 가기",
     // 답글 레이어
     layer: (text: string) => `한마디: ${text}`,
     close: "닫기",
@@ -64,6 +65,7 @@ export const COMMENTS_COPY = {
     hidden: "Hidden comment",
     backToDetail: "Back to post",
     backToNotifications: "Back to notifications",
+    back: "Back",
     layer: (text: string) => `Comment: ${text}`,
     close: "Close",
     cancelEdit: "Cancel editing",

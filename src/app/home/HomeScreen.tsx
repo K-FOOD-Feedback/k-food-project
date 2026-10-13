@@ -104,7 +104,8 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
         photoMask: shape.mask,
         color: post.color,
       });
-    router.push(`/posts/${post.id}`);
+    // 외국인 메인에서 열면 상세의 ← 가 외국인 메인으로 (src/lib/back.ts)
+    router.push(lang === "en" ? `/posts/${post.id}?from=home-en` : `/posts/${post.id}`);
   };
 
   return (
