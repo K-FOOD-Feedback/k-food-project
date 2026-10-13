@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Figtree } from "next/font/google";
+import { Suspense } from "react";
+import { ViewerToggle } from "@/components/ViewerToggle";
 import { FlowProvider } from "@/lib/write-store";
 import { Analytics } from "./Analytics";
 import { paperlogy } from "./posts/[id]/font";
@@ -40,6 +42,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         {/* 작성 → 게시 → 수정 흐름 상태 (서버 연결 전까지 메모리에 보관) */}
         <FlowProvider>{children}</FlowProvider>
+        {/* 작업용 한국인 ↔ 외국인 화면 바꾸기 (개발 서버에서만, 배포 주소는 ?dev=1) — 주소를 읽어서 Suspense로 감쌈 */}
+        <Suspense>
+          <ViewerToggle />
+        </Suspense>
         {/* Mixpanel (토큰 없으면 동작 안 함) */}
         <Analytics />
       </body>

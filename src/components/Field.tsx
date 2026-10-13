@@ -4,12 +4,16 @@ import { useEffect, useId, useRef } from "react";
 import { Icon } from "./Icon";
 
 /** Input/Title · Input/Story — 라벨 + 글자 수 + 자동 높이 텍스트 영역 */
+/** 글자 크기 15px × 줄 간격 1.5 */
+const LINE_PX = 22.5;
+
 export function TextField({
   label,
   value,
   onChange,
   maxLength,
   rows = 1,
+  maxRows = rows > 1 ? 8 : 4,
   locked = false,
   onBlur,
   placeholder,
@@ -20,6 +24,8 @@ export function TextField({
   onChange?: (value: string) => void;
   maxLength?: number;
   rows?: number;
+  /** 이 줄 수까지만 늘어나고 넘치면 칸 안에서 스크롤 (여러 줄 칸 기본 8줄) */
+  maxRows?: number;
   locked?: boolean;
   /** 입력칸에서 나갈 때 (분석 기록 등 — 글자마다가 아니라 한 번만) */
   onBlur?: (value: string) => void;
@@ -30,9 +36,12 @@ export function TextField({
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    // 글이 길어지면 늘어나다가 maxRows 줄에서 멈추고, 그 뒤로는 칸 안에서 스크롤 (화면이 끝없이 길어지지 않게)
     el.style.height = "auto";
-    el.style.height = `${el.scrollHeight}px`;
-  }, [value]);
+    const max = maxRows * LINE_PX + 1;
+    el.style.height = `${Math.min(el.scrollHeight, max)}px`;
+    el.style.overflowY = el.scrollHeight > max ? "auto" : "hidden";
+  }, [value, maxRows]);
 
   return (
     <div className="group flex w-full flex-col gap-2 px-5 py-3">
@@ -63,7 +72,7 @@ export function TextField({
           aria-readonly={locked}
           onBlur={(e) => onBlur?.(e.target.value)}
           onChange={(e) => onChange?.(e.target.value.replace(rows === 1 ? /\n/g : /$^/, ""))}
-          className={`min-w-0 flex-1 resize-none overflow-hidden bg-transparent text-[15px] leading-[1.5] outline-none placeholder:text-neutral-400 ${
+          className={`min-w-0 flex-1 resize-none overflow-hidden overscroll-contain bg-transparent text-[15px] leading-[1.5] outline-none placeholder:text-neutral-400 ${
             locked ? "text-muted" : "text-on-dark"
           }`}
         />

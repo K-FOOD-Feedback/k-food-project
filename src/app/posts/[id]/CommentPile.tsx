@@ -53,6 +53,7 @@ export function CommentPile({
   fullHref,
   writeLocked = false,
   onLockedWrite,
+  fixture,
 }: {
   postId: string;
   commentCount: number;
@@ -69,10 +70,14 @@ export function CommentPile({
   /** 로그인 전 외국인: 입력칸·이모지·답글 칸을 누르면 쓰는 대신 onLockedWrite (로그인 시트) */
   writeLocked?: boolean;
   onLockedWrite?: () => void;
+  /** 점검 화면(/dev/edge-cases) 전용: 저장된 한마디 대신 이 목록을 보여 줌 */
+  fixture?: Comment[];
 }) {
   const full = variant === "full";
   const scrolledOld = useRef(false); // 분석: 전체 화면에서 예전 댓글까지 스크롤했는지
-  const { comments: all, addedCount, add, edit, remove, nextColor, ready } = useComments(postId, authorFlag, authorName);
+  const stored = useComments(postId, authorFlag, authorName);
+  const { addedCount, add, edit, remove, nextColor, ready } = stored;
+  const all = fixture ?? stored.comments;
   const t = COMMENTS_COPY[lang];
   // 영어 화면에서 자동 번역이 켜져 있으면 한마디도 영어로 보여 줍니다 (언어 창 아래 켬/끔).
   const autoTranslate = useAutoTranslate();
@@ -419,9 +424,22 @@ export function CommentPile({
             </TrackedLink>
         </div>
 
-        <div ref={zone}>
+        <div ref={zone} className="relative">
           {/* 칸이 작아서 맨 위에 쌓일 최신 6개만 쏟아집니다 (많아도 금방 끝나게) */}
-          <GravityPile ref={pile} comments={comments} ready={ready} rainOnOpen={6} lang={lang} />
+          {/* 한마디가 하나도 없으면 칸을 낮추고 안내만 (첫 한마디가 날아와 앉을 자리는 남겨 둠) */}
+          <GravityPile
+            ref={pile}
+            comments={comments}
+            ready={ready}
+            rainOnOpen={6}
+            lang={lang}
+            className={ready && comments.length === 0 ? "h-[132px]" : undefined}
+          />
+          {ready && comments.length === 0 && (
+            <p className="pointer-events-none absolute inset-0 flex items-center justify-center pb-6 text-center text-[15px] leading-[1.45] font-semibold whitespace-pre-line text-white/50">
+              {t.emptyPile}
+            </p>
+          )}
         </div>
         {/* data-fade: 상세 화면이 잠금 상태에서 칸 내용을 흐릴 때 이 그라데이션은 흐리지 않도록 (흐리면 아래 끝이 비쳐 보임) */}
         <div data-fade className="pointer-events-none absolute inset-x-0 bottom-0 h-[92px] bg-linear-to-b from-[#292929]/0 to-[#292929]" />

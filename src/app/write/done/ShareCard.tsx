@@ -195,8 +195,9 @@ function PhotoCard({ post, t }: { post: ShareCardPost; t: Copy }) {
       <StarPhoto src={post.photo} size={176} className="mx-auto" />
       {/* 제목 묶음 */}
       <div className="flex flex-col gap-1 px-0.5 pt-4 pb-3.5">
-        <p className="line-clamp-2 font-display text-[19px] leading-[1.08] [text-wrap:balance]">{post.title}</p>
-        <p className="text-[9px] font-semibold opacity-70">{post.author}</p>
+        {/* 제목 2줄·작성자 1줄까지, 넘치면 … (띄어쓰기 없는 긴 단어도 칸 안에서 줄바꿈) */}
+        <p className="line-clamp-2 font-display text-[19px] leading-[1.08] [text-wrap:balance] [overflow-wrap:anywhere]">{post.title}</p>
+        <p className="truncate text-[9px] font-semibold opacity-70">{post.author}</p>
       </div>
       <Footer t={t} />
     </div>
@@ -210,13 +211,15 @@ function VoteCard({ post, t }: { post: ShareCardPost; t: Copy }) {
       <StarPhoto src={post.photo} size={118} className="-rotate-6" />
       {/* 인스타 투표 스티커: 질문 묶음 → 선택지 묶음 */}
       <div className="mt-3.5 flex w-full flex-col gap-2.5 rounded-[16px] bg-white p-3 text-on-light shadow-[0_6px_16px_rgba(0,0,0,0.2)]">
-        <p className="text-center font-display text-[13px] leading-[1.15] [text-wrap:balance]">{post.voteQuestion}</p>
+        {/* 질문 2줄까지, 넘치면 … */}
+        <p className="line-clamp-2 text-center font-display text-[13px] leading-[1.15] [text-wrap:balance] [overflow-wrap:anywhere]">{post.voteQuestion}</p>
         <div className="flex flex-col gap-1">
-          {post.options.slice(0, 4).map((o) => (
-            <span key={o} className="flex min-h-6 items-center gap-1.5 rounded-full bg-black/[0.06] px-2.5 py-1 text-[10px] font-bold leading-[1.2]">
+          {post.options.slice(0, 4).map((o, i) => (
+            // 같은 글자 선택지가 있을 수 있어서 순서로 구분
+            <span key={i} className="flex min-h-6 items-center gap-1.5 rounded-full bg-black/[0.06] px-2.5 py-1 text-[10px] font-bold leading-[1.2]">
               <span className="size-2.5 shrink-0 rounded-full border-[1.5px] border-black/30" />
-              {/* 말줄임·줄바꿈 없이 — 저장 이미지에선 글꼴 폭이 조금 달라져서 잘리거나 이모지만 내려가는 문제 */}
-              <span className="whitespace-nowrap">{o}</span>
+              {/* 한 줄, 넘치면 … (줄바꿈은 안 함 — 저장 이미지에선 글꼴 폭이 조금 달라져서 이모지만 내려가는 문제) */}
+              <span className="min-w-0 truncate">{o}</span>
             </span>
           ))}
         </div>

@@ -42,6 +42,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **화살표 CTA** (`ArrowCta`, 알약 + 오른쪽 원 →): "다음 단계로 넘어가는" 버튼에만. 지금은 작성 플로우의 Next · Write with AI · Post.
 - **일반 CTA** (`PillButton` 또는 같은 모양의 알약): 그 자리에서 끝나는 행동 — 저장, 삭제, 취소, 홈으로, 투표하러 가기, Share your K-food 등.
 
+## 극단값 점검 (`/dev/edge-cases`)
+- 글자 수·개수가 최소/최대일 때 깨지지 않는지 한 화면에서 보는 점검 화면입니다. 데이터는 `src/app/dev/edge-cases/fixtures.ts` (최대 길이는 `src/lib/write-data.ts` 등의 입력 한도에서 바로 만듦).
+- 새 화면·컴포넌트를 만들거나 글자가 들어가는 자리를 바꾸면, 점검 화면에 극단값 예시를 추가하고 폰 크기로 열어서 확인합니다.
+- 넘칠 때 규칙(몇 줄까지, 넘치면 …, 전체는 어디서 보이는지)을 컴포넌트마다 정해 두고 주석으로 남깁니다.
+
 ## 데이터 분석 (Mixpanel · 담당 송희)
 - 행동 기록은 `src/lib/analytics.ts` 의 `track()` 만 씁니다. 이벤트 이름은 `EventName` 목록에서만 고르고, 새 이벤트는 목록과 `docs/analytics-events.md` 에 같이 추가합니다.
 - 새 화면·버튼을 만들면 의미 있는 행동에 이벤트를 붙입니다 (타이핑은 입력칸을 나갈 때 한 번).
