@@ -7,6 +7,7 @@ import { DetailScreen } from "@/app/posts/[id]/DetailScreen";
 import { paperlogy } from "@/app/posts/[id]/font";
 import { VoteGate } from "@/app/posts/[id]/comments/VoteGate";
 import { LanguageButton } from "@/components/LanguagePicker";
+import type { BackFrom } from "@/lib/back";
 import { MY_POST_ID } from "@/lib/write-data";
 import { coverOf, SAMPLE_MY_POST, useFlow, type MyPost } from "@/lib/write-store";
 
@@ -40,13 +41,13 @@ function useMyPostAsHome() {
 }
 
 /** /posts/mine — 상세 */
-export function MyPostDetail() {
+export function MyPostDetail({ from }: { from?: BackFrom }) {
   const post = useMyPostAsHome();
-  return <DetailScreen key={post.id} post={post} />;
+  return <DetailScreen key={post.id} post={post} from={from} />;
 }
 
 /** /posts/mine/comments — 댓글 전체 화면 (지현의 댓글 화면과 같은 모양) */
-export function MyPostComments({ backHref }: { backHref: string }) {
+export function MyPostComments({ backHref, backTo }: { backHref: string; backTo: "detail" | "notifications" | "other" }) {
   const post = useMyPostAsHome();
   const circle = "flex size-16 items-center justify-center rounded-full bg-white/8";
   return (
@@ -56,7 +57,7 @@ export function MyPostComments({ backHref }: { backHref: string }) {
         className={`${paperlogy.variable} mx-auto flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-background text-on-dark`}
       >
         <header className="flex shrink-0 items-center justify-between px-2 pt-[calc(16px+env(safe-area-inset-top))] pb-4">
-          <Link href={backHref} aria-label={backHref === `/posts/${post.id}` ? "상세로 돌아가기" : "알림으로 돌아가기"} className={circle}>
+          <Link href={backHref} aria-label={backTo === "detail" ? "Back to post" : backTo === "notifications" ? "Back to notifications" : "Back"} className={circle}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="m15 18-6-6 6-6" />
             </svg>

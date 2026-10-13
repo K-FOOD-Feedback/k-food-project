@@ -20,7 +20,7 @@ export function CommentsScreen({
   initialLang,
   foreigner = false,
   backHref,
-  isDetailBack,
+  backTo,
   postId,
   commentCount,
   authorFlag,
@@ -30,8 +30,8 @@ export function CommentsScreen({
   /** 외국인 화면 (?viewer=en) */
   foreigner?: boolean;
   backHref: string;
-  /** 뒤로 가기가 상세 화면이면 true, 알림함이면 false */
-  isDetailBack: boolean;
+  /** 뒤로 가기가 어디로 가는지 (버튼 이름용) */
+  backTo: "detail" | "notifications" | "other";
   postId: string;
   commentCount: number;
   authorFlag: string;
@@ -56,7 +56,7 @@ export function CommentsScreen({
       {/* 공통 상단 바 (src/components/PageHeader — 모든 화면이 같은 위치·크기·디자인) */}
       <PageHeader
         left={
-          <Link href={backHref} aria-label={isDetailBack ? t.backToDetail : t.backToNotifications} className={HEADER_BUTTON}>
+          <Link href={backHref} aria-label={backTo === "detail" ? t.backToDetail : backTo === "notifications" ? t.backToNotifications : t.back} className={HEADER_BUTTON}>
             <ChevronLeftIcon />
           </Link>
         }

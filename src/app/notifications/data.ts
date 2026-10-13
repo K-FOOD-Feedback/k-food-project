@@ -28,6 +28,8 @@ export type Notif = {
   actor?: string;
   /** 댓글·대댓글: 내용 · milestone: 표 수 */
   detail: string;
+  /** reply: 답글이 달린 내 한마디 id — 누르면 그 한마디 레이어가 바로 열림 (?comment=) */
+  commentId?: string;
   /** 한국인 reply: 대댓글을 단 사람이 그 글의 글쓴이(외국인)인지 */
   byAuthor?: boolean;
   day: string;
@@ -42,6 +44,9 @@ export function photoOf(n: Notif) {
   if (n.postId === "mine") return "/images/buldak-skillet.jpg"; // 내 글 (서버 연결 전 예시)
   return getHomePost(n.postId)?.cardPhoto ?? "/images/card-buldak.png";
 }
+
+/** 서버 전 예시: 답글이 달린 "내 한마디"는 모든 글에 처음부터 있는 답글 달린 한마디 ("참치마요 삼김이랑…") */
+const repliedComment = (postId: string) => `${postId}-seed-5`;
 
 // ── 외국인
 const MINE = { postId: "mine", postTitle: "Buldak Carbonara with extra cheese" };
@@ -61,7 +66,7 @@ const EN_INCOMING: Notif = {
 const EN: Notif[] = [
   { ...MINE, id: "en1", type: "comment", actor: "하준", detail: "치즈 더 넣으면 완벽할 듯 ㅋㅋ", day: "Today", time: "21:55", read: false },
   { ...MINE, id: "en2", type: "comment", actor: "유나", detail: "불닭은 원래 이렇게 먹는 거 맞아요", day: "Today", time: "21:40", read: false },
-  { ...TTEOK, id: "en3", type: "reply", actor: "서연", detail: "저도 그렇게 생각해요!", day: "Today", time: "21:31", read: false },
+  { ...TTEOK, id: "en3", type: "reply", commentId: repliedComment(TTEOK.postId), actor: "서연", detail: "저도 그렇게 생각해요!", day: "Today", time: "21:31", read: false },
   { ...MINE, id: "en4", type: "milestone", detail: "20", day: "Today", time: "21:10", read: true },
   { ...MINE, id: "en5", type: "milestone", detail: "10", day: "Yesterday", time: "18:40", read: true },
   { ...MINE, id: "en6", type: "draft", detail: "", day: "Yesterday", time: "12:05", read: true },
@@ -75,6 +80,7 @@ const KO_INCOMING: Notif = {
   ...BULDAK,
   id: "ko-live",
   type: "reply",
+  commentId: repliedComment(BULDAK.postId),
   actor: "Sam",
   byAuthor: true,
   detail: "고마워요! 다음엔 참치마요 삼김이랑 먹어 볼게요",
@@ -84,10 +90,10 @@ const KO_INCOMING: Notif = {
 };
 
 const KO: Notif[] = [
-  { ...BULDAK, id: "ko1", type: "reply", detail: "삼김 조합 진짜 인정이요", day: "오늘", time: "21:50", read: false },
-  { ...BULDAK, id: "ko2", type: "reply", detail: "저도 그렇게 먹어요 ㅋㅋ", day: "오늘", time: "21:38", read: false },
-  { ...TTEOK, id: "ko4", type: "reply", actor: "Mia", byAuthor: true, detail: "Wow I didn't know that! Thank you", day: "어제", time: "22:04", read: true },
-  { ...TTEOK, id: "ko5", type: "reply", detail: "치즈 떡볶이엔 라면사리죠", day: "10월 5일", time: "18:20", read: true },
+  { ...BULDAK, id: "ko1", type: "reply", commentId: repliedComment(BULDAK.postId), detail: "삼김 조합 진짜 인정이요", day: "오늘", time: "21:50", read: false },
+  { ...BULDAK, id: "ko2", type: "reply", commentId: repliedComment(BULDAK.postId), detail: "저도 그렇게 먹어요 ㅋㅋ", day: "오늘", time: "21:38", read: false },
+  { ...TTEOK, id: "ko4", type: "reply", commentId: repliedComment(TTEOK.postId), actor: "Mia", byAuthor: true, detail: "Wow I didn't know that! Thank you", day: "어제", time: "22:04", read: true },
+  { ...TTEOK, id: "ko5", type: "reply", commentId: repliedComment(TTEOK.postId), detail: "치즈 떡볶이엔 라면사리죠", day: "10월 5일", time: "18:20", read: true },
 ];
 
 export const DATA: Record<Lang, { incoming: Notif; list: Notif[] }> = {

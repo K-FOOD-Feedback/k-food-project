@@ -70,8 +70,8 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
 
   // 상세 화면을 미리 받아 두어, 카드를 누르면 바로 전환이 시작되게 합니다.
   useEffect(() => {
-    for (const p of posts) router.prefetch(`/posts/${p.id}${lang === "en" ? "?viewer=en" : ""}`);
-  }, [router, posts, lang]);
+    for (const p of posts) router.prefetch(`/posts/${p.id}`);
+  }, [router, posts]);
 
   // 카드 사진(= 상세 첫 사진)을 미리 풀어 두어, 상세에서 돌아오는 전환의 사진이 처음 한 장면부터 바로 그려지게 합니다
   // (풀리기 전에 그려지면 그 순간 사진 자리가 비어 깜빡여 보임)
@@ -104,8 +104,8 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
         photoMask: shape.mask,
         color: post.color,
       });
-    // 외국인 메인에서 열면 외국인 상세 (투표 대신 결과, 한마디 바로 보기)
-    router.push(`/posts/${post.id}${lang === "en" ? "?viewer=en" : ""}`);
+    // 외국인 메인에서 열면 상세의 ← 가 외국인 메인으로 (src/lib/back.ts)
+    router.push(lang === "en" ? `/posts/${post.id}?from=home-en` : `/posts/${post.id}`);
   };
 
   return (

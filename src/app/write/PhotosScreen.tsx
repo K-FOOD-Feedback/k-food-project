@@ -16,7 +16,7 @@ import { PhotoCheckNotice } from "./PhotoCheckNotice";
 import { usePhotoActions } from "./usePhotoActions";
 import { WriteExit } from "./WriteExit";
 
-export function PhotosScreen({ backHref = "/home/en" }: { backHref?: string }) {
+export function PhotosScreen({ backHref = "/home?lang=en" }: { backHref?: string }) {
   const router = useRouter();
   // 로그인은 외국인 메인의 Share 버튼(ShareKfoodButton)에서 사진 선택 전에 끝냅니다.
   const { draft, saveDraftForLater } = useFlow();

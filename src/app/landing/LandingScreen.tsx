@@ -22,8 +22,10 @@ import { COPY, REACTIONS, SAMPLE_PCTS, type LandingLang } from "./copy";
 // 스크롤 이야기 구간 (0~1)
 const STEP_AT = [0, 0.1, 0.42, 0.74];
 // 스크롤이 멈추는 자리 (진행도). 섹션 높이 400svh - 화면 100svh = 300svh 기준
-// 한마디는 스크롤 한 번에 하나씩 (0.5 · 0.58 · 0.66)
-const SNAP_AT = [0, 0.345, 0.5, 0.58, 0.66, 0.83, 1];
+// 한마디는 스크롤 한 번(0.5)에 첫 번째가 오고, 두·세 번째는 스크롤 없이 시간차로 이어서 옴
+const SNAP_AT = [0, 0.345, 0.5, 0.83, 1];
+/** 첫 한마디가 붙은 뒤 나머지 둘이 이어서 오는 시간 */
+const TALK_MS = 800;
 
 const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 /** p가 a→b 사이에서 0→1 */
@@ -238,6 +240,29 @@ export function LandingScreen() {
   }, []);
   const typed = Math.min(t.story.length, Math.max(clock - 36, 0));
 
+  // 한마디: 첫 번째가 붙으면(p≈0.5) 두·세 번째는 시간 따라 저절로 (talk 0→1), 위로 돌아가면 빠르게 되감음
+  const [talk, setTalk] = useState(0);
+  const talkRef = useRef(0);
+  const talkOn = p >= 0.47; // 첫 번째가 거의 붙었을 때부터
+  useEffect(() => {
+    const goal = talkOn ? 1 : 0;
+    let frame = 0;
+    let last = 0;
+    const tick = (now: number) => {
+      const dt = last ? Math.min(now - last, 64) : 16;
+      last = now;
+      const v = talkRef.current;
+      const next = noMotion() ? goal : clamp(v + (talkOn ? dt / TALK_MS : (-dt / TALK_MS) * 3));
+      talkRef.current = next;
+      setTalk(next);
+      if (next !== goal) frame = requestAnimationFrame(tick);
+    };
+    if (talkRef.current !== goal) frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [talkOn]);
+  // 두·세 번째 한마디가 쓰는 진행도: 스크롤 위치와 시간 중 앞선 쪽
+  const talkP = Math.max(p, 0.5 + 0.16 * talk);
+
   return (
     <main className="mx-auto w-full max-w-[430px] bg-background text-on-dark">
       {/* 상단: 로고 · 건너뛰기 · 언어(🌐) */}
@@ -263,7 +288,7 @@ export function LandingScreen() {
           lang={lang}
           from="landing"
           // 랜딩 상단 높이(56)에 맞춰 메인보다 작게
-          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-surface/85 backdrop-blur-xl pointer-coarse:backdrop-blur-md transition-transform active:scale-95"
+          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-surface/85 transition-transform active:scale-95"
           onPick={(l) => {
             setChosen(l as LandingLang);
             track("language_clicked", { from: "landing", to: l });
@@ -313,7 +338,7 @@ export function LandingScreen() {
             <div ref={postRef} className="relative isolate rounded-[32px] px-5 pt-7 pb-6 text-on-dark">
               <span
                 aria-hidden="true"
-                className="absolute inset-0 -z-10 animate-[fade-in_500ms_ease-out_1300ms_both] rounded-[32px] bg-surface/70 backdrop-blur-xl pointer-coarse:backdrop-blur-md"
+                className="absolute inset-0 -z-10 animate-[fade-in_500ms_ease-out_1300ms_both] rounded-[32px] bg-surface/70"
               />
               <div
                 className="relative mx-auto animate-photo-frame overflow-hidden [animation-delay:250ms]"
@@ -387,7 +412,7 @@ export function LandingScreen() {
                 style={{ top: box.author.y - 2, rotate: `${REPLY_TILT}deg`, transformOrigin: "16px 19px" }}
               >
                 <span
-                  className="flex max-w-[240px] flex-col gap-1 rounded-[24px] bg-surface-2/80 px-4 pt-2.5 pb-3 text-on-dark backdrop-blur-xl pointer-coarse:backdrop-blur-md"
+                  className="flex max-w-[240px] flex-col gap-1 rounded-[24px] bg-surface-2/80 px-4 pt-2.5 pb-3 text-on-dark"
                   style={fly(p, 0.72, 0.79, { y: 40, s: 0.6 })}
                 >
                   <span ref={slotRef} className="invisible flex items-center gap-[5px] whitespace-nowrap text-[13px] font-semibold" aria-hidden="true">
@@ -401,7 +426,7 @@ export function LandingScreen() {
 
             {/* 투표 (앱 상세와 같은 모양: 세로 칸이 아래에서 차오름) */}
             <div className="mt-3" style={{ opacity: 1 - voteOut, translate: `0 ${voteOut * 60}px` }} aria-hidden={voteOut >= 1}>
-            <div className="relative rounded-[32px] bg-surface-2/75 px-4 pt-5 pb-4 backdrop-blur-xl pointer-coarse:backdrop-blur-md" style={fly(p, 0.1, 0.17, { y: 260, r: -6 })}>
+            <div className="relative rounded-[32px] bg-surface-2/75 px-4 pt-5 pb-4" style={fly(p, 0.1, 0.17, { y: 260, r: -6 })}>
               <p className="text-center font-display text-[18px] leading-[1.3]">{t.voteTitle}</p>
               <div className="mt-3 flex h-[min(128px,15svh)] gap-1.5">
                 {t.options.map((opt, i) => {
@@ -454,13 +479,13 @@ export function LandingScreen() {
               lang={lang}
               r={REACTIONS[1]}
               className="-right-2 top-[17%] max-w-[200px] bg-content"
-              style={fly(p, 0.52, 0.58, { x: 300, y: 20, r: 25 }, 5)}
+              style={fly(talkP, 0.52, 0.58, { x: 300, y: 20, r: 25 }, 5)}
             />
             <Bubble
               lang={lang}
               r={REACTIONS[2]}
               className="-left-1 top-[30%] bg-lilac"
-              style={fly(p, 0.6, 0.66, { x: -300, y: 60, r: -20 }, 3)}
+              style={fly(talkP, 0.6, 0.66, { x: -300, y: 60, r: -20 }, 3)}
             />
           </div>
           </div>
@@ -500,7 +525,7 @@ export function LandingScreen() {
  */
 const ROLES = [
   { kind: "korean", href: "/home", fill: "bg-primary" },
-  { kind: "foreigner", href: "/home/en", fill: "bg-content" },
+  { kind: "foreigner", href: "/home?lang=en", fill: "bg-content" },
 ] as const;
 
 function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
@@ -666,7 +691,7 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
               setLoginOpen(false);
               // 중국어·일본어도 이후 화면은 아직 영어 외국인 화면으로
               rememberRole(lang === "ko" ? "ko" : "en");
-              router.push(lang === "ko" ? "/home" : "/home/en");
+              router.push(lang === "ko" ? "/home" : "/home?lang=en");
             }}
           />,
           document.body,

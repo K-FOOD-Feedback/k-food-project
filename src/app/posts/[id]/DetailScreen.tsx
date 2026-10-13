@@ -15,9 +15,11 @@ import { TrackedLink } from "@/components/Track";
 import { MY_POST_ID } from "@/lib/write-data";
 import { track } from "@/lib/analytics";
 import { useCommentLogin } from "./CommentLogin";
+import { backHrefFrom, withFrom, type BackFrom } from "@/lib/back";
 import { CommentPile } from "./CommentPile";
 import { DETAIL_COPY, type Lang } from "./copy";
 import { paperlogy, titleFont } from "./font";
+import { isForeignFrom, withViewer } from "./viewer";
 import { saveViewerLang, useViewerLang } from "./viewerLang";
 import { VoteBowl } from "./VoteBowl";
 
@@ -26,25 +28,22 @@ import { VoteBowl } from "./VoteBowl";
   viewer "ko": 한국인 — 투표하면 한마디가 열림
   viewer "en": 외국인 — 투표할 수 없어서 투표 카드가 투표 완료 모양으로 결과만(VoteBowl viewOnly), 한마디는 처음부터 보임.
     한마디를 남기려면 로그인 (CommentLogin). 글자는 지구본으로 고른 언어(기본 영어, viewerLang)로,
-    한마디 전체 화면·말풍선 모달도 같은 언어로 열림. 상세 안의 링크에는 ?viewer=en 이 붙음.
+    한마디 전체 화면·말풍선 모달도 같은 언어로 열림.
+  from: 이 상세에 들어온 곳 (?from=, src/lib/back.ts) — ← 목적지.
+    다음 글로 넘기거나 한마디로 갔다 와도 그대로 이어 붙여서, 처음 들어온 곳으로 돌아감.
+    외국인인데 from으로 알 수 없으면(?viewer=en으로 들어옴) 링크에 ?viewer=en 도 이어 붙임.
 */
-export function DetailScreen({
-  post,
-  viewer = "ko",
-  backHref = "/home",
-}: {
-  post: HomePost;
-  viewer?: "ko" | "en";
-  /** 뒤로 가기 목적지 (외국인 메인·알림함 등) */
-  backHref?: string;
-}) {
+export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; from?: BackFrom; viewer?: "ko" | "en" }) {
   const foreigner = viewer === "en";
+  // 들어온 곳이 없으면 메인 (외국인·내 글은 외국인 메인)
+  const backHref = backHrefFrom(from, foreigner || post.id === MY_POST_ID ? "/home?lang=en" : "/home");
+  const keepViewer = foreigner && !isForeignFrom(from);
+  const link = (href: string) => withViewer(withFrom(href, from), keepViewer);
+  // 한마디 전체 화면 — ← 가 이 상세로 오도록 via=detail, 들어온 곳(from)은 이어 붙임
+  const commentsHref = link(`/posts/${post.id}/comments?via=detail`);
   const viewerLang = useViewerLang();
   const lang: Lang = foreigner ? viewerLang : "ko";
   const T = DETAIL_COPY[lang];
-  const q = foreigner ? "?viewer=en" : "";
-  const postHref = (id: string) => `/posts/${id}${q}`;
-  const commentsHref = `/posts/${post.id}/comments${q}`;
   const titleOf = (p: HomePost) => (lang === "en" ? p.en.title : p.title);
   const login = useCommentLogin({ enabled: foreigner, lang, postId: post.id, screen: "detail" });
   const voted = useMyVote(post.id) !== null;
@@ -457,7 +456,7 @@ export function DetailScreen({
       content.style.opacity = "0";
       track("post_opened", { post_id: target.id, from: "swipe", from_post_id: post.id, direction: dir });
       nextTrip = { postId: target.id, at: Date.now(), swipe: dir };
-      window.setTimeout(() => router.push(`/posts/${target.id}${q}`), SWIPE_OUT_MS - 40);
+      window.setTimeout(() => router.push(withViewer(withFrom(`/posts/${target.id}`, from), keepViewer)), SWIPE_OUT_MS - 40);
     };
     const onTouchStart = (e: TouchEvent) => {
       if (e.touches.length !== 1) return void (start = null);
@@ -493,7 +492,7 @@ export function DetailScreen({
       document.removeEventListener("pointerup", onMouseUp);
       document.removeEventListener("pointercancel", onMouseUp);
     };
-  }, [router, next, prev, post.id, q]);
+  }, [router, next, prev, post.id, from, keepViewer]);
 
   // 한마디 전체 화면에서 돌아오면: ↗를 눌렀던 스크롤 위치로 돌려 놓고,
   // 화면에 보이는 카드들이 위에서부터 하나씩 살짝 떠오르며 나타납니다.
@@ -506,8 +505,7 @@ export function DetailScreen({
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
       const link = (e.target as Element | null)?.closest?.("a");
-      // 외국인 상세는 ?viewer=en 이 붙어서 주소 경로만 비교
-      if (link && new URL(link.href).pathname === `/posts/${post.id}/comments`) {
+      if (link?.getAttribute("href")?.split("?")[0] === `/posts/${post.id}/comments`) {
         commentsTrip = { postId: post.id, scrollY: window.scrollY, at: Date.now() };
       }
     };
@@ -643,7 +641,7 @@ export function DetailScreen({
               commentCount={post.commentCount}
               authorFlag={post.author.flag}
               lang={lang}
-              commentsHref={commentsHref}
+              fullHref={commentsHref}
               writeLocked={login.locked}
               onLockedWrite={login.ask}
             />
@@ -664,7 +662,7 @@ export function DetailScreen({
         {/* 화면 맨 아래 "다음 훈수 거리" (Figma 332:3426 Question CTA) — 떠 있지 않고 내용 끝에 놓임 */}
         <div className="mt-[46px]">
           <ArrowCta
-            href={postHref(next.id)}
+            href={link(`/posts/${next.id}`)}
             caption={T.next}
             title={titleOf(next)}
             // 넘어갈 글의 카드 색 (게시글 데이터 색이라 토큰 대신 그대로)
