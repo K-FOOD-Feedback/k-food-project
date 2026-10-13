@@ -7,7 +7,7 @@ import { HEADER_BUTTON, PageHeader } from "@/components/PageHeader";
 import { CommentPile } from "../CommentPile";
 import { useCommentLogin } from "../CommentLogin";
 import { COMMENTS_COPY, type Lang } from "../copy";
-import { saveViewerLang, useViewerLang } from "../viewerLang";
+import { saveKoreanLang, saveViewerLang, useKoreanLang, useViewerLang } from "../viewerLang";
 
 /**
   한마디 전체 화면의 상단 바 + 한마디 칸.
@@ -26,7 +26,8 @@ export function CommentsScreen({
   authorFlag,
   title,
 }: {
-  initialLang: Lang;
+  /** 주소 ?lang= 으로 정해진 언어 (없으면 null → 저장된 언어) */
+  initialLang: Lang | null;
   /** 외국인 화면 (?viewer=en) */
   foreigner?: boolean;
   backHref: string;
@@ -37,15 +38,21 @@ export function CommentsScreen({
   authorFlag: string;
   title: Record<Lang, string>;
 }) {
-  const [koreanLang, setKoreanLang] = useState<Lang>(initialLang);
+  // 한국인도 상세 화면과 같은 언어 설정(koreanLang, 기본 한국어)을 함께 씁니다 — 상세에서 고른 언어가 여기서도 이어짐.
+  // 주소에 ?lang= 이 있으면(공유 링크 등) 이번 화면에서는 그 언어로 시작합니다.
+  const [urlLang, setUrlLang] = useState<Lang | null>(initialLang);
+  const koreanLang = useKoreanLang();
   const viewerLang = useViewerLang();
-  const lang = foreigner ? viewerLang : koreanLang;
+  const lang = foreigner ? viewerLang : (urlLang ?? koreanLang);
   const t = COMMENTS_COPY[lang];
   const login = useCommentLogin({ enabled: foreigner, lang, postId, screen: "comments" });
 
   const changeLang = (next: Lang) => {
     if (foreigner) saveViewerLang(next);
-    else setKoreanLang(next);
+    else {
+      saveKoreanLang(next);
+      setUrlLang(null);
+    }
     const url = new URL(window.location.href);
     url.searchParams.set("lang", next);
     window.history.replaceState(window.history.state, "", url);
