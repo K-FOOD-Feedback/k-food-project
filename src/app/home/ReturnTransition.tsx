@@ -120,7 +120,7 @@ export function ReturnGhosts({
     // 글은 카드 아래쪽에 붙어 있어서, 유령의 아래 가운데에 진짜 카드 크기로 붙여 둡니다. 사진·스티커는 따로 움직이는 유령이 맡습니다.
     const clone = front.cloneNode(true) as HTMLElement;
     clone
-      .querySelectorAll("[data-card-photo], [data-card-sticker]")
+      .querySelectorAll("[data-card-photo], [data-card-sticker], [data-card-badge]")
       .forEach((el) => el.remove());
     clone.removeAttribute("data-front-card");
     clone.removeAttribute("aria-label");

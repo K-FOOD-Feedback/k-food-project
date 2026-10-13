@@ -646,7 +646,7 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
               postId={post.id}
               commentCount={post.commentCount}
               authorFlag={post.author.flag}
-              authorName={post.author.name}
+              // 한마디에는 닉네임을 보이지 않음 (글쓴이 뱃지는 "글쓴이"만) — 닉네임은 본문 카드에만
               lang={lang}
               fullHref={commentsHref}
               writeLocked={login.locked}

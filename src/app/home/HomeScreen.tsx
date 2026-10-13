@@ -10,6 +10,7 @@ import {
   setCardTransition,
 } from "./cardTransition";
 import {
+  CARD_BOTTOM,
   CARD_TOP,
   CardStack,
   cardMaskBox,
@@ -29,8 +30,6 @@ const HEADLINE = {
   en: ["Cooked some K-food?", "Let Koreans judge it 👀"],
 } as const;
 
-/** 카드 더미(CardStack) 원래 높이 — 화면이 낮으면 이 높이가 들어가도록 통째로 줄임 */
-const STACK_HEIGHT = 480;
 /** 제목 아래끝 ~ 맨 앞 카드 위끝 간격 */
 const TITLE_GAP = 40;
 
@@ -68,26 +67,36 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
 
   // 화면 높이에 맞추기: 헤더와 하단 버튼 사이 빈 칸에 카드 더미가 다 들어가도록, 모자라면 통째로 줄임 (스크롤 없음)
   // 제목 + (40px) + 카드 더미를 한 덩어리로 가운데에 — 남는 높이에 다 들어가도록, 모자라면 카드 더미를 줄임
+  // 제목 + (40px) + 카드를 한 덩어리로, 헤더까지 포함한 화면 전체 높이의 가운데에.
+  // 가운데를 지키면서 위로는 헤더, 아래로는 하단 버튼 자리에 닿지 않을 만큼만 쓰고, 모자라면 카드 더미를 줄임
   const stage = useRef<HTMLDivElement>(null);
   const headline = useRef<HTMLHeadingElement>(null);
+  const headerBox = useRef<HTMLDivElement>(null);
+  const bottomLimit = useRef<HTMLDivElement>(null);
   const [fit, setFit] = useState<number | null>(null);
   useLayoutEffect(() => {
     const el = stage.current;
     const h1 = headline.current;
-    if (!el || !h1) return;
-    // 카드 더미 틀 맨 위엔 뒤 카드 자리(CARD_TOP)가 있어서, 보이는 카드까지 40px이 되도록 그만큼은 간격에 겹쳐 씀
-    const measure = () =>
+    const top = headerBox.current;
+    const bottom = bottomLimit.current;
+    if (!el || !h1 || !top || !bottom) return;
+    const measure = () => {
+      const center = el.clientHeight / 2;
+      const room =
+        2 * Math.min(center - top.offsetHeight, bottom.offsetTop - center);
+      // 카드 더미 틀 맨 위엔 뒤 카드 자리(CARD_TOP)가 있어서, 보이는 카드까지 40px이 되도록 그만큼은 간격에 겹쳐 씀
       setFit(
         Math.min(
           1,
-          (el.clientHeight - h1.offsetHeight - TITLE_GAP) /
-            (STACK_HEIGHT - CARD_TOP),
+          (room - h1.offsetHeight - TITLE_GAP) / (CARD_BOTTOM - CARD_TOP),
         ),
       );
+    };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     ro.observe(h1);
+    ro.observe(top);
     return () => ro.disconnect();
   }, []);
   const scale = fit ?? 1;
@@ -142,16 +151,24 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
   return (
     // 랜딩(src/app/page.tsx)과 같은 틀: 가운데 430px 폭의 어두운 화면
     <main className="relative mx-auto flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-background text-on-dark">
-      <MainHeader lang={lang} />
-      {/* 헤더 아래 ~ 하단 버튼 위(한국인은 버튼이 없어 화면 아래까지): 제목 + 카드 더미를 한 덩어리로 가운데에 */}
+      {/* 헤더는 위에 떠 있고, 내용은 헤더 포함 화면 전체 높이의 가운데에 */}
+      <div ref={headerBox} className="absolute inset-x-0 top-0 z-20">
+        <MainHeader lang={lang} />
+      </div>
+      {/* 하단 버튼 자리 (한국인은 버튼이 없어 여백만) — 내용이 여기 닿지 않게 재는 용도 */}
+      <div
+        ref={bottomLimit}
+        aria-hidden
+        className={`pointer-events-none absolute inset-x-0 bottom-0 ${
+          lang === "en"
+            ? "h-[calc(166px+env(safe-area-inset-bottom))]"
+            : "h-[calc(24px+env(safe-area-inset-bottom))]"
+        }`}
+      />
       <div className="relative min-h-0 flex-1">
         <div
           ref={stage}
-          className={`absolute inset-x-0 top-0 flex flex-col items-center justify-center ${
-            lang === "en"
-              ? "bottom-[calc(166px+env(safe-area-inset-bottom))]"
-              : "bottom-[calc(24px+env(safe-area-inset-bottom))]"
-          }`}
+          className="absolute inset-0 flex flex-col items-center justify-center"
         >
           {/* 두 줄 한마디 (가운데 정렬) */}
           <h1
@@ -171,7 +188,7 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
           <div
             className="shrink-0"
             style={{
-              height: STACK_HEIGHT * scale,
+              height: CARD_BOTTOM * scale,
               marginTop: TITLE_GAP - CARD_TOP * scale,
             }}
           >
