@@ -5,7 +5,7 @@ import type { HomePost } from "@/app/home/mockPosts";
 import { saveVote, useMyVote } from "@/app/home/votes";
 import { LoginSheet } from "@/components/LoginSheet";
 import { isOnboarded } from "@/app/my/profile";
-import { WelcomePopup } from "@/app/my/WelcomePopup";
+import { openWelcome, WelcomePopup } from "@/app/my/WelcomePopup";
 import { track } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
 import { burstConfetti } from "./confetti";
@@ -407,6 +407,7 @@ export function VoteBowl({ post }: { post: HomePost }) {
           if (!isOnboarded("ko")) {
             track("signup_shown", { viewer: "korean", from: "vote" });
             setWelcome(pending);
+            openWelcome();
           } else if (pending) castVote(pending.choice, pending.method);
           setPending(null);
         }}
@@ -423,9 +424,9 @@ export function VoteBowl({ post }: { post: HomePost }) {
         </div>
       </LoginSheet>
 
+      {/* 주소 ?welcome 로 열림 (/posts/2?welcome 로 바로 열기도 됨) */}
       <WelcomePopup
         lang="ko"
-        open={welcome !== null}
         onClose={() => setWelcome(null)}
         onDone={() => {
           if (welcome) castVote(welcome.choice, welcome.method);

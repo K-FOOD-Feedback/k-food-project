@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { IconButton, PillButton } from "@/components/Buttons";
 import { Icon } from "@/components/Icon";
@@ -25,7 +25,61 @@ import {
   - 약관 동의: 전체 동의 + 펼쳐 보기 (만 14세 이상 · 이용약관 · 개인정보 수집·이용, 모두 필수)
   - 시작 → 원래 하려던 행동으로 (사진 고르기 / 투표)
   서버 전까지: 닉네임·나라·가입 여부는 이 브라우저에 저장
+
+  주소: 열리면 지금 주소에 ?welcome 이 붙음 (화면 위에 덮이는 팝업은 그대로)
+  - 폰 뒤로가기 → 팝업만 닫힘 · ?welcome 주소로 바로 열 수 있음 (외국인 /home/en?welcome · 한국인 /posts/2?welcome)
+  - 열고 닫기는 openWelcome() / 주소로 — 열려 있는지는 주소가 정함
 */
+
+// ── 주소의 ?welcome ─────────────────────
+const URL_CHANGE = "kfood:welcome-url";
+const hasWelcome = () => new URLSearchParams(window.location.search).has("welcome");
+
+function urlWith(on: boolean) {
+  const url = new URL(window.location.href);
+  url.searchParams.delete("welcome");
+  const q = url.searchParams.toString();
+  return `${url.pathname}${on ? `?${q ? `${q}&` : ""}welcome` : q ? `?${q}` : ""}${url.hash}`;
+}
+
+// 앱이 직접 기록을 쌓았는지 — 주소로 바로 들어온 경우엔 뒤로가기로 닫으면 사이트를 나가 버리므로
+let pushed = false;
+
+/** 가입 환영 팝업 열기 — 주소에 ?welcome (뒤로가기로 닫히게 기록을 하나 쌓음) */
+export function openWelcome() {
+  if (!hasWelcome()) {
+    window.history.pushState(window.history.state, "", urlWith(true));
+    pushed = true;
+  }
+  window.dispatchEvent(new Event(URL_CHANGE));
+}
+
+/** 닫기 — ×는 뒤로가기처럼(쌓은 기록을 되돌림), 시작은 주소에서 표시만 지움 */
+function closeWelcome(how: "back" | "replace") {
+  if (!hasWelcome()) return;
+  if (how === "back" && pushed) window.history.back();
+  else window.history.replaceState(window.history.state, "", urlWith(false));
+  pushed = false;
+  window.dispatchEvent(new Event(URL_CHANGE));
+}
+
+function subscribeUrl(on: () => void) {
+  const onPop = () => {
+    if (!hasWelcome()) pushed = false; // 뒤로가기로 닫힘
+    on();
+  };
+  window.addEventListener("popstate", onPop);
+  window.addEventListener(URL_CHANGE, on);
+  return () => {
+    window.removeEventListener("popstate", onPop);
+    window.removeEventListener(URL_CHANGE, on);
+  };
+}
+
+/** 주소에 ?welcome 이 있는지 (= 팝업이 열려 있는지) */
+export function useWelcomeOpen() {
+  return useSyncExternalStore(subscribeUrl, hasWelcome, () => false);
+}
 
 // 나라 목록 (자주 쓰는 순 아님, 이름순으로 정렬해서 보여 줌). 한국은 외국인 화면이라 뺌
 const COUNTRIES = [
@@ -81,19 +135,18 @@ function guessCountry() {
 }
 
 export function WelcomePopup({
-  open,
   lang,
   onClose,
   onDone,
 }: {
-  open: boolean;
   lang: MyLang;
-  /** × 로 닫음 (가입은 다음에 다시) */
-  onClose: () => void;
+  /** × 나 뒤로가기로 닫음 (가입은 다음에 다시) */
+  onClose?: () => void;
   /** 시작 — 원래 하려던 행동으로 (사진 고르기 등은 이 클릭 안에서 열어야 브라우저가 막지 않음) */
   onDone: () => void;
 }) {
   const t = COPY[lang];
+  const open = useWelcomeOpen();
   const foreigner = lang === "en";
   const [nickname, setNickname] = useState("");
   const [spinning, setSpinning] = useState(false);
@@ -132,7 +185,8 @@ export function WelcomePopup({
           label={t.close}
           onClick={() => {
             track("signup_closed", { viewer: foreigner ? "foreigner" : "korean" });
-            onClose();
+            closeWelcome("back");
+            onClose?.();
           }}
         />
       </div>
@@ -243,6 +297,7 @@ export function WelcomePopup({
               if (foreigner) saveCountry(country);
               markOnboarded(lang, true);
               track("signup_completed", { viewer: foreigner ? "foreigner" : "korean", ...(foreigner && { country }) });
+              closeWelcome("replace");
               onDone();
             }}
           >
