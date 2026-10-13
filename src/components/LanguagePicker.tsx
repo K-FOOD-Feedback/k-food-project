@@ -31,10 +31,13 @@ export function LanguageButton({
   lang,
   from,
   className = HEADER_BUTTON,
+  onPick,
 }: {
   lang: ServiceLang;
   from: string;
   className?: string;
+  /** 메인으로 이동하는 대신 그 자리에서 언어만 바꿀 때 (랜딩 등, 송희) */
+  onPick?: (lang: ServiceLang) => void;
 }) {
   const [open, setOpen] = useState(false);
   const en = lang === "en";
@@ -53,12 +56,22 @@ export function LanguageButton({
         {/* eslint-disable-next-line @next/next/no-img-element -- 작은 SVG 아이콘 */}
         <img src="/images/icon-world.svg" width={24} height={24} alt="" />
       </button>
-      {open && <LanguagePicker lang={lang} from={from} onClose={() => setOpen(false)} />}
+      {open && <LanguagePicker lang={lang} from={from} onPick={onPick} onClose={() => setOpen(false)} />}
     </>
   );
 }
 
-function LanguagePicker({ lang, from, onClose }: { lang: ServiceLang; from: string; onClose: () => void }) {
+function LanguagePicker({
+  lang,
+  from,
+  onPick,
+  onClose,
+}: {
+  lang: ServiceLang;
+  from: string;
+  onPick?: (lang: ServiceLang) => void;
+  onClose: () => void;
+}) {
   const router = useRouter();
   const en = lang === "en";
   const [soon, setSoon] = useState(false);
@@ -85,6 +98,10 @@ function LanguagePicker({ lang, from, onClose }: { lang: ServiceLang; from: stri
     });
     if (!o.href) return setSoon(true);
     if (o.id === lang) return onClose();
+    if (onPick) {
+      onPick(o.id === "ko" ? "ko" : "en");
+      return onClose();
+    }
     rememberRole(o.id === "ko" ? "ko" : "en"); // 다음에 첫 화면(/)으로 와도 이 언어 메인으로 (송희)
     router.push(o.href);
   };

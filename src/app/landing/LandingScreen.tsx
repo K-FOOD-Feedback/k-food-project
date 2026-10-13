@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
+import { LanguageButton } from "@/components/LanguagePicker";
 import { LoginSheet } from "@/components/LoginSheet";
 import { useRouter } from "next/navigation";
 import { setSuperProps, track, useTrackOnce } from "@/lib/analytics";
@@ -230,7 +231,7 @@ export function LandingScreen() {
 
   return (
     <main className="mx-auto w-full max-w-[430px] bg-background text-on-dark">
-      {/* 상단: 로고 · 언어 */}
+      {/* 상단: 로고 · 건너뛰기 · 언어(🌐) */}
       <header className="fixed inset-x-0 top-0 z-40 mx-auto flex h-[calc(56px+env(safe-area-inset-top))] w-full max-w-[430px] items-center justify-between px-5 pt-[env(safe-area-inset-top)]">
         <span className="font-display text-[19px] leading-none">{t.brand}</span>
         <div className="flex items-center gap-2">
@@ -248,22 +249,17 @@ export function LandingScreen() {
             {t.skip}
           </button>
         )}
-        <div className="flex rounded-full bg-surface p-1 text-[13px] font-bold" role="group" aria-label="Language">
-          {(["ko", "en"] as const).map((l) => (
-            <button
-              key={l}
-              type="button"
-              aria-pressed={lang === l}
-              onClick={() => {
-                setChosen(l);
-                track("language_clicked", { from: "landing", to: l });
-              }}
-              className={`rounded-full px-3 py-1.5 uppercase transition ${lang === l ? "bg-on-dark text-on-light" : "text-neutral-400"}`}
-            >
-              {l}
-            </button>
-          ))}
-        </div>
+        {/* 언어 — 메인과 같은 🌐 (한국어 · 영어 · 일본어 · 중국어). 처음엔 기기 언어로 자동 */}
+        <LanguageButton
+          lang={lang}
+          from="landing"
+          // 랜딩 상단 높이(56)에 맞춰 메인보다 작게
+          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-surface/85 backdrop-blur-xl transition-transform active:scale-95"
+          onPick={(l) => {
+            setChosen(l);
+            track("language_clicked", { from: "landing", to: l });
+          }}
+        />
         </div>
       </header>
 
@@ -657,7 +653,7 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
           track("login_sheet_opened", { from: "landing" });
           setLoginOpen(true);
         }}
-        className="py-1 text-center text-[14px] font-bold leading-[1.3] text-neutral-400"
+        className="mt-3 py-1 text-center text-[14px] font-bold leading-[1.3] text-neutral-400"
       >
         {t.login}
       </button>
