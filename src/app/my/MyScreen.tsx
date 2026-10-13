@@ -34,7 +34,7 @@ import { coverOf, useFlow } from "@/lib/write-store";
   - 없음: 안내 문구 + 중간 크기 버튼(Browse posts → 외국인 메인)
   - 한마디: 2줄까지, 넘치면 …
   - 어느 글: "On 글 제목" / 내 글 댓글에 단 답글이면 "Reply on 글 제목" · 1줄, 넘치면 …
-  - 글이 지워졌으면: "On a deleted post", 사진 자리는 회색, 누를 수 없음(화살표 없음), 카드를 흐리게
+  - 글이 지워졌으면: "On a deleted post", 사진 자리는 회색, 누를 수 없음(화살표 없음). 카드는 흐리게 하지 않음 (읽은 것처럼 보여 헷갈림)
   - 시간 (timeAgo):
       1분 안 "Just now" · 1시간 안 "5m" · 오늘 "3h" · 어제 "Yesterday"
       · 7일 안 "3d" · 올해 "Oct 10" · 작년 이전 "Oct 10, 2025"
@@ -253,7 +253,7 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
                 );
                 const card = "flex items-start gap-3.5 rounded-[24px] bg-surface py-4 pl-4 pr-3";
                 return deleted ? (
-                  <div key={c.id} className={`${card} opacity-50`}>
+                  <div key={c.id} className={card}>
                     {body}
                   </div>
                 ) : (
