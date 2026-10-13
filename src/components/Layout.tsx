@@ -39,13 +39,14 @@ export function TopBar({
   bg?: string;
 }) {
   return (
+    // 위치·간격은 공통 상단 바(PageHeader)와 같게 — 위·아래·좌우 8px, 버튼 64px(IconButton), 버튼 사이 4px
     <header
-      className={`${sticky ? "sticky top-0 z-30" : "relative"} ${bg} pt-[env(safe-area-inset-top)]`}
+      className={`${sticky ? "sticky top-0 z-30" : "relative"} ${bg} pt-[calc(8px+env(safe-area-inset-top))] pb-2`}
     >
-      <div className="relative flex h-20 items-center gap-2 px-2">
-        {left}
+      <div className="relative flex h-16 items-center gap-1 px-2">
+        <div className="flex items-center gap-1">{left}</div>
         <div className="flex-1" />
-        {right}
+        <div className="flex items-center gap-1">{right}</div>
         {title && (
           <h1 className="pointer-events-none absolute left-1/2 top-1/2 w-[219px] -translate-x-1/2 -translate-y-1/2 text-center font-display text-[20px] leading-[1.15] text-on-dark">
             {title}
