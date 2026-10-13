@@ -270,7 +270,10 @@ export function CommentPile({
             {t.title} <span className="text-neutral-400">{count}</span>
           </h2>
           {postTitle && (
-            <p className="font-(family-name:--font-paperlogy) text-[24px] leading-[1.4] tracking-[-0.48px] break-keep text-neutral-400">
+            // 한국어는 Paperlogy, 영어는 Gilroy(font-display) — 메인 카드 제목과 같은 규칙
+            <p
+              className={`${lang === "en" ? "font-display" : "font-(family-name:--font-paperlogy)"} text-[24px] leading-[1.4] tracking-[-0.48px] break-keep text-neutral-400`}
+            >
               {postTitle}
             </p>
           )}
