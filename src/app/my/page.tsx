@@ -1,12 +1,9 @@
-import { Placeholder } from "@/components/Placeholder";
+import type { Metadata } from "next";
+import { KoMyScreen } from "./KoMyScreen";
 
+export const metadata: Metadata = { title: "마이 · 오늘의 참견" };
+
+// 7. 마이 · 한국인 (담당 송희) — 내가 투표한 글 · 내가 남긴 한마디를 빠르게 확인
 export default function Page() {
-  return (
-    <Placeholder
-      part="7. 마이 (나중)"
-      title="마이"
-      owner="송희"
-      links={[{ href: "/home", label: "메인으로" }]}
-    />
-  );
+  return <KoMyScreen />;
 }
