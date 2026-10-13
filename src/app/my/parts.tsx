@@ -80,7 +80,8 @@ export function MyTabs<T extends string>({
 /** 빈 상태 — 카드 없이 문구 + 중간 크기 버튼 */
 export function Empty({ title, body, cta }: { title: string; body: string; cta?: ReactNode }) {
   return (
-    <div className="flex flex-col items-center gap-5 px-6 pt-14 text-center break-keep">
+    // 안내 글과 버튼 사이 48px (붙어 보이지 않게)
+    <div className="flex flex-col items-center gap-12 px-6 pt-14 text-center break-keep">
       <div className="flex flex-col gap-1">
         <p className="text-[15px] font-semibold">{title}</p>
         <p className="text-[14px] leading-[1.5] text-muted">{body}</p>
