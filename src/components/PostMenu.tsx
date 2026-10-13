@@ -221,7 +221,7 @@ export function PostMenu({
                   aria-label={t.closeMenu}
                   tabIndex={-1}
                   onClick={() => setOpen(false)}
-                  className="fixed inset-0 z-40 animate-fade-in bg-black/50"
+                  className="bleed-top fixed inset-0 z-40 animate-fade-in bg-black/50"
                 />
                 <div className="pointer-events-none fixed inset-x-0 top-[calc(env(safe-area-inset-top)+88px)] z-50 mx-auto flex w-full max-w-[430px] justify-end px-2">
                   <div

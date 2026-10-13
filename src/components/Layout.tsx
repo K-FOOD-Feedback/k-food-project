@@ -130,7 +130,7 @@ export function BottomSheet({
         aria-label="닫기"
         tabIndex={-1}
         onClick={onClose}
-        className="absolute inset-0 animate-fade-in bg-black/60"
+        className="bleed-top absolute inset-0 animate-fade-in bg-black/60"
       />
       <div
         ref={sheetRef}

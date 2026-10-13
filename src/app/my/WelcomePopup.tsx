@@ -175,7 +175,7 @@ export function WelcomePopup({
       role="dialog"
       aria-modal="true"
       aria-label={t.label}
-      className="fixed inset-0 z-50 mx-auto flex w-full max-w-[430px] animate-sheet-up flex-col bg-background text-on-dark"
+      className="bleed-top fixed inset-0 z-50 mx-auto flex w-full max-w-[430px] animate-sheet-up flex-col bg-background text-on-dark"
     >
       <div className="flex items-center px-2 pt-[calc(8px+env(safe-area-inset-top))]">
         <IconButton

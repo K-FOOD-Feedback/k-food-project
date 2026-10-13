@@ -478,18 +478,7 @@ export function VoteBowl({
           } else if (pending) castVote(pending.choice, pending.method);
           setPending(null);
         }}
-      >
-        <div className="flex items-center gap-2 pt-2" aria-hidden="true">
-          <span className="flex size-14 animate-pop items-center justify-center rounded-full bg-on-dark text-[24px] shadow-[0_6px_16px_rgba(0,0,0,0.35)]">
-            🇰🇷
-          </span>
-          <span className="flex size-14 animate-pop items-center justify-center rounded-full bg-primary text-on-light [animation-delay:120ms]">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 6 9 17l-5-5" />
-            </svg>
-          </span>
-        </div>
-      </LoginSheet>
+      />
 
       {/* 주소 ?welcome 로 열림 (/posts/2?welcome 로 바로 열기도 됨) — 외국인 상세는 한마디 로그인 쪽(CommentLogin)이 띄움 */}
       {!viewOnly && <WelcomePopup

@@ -481,3 +481,22 @@ body {
     animation-delay: 0s !important;
   }
 }
+
+/*
+  화면 전체를 덮는 막(시트 뒤 어두운 막·풀 팝업 바탕)을 위로 늘려, 아이폰 상단 상태 표시줄 밑까지 덮기
+  최신 iOS 사파리는 상태 표시줄 밑에도 페이지를 그리는데, 고정(fixed) 막은 그 아래에서 시작해서
+  막을 띄워도 위쪽에 뒤 화면이 그대로 비쳐 보임 → 막 바로 위에 같은 바탕을 한 칸 더 붙임 (다른 기기에선 화면 밖이라 안 보임)
+*/
+@utility bleed-top {
+  &::before {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    bottom: 100%;
+    height: max(env(safe-area-inset-top), 120px);
+    background: inherit;
+    -webkit-backdrop-filter: inherit;
+    backdrop-filter: inherit;
+    pointer-events: none;
+  }
+}

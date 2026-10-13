@@ -171,7 +171,7 @@ function LanguagePicker({
         role="dialog"
         aria-modal="true"
         aria-label={en ? "Change language" : "언어 변경"}
-        className="relative mx-auto h-full w-full max-w-[430px] animate-[lang-fade_200ms_ease-out] bg-background/80 backdrop-blur-[8px]"
+        className="bleed-top relative mx-auto h-full w-full max-w-[430px] animate-[lang-fade_200ms_ease-out] bg-background/80 backdrop-blur-[8px]"
       >
         <PageHeader
           left={

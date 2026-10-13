@@ -49,8 +49,8 @@ export function LoginSheet({
   return (
     <BottomSheet open={open} onClose={onClose} label={t.label}>
       {children}
-      {/* 제목·안내는 가운데 정렬 (위 그림·아래 버튼과 같은 축) */}
-      <div className="flex w-full flex-col items-center gap-2 px-6 pt-2 text-center break-keep">
+      {/* 제목·안내는 가운데 정렬 (아래 버튼과 같은 축), 제목과 안내 사이 12px */}
+      <div className="flex w-full flex-col items-center gap-3 px-6 pt-3 text-center break-keep">
         <h2 className="font-display text-[22px] leading-[1.25]">
           {title ?? t.title}
         </h2>

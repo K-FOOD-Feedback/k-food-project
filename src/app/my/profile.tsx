@@ -405,7 +405,7 @@ export function AccountMenu({ lang, onLogout, onDelete }: { lang: MyLang; onLogo
               aria-label={t.closeMenu}
               tabIndex={-1}
               onClick={() => setOpen(false)}
-              className="fixed inset-0 z-40 animate-fade-in bg-black/50"
+              className="bleed-top fixed inset-0 z-40 animate-fade-in bg-black/50"
             />
             {/* 상세 화면 ⋯ 메뉴(PostMenu)와 같은 모양 */}
             <div className="pointer-events-none fixed inset-x-0 top-[calc(env(safe-area-inset-top)+64px)] z-50 mx-auto flex w-full max-w-[430px] justify-end px-2">
