@@ -22,8 +22,9 @@ import { splitLines } from "./GravityPile";
   - 말풍선 위 뱃지: 나 / 글쓴이, 답글이 달렸으면 ↪ 답글 수
   - 답글에 단 답글은 그 답글 바로 아래에 (오래된 순으로 이어지는 대화 순서)
   - 답글을 보내면 입력칸에서 목록 속 제자리로 톡 튀어 올라가 앉고, 그 자리가 가운데로 옵니다.
-  - 답글이 3개 이하면 휠 없이 모두 같은 크기로, 묶음째 칸 가운데에 (어느 답글이든 누르면 바로 버튼)
-  - 첫 답글은 늘 원글 바로 아래에서 시작하고, 맨 위로 올려도 거기까지만 (원글과 사이가 벌어지지 않게).
+  - 답글이 칸에 다 들어가면 휠·스크롤 없이 모두 같은 크기로, 묶음째 칸 가운데에 (어느 답글이든 누르면 바로 버튼).
+    많아져서 맨 위 답글이 원글 아래 24px에 닿으면 그때부터 스크롤(+그라데이션)과 휠.
+  - 스크롤할 때 첫 답글은 원글 아래 24px에서 시작하고, 맨 위로 올려도 거기까지만 (원글과 사이가 벌어지지 않게).
     맨 위 근처에서는 휠 기준선이 첫 답글 자리에 있다가, 내리는 만큼 가운데로 내려와 보통 휠이 됩니다.
   - 수정 (Figma 375:8019, 내 원글·내 답글): 화면이 어두워지며 그 말풍선이 화면 가운데로 날아와 뒤집혀 수정 카드로
     → 체크로 저장하면 다시 뒤집혀 "수정됨"이 붙고 원래 자리로 돌아갑니다.
@@ -74,6 +75,11 @@ export function CommentModal({
   const [overflowing, setOverflowing] = useState(false);
   // 휠 가운데에 온 답글, 버튼을 펼친 답글(가운데 답글만), 답글을 다는 대상
   const [centerId, setCenterId] = useState<string | null>(null);
+  // 답글이 칸에 다 들어가서 휠·스크롤 없이 가운데에 모여 있는지
+  const [compact, setCompact] = useState(true);
+  // 손가락으로 끄는 중인지 (그동안은 가운데 답글에 붙이지 않음), 스크롤이 멈추면 붙이는 타이머
+  const touching = useRef(false);
+  const settleTimer = useRef(0);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [target, setTarget] = useState<Comment | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -138,17 +144,18 @@ export function CommentModal({
     if (!items.length) return;
     const first = items[0].offsetHeight;
     const last = items[items.length - 1].offsetHeight;
-    // 답글이 몇 개 안 되면 휠 없이 다 같은 크기로, 묶음째 칸 가운데에
-    if (items.length <= COMPACT_MAX) {
+    // 답글 묶음 높이 (여백과 상관없는 원래 크기)
+    const lastEl = items[items.length - 1];
+    const content = lastEl.offsetTop + lastEl.offsetHeight - items[0].offsetTop;
+    // 칸에 다 들어가면(맨 위 답글이 원글 아래 24px보다 내려와 있으면) 휠 없이 묶음째 가운데에
+    const fits = content <= el.clientHeight - 2 * TOP_GAP;
+    setCompact((prev) => (prev === fits ? prev : fits));
+    if (fits) {
       el.dataset.compact = "1";
-      const lastEl = items[items.length - 1];
-      el.style.paddingTop = "0px";
+      el.style.paddingTop = `${(el.clientHeight - content) / 2}px`;
       el.style.paddingBottom = "0px";
-      const content = lastEl.offsetTop + lastEl.offsetHeight - items[0].offsetTop;
-      el.style.paddingTop = `${Math.max(TOP_GAP, (el.clientHeight - content) / 2)}px`;
-      el.style.scrollSnapType = "none";
-      el.style.setProperty("--fade-top", "56px");
-      setOverflowing(el.scrollHeight > el.clientHeight + 1);
+      el.scrollTop = 0;
+      setOverflowing(false);
       for (const item of items) {
         const inner = item.firstElementChild as HTMLElement;
         inner.style.scale = "1";
@@ -165,8 +172,6 @@ export function CommentModal({
     setOverflowing(el.scrollHeight > el.clientHeight + 1);
     // 휠 기준선: 맨 위에서는 첫 답글 자리, 내리는 만큼 내려와 칸 가운데에서 멈춥니다.
     const { line, t } = wheelLine(el, first);
-    // 맨 위 근처에서는 가운데에 착 붙는 스크롤을 끕니다 (첫 답글은 가운데까지 못 오니까).
-    el.style.scrollSnapType = t < 1 ? "none" : "";
     // 위쪽 그라데이션도 기준선이 내려오는 만큼만 (원글 바로 아래 첫 답글이 흐려지지 않게)
     el.style.setProperty("--fade-top", `${Math.round(56 * t)}px`);
     // 레이아웃 위치(변형 전)로 계산해야 당겨 놓은 위치 때문에 흔들리지 않습니다.
@@ -215,7 +220,6 @@ export function CommentModal({
     const el = list.current;
     const item = focusId ? el?.querySelector<HTMLElement>(`[data-reply-id="${CSS.escape(focusId)}"]`) : null;
     if (!el || !item) return;
-    el.style.scrollSnapType = "none";
     el.scrollTop = scrollFor(el, item);
     updateRef.current();
     (item.firstElementChild as HTMLElement).animate(
@@ -230,14 +234,13 @@ export function CommentModal({
   const centerReply = (item: HTMLElement) => {
     const el = list.current;
     if (!el) return;
-    el.style.scrollSnapType = "none"; // 움직이는 동안 다른 답글에 붙지 않게 (도착하면 updateWheel이 다시 켬)
     el.scrollTo({ top: scrollFor(el, item), behavior: "smooth" });
   };
 
   /** 답글을 누르면: 흐린 답글은 가운데로, 가운데 답글은 버튼 펼치기/접기 (남의 답글이면 답글 달 대상으로) */
   const tapReply = (r: Comment, item: HTMLElement) => {
     // (답글이 몇 개 안 될 때는 휠이 없어서 어느 답글이든 바로 버튼)
-    if ((r.id !== centerId && replies.length > COMPACT_MAX) || hiddenIds.has(r.id)) {
+    if ((r.id !== centerId && !compact) || hiddenIds.has(r.id)) {
       setActiveId(null);
       centerReply(item);
       return;
@@ -254,8 +257,31 @@ export function CommentModal({
     input.current?.focus({ preventScroll: true });
   };
 
+  /**
+    스크롤이 멈추면 휠 기준선에 가장 가까운 답글로 착 붙입니다.
+    (브라우저의 scroll-snap은 늘 칸 가운데 기준이라, 맨 위 구간에서 기준선과 어긋나 튀어서 직접 붙임)
+  */
+  const settle = () => {
+    const el = list.current;
+    if (!el || el.dataset.compact || touching.current) return;
+    const item = centerId ? el.querySelector<HTMLElement>(`[data-reply-id="${CSS.escape(centerId)}"]`) : null;
+    if (!item) return;
+    const top = scrollFor(el, item);
+    if (Math.abs(top - el.scrollTop) > 1) el.scrollTo({ top, behavior: "smooth" });
+  };
+  const settleRef = useRef(settle);
+  useLayoutEffect(() => {
+    settleRef.current = settle;
+  });
+  const scheduleSettle = () => {
+    window.clearTimeout(settleTimer.current);
+    settleTimer.current = window.setTimeout(() => settleRef.current(), 140);
+  };
+  useEffect(() => () => window.clearTimeout(settleTimer.current), []);
+
   const onListScroll = () => {
     updateWheel();
+    scheduleSettle();
     // 스크롤하면 펼친 버튼은 접습니다 (답글 달 대상은 그대로).
     if (activeId && Math.abs((list.current?.scrollTop ?? 0) - activeScroll.current) > 4) setActiveId(null);
   };
@@ -389,7 +415,15 @@ export function CommentModal({
             <div
               ref={list}
               onScroll={onListScroll}
-              className={`relative flex h-full snap-y snap-mandatory flex-col items-center gap-0.5 overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+              onTouchStart={() => {
+                touching.current = true;
+                window.clearTimeout(settleTimer.current);
+              }}
+              onTouchEnd={() => {
+                touching.current = false;
+                scheduleSettle();
+              }}
+              className={`relative flex h-full flex-col items-center gap-0.5 overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
                 overflowing
                   ? "[mask-image:linear-gradient(to_bottom,transparent,black_var(--fade-top,56px),black_calc(100%-56px),transparent)]"
                   : ""
@@ -407,7 +441,7 @@ export function CommentModal({
                     onClick={(e) => tapReply(r, e.currentTarget)}
                     // 아래 답글일수록 뒤에 깔리게
                     style={{ zIndex: thread.length - i }}
-                    className="relative shrink-0 cursor-pointer snap-center transition-[opacity,translate] duration-300 ease-out starting:translate-y-2 starting:opacity-0"
+                    className="relative shrink-0 cursor-pointer transition-[opacity,translate] duration-300 ease-out starting:translate-y-2 starting:opacity-0"
                   >
                     {/* 휠 크기·흐림·당김은 스크롤할 때 updateWheel이 직접 바꿉니다. */}
                     {/* 말풍선 사이는 늘 뱃지 높이만큼(12px) 띄웁니다. 답글에 단 답글은 "↪ 원 답글" 줄 위를 띄우고,
@@ -598,11 +632,8 @@ function threadOrder(rootId: string, replies: Comment[]): Comment[] {
   return out;
 }
 
-/** 답글이 이만큼 이하면 휠 없이 묶음째 가운데에 */
-const COMPACT_MAX = 3;
-
-/** 첫 답글 위 여백 — 말풍선 위 뱃지 자리(12px)와 합쳐 답글 사이 간격과 비슷하게 */
-const TOP_GAP = 2;
+/** 첫 답글 위 여백 — 말풍선 위 뱃지 자리(12px)와 합쳐 원글 카드와 24px */
+const TOP_GAP = 12;
 
 /**
   휠 기준선 (칸 위에서부터 px)과 맨 위 구간 진행도 t (0 = 맨 위, 1 = 보통 휠).
