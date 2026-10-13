@@ -12,7 +12,8 @@ import type { MyLang } from "./parts";
   마이 프로필 — 닉네임 (담당 송희)
   - 이름은 Google 실명 대신 랜덤 닉네임. 처음 마이를 열 때 하나 정해 줌
   - 직접 입력은 없음. 프로필 시트에서 🔄를 누르면 슬롯머신처럼 닉네임이 띠로로롱 돌다가 띠용 하고 멈춤 → 마음에 들면 적용
-  - 닉네임 옆 › → 프로필 시트: 닉네임 바꾸기 · Google 계정(이메일) · 계정 삭제
+  - 닉네임 옆 › → 프로필 시트: 닉네임 바꾸기 · 제목 옆에 Google 계정(이메일)
+  - 계정 삭제는 잘 안 보이게: 계정 정보를 눌러야 회색 "계정 삭제"가 나옴
   서버 전까지: 닉네임은 이 브라우저에 저장, 이메일은 목업
 */
 
@@ -162,6 +163,7 @@ export function ProfileSheet({
   const [spins, setSpins] = useState(0);
   const [spinning, setSpinning] = useState(false);
   const [confirm, setConfirm] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false); // 계정 정보를 눌러 계정 삭제를 펼쳤는지
   const reelRef = useRef<HTMLDivElement>(null);
 
   // 시트를 열 때마다 지금 닉네임부터
@@ -169,6 +171,7 @@ export function ProfileSheet({
   if (open !== wasOpen) {
     setWasOpen(open);
     if (open) {
+      setAccountOpen(false);
       setCandidate(nickname);
       setReel([nickname]);
       setSpinning(false);
@@ -226,7 +229,34 @@ export function ProfileSheet({
     <>
       <BottomSheet open={open && !confirm} onClose={onClose} label={t.sheet}>
         <div className="flex w-full flex-col gap-3 px-4 pt-2">
-          <h2 className="px-2 font-display text-[22px] leading-[1.25]">{t.title}</h2>
+          {/* 제목 + 오른쪽에 Google 계정 (누르면 아래에 계정 삭제가 나옴) */}
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-3 px-2">
+              <h2 className="shrink-0 font-display text-[22px] leading-[1.25]">{t.title}</h2>
+              <button
+                type="button"
+                onClick={() => setAccountOpen((v) => !v)}
+                aria-expanded={accountOpen}
+                aria-label={`${t.account}: ${email}`}
+                className="ml-auto flex min-w-0 items-center gap-1.5 rounded-full py-1 pl-1 pr-2 text-[12px] text-muted transition active:bg-white/5"
+              >
+                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-white">
+                  <Image src="/logos/google.svg" alt="" width={11} height={11} />
+                </span>
+                <span className="truncate">{email}</span>
+                <Icon name="chevron-right" size={14} className={`shrink-0 transition ${accountOpen ? "rotate-90" : ""}`} />
+              </button>
+            </div>
+            {accountOpen && (
+              <button
+                type="button"
+                onClick={() => setConfirm(true)}
+                className="animate-fade-in self-end px-2 py-1 text-[12px] font-medium text-neutral-400 underline underline-offset-2 transition active:opacity-70"
+              >
+                {t.delete}
+              </button>
+            )}
+          </div>
           {/* 슬롯 */}
           <div className="flex h-[72px] items-center gap-2 rounded-[24px] bg-surface-2 pl-5 pr-3">
             <div className="relative min-w-0 flex-1 overflow-hidden" style={{ height: REEL_H }}>
@@ -272,25 +302,6 @@ export function ProfileSheet({
           </PillButton>
         </div>
 
-        {/* 계정 */}
-        <div className="flex w-full flex-col gap-1 border-t border-white/10 px-4 pt-5">
-          <div className="flex items-center gap-3 px-2 py-2">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white">
-              <Image src="/logos/google.svg" alt="" width={18} height={18} />
-            </span>
-            <span className="flex min-w-0 flex-col">
-              <span className="text-[13px] text-muted">{t.account}</span>
-              <span className="truncate text-[15px] font-semibold">{email}</span>
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setConfirm(true)}
-            className="self-start px-2 py-2 text-[14px] font-semibold text-error transition active:opacity-70"
-          >
-            {t.delete}
-          </button>
-        </div>
       </BottomSheet>
 
       {/* 계정 삭제 확인 */}

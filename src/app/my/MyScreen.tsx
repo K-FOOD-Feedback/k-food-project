@@ -98,7 +98,6 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
   return (
     <Screen className="pb-16">
       <TopBar
-        title="My"
         left={<IconButton icon="chevron-left" label="Back" href="/home/en" />}
         right={
           <IconButton

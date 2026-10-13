@@ -56,7 +56,6 @@ export function KoMyScreen() {
   return (
     <Screen className="pb-16">
       <TopBar
-        title="마이"
         left={<IconButton icon="chevron-left" label="뒤로" href="/home" />}
         right={
           <IconButton
