@@ -668,6 +668,8 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
               postId={post.id}
               commentCount={post.commentCount}
               authorFlag={post.author.flag}
+              // 글쓴이 말풍선은 이 글의 카드 색 (화면 색을 카드 색 하나로 맞춤)
+              authorColor={post.color}
               // 한마디에는 닉네임을 보이지 않음 (글쓴이 뱃지는 "글쓴이"만) — 닉네임은 본문 카드에만
               lang={lang}
               fullHref={commentsHref}
