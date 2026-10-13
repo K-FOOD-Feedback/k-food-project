@@ -6,6 +6,7 @@ import { clearCardTransition, peekCardTransition, setReturnTransition, type Box 
 import { HOME_POSTS, participantsOf, type HomePost } from "@/app/home/mockPosts";
 import { ArrowCta } from "@/components/Buttons";
 import { Icon } from "@/components/Icon";
+import { LanguageButton } from "@/components/LanguagePicker";
 import { HEADER_BUTTON, PageHeader } from "@/components/PageHeader";
 import { useMyVote } from "@/app/home/votes";
 import { PostMenu } from "@/components/PostMenu";
@@ -399,10 +400,8 @@ export function DetailScreen({ post }: { post: HomePost }) {
         }
         right={
           <>
-            <TrackedLink href="/" event="language_clicked" props={{ from: "detail" }} className={HEADER_BUTTON} aria-label="언어 선택">
-              {/* eslint-disable-next-line @next/next/no-img-element -- 작은 SVG 아이콘 */}
-              <img src="/images/icon-world.svg" width={24} height={24} alt="" />
-            </TrackedLink>
+            {/* 지구본: 메인과 같은 언어 변경 창 (공통 LanguageButton) */}
+            <LanguageButton lang="ko" from="detail" />
             {/* 더보기 메뉴 (송희 PostMenu) — 내 글이면 수정·삭제, 남의 글이면 링크 복사·신고 */}
             <PostMenu
               postId={post.id}
