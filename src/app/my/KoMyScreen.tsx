@@ -10,6 +10,7 @@ import { Screen, TopBar } from "@/components/Layout";
 import { track, useTrackOnce } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
 import { CommentCard, Empty, LogoutSheet, MyTabs, PhotoTile, timeAgo } from "./parts";
+import { forgetRole } from "@/lib/role";
 import { AccountFooter, ProfileHeader, ProfileSheet, useNickname } from "./profile";
 
 /*
@@ -157,6 +158,11 @@ export function KoMyScreen() {
         lang="ko"
         email={PROFILE.email}
         onDelete={() => {
+          // 서버 전까지: 이 브라우저에 남은 내 투표·한마디도 지움 (안 지우면 삭제 직후에도 마이에 그대로 보임)
+          for (const k of Object.keys(localStorage)) {
+            if (k.startsWith("kfood:vote:") || k.startsWith("kfood:comments:")) localStorage.removeItem(k);
+          }
+          forgetRole();
           logOut();
           router.push("/");
         }}

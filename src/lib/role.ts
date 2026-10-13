@@ -10,3 +10,8 @@ export const ROLE_COOKIE = "kfood_role";
 export function rememberRole(role: Role) {
   document.cookie = `${ROLE_COOKIE}=${role}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
 }
+
+/** 기억한 역할 지우기 (계정 삭제) — 다음에 / 로 오면 다시 랜딩부터 */
+export function forgetRole() {
+  document.cookie = `${ROLE_COOKIE}=; path=/; max-age=0; samesite=lax`;
+}

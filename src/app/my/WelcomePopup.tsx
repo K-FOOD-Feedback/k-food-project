@@ -13,6 +13,7 @@ import {
   markOnboarded,
   NicknameSlot,
   randomNickname,
+  readNickname,
   saveCountry,
   saveNickname,
 } from "./profile";
@@ -155,7 +156,8 @@ export function WelcomePopup({
   if (open !== wasOpen) {
     setWasOpen(open);
     if (open) {
-      setNickname(randomNickname(lang));
+      // 이미 정해진 닉네임이 있으면(가입 전에 마이를 열어 봤으면) 그대로 — 방금 본 닉네임이 바뀌지 않게
+      setNickname(readNickname(lang) || randomNickname(lang));
       setCountry(foreigner ? guessCountry() : "");
       setAgreed([false, false, false]);
       setExpanded(false);

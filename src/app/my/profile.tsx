@@ -57,6 +57,9 @@ function read(lang: MyLang) {
   }
 }
 
+/** 저장된 내 닉네임 (없으면 "") — 버튼 누를 때 등 바로 읽기용 */
+export const readNickname = read;
+
 export function saveNickname(lang: MyLang, name: string | null) {
   try {
     if (name) localStorage.setItem(key(lang), name);
@@ -100,15 +103,25 @@ export const isOnboarded = (lang: MyLang) => readRaw(onboardedKey(lang)) === "1"
 export const markOnboarded = (lang: MyLang, done: boolean) => saveRaw(onboardedKey(lang), done ? "1" : null);
 
 /** 나라 이름 (영어) · 국기 이모지 */
-export function countryName(code: string) {
+export function countryName(code: string, lang: MyLang = "en") {
   try {
-    return new Intl.DisplayNames(["en"], { type: "region" }).of(code) ?? code;
+    return new Intl.DisplayNames([lang], { type: "region" }).of(code) ?? code;
   } catch {
     return code;
   }
 }
 export function countryFlag(code: string) {
   return code.length === 2 ? String.fromCodePoint(...[...code.toUpperCase()].map((c) => 0x1f1a5 + c.charCodeAt(0))) : "🌍";
+}
+
+/**
+ * 글쓴이(외국인)로 보이는 나 — 가입 때 정한 닉네임 · 나라 (내 글 상세·완료·공유 카드)
+ * 나라를 아직 안 골랐으면(가입 전 예시) 캐나다
+ */
+export function useMyAuthor() {
+  const name = useNickname("en");
+  const code = useCountry() || "CA";
+  return { name, flag: countryFlag(code), country: { en: countryName(code, "en"), ko: countryName(code, "ko") } };
 }
 
 /** 내 닉네임 — 없으면 처음 열 때 랜덤으로 정해 저장 (서버에서 그린 첫 화면은 빈 값) */

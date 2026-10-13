@@ -569,6 +569,7 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
             <PostMenu
               postId={post.id}
               isMine={post.id === MY_POST_ID}
+              lang={lang}
               className={HEADER_BUTTON}
               onOpen={() => track("post_more_clicked", { post_id: post.id })}
             >

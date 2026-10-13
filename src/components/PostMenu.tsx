@@ -9,6 +9,7 @@ import type { ShareCardPost } from "@/app/write/done/ShareCard";
 import { track } from "@/lib/analytics";
 import { currentFrom, withFrom } from "@/lib/back";
 import { coverOf, SAMPLE_MY_POST, useFlow } from "@/lib/write-store";
+import { useMyAuthor } from "@/app/my/profile";
 import { PillButton } from "./Buttons";
 import { Icon } from "./Icon";
 import { BottomSheet } from "./Layout";
@@ -17,14 +18,57 @@ import { BottomSheet } from "./Layout";
  * 게시글 "더보기(⋯)" 메뉴 (담당 송희 — 상세 화면 등에 끼워 씀)
  * - 내 글: 공유하기 · 수정하기 · 삭제하기(확인 시트)
  * - 남의 글: 공유하기 · 링크 복사 · 신고하기(이유 고르는 시트)
- * - 공유하기 → 글 올린 뒤와 같은 공유 시트 (스토리 카드 꾸미기). 상세는 한국인 화면이라 한국어로
+ * - 공유하기 → 글 올린 뒤와 같은 공유 시트 (스토리 카드 꾸미기)
+ * - lang: 보는 사람 화면의 언어 (한국인 상세 ko · 외국인 상세와 내 글 en) — 메뉴·시트·공유 카드 모두
  * 메뉴·시트는 화면 맨 바깥(body)에 띄워서, 버튼이 어디에 있든 화면 전체를 덮습니다.
  */
-const REPORT_REASONS = ["스팸·광고예요", "욕설이나 혐오 표현이 있어요", "음식과 관계없는 사진이에요", "기타"];
+const COPY = {
+  ko: {
+    more: "더보기",
+    closeMenu: "메뉴 닫기",
+    share: "공유하기",
+    edit: "수정하기",
+    delete: "삭제하기",
+    copyLink: "링크 복사",
+    report: "신고하기",
+    copied: "링크를 복사했어요",
+    copyFailed: "링크를 복사하지 못했어요",
+    deleteLabel: "글 삭제",
+    deleteTitle: "이 글을 삭제할까요?",
+    deleteBody: "받은 투표와 한마디도 함께 사라지고, 되돌릴 수 없어요.",
+    cancel: "취소",
+    reportTitle: "이 글을 신고할까요?",
+    reportBody: "이유를 골라 주세요. 확인한 뒤 조치할게요.",
+    reportReason: "신고 이유",
+    reported: "신고가 접수됐어요",
+    reasons: ["스팸·광고예요", "욕설이나 혐오 표현이 있어요", "음식과 관계없는 사진이에요", "기타"],
+  },
+  en: {
+    more: "More",
+    closeMenu: "Close menu",
+    share: "Share",
+    edit: "Edit",
+    delete: "Delete",
+    copyLink: "Copy link",
+    report: "Report",
+    copied: "Link copied",
+    copyFailed: "Couldn't copy the link",
+    deleteLabel: "Delete post",
+    deleteTitle: "Delete this post?",
+    deleteBody: "Its votes and comments will be gone too. You can't undo this.",
+    cancel: "Cancel",
+    reportTitle: "Report this post?",
+    reportBody: "Tell us why. We'll review it and take action.",
+    reportReason: "Reason",
+    reported: "Thanks, we got your report",
+    reasons: ["Spam or ads", "Hate or abusive language", "Not a food photo", "Something else"],
+  },
+};
 
 export function PostMenu({
   postId,
   isMine = false,
+  lang = "ko",
   className,
   onOpen,
   children,
@@ -33,12 +77,16 @@ export function PostMenu({
   /** 메뉴를 열 때 쓰는 화면이 따로 남길 기록 등 */
   onOpen?: () => void;
   isMine?: boolean;
+  /** 보는 사람 화면의 언어 */
+  lang?: "ko" | "en";
   /** ⋯ 버튼 모양 (쓰는 화면의 버튼 스타일 그대로) */
   className?: string;
   children: ReactNode;
 }) {
   const router = useRouter();
   const { deleteMyPost, myPost } = useFlow();
+  const t = COPY[lang];
+  const me = useMyAuthor();
   const [shareOpen, setShareOpen] = useState(false);
   const [open, setOpen] = useState(false);
   const [sheet, setSheet] = useState<"delete" | "report" | null>(null);
@@ -65,9 +113,9 @@ export function PostMenu({
     track("post_shared", { channel: "copy_link", from: "detail_menu", post_id: postId });
     try {
       await navigator.clipboard.writeText(`${window.location.origin}/posts/${postId}`);
-      setToast("링크를 복사했어요");
+      setToast(t.copied);
     } catch {
-      setToast("링크를 복사하지 못했어요");
+      setToast(t.copyFailed);
     }
   };
 
@@ -81,24 +129,26 @@ export function PostMenu({
         photo: coverOf(p).src,
         voteQuestion: p.voteQuestion,
         options: p.options.filter((o) => o.trim()),
-        author: "Sam · 캐나다",
+        // 글쓴이 = 나 (가입 때 정한 닉네임 · 나라)
+        author: `${me.name || "Sam"} · ${me.country[lang]}`,
       };
     }
     const p = getHomePost(postId);
     if (!p) return null;
+    const en = lang === "en";
     return {
-      title: p.title,
-      dish: p.title,
+      title: en ? p.en.title : p.title,
+      dish: en ? p.en.title : p.title,
       photo: p.cardPhoto,
       voteQuestion: p.question.text,
-      options: p.question.options.map((o) => o.replace(/\n/g, " ")),
-      author: `${p.author.name} · ${p.author.country}`,
+      options: ((en && p.en.options) || p.question.options).map((o) => o.replace(/\n/g, " ")),
+      author: `${p.author.name} · ${en ? p.en.country : p.author.country}`,
     };
   };
   const card = sharePost();
   const share = {
     icon: "share" as const,
-    label: "공유하기",
+    label: t.share,
     danger: false,
     onClick: () => {
       setOpen(false);
@@ -112,7 +162,7 @@ export function PostMenu({
         ...(card ? [share] : []),
         {
           icon: "pencil" as const,
-          label: "수정하기",
+          label: t.edit,
           danger: false,
           onClick: () => {
             track("post_edit_started", { post_id: postId, from: "detail_menu" });
@@ -121,7 +171,7 @@ export function PostMenu({
         },
         {
           icon: "trash" as const,
-          label: "삭제하기",
+          label: t.delete,
           danger: true,
           onClick: () => {
             track("post_delete_sheet_opened", { post_id: postId, from: "detail_menu" });
@@ -131,10 +181,10 @@ export function PostMenu({
       ]
     : [
         ...(card ? [share] : []),
-        { icon: "link" as const, label: "링크 복사", danger: false, onClick: copyLink },
+        { icon: "link" as const, label: t.copyLink, danger: false, onClick: copyLink },
         {
           icon: "alert" as const,
-          label: "신고하기",
+          label: t.report,
           danger: true,
           onClick: () => {
             setReason(null);
@@ -148,7 +198,7 @@ export function PostMenu({
       <button
         type="button"
         className={className}
-        aria-label="더보기"
+        aria-label={t.more}
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => {
@@ -168,7 +218,7 @@ export function PostMenu({
               <>
                 <button
                   type="button"
-                  aria-label="메뉴 닫기"
+                  aria-label={t.closeMenu}
                   tabIndex={-1}
                   onClick={() => setOpen(false)}
                   className="fixed inset-0 z-40 animate-fade-in bg-black/50"
@@ -201,13 +251,13 @@ export function PostMenu({
             )}
 
             {/* 삭제 확인 (내 글) */}
-            <BottomSheet open={sheet === "delete"} onClose={() => setSheet(null)} label="글 삭제">
+            <BottomSheet open={sheet === "delete"} onClose={() => setSheet(null)} label={t.deleteLabel}>
               <div className="flex w-full flex-col items-center gap-2 px-6 pt-2 text-center break-keep">
                 <span className="mb-2 flex size-16 items-center justify-center rounded-full bg-surface-2 text-error">
                   <Icon name="trash" size={28} />
                 </span>
-                <h2 className="font-display text-[22px] leading-[1.25]">이 글을 삭제할까요?</h2>
-                <p className="text-[15px] leading-[1.5] text-muted">받은 투표와 한마디도 함께 사라지고, 되돌릴 수 없어요.</p>
+                <h2 className="font-display text-[22px] leading-[1.25]">{t.deleteTitle}</h2>
+                <p className="text-[15px] leading-[1.5] text-muted">{t.deleteBody}</p>
               </div>
               <div className="flex w-full gap-1">
                 <PillButton
@@ -217,7 +267,7 @@ export function PostMenu({
                     setSheet(null);
                   }}
                 >
-                  취소
+                  {t.cancel}
                 </PillButton>
                 <PillButton
                   tone="error"
@@ -228,19 +278,19 @@ export function PostMenu({
                     router.push("/home?lang=en");
                   }}
                 >
-                  삭제하기
+                  {t.delete}
                 </PillButton>
               </div>
             </BottomSheet>
 
             {/* 신고 (남의 글) */}
-            <BottomSheet open={sheet === "report"} onClose={() => setSheet(null)} label="신고하기">
+            <BottomSheet open={sheet === "report"} onClose={() => setSheet(null)} label={t.report}>
               <div className="flex w-full flex-col gap-2 px-6 pt-2 break-keep">
-                <h2 className="font-display text-[22px] leading-[1.25]">이 글을 신고할까요?</h2>
-                <p className="text-[15px] leading-[1.5] text-muted">이유를 골라 주세요. 확인한 뒤 조치할게요.</p>
+                <h2 className="font-display text-[22px] leading-[1.25]">{t.reportTitle}</h2>
+                <p className="text-[15px] leading-[1.5] text-muted">{t.reportBody}</p>
               </div>
-              <div role="radiogroup" aria-label="신고 이유" className="flex w-full flex-col gap-1">
-                {REPORT_REASONS.map((r) => {
+              <div role="radiogroup" aria-label={t.reportReason} className="flex w-full flex-col gap-1">
+                {t.reasons.map((r) => {
                   const on = reason === r;
                   return (
                     <button
@@ -268,18 +318,18 @@ export function PostMenu({
               </div>
               <div className="flex w-full gap-1">
                 <PillButton tone="soft" onClick={() => setSheet(null)}>
-                  취소
+                  {t.cancel}
                 </PillButton>
                 <PillButton
                   tone={reason ? "error" : "disabled"}
                   disabled={!reason}
                   onClick={() => {
-                    track("post_reported", { post_id: postId, reason: REPORT_REASONS.indexOf(reason ?? "") });
+                    track("post_reported", { post_id: postId, reason: t.reasons.indexOf(reason ?? "") });
                     setSheet(null);
-                    setToast("신고가 접수됐어요");
+                    setToast(t.reported);
                   }}
                 >
-                  신고하기
+                  {t.report}
                 </PillButton>
               </div>
             </BottomSheet>
@@ -300,7 +350,7 @@ export function PostMenu({
           document.body,
         )}
       {card && (
-        <ShareSheet open={shareOpen} onClose={() => setShareOpen(false)} postId={postId} post={card} from="detail_menu" lang="ko" />
+        <ShareSheet open={shareOpen} onClose={() => setShareOpen(false)} postId={postId} post={card} from="detail_menu" lang={lang} />
       )}
     </>
   );

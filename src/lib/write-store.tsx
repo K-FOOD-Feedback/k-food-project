@@ -32,6 +32,8 @@ import { track } from "./analytics";
 */
 
 export type DraftStep = "photos" | "post" | "vote";
+/** 쓰다 만 글을 이어 쓸 화면 */
+export const STEP_HREF: Record<DraftStep, string> = { photos: "/write", post: "/write/post", vote: "/write/vote" };
 
 export type PostContent = {
   photos: Photo[];

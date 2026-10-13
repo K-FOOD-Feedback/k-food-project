@@ -7,6 +7,7 @@ import { LanguageButton } from "@/components/LanguagePicker";
 import { LoginSheet } from "@/components/LoginSheet";
 import { useRouter } from "next/navigation";
 import { setSuperProps, track, useTrackOnce } from "@/lib/analytics";
+import { isOnboarded } from "@/app/my/profile";
 import { rememberRole } from "@/lib/role";
 import { useFlow } from "@/lib/write-store";
 import { COPY, REACTIONS, SAMPLE_PCTS, type LandingLang } from "./copy";
@@ -689,9 +690,12 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
               track("login_completed", { from: "landing", method: "google" });
               logIn();
               setLoginOpen(false);
-              // 중국어·일본어도 이후 화면은 아직 영어 외국인 화면으로
-              rememberRole(lang === "ko" ? "ko" : "en");
-              router.push(lang === "ko" ? "/home" : "/home?lang=en");
+              // 이미 가입한 사람: 화면 언어가 아니라 가입한 역할로 (서버 전까지는 이 브라우저의 가입 기록)
+              // 기록이 없으면 화면 언어로 — 중국어·일본어도 이후 화면은 아직 영어 외국인 화면으로
+              const ko = isOnboarded("ko"), en = isOnboarded("en");
+              const role = ko !== en ? (ko ? "ko" : "en") : lang === "ko" ? "ko" : "en";
+              rememberRole(role);
+              router.push(role === "ko" ? "/home" : "/home?lang=en");
             }}
           />,
           document.body,

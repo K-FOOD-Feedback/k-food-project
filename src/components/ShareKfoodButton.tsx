@@ -5,7 +5,8 @@ import { useState, type ReactNode } from "react";
 import { isOnboarded } from "@/app/my/profile";
 import { openWelcome, WelcomePopup } from "@/app/my/WelcomePopup";
 import { track } from "@/lib/analytics";
-import { coverOf, useFlow, type DraftStep } from "@/lib/write-store";
+import { withFrom, type BackFrom } from "@/lib/back";
+import { coverOf, STEP_HREF, useFlow, type DraftStep } from "@/lib/write-store";
 import { PillButton } from "./Buttons";
 import { BottomSheet } from "./Layout";
 import { LoginSheet } from "./LoginSheet";
@@ -19,10 +20,18 @@ import { usePhotoPicker } from "./PhotoPicker";
  * - 사진 고르기는 버튼 누르는 동작 안에서 열어야 브라우저가 막지 않아서, 각 단계의 버튼에서 바로 엶
  * 모양은 className으로 메인 화면에서 정합니다.
  */
-const STEP_HREF: Record<DraftStep, string> = { photos: "/write", post: "/write/post", vote: "/write/vote" };
 const STEP_LABEL: Record<DraftStep, string> = { photos: "Photos", post: "Your post", vote: "Ask Koreans" };
 
-export function ShareKfoodButton({ className, children }: { className?: string; children: ReactNode }) {
+export function ShareKfoodButton({
+  className,
+  children,
+  from,
+}: {
+  className?: string;
+  children: ReactNode;
+  /** 메인이 아닌 곳(마이 등)에서 쓸 때 — 사진 화면 ← 가 그곳으로 (src/lib/back.ts) */
+  from?: BackFrom;
+}) {
   const router = useRouter();
   const { loggedIn, logIn, addPhotos, draft, discardDraft } = useFlow();
   const [sheet, setSheet] = useState<"login" | "resume" | null>(null);
@@ -32,7 +41,7 @@ export function ShareKfoodButton({ className, children }: { className?: string; 
     const { added, overflow } = addPhotos(files, { fresh: true });
     track("photos_added", { count: added, total: added, from: "share" });
     if (overflow) track("photo_limit_hit", { from: "share" });
-    router.push("/write");
+    router.push(withFrom("/write", from));
   });
 
   /** 로그인·가입이 끝난 뒤: 쓰다 만 글이 있으면 묻고, 없으면 바로 사진 고르기 */

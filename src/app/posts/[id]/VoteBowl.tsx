@@ -124,6 +124,13 @@ export function VoteBowl({ post, viewOnly = false, lang = "ko" }: { post: HomePo
       setPending({ choice, method });
       return;
     }
+    // 로그인은 했는데 가입 환영(닉네임·약관)을 ×로 닫았던 사람 — 약관 동의 전엔 투표 안 됨, 다시 띄움 (송희)
+    if (!isOnboarded("ko")) {
+      track("signup_shown", { viewer: "korean", from: "vote" });
+      setWelcome({ choice, method });
+      openWelcome();
+      return;
+    }
     castVote(choice, method);
   };
 

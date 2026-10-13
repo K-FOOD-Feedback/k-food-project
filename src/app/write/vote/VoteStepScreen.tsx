@@ -8,6 +8,7 @@ import { Icon } from "@/components/Icon";
 import { Screen, StepProgress, StickyBottom, Tile, TopBar } from "@/components/Layout";
 import { getQuestion, rankQuestions, VOTE_TITLE_MAX, voteBasisOf, type QuestionId } from "@/lib/write-data";
 import { keptRatio, track } from "@/lib/analytics";
+import { currentFrom, withFrom } from "@/lib/back";
 import { useFlow } from "@/lib/write-store";
 import { OptionsEditor } from "../OptionsEditor";
 import { WriteExit } from "../WriteExit";
@@ -91,7 +92,7 @@ export function VoteStepScreen() {
             onClick={() => {
               saveDraftForLater("vote");
               track("draft_saved", { step: "vote" });
-              router.push("/write/post");
+              router.push(withFrom("/write/post", currentFrom()));
             }}
           />
         }

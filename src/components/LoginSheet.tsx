@@ -16,14 +16,15 @@ const COPY = {
     title: "Log in to share your K-food",
     body: "One quick step and Koreans can start judging your dish.",
     google: "Continue with Google",
-    terms: "By continuing, you agree to our Terms and Privacy Policy.",
+    // [앞, 이용약관, 가운데, 개인정보처리방침, 뒤] — 두 이름은 링크
+    terms: ["By continuing, you agree to our ", "Terms", " and ", "Privacy Policy", "."],
   },
   ko: {
     label: "로그인",
     title: "로그인하고 한마디 보태기",
     body: "투표는 로그인한 한국인만 할 수 있어요. 구글로 3초면 끝나요.",
     google: "Google로 계속하기",
-    terms: "계속하면 이용약관과 개인정보처리방침에 동의하게 돼요.",
+    terms: ["계속하면 ", "이용약관", "과 ", "개인정보처리방침", "에 동의하게 돼요."],
   },
 };
 
@@ -66,7 +67,18 @@ export function LoginSheet({
           <Image src="/logos/google.svg" alt="" width={20} height={20} />
           {t.google}
         </button>
-        <p className="w-full break-keep px-6 text-center text-[12px] font-medium leading-[1.4] text-muted">{t.terms}</p>
+        <p className="w-full break-keep px-6 text-center text-[12px] font-medium leading-[1.4] text-muted">
+          {/* 새 탭으로 (이 시트·고르던 것이 사라지지 않게) — 약관 화면의 ×로 닫고 돌아옴 */}
+          {t.terms[0]}
+          <a href="/terms" target="_blank" className="underline underline-offset-2">
+            {t.terms[1]}
+          </a>
+          {t.terms[2]}
+          <a href="/privacy" target="_blank" className="underline underline-offset-2">
+            {t.terms[3]}
+          </a>
+          {t.terms[4]}
+        </p>
       </div>
     </BottomSheet>
   );

@@ -8,6 +8,8 @@ import { Icon } from "@/components/Icon";
 import { Screen, TopBar } from "@/components/Layout";
 import { track, useTrackOnce } from "@/lib/analytics";
 import { markNotificationsSeen } from "@/lib/notifications-seen";
+import { useAutoTranslate } from "@/components/LanguagePicker";
+import { STEP_HREF, useFlow, type DraftStep } from "@/lib/write-store";
 import { DATA, groupByDay, photoOf, type Lang, type Notif } from "./data";
 
 /**
@@ -20,6 +22,8 @@ import { DATA, groupByDay, photoOf, type Lang, type Notif } from "./data";
 export function NotificationsScreen({ lang }: { lang: Lang }) {
   const t = COPY[lang];
   const { incoming: INCOMING, list: NOTIFS } = DATA[lang];
+  const translate = useAutoTranslate(); // 🌐의 자동 번역 설정 (한마디 화면과 같음)
+  const { draft } = useFlow();
   const [live, setLive] = useState(false);
 
   useTrackOnce("notifications_viewed", { count: NOTIFS.length, viewer: VIEWER[lang] });
@@ -58,13 +62,13 @@ export function NotificationsScreen({ lang }: { lang: Lang }) {
             {items.map((n) => (
               <Link
                 key={n.id}
-                href={hrefOf(n, lang)}
+                href={hrefOf(n, lang, draft.savedStep)}
                 onClick={() => {
                   track("notification_clicked", { type: n.type, viewer: VIEWER[lang] });
                 }}
                 className="block transition active:scale-[0.99]"
               >
-                <Card lang={lang} n={n} className={n.id === INCOMING.id ? "animate-arrive" : ""} />
+                <Card lang={lang} n={n} translate={translate} className={n.id === INCOMING.id ? "animate-arrive" : ""} />
               </Link>
             ))}
           </section>
@@ -74,7 +78,7 @@ export function NotificationsScreen({ lang }: { lang: Lang }) {
   );
 }
 
-function Card({ lang, n, className = "" }: { lang: Lang; n: Notif; className?: string }) {
+function Card({ lang, n, translate, className = "" }: { lang: Lang; n: Notif; translate: boolean; className?: string }) {
   return (
     <span className={`flex items-start gap-3.5 rounded-[24px] bg-surface p-5 ${className}`}>
       {/* 그 글의 음식 사진 (앱의 물결 모양) */}
@@ -96,7 +100,7 @@ function Card({ lang, n, className = "" }: { lang: Lang; n: Notif; className?: s
           <span className="shrink-0 pt-0.5 text-[12px] font-medium tabular-nums text-muted">{n.time}</span>
         </span>
         <span className="flex items-center gap-2">
-          <span className="line-clamp-1 min-w-0 flex-1 text-[13px] leading-[1.45] text-muted">{bodyOf(n, lang)}</span>
+          <span className="line-clamp-1 min-w-0 flex-1 text-[13px] leading-[1.45] text-muted">{bodyOf(n, lang, translate)}</span>
           <Icon name="chevron-right" size={16} className="shrink-0 text-muted" />
         </span>
       </span>
@@ -118,7 +122,7 @@ const COPY = {
     title: "알림",
     back: "뒤로",
     emptyTitle: "아직 알림이 없어요",
-    emptyBody: "내 댓글에 답글이 달리면 바로 알려 드릴게요.",
+    emptyBody: "내 한마디에 답글이 달리면 바로 알려 드릴게요.",
     close: "닫기",
   },
 };
@@ -126,7 +130,7 @@ const COPY = {
 /** 제목은 모두 문장형 */
 function titleOf(n: Notif, lang: Lang) {
   if (lang === "ko") {
-    return n.byAuthor ? `글쓴이 ${n.actor}님이 내 댓글에 답글을 달았어요` : "내 댓글에 답글이 달렸어요";
+    return n.byAuthor ? `글쓴이 ${n.actor}님이 내 한마디에 답글을 달았어요` : "내 한마디에 답글이 달렸어요";
   }
   switch (n.type) {
     case "first":
@@ -134,17 +138,18 @@ function titleOf(n: Notif, lang: Lang) {
     case "milestone":
       return `Your post got ${n.detail} votes.`;
     case "comment":
-      return `${n.actor} commented on your post.`;
+      // 한국인 한마디는 익명
+      return n.actor ? `${n.actor} commented on your post.` : "A Korean commented on your post.";
     case "reply":
-      return `${n.actor} replied to your comment.`;
+      return n.actor ? `${n.actor} replied to your comment.` : "A Korean replied to your comment.";
     case "draft":
       return "You have an unfinished post.";
   }
 }
 
-/** 아래 줄: 댓글·답글은 내용, 나머지는 어느 글인지 (어느 글인지는 왼쪽 사진으로도 보임) */
-function bodyOf(n: Notif, lang: Lang) {
-  if (n.type === "comment" || n.type === "reply") return `“${n.detail}”`;
+/** 아래 줄: 댓글·답글은 내용(자동 번역이 켜져 있으면 번역본), 나머지는 어느 글인지 (어느 글인지는 왼쪽 사진으로도 보임) */
+function bodyOf(n: Notif, lang: Lang, translate: boolean) {
+  if (n.type === "comment" || n.type === "reply") return `“${translate && n.translated ? n.translated : n.detail}”`;
   if (n.type === "draft") return lang === "ko" ? "이어서 써 보세요" : "Pick up where you left off.";
   return n.postTitle;
 }
@@ -154,13 +159,16 @@ function bodyOf(n: Notif, lang: Lang) {
  * - 외국인: 내 글 / 남의 글 대댓글은 그 글의 댓글 화면 / 쓰다 만 글은 작성 화면(뒤로 → 알림함)
  * - 한국인: 대댓글이 달린 글의 댓글 화면 — 답글이 달린 내 한마디가 바로 열린 채로
  */
-function hrefOf(n: Notif, lang: Lang) {
+function hrefOf(n: Notif, lang: Lang, savedStep: DraftStep | null) {
   const from = lang === "en" ? "notifications-en" : "notifications";
-  if (n.type === "draft") return `/write?from=${from}`;
+  // 쓰다 만 글: 멈춘 단계로 바로 (이 브라우저에 쓰다 만 글이 없으면 사진 고르기부터)
+  if (n.type === "draft") return `${savedStep ? STEP_HREF[savedStep] : "/write"}?from=${from}`;
   if (n.type === "reply" && (lang === "ko" || n.postId !== "mine")) {
     // 답글이 달린 내 한마디를 바로 열어 줌 (한마디 화면의 ?comment=)
     const comment = n.commentId ? `&comment=${encodeURIComponent(n.commentId)}` : "";
     return `/posts/${n.postId}/comments?from=${from}${comment}`;
   }
+  // 내 글에 달린 한마디 → 한마디 전체 화면으로
+  if (n.type === "comment") return `/posts/${n.postId}/comments?from=${from}`;
   return `/posts/${n.postId}?from=${from}`;
 }

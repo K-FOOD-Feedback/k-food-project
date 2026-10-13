@@ -5,7 +5,7 @@ import { useCallback, useState } from "react";
 import { IconButton, PillButton } from "@/components/Buttons";
 import { TextField } from "@/components/Field";
 import { Icon } from "@/components/Icon";
-import { Screen, StickyBottom, Tile, Toast, TopBar } from "@/components/Layout";
+import { BottomSheet, Screen, StickyBottom, Tile, Toast, TopBar } from "@/components/Layout";
 import { PhotoGrid } from "@/components/PhotoGrid";
 import { usePhotoPicker } from "@/components/PhotoPicker";
 import { getQuestion, MAX_PHOTOS, STORY_MAX, TITLE_MAX, type Photo } from "@/lib/write-data";
@@ -29,6 +29,7 @@ export function EditScreen({ detailHref = `/posts/${MY_POST_ID}` }: { detailHref
   const locked = initial.votes > 0; // 분석용: 이미 투표가 들어온 글인지
   const [form, setForm] = useState<MyPost>(initial);
   const [limitToast, setLimitToast] = useState(false);
+  const [confirmLeave, setConfirmLeave] = useState(false);
   const closeToast = useCallback(() => setLimitToast(false), []);
   // 잠긴 투표를 눌렀을 때: 흔들림 + 안내 토스트
   const [lockShake, setLockShake] = useState(0);
@@ -73,11 +74,12 @@ export function EditScreen({ detailHref = `/posts/${MY_POST_ID}` }: { detailHref
         left={
           <IconButton
             icon="x"
-            label="Discard changes"
-            href={detailHref}
+            label="Close"
             onClick={() => {
-              const changed = Object.values(changedFields()).some(Boolean);
-              track("post_edit_discarded", { had_changes: changed, locked });
+              // 고친 게 있으면 버릴지 먼저 물어봄
+              if (Object.values(changedFields()).some(Boolean)) return setConfirmLeave(true);
+              track("post_edit_discarded", { had_changes: false, locked });
+              router.push(detailHref);
             }}
           />
         }
@@ -180,6 +182,29 @@ export function EditScreen({ detailHref = `/posts/${MY_POST_ID}` }: { detailHref
         body="To keep votes fair, the question and choices stay as posted."
       />
       {picker.input}
+
+      {/* 고친 내용이 있는데 × — 버릴지 확인 */}
+      <BottomSheet open={confirmLeave} onClose={() => setConfirmLeave(false)} label="Discard changes">
+        <div className="flex w-full flex-col gap-2 px-6 pt-2 break-keep">
+          <h2 className="font-display text-[22px] leading-[1.25]">Discard your changes?</h2>
+          <p className="text-[15px] leading-[1.5] text-muted">What you changed here won&apos;t be saved.</p>
+        </div>
+        <div className="flex w-full gap-1">
+          <PillButton tone="soft" onClick={() => setConfirmLeave(false)}>
+            Keep editing
+          </PillButton>
+          <PillButton
+            tone="error"
+            onClick={() => {
+              track("post_edit_discarded", { had_changes: true, locked });
+              setConfirmLeave(false);
+              router.push(detailHref);
+            }}
+          >
+            Discard
+          </PillButton>
+        </div>
+      </BottomSheet>
     </Screen>
   );
 }

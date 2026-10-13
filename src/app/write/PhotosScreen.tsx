@@ -8,6 +8,7 @@ import { Chip, Screen, StepProgress, StickyBottom, Tile, Toast, TopBar } from "@
 import { PhotoGrid, PhotoImage } from "@/components/PhotoGrid";
 import { usePhotoPicker } from "@/components/PhotoPicker";
 import { MAX_PHOTOS } from "@/lib/write-data";
+import { currentFrom, withFrom } from "@/lib/back";
 import { track } from "@/lib/analytics";
 import { coverOf, useFlow } from "@/lib/write-store";
 import { AnalyzingView } from "./AnalyzingView";
@@ -125,7 +126,13 @@ export function PhotosScreen({ backHref = "/home?lang=en" }: { backHref?: string
             compact
             caption={dishFlow.working ? "Looking at your photos…" : undefined}
             {...(dishFlow.canGo && !editingDish
-              ? { href: "/write/post", onClick: () => track("photos_completed", { count: draft.photos.length }) }
+              ? {
+                  // 들어온 곳(?from=)은 누를 때 읽어서 이어 붙임 (그리기 전엔 주소를 몰라서 링크 대신 이동)
+                  onClick: () => {
+                    track("photos_completed", { count: draft.photos.length });
+                    router.push(withFrom("/write/post", currentFrom()));
+                  },
+                }
               : { disabled: true })}
           />
         </StickyBottom>

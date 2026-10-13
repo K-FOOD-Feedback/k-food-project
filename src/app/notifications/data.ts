@@ -24,10 +24,12 @@ export type Notif = {
   type: NotifType;
   postId: string;
   postTitle: string;
-  /** 남긴 사람. 한국인 댓글은 익명이라 비워 둠 */
+  /** 남긴 사람 — 글쓴이(외국인)일 때만. 한국인 한마디는 익명이라 비워 둠 */
   actor?: string;
   /** 댓글·대댓글: 내용 · milestone: 표 수 */
   detail: string;
+  /** detail 이 보는 사람 언어가 아닐 때 번역본 (자동 번역이 켜져 있으면 이걸 보여 줌) */
+  translated?: string;
   /** reply: 답글이 달린 내 한마디 id — 누르면 그 한마디 레이어가 바로 열림 (?comment=) */
   commentId?: string;
   /** 한국인 reply: 대댓글을 단 사람이 그 글의 글쓴이(외국인)인지 */
@@ -56,21 +58,21 @@ const EN_INCOMING: Notif = {
   ...MINE,
   id: "en-live",
   type: "comment",
-  actor: "지우",
   detail: "면이 어디 있는데요 ㅋㅋ",
+  translated: "Where are the noodles lol",
   day: "Today",
   time: "Just now",
   read: false,
 };
 
 const EN: Notif[] = [
-  { ...MINE, id: "en1", type: "comment", actor: "하준", detail: "치즈 더 넣으면 완벽할 듯 ㅋㅋ", day: "Today", time: "21:55", read: false },
-  { ...MINE, id: "en2", type: "comment", actor: "유나", detail: "불닭은 원래 이렇게 먹는 거 맞아요", day: "Today", time: "21:40", read: false },
-  { ...TTEOK, id: "en3", type: "reply", commentId: repliedComment(TTEOK.postId), actor: "서연", detail: "저도 그렇게 생각해요!", day: "Today", time: "21:31", read: false },
+  { ...MINE, id: "en1", type: "comment", detail: "치즈 더 넣으면 완벽할 듯 ㅋㅋ", translated: "A bit more cheese and it'd be perfect lol", day: "Today", time: "21:55", read: false },
+  { ...MINE, id: "en2", type: "comment", detail: "불닭은 원래 이렇게 먹는 거 맞아요", translated: "Yep, this is exactly how you eat Buldak", day: "Today", time: "21:40", read: false },
+  { ...TTEOK, id: "en3", type: "reply", commentId: repliedComment(TTEOK.postId), detail: "저도 그렇게 생각해요!", translated: "I think so too!", day: "Today", time: "21:31", read: false },
   { ...MINE, id: "en4", type: "milestone", detail: "20", day: "Today", time: "21:10", read: true },
   { ...MINE, id: "en5", type: "milestone", detail: "10", day: "Yesterday", time: "18:40", read: true },
   { ...MINE, id: "en6", type: "draft", detail: "", day: "Yesterday", time: "12:05", read: true },
-  { ...MINE, id: "en7", type: "first", actor: "민지", detail: "", day: "Oct 6", time: "09:12", read: true },
+  { ...MINE, id: "en7", type: "first", detail: "", day: "Oct 6", time: "09:12", read: true },
 ];
 
 // ── 한국인 (대댓글만)
@@ -92,7 +94,7 @@ const KO_INCOMING: Notif = {
 const KO: Notif[] = [
   { ...BULDAK, id: "ko1", type: "reply", commentId: repliedComment(BULDAK.postId), detail: "삼김 조합 진짜 인정이요", day: "오늘", time: "21:50", read: false },
   { ...BULDAK, id: "ko2", type: "reply", commentId: repliedComment(BULDAK.postId), detail: "저도 그렇게 먹어요 ㅋㅋ", day: "오늘", time: "21:38", read: false },
-  { ...TTEOK, id: "ko4", type: "reply", commentId: repliedComment(TTEOK.postId), actor: "Mia", byAuthor: true, detail: "Wow I didn't know that! Thank you", day: "어제", time: "22:04", read: true },
+  { ...TTEOK, id: "ko4", type: "reply", commentId: repliedComment(TTEOK.postId), actor: "Mia", byAuthor: true, detail: "Wow I didn't know that! Thank you", translated: "와 몰랐어요! 고마워요", day: "어제", time: "22:04", read: true },
   { ...TTEOK, id: "ko5", type: "reply", commentId: repliedComment(TTEOK.postId), detail: "치즈 떡볶이엔 라면사리죠", day: "10월 5일", time: "18:20", read: true },
 ];
 
