@@ -327,10 +327,12 @@ function CardContent({ lang, post, voted, shape }: { lang: Lang; post: Post; vot
           {en ? post.en.title : post.title}
         </span>
         <span className="flex w-full items-center justify-between text-[13px] font-semibold text-black/60">
-          {/* 작성자: 영어는 국기 + 닉네임, 한국어는 국기 + "국가명에서 온 닉네임" · 글자는 흐리지 않게 */}
-          <span className="flex min-w-0 items-center gap-[5px] truncate text-black">
-            <span className="text-[15px]">{post.author.flag}</span>
-            {en ? post.author.name : `${post.author.country}에서 온 ${post.author.name}`}
+          {/* 작성자: 하얀 원 속 국기 + 닉네임 (상세 화면 작성자와 같은 디자인, 언어 상관없이) */}
+          <span className="flex min-w-0 items-center gap-1.5 font-sans text-[14px] leading-none font-semibold tracking-[-0.28px] text-[#242424]">
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-white text-[14px]" aria-hidden>
+              {post.author.flag}
+            </span>
+            <span className="truncate">{post.author.name}</span>
           </span>
           <span className="shrink-0">💬 {post.commentCount}</span>
         </span>

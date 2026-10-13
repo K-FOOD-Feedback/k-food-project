@@ -3,7 +3,6 @@
 import { useLayoutEffect, useRef } from "react";
 import { CARD_PHOTO_IN_MASK, cardMaskBox, cardPhotoOf } from "./CardStack";
 import type { CardShape } from "./cardShapes";
-import { DETAIL_COPY } from "../posts/[id]/copy";
 import type { HomePost } from "./mockPosts";
 import {
   clearReturnTransition,
@@ -551,12 +550,14 @@ function DetailArticleBody({
   const en = lang === "en";
   return (
     <>
-      <p className="flex items-center gap-1.5 text-[14px] leading-none font-medium tracking-[-0.28px] text-[#696969]">
-        <span className="text-[16px]">{post.author.flag}</span>
-        {DETAIL_COPY[lang].byline(
-          post.author.name,
-          en ? post.en.country : post.author.country,
-        )}
+      <p className="flex items-center gap-1.5 font-sans text-[14px] leading-none font-semibold tracking-[-0.28px] text-[#242424]">
+        <span
+          className="flex size-6 shrink-0 items-center justify-center rounded-full bg-white text-[14px]"
+          aria-hidden
+        >
+          {post.author.flag}
+        </span>
+        {post.author.name}
       </p>
       <h1
         className={`max-w-[204px] text-[31px] tracking-[-0.62px] break-keep ${
