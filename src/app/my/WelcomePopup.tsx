@@ -197,7 +197,7 @@ export function WelcomePopup({
 
         {/* 닉네임 */}
         <section className="flex flex-col gap-3">
-          <h2 className="px-2 text-[18px] leading-[1.3] font-bold">{t.nickname}</h2>
+          <h2 className="px-2 text-[15px] leading-[1.4] font-bold">{t.nickname}</h2>
           {nickname && (
             <NicknameSlot lang={lang} value={nickname} onChange={setNickname} onSpinningChange={setSpinning} from="signup" />
           )}
@@ -206,7 +206,7 @@ export function WelcomePopup({
         {/* 나라 (외국인만) */}
         {foreigner && (
           <section className="flex flex-col gap-3">
-            <h2 className="px-2 text-[18px] leading-[1.3] font-bold">{t.country}</h2>
+            <h2 className="px-2 text-[15px] leading-[1.4] font-bold">{t.country}</h2>
             <label className="relative flex h-14 items-center gap-3 rounded-[24px] bg-surface-2 px-5">
               <span className="text-[22px] leading-none" aria-hidden="true">
                 {countryFlag(country)}

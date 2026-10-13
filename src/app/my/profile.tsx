@@ -329,7 +329,7 @@ export function ProfileSheet({
   return (
     <BottomSheet open={open} onClose={onClose} label={t.sheet}>
       <div className="flex w-full flex-col gap-3 px-4 pt-2">
-        <h2 className="px-2 text-[20px] leading-[1.3] font-bold">{t.title}</h2>
+        <h2 className="px-2 text-[15px] leading-[1.4] font-bold">{t.title}</h2>
         <NicknameSlot lang={lang} value={candidate} onChange={setCandidate} onSpinningChange={setSpinning} from="profile" />
       </div>
 
