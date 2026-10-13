@@ -73,6 +73,16 @@ const LEFT: Pose[] = [
   { x: -16, y: 9, rotate: 3.2, scale: 0.9215, dim: 0.2 },
 ];
 const HIDDEN: Pose = { x: 0, y: 8, rotate: 0, scale: 0.85, dim: 0.32 };
+
+/** 카드 더미(앞 카드 + 양옆으로 비져 나온 뒤 카드들)의 가운데에서 가장 먼 좌우 끝까지 거리 — 화면 폭 안에 다 들어가게 크기를 정할 때 씀 */
+export const DECK_HALF_WIDTH = Math.max(
+  ...[FRONT, ...RIGHT, ...LEFT].map((p) => {
+    const r = (p.rotate * Math.PI) / 180;
+    const halfW = (CARD.width / 2) * p.scale;
+    const halfH = (CARD.height / 2) * p.scale;
+    return Math.abs(p.x) + halfW * Math.cos(r) + halfH * Math.sin(Math.abs(r));
+  }),
+);
 // 카드가 덱 뒤로 들어가거나 뒤에서 나올 때 잠깐 비켜나는 자리
 const ASIDE = "translate(-250px, 28px) rotate(-14deg) scale(0.96)";
 
@@ -382,7 +392,10 @@ function CardContent({
   const photoLeft = CARD.width / 2 + IMAGE.dx - (IMAGE.width * k) / 2 + m.left;
   const photoBottom =
     CARD.height / 2 + IMAGE.dy - (IMAGE.height * k) / 2 + m.top + m.height;
-  const badge = { left: photoLeft + m.width * 0.12 - 16, top: photoBottom - 54 };
+  const badge = {
+    left: photoLeft + m.width * 0.12 - 16,
+    top: photoBottom - 54,
+  };
   return (
     <>
       {photo && (

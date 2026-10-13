@@ -12,8 +12,8 @@ import {
 import {
   CARD_BOTTOM,
   CARD_TOP,
-  CARD_WIDTH,
   CardStack,
+  DECK_HALF_WIDTH,
   cardMaskBox,
   cardPhotoOf,
   type Lang,
@@ -45,7 +45,7 @@ const SHARE_LABEL = {
 } as const;
 
 /** 제목 아래끝 ~ 맨 앞 카드 위끝 간격 */
-const TITLE_GAP = 40;
+const TITLE_GAP = 24;
 /** 카드 최대 크기 (Figma 카드 대비) */
 const MAX_SCALE = 1.2;
 /** 두 줄 한마디 높이 (24px × 한국어 행간 1.3 × 2줄) — 두 버전 카드 크기를 같게 계산하려고 고정값으로 */
@@ -115,11 +115,11 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
       // 카드 더미 틀 맨 위엔 뒤 카드 자리(CARD_TOP)가 있어서, 보이는 카드까지 40px이 되도록 그만큼은 간격에 겹쳐 씀
       const room = Math.min(roomKo, roomEn);
       setHeaderH(header);
-      // 카드는 Figma보다 1.2배까지 키우되, 화면 폭(좌우 12px 여백)과 위아래 공간에 들어가는 만큼만
+      // 카드는 Figma보다 1.2배까지 키우되, 양옆 뒤 카드까지 화면 폭 안에 다 들어가고(잘리지 않게) 위아래 공간에 들어가는 만큼만
       setFit(
         Math.min(
           MAX_SCALE,
-          (main.clientWidth - 24) / CARD_WIDTH,
+          (main.clientWidth / 2 - 4) / DECK_HALF_WIDTH,
           (room - HEADLINE_H - TITLE_GAP) / (CARD_BOTTOM - CARD_TOP),
         ),
       );
@@ -196,17 +196,21 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
       <div
         ref={enLimit}
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-[calc(166px+env(safe-area-inset-bottom))]"
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[calc(124px+env(safe-area-inset-bottom))]"
       />
       <div className="relative min-h-0 flex-1">
         <div
           ref={stage}
           className={`absolute inset-x-0 flex flex-col items-center justify-center ${
             lang === "en"
-              ? "bottom-[calc(166px+env(safe-area-inset-bottom))]"
+              ? "bottom-[calc(124px+env(safe-area-inset-bottom))]"
               : "bottom-0"
           }`}
-          style={{ top: lang === "en" ? headerH : 0 }}
+          // 화면 크기를 재기 전(첫 그림)엔 감춰 둠 — 원래 크기로 그려졌다 줄어들며 헤더와 겹쳐 보이는 것 방지
+          style={{
+            top: lang === "en" ? headerH : 0,
+            visibility: fit === null ? "hidden" : undefined,
+          }}
         >
           {/* 두 줄 한마디 (가운데 정렬) */}
           <h1
@@ -259,7 +263,7 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
 
       {lang === "en" && (
         // 외국인 메인 하단 CTA (Figma 259:7823): 로그인 시트 → 사진 선택 → /write (동작은 송희 담당 ShareKfoodButton)
-        <ShareKfoodButton className="fixed bottom-[calc(60px+env(safe-area-inset-bottom))] left-1/2 z-10 flex h-[80px] w-[259px] -translate-x-1/2 items-center justify-center rounded-full bg-primary text-[20px] font-extrabold tracking-[-0.4px] whitespace-nowrap text-white drop-shadow-[0_10px_12px_rgba(255,135,196,0.45)] transition-transform active:scale-[0.97]">
+        <ShareKfoodButton className="fixed bottom-[calc(40px+env(safe-area-inset-bottom))] left-1/2 z-10 -translate-x-1/2 rounded-full bg-primary px-8 py-6 text-[20px] leading-none font-extrabold tracking-[-0.4px] whitespace-nowrap text-white shadow-[0_18px_48px_4px_rgba(0,0,0,0.55),0_10px_24px_-6px_rgba(255,135,196,0.55)] transition-transform active:scale-95">
           {SHARE_LABEL[ui]}
         </ShareKfoodButton>
       )}
