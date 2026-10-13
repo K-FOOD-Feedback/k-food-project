@@ -560,7 +560,8 @@ function DetailArticleBody({
         {post.author.name}
       </p>
       <h1
-        className={`max-w-[204px] text-[31px] tracking-[-0.62px] break-keep ${
+        // 상세 제목과 같게 (폭은 본문과 같은 글 영역 전체)
+        className={`text-[31px] tracking-[-0.62px] break-keep text-balance ${
           en
             ? "font-title-en leading-[1.05]"
             : "font-(family-name:--font-paperlogy) leading-[1.2]"

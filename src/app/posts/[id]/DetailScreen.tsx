@@ -916,9 +916,11 @@ function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: HomePost
         </span>
         {post.author.name}
       </p>
-      {/* 영어는 소문자가 낮아 같은 행간이면 줄 사이가 비어 보여서 좁게 (한국어 1.2 → 영어 1.05) */}
+      {/* 영어는 소문자가 낮아 같은 행간이면 줄 사이가 비어 보여서 좁게 (한국어 1.2 → 영어 1.05)
+          폭은 본문과 같은 글 영역 전체(카드 안쪽 여백은 그대로) — 204px로 막으면 영어·긴 제목이 4줄 이상으로 쪼개짐
+          줄 길이는 메인 카드처럼 고르게(text-balance) → 끊기는 자리가 메인과 비슷하게 */}
       <h1
-        className={`max-w-[204px] ${titleFont(contentLang)} text-[31px] ${enText ? "leading-[1.05]" : "leading-[1.2]"} tracking-[-0.62px] break-keep`}
+        className={`${titleFont(contentLang)} text-[31px] ${enText ? "leading-[1.05]" : "leading-[1.2]"} tracking-[-0.62px] break-keep text-balance`}
       >
         {enText ? post.en.title : post.title}
       </h1>
