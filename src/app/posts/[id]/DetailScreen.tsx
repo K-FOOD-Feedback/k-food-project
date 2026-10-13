@@ -937,7 +937,11 @@ function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: HomePost
     const fit = () => {
       el.style.fontSize = "";
       let size = parseFloat(getComputedStyle(el).fontSize);
-      const lines = () => Math.round(el.scrollHeight / parseFloat(getComputedStyle(el).lineHeight));
+      // 아래 여백(pb, g·y 같은 글자 꼬리가 잘리지 않게 둔 자리)은 빼고 줄 수를 셈
+      const lines = () => {
+        const cs = getComputedStyle(el);
+        return Math.round((el.scrollHeight - parseFloat(cs.paddingBottom)) / parseFloat(cs.lineHeight));
+      };
       while (lines() > TITLE_MAX_LINES && size > TITLE_MIN_PX) {
         size -= 1;
         el.style.fontSize = `${size}px`;
@@ -958,12 +962,12 @@ function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: HomePost
         </span>
         {post.author.name}
       </p>
-      {/* 제목: 글 영역 폭의 3/5, 최대 3줄 — 3줄을 넘으면 넘지 않을 때까지 글자를 조금씩 줄임(최소 18px, 그래도 넘치면 3줄에서 자름)
+      {/* 제목: 글 영역 폭의 3/5, 최대 3줄 (아래 0.15em 여백: 행간이 좁아도 g·y 꼬리가 잘리지 않게) — 3줄을 넘으면 넘지 않을 때까지 글자를 조금씩 줄임(최소 18px, 그래도 넘치면 3줄에서 자름)
           영어는 소문자가 낮아 같은 행간이면 줄 사이가 비어 보여서 좁게 (한국어 1.2 → 영어 1.05)
           줄 길이는 고르게(text-balance) */}
       <h1
         ref={titleRef}
-        className={`line-clamp-3 w-3/5 ${titleFont(contentLang)} text-[31px] ${enText ? "leading-[1.05]" : "leading-[1.2]"} tracking-[-0.62px] break-keep text-balance`}
+        className={`line-clamp-3 w-3/5 pb-[0.15em] ${titleFont(contentLang)} text-[31px] ${enText ? "leading-[1.05]" : "leading-[1.2]"} tracking-[-0.62px] break-keep text-balance`}
       >
         {enText ? post.en.title : post.title}
       </h1>
