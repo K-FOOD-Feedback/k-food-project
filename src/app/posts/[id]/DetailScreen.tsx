@@ -600,7 +600,8 @@ export function DetailScreen({ post }: { post: HomePost }) {
                 ? "[&>div>*:not(section)]:transition-opacity [&>div>*:not(section)]:duration-500 [&>div>*:not(section)]:starting:opacity-0"
                 : // 잠금 레이어 아래 한마디 칸은 칸 안 내용 자체를 흐리게 (위에 backdrop-blur를 얹으면
                   // 움직이는 말풍선 위에서 블러가 매 프레임 다시 그려지며 세로 줄·깜빡임이 생김)
-                  "[&>div>*:not(section)]:hidden [&>div>section>*]:blur-[8px]"
+                  // 아래 그라데이션(data-fade)은 흐리지 않음 — 흐리면 그라데이션 끝이 반투명해져 말풍선 색이 비쳐 보임
+                  "[&>div>*:not(section)]:hidden [&>div>section>*:not([data-fade])]:blur-[8px]"
             }
           >
             <CommentPile postId={post.id} commentCount={post.commentCount} authorFlag={post.author.flag} />
@@ -732,7 +733,7 @@ function CommentLock({ locked, onVote }: { locked: boolean; onVote: () => void }
           type="button"
           onClick={onVote}
           tabIndex={locked ? 0 : -1}
-          className="rounded-full bg-primary px-5 py-3.5 font-(family-name:--font-paperlogy) text-[18px] leading-[1.45] tracking-[-0.36px] text-white transition-transform active:scale-95"
+          className="rounded-full bg-primary px-5 py-3.5 text-[18px] leading-[1.45] font-extrabold tracking-[-0.36px] text-white transition-transform active:scale-95"
         >
           투표하기
         </button>
