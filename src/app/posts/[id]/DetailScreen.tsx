@@ -418,21 +418,25 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
       dx = 0;
       content.style.transition = "";
     };
+    // 좌우로 넘기는 중이면 true (터치에서는 이때 화면이 위아래로 같이 움직이지 않게 막음)
     const drag = (x0: number, y0: number) => {
-      if (!start) return;
+      if (!start) return false;
       const x = x0 - start.x;
       const y = y0 - start.y;
-      if (mode === "undecided" && Math.hypot(x, y) > 10) {
-        mode = Math.abs(x) > Math.abs(y) * 1.4 ? "swipe" : "scroll";
+      // 처음 조금 움직인 방향으로 결정: 옆이 더 크면 넘기기, 아니면 그냥 스크롤
+      // (기울어진 대각선도 넘기기로 잡히게 조금 넉넉하게 — 옆 > 위아래)
+      if (mode === "undecided" && Math.hypot(x, y) > 8) {
+        mode = Math.abs(x) > Math.abs(y) ? "swipe" : "scroll";
         if (mode === "swipe") {
           // 마우스로 끌 때 글자가 같이 선택되지 않게
           window.getSelection()?.removeAllRanges();
           document.body.style.userSelect = "none";
         }
       }
-      if (mode !== "swipe") return;
+      if (mode !== "swipe") return false;
       dx = x;
-      setOffset(x * 0.6); // 살짝 무겁게 따라옴
+      setOffset(x * 0.6); // 살짝 무겁게 따라옴 (위아래로는 움직이지 않음)
+      return true;
     };
     const finish = () => {
       document.body.style.userSelect = "";
@@ -464,11 +468,23 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
       nextTrip = { postId: target.id, at: Date.now(), swipe: dir };
       window.setTimeout(() => router.push(withViewer(withFrom(`/posts/${target.id}`, from), keepViewer)), SWIPE_OUT_MS - 40);
     };
+    // 시스템이 터치를 가로채면(전화 등) 넘기지 않고 제자리로
+    const cancel = () => {
+      document.body.style.userSelect = "";
+      if (start && mode === "swipe") {
+        content.style.transition = "transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 300ms";
+        setOffset(0);
+      }
+      start = null;
+    };
     const onTouchStart = (e: TouchEvent) => {
       if (e.touches.length !== 1) return void (start = null);
       begin(e.touches[0].clientX, e.touches[0].clientY, e.target as Element);
     };
-    const onTouchMove = (e: TouchEvent) => drag(e.touches[0].clientX, e.touches[0].clientY);
+    // 넘기는 중에는 브라우저 기본 동작(위아래 스크롤·옆으로 밀림·확대 축소)을 막아 좌우로만 움직이게
+    const onTouchMove = (e: TouchEvent) => {
+      if (drag(e.touches[0].clientX, e.touches[0].clientY) && e.cancelable) e.preventDefault();
+    };
     // 웹(마우스): 왼쪽 버튼으로 끌기
     const onMouseDown = (e: PointerEvent) => {
       if (e.pointerType === "mouse" && e.button === 0) begin(e.clientX, e.clientY, e.target as Element);
@@ -480,9 +496,13 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
       if (e.pointerType === "mouse") finish();
     };
     document.addEventListener("touchstart", onTouchStart, { passive: true });
-    document.addEventListener("touchmove", onTouchMove, { passive: true });
+    document.addEventListener("touchmove", onTouchMove, { passive: false });
+    // 화면 가장자리에서 옆으로 밀 때 브라우저 뒤로 가기·페이지 통째로 밀림이 같이 일어나지 않게
+    const html = document.documentElement;
+    const prevOverscroll = html.style.overscrollBehaviorX;
+    html.style.overscrollBehaviorX = "none";
     document.addEventListener("touchend", finish);
-    document.addEventListener("touchcancel", finish);
+    document.addEventListener("touchcancel", cancel);
     document.addEventListener("pointerdown", onMouseDown);
     document.addEventListener("pointermove", onMouseMove);
     document.addEventListener("pointerup", onMouseUp);
@@ -491,8 +511,9 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
       document.body.style.userSelect = "";
       document.removeEventListener("touchstart", onTouchStart);
       document.removeEventListener("touchmove", onTouchMove);
+      html.style.overscrollBehaviorX = prevOverscroll;
       document.removeEventListener("touchend", finish);
-      document.removeEventListener("touchcancel", finish);
+      document.removeEventListener("touchcancel", cancel);
       document.removeEventListener("pointerdown", onMouseDown);
       document.removeEventListener("pointermove", onMouseMove);
       document.removeEventListener("pointerup", onMouseUp);
