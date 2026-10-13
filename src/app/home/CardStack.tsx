@@ -42,6 +42,13 @@ export const cardMaskBox = (scale: number) => ({
 });
 /** 물결 영역을 기준(1 = 물결 영역 크기)으로 본 카드 사진의 위치·크기 — 전환 유령이 카드와 똑같이 사진을 보여 줄 때 씀 */
 /** 카드 더미 틀 위끝에서 맨 앞 카드 위끝까지 거리 (틀 위로 뒤 카드가 비져 나올 자리) */
+/** 투표 완료 표시 자리 — 모든 카드 같은 자리 (물결 사진 카드 기준: 사진 아래쪽, 왼쪽 아래와 가운데 사이) */
+const VOTED_BADGE = (() => {
+  const m = cardMaskBox(1);
+  const photoLeft = CARD.width / 2 + IMAGE.dx - IMAGE.width / 2 + m.left;
+  const photoBottom = CARD.height / 2 + IMAGE.dy - IMAGE.height / 2 + m.top + m.height;
+  return { left: photoLeft + m.width * 0.12 - 16, top: photoBottom - 54 };
+})();
 export const CARD_TOP = CARD.top;
 /** 맨 앞 카드 폭 */
 export const CARD_WIDTH = CARD.width;
@@ -390,14 +397,6 @@ function CardContent({
   const photo = cardPhotoOf(post);
   const { mask, scale: k } = shape;
   const m = cardMaskBox(k);
-  // 사진(모양) 영역의 카드 안 위치 → 투표 완료 표시 자리: 사진 아래끝에 걸치고, 왼쪽 아래와 가운데 사이
-  const photoLeft = CARD.width / 2 + IMAGE.dx - (IMAGE.width * k) / 2 + m.left;
-  const photoBottom =
-    CARD.height / 2 + IMAGE.dy - (IMAGE.height * k) / 2 + m.top + m.height;
-  const badge = {
-    left: photoLeft + m.width * 0.12 - 16,
-    top: photoBottom - 54,
-  };
   return (
     <>
       {photo && (
@@ -446,7 +445,7 @@ function CardContent({
         <span
           data-card-badge
           className="absolute flex -rotate-6 items-center gap-1 rounded-full bg-background px-3 py-2 text-[13px] leading-none font-bold whitespace-nowrap text-white shadow-[0_4px_12px_rgba(0,0,0,0.18)]"
-          style={{ left: badge.left, top: badge.top }}
+          style={{ left: VOTED_BADGE.left, top: VOTED_BADGE.top }}
         >
           <svg
             width="12"
