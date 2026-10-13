@@ -160,7 +160,7 @@ export function DoneScreen() {
           </PillButton>
           <PillButton
             tone="primary"
-            href={`/posts/${MY_POST_ID}`}
+            href={`/posts/${MY_POST_ID}?from=posted`}
             onClick={() => track("posted_next_action", { action: "my_post", taps: burst, tilted: tilted.current })}
           >
             See my post

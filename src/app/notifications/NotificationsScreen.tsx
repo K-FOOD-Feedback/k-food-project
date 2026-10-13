@@ -76,7 +76,7 @@ export function NotificationsScreen({ lang }: { lang: Lang }) {
 
 function Card({ lang, n, className = "" }: { lang: Lang; n: Notif; className?: string }) {
   return (
-    <span className={`flex items-start gap-3.5 rounded-[24px] bg-surface py-4 pl-4 pr-3 ${className}`}>
+    <span className={`flex items-start gap-3.5 rounded-[24px] bg-surface p-5 ${className}`}>
       {/* 그 글의 음식 사진 (앱의 물결 모양) */}
       <span
         className="relative size-12 shrink-0"

@@ -146,7 +146,7 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
                 <PillButton
                   tone="primary"
                   size="md"
-                  href="/write"
+                  href="/write?from=my-en"
                   onClick={() => track("my_item_clicked", { item: "write", viewer: "foreigner" })}
                 >
                   Share your K-food
@@ -158,7 +158,7 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
               {posts.map((p) => (
                 <PhotoTile
                   key={p.id}
-                  href={`/posts/${p.id}`}
+                  href={`/posts/${p.id}?from=my-en`}
                   onClick={() => track("my_item_clicked", { item: "post", viewer: "foreigner" })}
                   photo={p.photo}
                   chip={votesLabel(p.votes)}
@@ -193,7 +193,7 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
                   href={
                     c.postTitle === null
                       ? undefined
-                      : `/posts/${c.postId}/comments?comment=${encodeURIComponent(c.id)}&viewer=en`
+                      : `/posts/${c.postId}/comments?comment=${encodeURIComponent(c.id)}&viewer=en&from=my-en`
                   }
                   onClick={() => track("my_item_clicked", { item: "comment", reply: c.reply, viewer: "foreigner" })}
                   photo={c.photo}
