@@ -4,7 +4,11 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ShareKfoodButton } from "@/components/ShareKfoodButton";
 import { track, useTrackOnce } from "@/lib/analytics";
-import { measureCard, peekReturnTransition, setCardTransition } from "./cardTransition";
+import {
+  measureCard,
+  peekReturnTransition,
+  setCardTransition,
+} from "./cardTransition";
 import { CardStack, cardMaskBox, cardPhotoOf, type Lang } from "./CardStack";
 import { cardShapeAt } from "./cardShapes";
 import { MainHeader } from "./MainHeader";
@@ -15,6 +19,16 @@ import { useVotedIds } from "./votes";
 // 상세에 다녀와도 보던 카드에서 다시 시작하도록 기억해 둡니다 (새로고침하면 처음부터).
 let lastIndex = 0;
 
+// 한 번 풀어 둔 사진을 붙잡아 두어(브라우저가 버리지 않게) 다음에 같은 사진을 그릴 때 바로 그려지게 합니다.
+const decoded = new Map<string, HTMLImageElement>();
+function decodePhoto(src: string) {
+  if (!src || decoded.has(src)) return;
+  const img = new Image();
+  img.src = src;
+  decoded.set(src, img);
+  img.decode().catch(() => decoded.delete(src));
+}
+
 export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
   const router = useRouter();
   const posts = HOME_POSTS;
@@ -24,7 +38,9 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
   // 상세에서 뒤로 돌아왔으면: 상세의 사진·본문 카드·참여 칩이 맨 앞 카드로 줄어들며 돌아옵니다.
   const [returning, setReturning] = useState(() => {
     const t = peekReturnTransition();
-    return t && t.postId === posts[Math.min(lastIndex, posts.length - 1)].id ? t : null;
+    return t && t.postId === posts[Math.min(lastIndex, posts.length - 1)].id
+      ? t
+      : null;
   });
   const votedIds = useVotedIds();
   const current = posts[index];
@@ -40,11 +56,21 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
     for (const p of posts) router.prefetch(`/posts/${p.id}`);
   }, [router, posts]);
 
+  // 카드 사진(= 상세 첫 사진)을 미리 풀어 두어, 상세에서 돌아오는 전환의 사진이 처음 한 장면부터 바로 그려지게 합니다
+  // (풀리기 전에 그려지면 그 순간 사진 자리가 비어 깜빡여 보임)
+  useEffect(() => {
+    for (const p of posts) decodePhoto(cardPhotoOf(p));
+  }, [posts]);
+
   /** 카드·CTA 어느 쪽으로 가든, 맨 앞 카드에서 상세 화면으로 이어지는 전환과 함께 상세 맨 위로 이동합니다. */
   const viewer = lang === "en" ? "foreigner" : "korean";
   useTrackOnce("feed_viewed", { viewer, posts: posts.length });
 
-  const openPost = (post: HomePost, cardEl: Element | null, from: "card" | "cta" = "card") => {
+  const openPost = (
+    post: HomePost,
+    cardEl: Element | null,
+    from: "card" | "cta" = "card",
+  ) => {
     track("post_opened", {
       post_id: post.id,
       from,
@@ -88,14 +114,17 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
       </div>
 
       {returning && (
-        <ReturnGhosts transition={returning} post={current} shape={cardShapeAt(index)} onDone={() => setReturning(null)} />
+        <ReturnGhosts
+          transition={returning}
+          post={current}
+          shape={cardShapeAt(index)}
+          onDone={() => setReturning(null)}
+        />
       )}
 
       {lang === "en" ? (
         // 외국인 메인 하단 CTA (Figma 259:7823): 로그인 시트 → 사진 선택 → /write (동작은 송희 담당 ShareKfoodButton)
-        <ShareKfoodButton
-          className="fixed bottom-[calc(60px+env(safe-area-inset-bottom))] left-1/2 z-10 flex h-[80px] w-[259px] -translate-x-1/2 items-center justify-center rounded-full bg-primary text-[20px] font-extrabold tracking-[-0.4px] whitespace-nowrap text-white drop-shadow-[0_10px_12px_rgba(255,135,196,0.45)] transition-transform active:scale-[0.97]"
-        >
+        <ShareKfoodButton className="fixed bottom-[calc(60px+env(safe-area-inset-bottom))] left-1/2 z-10 flex h-[80px] w-[259px] -translate-x-1/2 items-center justify-center rounded-full bg-primary text-[20px] font-extrabold tracking-[-0.4px] whitespace-nowrap text-white drop-shadow-[0_10px_12px_rgba(255,135,196,0.45)] transition-transform active:scale-[0.97]">
           Share your K-food
         </ShareKfoodButton>
       ) : (
@@ -105,7 +134,11 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
           data-main-cta
           onClick={() => {
             track("feed_cta_clicked", { post_id: current.id, voted });
-            openPost(current, document.querySelector("[data-front-card]"), "cta");
+            openPost(
+              current,
+              document.querySelector("[data-front-card]"),
+              "cta",
+            );
           }}
           className={`fixed bottom-[calc(60px+env(safe-area-inset-bottom))] left-1/2 z-10 flex h-[90px] w-[259px] -translate-x-1/2 items-center justify-center rounded-full text-[20px] font-extrabold tracking-[-0.4px] whitespace-nowrap transition-transform active:scale-[0.97] ${
             voted
