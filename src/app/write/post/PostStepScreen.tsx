@@ -8,7 +8,8 @@ import { Screen, StepProgress, StickyBottom, TopBar } from "@/components/Layout"
 import { STORY_MAX, TITLE_MAX } from "@/lib/write-data";
 import { keptRatio, track } from "@/lib/analytics";
 import { currentFrom, withFrom } from "@/lib/back";
-import { useFlow } from "@/lib/write-store";
+import { coverOf, useFlow } from "@/lib/write-store";
+import { PhotoImage } from "@/components/PhotoGrid";
 import { WriteExit } from "../WriteExit";
 
 /*
@@ -21,6 +22,7 @@ import { WriteExit } from "../WriteExit";
 export function PostStepScreen() {
   const router = useRouter();
   const { draft, ai, updateDraft, saveDraftForLater } = useFlow();
+  const cover = draft.photos.length ? coverOf(draft) : null;
   const writing = ai.story === "working";
 
   const canNext = !writing && draft.title.trim().length > 0 && draft.story.trim().length > 0;
@@ -45,6 +47,21 @@ export function PostStepScreen() {
       <StepProgress step={2} />
 
       <div className="stagger flex flex-col gap-1 px-2">
+        {/* 무엇에 대해 쓰는 글인지 — 대표 사진 + AI가 알아본 음식 이름 (①에서 확인한 것) */}
+        {cover && (
+          <div className="flex items-center gap-3 px-5 pt-1 pb-2">
+            <span className="relative size-14 shrink-0 overflow-hidden rounded-[16px] bg-surface">
+              <PhotoImage src={cover.src} sizes="56px" className="object-cover" />
+            </span>
+            <span className="flex min-w-0 flex-col gap-0.5">
+              <span className="text-[13px] font-medium text-muted">
+                {draft.photos.length} {draft.photos.length === 1 ? "photo" : "photos"}
+              </span>
+              <span className="truncate font-display text-[20px] leading-[1.2]">{draft.dish || "Your K-food"}</span>
+            </span>
+          </div>
+        )}
+
         {/* 바깥 카드 없이 입력칸만 */}
         <div>
           {writing ? (
@@ -56,7 +73,9 @@ export function PostStepScreen() {
                 label="Story"
                 value={draft.story}
                 maxLength={STORY_MAX}
-                rows={4}
+                // 남는 공간을 채우게 길게 (9줄부터, 14줄까지 늘어나고 그 뒤로는 칸 안에서 스크롤)
+                rows={9}
+                maxRows={14}
                 onChange={(story) => updateDraft({ story })}
               />
               <div className="pb-2" />
@@ -109,7 +128,7 @@ function WritingSkeleton({ dish }: { dish: string }) {
       </div>
       <div className="flex flex-col gap-2">
         <span className="text-[13px] font-semibold text-muted">Story</span>
-        <span className="h-[124px] animate-pulse rounded-[20px] bg-surface-2 [animation-delay:150ms]" />
+        <span className="h-[230px] animate-pulse rounded-[20px] bg-surface-2 [animation-delay:150ms]" />
       </div>
     </div>
   );
