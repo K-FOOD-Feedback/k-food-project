@@ -10,8 +10,9 @@ import { track } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
 import { burstConfetti } from "./confetti";
 import { DETAIL_COPY, type Lang } from "./copy";
+import { titleFont } from "./font";
 
-const title = "font-(family-name:--font-paperlogy) text-[24px] leading-[1.3] tracking-[-0.72px]";
+const titleSize = "text-[24px] leading-[1.3] tracking-[-0.72px]";
 
 /*
   랜딩 화면 투표 장면과 같은 움직임 (src/app/landing/LandingScreen.tsx)
@@ -52,6 +53,9 @@ export function VoteBowl({ post, viewOnly = false, lang = "ko" }: { post: HomePo
   const myVote = viewOnly ? null : storedVote;
   const options = (lang === "en" && post.en.options) || post.question.options;
   const T = DETAIL_COPY[lang];
+  // 제목·칸 이름·% 글꼴 (영어면 Gilroy)
+  const font = titleFont(lang);
+  const title = `${font} ${titleSize}`;
   const columns = useRef<(HTMLButtonElement | null)[]>([]);
   const token = useRef<HTMLDivElement>(null);
   // 내 칸에 들어가 앉은 토큰 (칸 이름과 % 사이, 차오른 색 바로 위)
@@ -371,7 +375,7 @@ export function VoteBowl({ post, viewOnly = false, lang = "ko" }: { post: HomePo
                     {mine && (
                       <>
                         {/* 칸 맨 위 기준 자리 = 색 영역 맨 위에서 (칸 높이 - 색 높이)만큼 위 */}
-                        <span aria-hidden className="absolute left-0 w-full pt-4 pr-2 pl-4 font-(family-name:--font-paperlogy) text-[16px] leading-[1.3] tracking-[-0.32px] whitespace-pre-line text-on-light" style={{ top: "calc(100% - 230px)" }}>
+                        <span aria-hidden className={`absolute left-0 w-full pt-4 pr-2 pl-4 ${font} text-[16px] leading-[1.3] tracking-[-0.32px] whitespace-pre-line text-on-light`} style={{ top: "calc(100% - 230px)" }}>
                           {label}
                         </span>
                         <span aria-hidden className={`${title} absolute bottom-3 left-4 text-on-light`}>
@@ -383,7 +387,7 @@ export function VoteBowl({ post, viewOnly = false, lang = "ko" }: { post: HomePo
                 </span>
               )}
               <span
-                className="absolute top-0 left-0 w-full pt-4 pr-2 pl-4 font-(family-name:--font-paperlogy) text-[16px] leading-[1.3] tracking-[-0.32px] whitespace-pre-line text-on-dark"
+                className={`absolute top-0 left-0 w-full pt-4 pr-2 pl-4 ${font} text-[16px] leading-[1.3] tracking-[-0.32px] whitespace-pre-line text-on-dark`}
               >
                 {label}
               </span>

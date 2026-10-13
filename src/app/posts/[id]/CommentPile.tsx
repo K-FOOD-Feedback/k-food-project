@@ -9,6 +9,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "re
 import { CommentModal } from "./CommentModal";
 import { COMMENT_MAX, QUICK_EMOJIS, translateToEnglish, useComments, type Comment } from "./comments";
 import { COMMENTS_COPY, type Lang } from "./copy";
+import { titleFont } from "./font";
 import { HIDDEN_COLOR, useHiddenComments } from "./hidden";
 import { estimateWidth, GravityPile, type PileHandle } from "./GravityPile";
 
@@ -275,7 +276,7 @@ export function CommentPile({
             {t.title} <span className="text-neutral-400">{count}</span>
           </h2>
           {postTitle && (
-            <p className="font-(family-name:--font-paperlogy) text-[24px] leading-[1.4] tracking-[-0.48px] break-keep text-neutral-400">
+            <p className={`${titleFont(lang)} text-[24px] leading-[1.4] tracking-[-0.48px] break-keep text-neutral-400`}>
               {postTitle}
             </p>
           )}

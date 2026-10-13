@@ -17,7 +17,7 @@ import { track } from "@/lib/analytics";
 import { useCommentLogin } from "./CommentLogin";
 import { CommentPile } from "./CommentPile";
 import { DETAIL_COPY, type Lang } from "./copy";
-import { paperlogy } from "./font";
+import { paperlogy, titleFont } from "./font";
 import { saveViewerLang, useViewerLang } from "./viewerLang";
 import { VoteBowl } from "./VoteBowl";
 
@@ -670,7 +670,12 @@ export function DetailScreen({
             // 넘어갈 글의 카드 색 (게시글 데이터 색이라 토큰 대신 그대로)
             style={{ backgroundColor: next.color }}
             // 제목 글자만 Paperlogy로 (ArrowCta는 공통 부품이라 바깥에서 지정)
-            className="[&>span>span:last-child]:font-(family-name:--font-paperlogy) [&>span>span:last-child]:truncate [&>span>span:last-child]:font-normal"
+            // (영어면 Gilroy ExtraBold — font-display와 같은 글꼴·굵기)
+            className={
+              lang === "en"
+                ? "[&>span>span:last-child]:font-(family-name:--font-gilroy) [&>span>span:last-child]:truncate [&>span>span:last-child]:font-extrabold"
+                : "[&>span>span:last-child]:font-(family-name:--font-paperlogy) [&>span>span:last-child]:truncate [&>span>span:last-child]:font-normal"
+            }
             onClick={() => {
               track("post_opened", { post_id: next.id, from: "next", from_post_id: post.id });
               // 다음 상세 화면이 위에서부터 차례로 나타나도록 표시를 남김
@@ -890,7 +895,7 @@ function ArticleBody({ post, lang = "ko" }: { post: HomePost; lang?: Lang }) {
       <p className="text-[14px] leading-none font-medium tracking-[-0.28px] text-[#696969]">
         {DETAIL_COPY[lang].from(en ? post.en.country : post.author.country)}
       </p>
-      <h1 className="max-w-[204px] font-(family-name:--font-paperlogy) text-[31px] leading-[1.2] tracking-[-0.62px] break-keep">
+      <h1 className={`max-w-[204px] ${titleFont(lang)} text-[31px] leading-[1.2] tracking-[-0.62px] break-keep`}>
         {en ? post.en.title : post.title}
       </h1>
       <p className="text-[16px] leading-[1.55] font-medium tracking-[-0.32px] whitespace-pre-line text-[#444]">
