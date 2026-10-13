@@ -2,11 +2,11 @@
 
 import { useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { IconButton, PillButton } from "@/components/Buttons";
-import { FeedCard } from "@/components/FeedCard";
+import { HomeCard, HOME_CARD_WIDTH } from "@/app/home/CardStack";
+import { useMyPostAsHome } from "@/app/write/MyPostDetail";
 import { Icon } from "@/components/Icon";
 import { Screen, StickyBottom, TopBar } from "@/components/Layout";
 import { track } from "@/lib/analytics";
-import { getQuestion } from "@/lib/write-data";
 import { coverOf, SAMPLE_MY_POST, useFlow, MY_POST_ID } from "@/lib/write-store";
 import { useMyAuthor } from "@/app/my/profile";
 import { ShareSheet } from "./ShareSheet";
@@ -23,11 +23,15 @@ const T = { stamp: 1050, check: 1500, text: 1600, cta: 1750, float: 2000 };
 /** 카드 연출 영역 원래 높이 — 화면이 낮으면 이 영역을 통째로 줄여 스크롤 없이 한 화면에 */
 const STAGE_HEIGHT = 420;
 
+/** 카드 자리 폭 (아래 w-[235px]과 같게) */
+const CARD_SLOT = 235;
+
 export function DoneScreen() {
   const { myPost } = useFlow();
   const post = myPost ?? SAMPLE_MY_POST;
   // 글쓴이 = 나 (가입 때 정한 닉네임 · 나라)
   const me = useMyAuthor();
+  const homePost = useMyPostAsHome();
   // 작성자 표시는 국기 + 닉네임만 (메인·상세와 같은 규칙)
   const byline = `${me.flag} ${me.name}`;
 
@@ -102,16 +106,10 @@ export function DoneScreen() {
               {/* 솟아올라 정방향으로 */}
               <div className="relative animate-card-enter">
                 <div key={`squash-${burst}`} className="relative animate-squash" style={{ animationDelay: `${stampDelay + 40}ms` }}>
-                  <FeedCard
-                    title={post.title}
-                    author={byline}
-                    photo={coverOf(post).src}
-                    votesLabel="0 votes yet"
-                    questionLabel={post.questionId === "custom" ? post.voteQuestion : getQuestion(post.questionId).label}
-                    color="bg-content"
-                    scale={0.72}
-                    priority
-                  />
+                  {/* 메인 카드와 똑같은 카드 (메인에 올라간 모습 그대로), 이 자리 폭에 맞게 줄임 */}
+                  <div style={{ zoom: CARD_SLOT / HOME_CARD_WIDTH }}>
+                    <HomeCard post={homePost} />
+                  </div>
                 </div>
                 <span
                   key={`stamp-${burst}`}

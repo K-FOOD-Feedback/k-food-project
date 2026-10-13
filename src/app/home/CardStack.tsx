@@ -379,6 +379,24 @@ export function CardStack({
 }
 
 /** 카드 한 장 (Figma: KF/Feed Card) */
+/** 메인 카드 폭 (다른 화면에서 같은 카드를 줄여 보여 줄 때 비율 계산용) */
+export const HOME_CARD_WIDTH = CARD.width;
+
+/**
+ * 메인 카드 한 장만 (더미·넘기기 없이) — 글 올린 뒤 화면 등에서 메인과 똑같은 카드를 보여 줄 때 (송희)
+ * 크기는 메인 카드 그대로라, 작게 보이려면 바깥에서 zoom/scale
+ */
+export function HomeCard({ lang = "en", post, voted = false, index = 0 }: { lang?: Lang; post: Post; voted?: boolean; index?: number }) {
+  return (
+    <div
+      className="relative overflow-hidden text-left"
+      style={{ width: CARD.width, height: CARD.height, borderRadius: CARD.radius, background: post.color }}
+    >
+      <CardContent lang={lang} contentLang={lang} post={post} voted={voted} shape={cardShapeAt(index)} />
+    </div>
+  );
+}
+
 function CardContent({
   lang,
   contentLang,

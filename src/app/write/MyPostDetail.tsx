@@ -41,7 +41,8 @@ function asHomePost(p: MyPost, author: Author, sample: boolean): HomePost {
   };
 }
 
-function useMyPostAsHome() {
+/** 내 글을 메인 카드·상세 화면이 쓰는 글 모양으로 (글 올린 뒤 화면의 카드도 이걸로) */
+export function useMyPostAsHome() {
   const { myPost } = useFlow();
   const author = useMyAuthor();
   return asHomePost(myPost ?? SAMPLE_MY_POST, author, !myPost);
