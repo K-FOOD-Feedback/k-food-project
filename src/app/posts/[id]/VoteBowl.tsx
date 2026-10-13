@@ -48,13 +48,27 @@ const secondsSince = (start: number) => Math.round((performance.now() - start) /
   viewOnly (외국인 상세): 외국인은 투표할 수 없어서 처음부터 투표 완료 모양으로 결과만 보여 주고 누를 수 없습니다.
     🇰🇷 토큰은 없고, 내 칸 대신 가장 많이 고른 칸이 분홍으로 차오릅니다.
 */
-export function VoteBowl({ post, viewOnly = false, lang = "ko" }: { post: HomePost; viewOnly?: boolean; lang?: Lang }) {
+export function VoteBowl({
+  post,
+  viewOnly = false,
+  lang = "ko",
+  contentLang = lang,
+}: {
+  post: HomePost;
+  viewOnly?: boolean;
+  /** 화면 문구 언어 */
+  lang?: Lang;
+  /** 투표 칸 이름(글쓴이가 쓴 글) 언어 — 원어 또는 자동 번역 */
+  contentLang?: Lang;
+}) {
   const storedVote = useMyVote(post.id);
   const myVote = viewOnly ? null : storedVote;
-  const options = (lang === "en" && post.en.options) || post.question.options;
+  const options = (contentLang === "en" && post.en.options) || post.question.options;
   const T = DETAIL_COPY[lang];
   // 제목·칸 이름·% 글꼴 (영어면 Gilroy)
   const font = titleFont(lang);
+  // 칸 이름은 글쓴이가 쓴 글이라 글 언어 글꼴 (한국어 Paperlogy · 영어 Gilroy)
+  const optionFont = titleFont(contentLang);
   const title = `${font} ${titleSize}`;
   const columns = useRef<(HTMLButtonElement | null)[]>([]);
   const token = useRef<HTMLDivElement>(null);
@@ -275,12 +289,12 @@ export function VoteBowl({ post, viewOnly = false, lang = "ko" }: { post: HomePo
         {viewOnly ? (
           T.resultsTitle
         ) : voted ? (
-          "투표 완료!"
+          T.voted
         ) : (
           <>
-            나의 생각을
+            {T.voteAsk[0]}
             <br />
-            투표해주세요!
+            {T.voteAsk[1]}
           </>
         )}
       </h2>
@@ -295,9 +309,24 @@ export function VoteBowl({ post, viewOnly = false, lang = "ko" }: { post: HomePo
         ) : myVote !== null ? (
           <div className="flex flex-col items-center gap-1 text-center">
             <p className="text-[15px] leading-[1.4] font-semibold text-neutral-400">
-              {total}명 중 <span className="text-on-dark">{pcts[myVote]}%</span>가 같은 생각이에요
+              {(() => {
+                const [a, b, c] = T.sameThink(total, pcts[myVote]);
+                // 한국어: "N명 중 [X%]가 …" / 영어: "[X%] of N people …" — 숫자 부분만 흰색
+                return lang === "en" ? (
+                  <>
+                    <span className="text-on-dark">{a}</span>
+                    {b}
+                  </>
+                ) : (
+                  <>
+                    {a}
+                    <span className="text-on-dark">{b}</span>
+                    {c}
+                  </>
+                );
+              })()}
             </p>
-            <p className="text-[12px] leading-[1.4] font-medium text-neutral-400/70">다른 칸을 누르면 선택을 바꿀 수 있어요</p>
+            <p className="text-[12px] leading-[1.4] font-medium text-neutral-400/70">{T.changeHint}</p>
           </div>
         ) : (
           <div
@@ -315,7 +344,7 @@ export function VoteBowl({ post, viewOnly = false, lang = "ko" }: { post: HomePo
               setHover(null);
             }}
             role="img"
-            aria-label="투표 토큰 — 원하는 칸으로 끌어다 놓거나 칸을 눌러 투표하세요"
+            aria-label={T.tokenLabel}
           >
             {tokenEl}
           </div>
@@ -339,8 +368,8 @@ export function VoteBowl({ post, viewOnly = false, lang = "ko" }: { post: HomePo
                 viewOnly
                   ? T.resultLabel(label.replace("\n", " "), pcts[i], mine)
                   : voted
-                  ? `${label.replace("\n", " ")} ${pcts[i]}%${mine ? " (내 선택)" : " — 눌러서 선택 바꾸기"}`
-                  : `${label.replace("\n", " ")}에 투표`
+                  ? `${label.replace("\n", " ")} ${pcts[i]}%${mine ? T.optionMine : T.optionChange}`
+                  : T.optionVote(label.replace("\n", " "))
               }
               className={`relative h-[230px] min-w-0 flex-1 rounded-[20px] text-left transition-[background-color,scale] ${
                 hover === i ? "bg-[#2e2e2e]" : "bg-[#1e1e1e]"
@@ -382,7 +411,7 @@ export function VoteBowl({ post, viewOnly = false, lang = "ko" }: { post: HomePo
                     {mine && (
                       <>
                         {/* 칸 맨 위 기준 자리 = 색 영역 맨 위에서 (칸 높이 - 색 높이)만큼 위 */}
-                        <span aria-hidden className={`absolute left-0 w-full pt-4 pr-2 pl-4 ${font} text-[16px] leading-[1.3] tracking-[-0.32px] whitespace-pre-line text-on-light`} style={{ top: "calc(100% - 230px)" }}>
+                        <span aria-hidden className={`absolute left-0 w-full pt-4 pr-2 pl-4 ${optionFont} text-[16px] leading-[1.3] tracking-[-0.32px] whitespace-pre-line text-on-light`} style={{ top: "calc(100% - 230px)" }}>
                           {label}
                         </span>
                         <span aria-hidden className={`${title} absolute bottom-3 left-4 text-on-light`}>
@@ -394,7 +423,7 @@ export function VoteBowl({ post, viewOnly = false, lang = "ko" }: { post: HomePo
                 </span>
               )}
               <span
-                className={`absolute top-0 left-0 w-full pt-4 pr-2 pl-4 ${font} text-[16px] leading-[1.3] tracking-[-0.32px] whitespace-pre-line text-on-dark`}
+                className={`absolute top-0 left-0 w-full pt-4 pr-2 pl-4 ${optionFont} text-[16px] leading-[1.3] tracking-[-0.32px] whitespace-pre-line text-on-dark`}
               >
                 {label}
               </span>
@@ -427,7 +456,7 @@ export function VoteBowl({ post, viewOnly = false, lang = "ko" }: { post: HomePo
       <LoginSheet
         lang="ko"
         open={pending !== null}
-        title={pending ? `‘${options[pending.choice].replace("\n", " ")}’에 투표할까요?` : undefined}
+        title={pending ? T.voteConfirm(options[pending.choice].replace("\n", " ")) : undefined}
         onClose={() => {
           track("login_cancelled", { from: "vote", stage: "sheet", post_id: post.id });
           setPending(null);

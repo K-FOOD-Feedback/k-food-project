@@ -7,7 +7,7 @@ import { clearCardTransition, peekCardTransition, setReturnTransition, type Box 
 import { HOME_POSTS, participantsOf, type HomePost } from "@/app/home/mockPosts";
 import { ArrowCta } from "@/components/Buttons";
 import { Icon } from "@/components/Icon";
-import { LanguageButton } from "@/components/LanguagePicker";
+import { LanguageButton, useAutoTranslate } from "@/components/LanguagePicker";
 import { HEADER_BUTTON, PageHeader } from "@/components/PageHeader";
 import { useMyVote } from "@/app/home/votes";
 import { PostMenu } from "@/components/PostMenu";
@@ -20,7 +20,7 @@ import { CommentPile } from "./CommentPile";
 import { DETAIL_COPY, type Lang } from "./copy";
 import { paperlogy, titleFont } from "./font";
 import { isForeignFrom, withViewer } from "./viewer";
-import { saveViewerLang, useViewerLang } from "./viewerLang";
+import { saveKoreanLang, saveViewerLang, useKoreanLang, useViewerLang } from "./viewerLang";
 import { VoteBowl } from "./VoteBowl";
 
 /**
@@ -41,10 +41,15 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
   const link = (href: string) => withViewer(withFrom(href, from), keepViewer);
   // 한마디 전체 화면 — ← 가 이 상세로 오도록 via=detail, 들어온 곳(from)은 이어 붙임
   const commentsHref = link(`/posts/${post.id}/comments?via=detail`);
+  // 화면 문구 언어: 지구본으로 고른 언어 (외국인 기본 영어, 한국인 기본 한국어 — 따로 기억)
   const viewerLang = useViewerLang();
-  const lang: Lang = foreigner ? viewerLang : "ko";
+  const koreanLang = useKoreanLang();
+  const lang: Lang = foreigner ? viewerLang : koreanLang;
   const T = DETAIL_COPY[lang];
-  const titleOf = (p: HomePost) => (lang === "en" ? p.en.title : p.title);
+  // 글(제목·본문·투표 칸) 언어: 원어(글쓴이 언어 = 영어) 그대로, 자동 번역이 켜져 있으면 화면 언어로 번역해 보여 줌
+  const autoTranslate = useAutoTranslate();
+  const contentLang: Lang = autoTranslate ? lang : POST_ORIGINAL_LANG;
+  const titleOf = (p: HomePost) => (contentLang === "en" ? p.en.title : p.title);
   const login = useCommentLogin({ enabled: foreigner, lang, postId: post.id, screen: "detail" });
   const voted = useMyVote(post.id) !== null;
   // 한마디를 볼 수 있는지 — 한국인은 투표한 뒤, 외국인은 처음부터
@@ -563,8 +568,8 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
         right={
           <>
             {/* 지구본: 메인과 같은 언어 변경 창 (공통 LanguageButton) */}
-            {/* 외국인: 메인으로 가지 않고 이 화면 글자만 바뀜 (한마디 전체 화면도 같은 언어로) */}
-            <LanguageButton lang={lang} from="detail" onChange={foreigner ? saveViewerLang : undefined} />
+            {/* 메인으로 가지 않고 이 화면 글자만 바뀜 (외국인은 한마디 전체 화면도 같은 언어로) */}
+            <LanguageButton lang={lang} from="detail" onChange={foreigner ? saveViewerLang : saveKoreanLang} />
             {/* 더보기 메뉴 (송희 PostMenu) — 내 글이면 수정·삭제, 남의 글이면 링크 복사·신고 */}
             <PostMenu
               postId={post.id}
@@ -599,7 +604,7 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
           className={`flex flex-col gap-5 rounded-[32px] px-7 py-[30px] text-on-light ${hiddenUntilIntro}`}
           style={{ background: post.color }}
         >
-          <ArticleBody post={post} lang={lang} />
+          <ArticleBody post={post} lang={lang} contentLang={contentLang} />
         </article>
 
         <div
@@ -609,11 +614,11 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
           }}
         >
           {/* 외국인은 투표할 수 없어서 투표 완료 모양으로 결과만 (토큰·국기 없음) */}
-          <VoteBowl post={post} viewOnly={foreigner} lang={lang} />
+          <VoteBowl post={post} viewOnly={foreigner} lang={lang} contentLang={contentLang} />
         </div>
 
         {/* 투표 완료 후: 투표 ↔ 한마디 사이 공유 카드 (누르면 휴대폰·브라우저 공유창) — 한국인만 */}
-        {voted && !foreigner && <ShareVoteCard post={post} />}
+        {voted && !foreigner && <ShareVoteCard post={post} lang={lang} title={titleOf(post)} />}
 
         <div
           className="relative"
@@ -647,7 +652,7 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
               onLockedWrite={login.ask}
             />
           </div>
-          {!foreigner && <CommentLock locked={!voted} onVote={goToVote} />}
+          {!foreigner && <CommentLock locked={!voted} onVote={goToVote} lines={T.lock} button={T.voteNow} />}
           {/* 투표 후: 한마디 칸 어디를 눌러도 한마디 전체 화면으로 (상세에서는 말풍선 호버·모달 없이 칸 전체가 하나의 링크) */}
           {open && (
             <TrackedLink
@@ -671,7 +676,7 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
             // 제목 글자만 Paperlogy로 (ArrowCta는 공통 부품이라 바깥에서 지정)
             // (영어면 Gilroy ExtraBold — font-display와 같은 글꼴·굵기)
             className={
-              lang === "en"
+              contentLang === "en"
                 ? "[&>span>span:last-child]:font-(family-name:--font-gilroy) [&>span>span:last-child]:truncate [&>span>span:last-child]:font-extrabold"
                 : "[&>span>span:last-child]:font-(family-name:--font-paperlogy) [&>span>span:last-child]:truncate [&>span>span:last-child]:font-normal"
             }
@@ -697,7 +702,7 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
           >
             {/* 진짜 본문 카드와 같은 글을 같이 실어 나름 (도착하면 그대로 이어짐) */}
             <div ref={cardGhostText} className="flex flex-col gap-5 px-7 py-[30px] text-on-light">
-              <ArticleBody post={post} lang={lang} />
+              <ArticleBody post={post} lang={lang} contentLang={contentLang} />
             </div>
           </div>
           <div
@@ -728,7 +733,7 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
               className="pointer-events-none fixed z-30 flex items-center justify-center overflow-hidden rounded-full bg-primary text-[20px] leading-none font-extrabold tracking-[-0.4px] whitespace-nowrap text-white"
               style={boxStyle(intro.cta)}
             >
-              투표하기
+              {T.voteNow}
             </div>
           )}
         </>
@@ -745,7 +750,7 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
           showCta ? "opacity-100" : "pointer-events-none translate-y-6 opacity-0"
         } ${ctaIntro && !introDone ? "invisible" : ""}`}
       >
-        투표하기
+        {T.voteNow}
       </button>
 
       {login.sheet}
@@ -757,7 +762,17 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
   투표 전에는 한마디 칸(위쪽 362px) 위에 잠금 레이어를 덮습니다 (Figma 333:4130 layer_lock).
   한마디 칸 자체는 한마디 세션 담당(CommentPile)이라, 상세 화면에서 위에 겹쳐 올립니다.
 */
-function CommentLock({ locked, onVote }: { locked: boolean; onVote: () => void }) {
+function CommentLock({
+  locked,
+  onVote,
+  lines,
+  button,
+}: {
+  locked: boolean;
+  onVote: () => void;
+  lines: readonly string[];
+  button: string;
+}) {
   return (
     <div
       aria-hidden={!locked}
@@ -772,9 +787,9 @@ function CommentLock({ locked, onVote }: { locked: boolean; onVote: () => void }
             <img src="/images/icon-lock.svg" width={32} height={32} alt="" />
           </span>
           <p className="text-center font-(family-name:--font-paperlogy) text-[20px] leading-[1.45] tracking-[-0.4px] whitespace-nowrap text-white">
-            투표하고 다른 사람들과
+            {lines[0]}
             <br />
-            한마디를 나눠보세요!
+            {lines[1]}
           </p>
         </div>
         <button
@@ -783,7 +798,7 @@ function CommentLock({ locked, onVote }: { locked: boolean; onVote: () => void }
           tabIndex={locked ? 0 : -1}
           className="rounded-full bg-primary px-5 py-3.5 text-[18px] leading-[1.45] font-extrabold tracking-[-0.36px] text-white transition-transform active:scale-95"
         >
-          투표하기
+          {button}
         </button>
       </div>
     </div>
@@ -808,6 +823,8 @@ const NEXT_MS = 700;
 const NEXT_STAGGER_MS = 130;
 const NEXT_EASE = "cubic-bezier(0.22, 1, 0.36, 1)"; // 빠르게 출발해 길게 감속
 const TRIP_TTL_MS = 30 * 60_000;
+// 게시글 원어 — 지금 글은 모두 외국인이 쓴 글이라 영어 (자동 번역을 끄면 이 언어로 보임)
+const POST_ORIGINAL_LANG: Lang = "en";
 const BACK_CARD_MS = 320;
 // 사진 자동 넘김 간격 (가만히 있은 지 이만큼 지나면 다음 사진)
 const AUTOPLAY_MS = 3500;
@@ -821,7 +838,8 @@ const EASE = "cubic-bezier(0.2, 0.8, 0.2, 1)";
   휴대폰·공유를 지원하는 브라우저는 시스템 공유창(navigator.share)을 띄우고,
   지원하지 않으면(일부 데스크톱 브라우저) 링크를 복사하고 알려 줍니다.
 */
-function ShareVoteCard({ post }: { post: HomePost }) {
+function ShareVoteCard({ post, lang, title }: { post: HomePost; lang: Lang; title: string }) {
+  const T = DETAIL_COPY[lang];
   const [toast, setToast] = useState<string | null>(null);
   useEffect(() => {
     if (!toast) return;
@@ -835,7 +853,7 @@ function ShareVoteCard({ post }: { post: HomePost }) {
       try {
         // 받는 사람이 한국인이든 외국인이든 읽을 수 있게 한국어·영어 같이
         await navigator.share({
-          title: post.title,
+          title,
           text: `${post.question.text}\n난 벌써 한 표 던졌어. 이제 네 차례!\nI already voted. Your turn!`,
           url,
         });
@@ -848,9 +866,9 @@ function ShareVoteCard({ post }: { post: HomePost }) {
     try {
       await navigator.clipboard.writeText(url);
       track("post_shared", { channel: "copy_link", from: "detail_vote", post_id: post.id });
-      setToast("링크를 복사했어요");
+      setToast(T.copied);
     } catch {
-      setToast("링크를 복사하지 못했어요");
+      setToast(T.copyFail);
     }
   };
 
@@ -863,10 +881,10 @@ function ShareVoteCard({ post }: { post: HomePost }) {
       >
         <span className="flex min-w-0 flex-1 flex-col gap-1">
           <span className="font-(family-name:--font-paperlogy) text-[22px] leading-[1.25] tracking-[-0.44px] break-keep">
-            내 입맛만 정상인지 확인하기
+            {T.shareTitle}
           </span>
           <span className="text-[14px] leading-[1.4] font-semibold break-keep opacity-70">
-            한국·외국 친구 불러서 훈수 배틀 열기
+            {T.shareSub}
           </span>
         </span>
         {/* 공유 원이 둥실둥실 떠서 눈길을 끔 */}
@@ -887,18 +905,20 @@ function ShareVoteCard({ post }: { post: HomePost }) {
 }
 
 /** 본문 카드 안 글 (진짜 카드와 전환용 카드가 같은 모양을 쓰도록) */
-function ArticleBody({ post, lang = "ko" }: { post: HomePost; lang?: Lang }) {
+function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: HomePost; lang?: Lang; contentLang?: Lang }) {
+  // lang: 화면 문구·나라 이름 / contentLang: 글쓴이가 쓴 제목·본문 (원어 또는 자동 번역)
   const en = lang === "en";
+  const enText = contentLang === "en";
   return (
     <>
       <p className="text-[14px] leading-none font-medium tracking-[-0.28px] text-[#696969]">
         {DETAIL_COPY[lang].from(en ? post.en.country : post.author.country)}
       </p>
-      <h1 className={`max-w-[204px] ${titleFont(lang)} text-[31px] leading-[1.2] tracking-[-0.62px] break-keep`}>
-        {en ? post.en.title : post.title}
+      <h1 className={`max-w-[204px] ${titleFont(contentLang)} text-[31px] leading-[1.2] tracking-[-0.62px] break-keep`}>
+        {enText ? post.en.title : post.title}
       </h1>
       <p className="text-[16px] leading-[1.55] font-medium tracking-[-0.32px] whitespace-pre-line text-[#444]">
-        {(en && post.en.body) || post.body}
+        {(enText && post.en.body) || post.body}
       </p>
     </>
   );

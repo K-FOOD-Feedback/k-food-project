@@ -33,7 +33,8 @@ export default async function Page(props: PageProps<"/posts/[id]/comments">) {
   const post = getHomePost(id);
   if (!post) notFound();
   // 화면 언어: 지구본으로 고른 언어(?lang=). 외국인은 상세에서 고른 언어를 따름 (CommentsScreen)
-  const lang = sp.lang === "en" || sp.lang === "ko" ? sp.lang : "ko";
+  // 주소에 ?lang= 이 있을 때만 그 언어로 시작 (없으면 상세 화면에서 고른 언어 그대로 — CommentsScreen)
+  const lang = sp.lang === "en" || sp.lang === "ko" ? sp.lang : null;
 
   return (
     // 답글 알림에서 왔으면 이미 한마디를 남긴(= 투표한) 사람이라 바로 보여 줌 — 서버 전엔 이 브라우저에 투표 기록이 없을 수 있어서
