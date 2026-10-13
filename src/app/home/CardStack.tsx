@@ -451,9 +451,10 @@ function CardContent({
       )}
 
       <span className="absolute right-5 bottom-5 left-5 flex flex-col items-start gap-2 text-black">
-        {/* 제목: 한국어는 상세 제목과 같은 Paperlogy, 영어는 Gilroy를 한글 크기에 맞춘 font-title-en (행간 0.15 좁게) */}
+        {/* 제목 — 줄 수 제한(line-clamp)에 g·p 같은 글자 아래가 잘리지 않게 아래 8px 여유(pb-2), 배치는 그대로(-mb-2)
+            한국어는 상세 제목과 같은 Paperlogy, 영어는 Gilroy를 한글 크기에 맞춘 font-title-en (행간 0.15 좁게) */}
         <span
-          className={`w-full text-[23px] font-extrabold tracking-[-0.69px] break-keep text-balance ${
+          className={`-mb-2 w-full pb-2 text-[23px] font-extrabold tracking-[-0.69px] break-keep text-balance ${
             enTitle
               ? "line-clamp-3 font-title-en leading-[1.03]"
               : "line-clamp-2 font-(family-name:--font-paperlogy) leading-[1.18]"
