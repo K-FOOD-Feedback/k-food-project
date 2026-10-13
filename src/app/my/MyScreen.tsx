@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { getHomePost } from "@/app/home/mockPosts";
 import { IconButton, PillButton } from "@/components/Buttons";
+import { Icon } from "@/components/Icon";
 import { BottomSheet, Screen, TopBar } from "@/components/Layout";
 import { track, useTrackOnce } from "@/lib/analytics";
 import { MY_POST_ID } from "@/lib/write-data";
@@ -21,35 +22,90 @@ import { coverOf, useFlow } from "@/lib/write-store";
   - 오른쪽 위는 로그아웃만 (알림은 메인 🔔에 있어서 여기엔 두지 않음)
   - 쓰다 만 글은 여기 없음 (글 쓰기를 시작할 때 이어 쓰기로 보여 줌)
   서버 전까지: 프로필은 목업(Sam · Canada), 내 글은 이 브라우저의 글 1개, 한마디는 목업
+  리뷰용: /my/en?comments=none 으로 열면 한마디가 없는 상태
+
+  ── 경우별 정의 ─────────────────────────────
+  [Posts]
+  - 없음: 카드 없이 안내 문구 + 중간 크기 버튼(Share your K-food)
+  - 제목: 2줄까지, 넘치면 … / 제목이 비면 "Untitled post"
+  - 사진이 없으면: 회색 칸 + 이미지 아이콘
+  - 받은 투표: 0 → "No votes yet" · 1 → "1 vote" · 2~999 → "12 votes" · 1,000부터 줄여서 "1.2K votes"
+  [Comments]
+  - 없음: 안내 문구 + 중간 크기 버튼(Browse posts → 외국인 메인)
+  - 한마디: 3줄까지, 넘치면 …
+  - 어느 글: "On 글 제목" / 내 글 댓글에 단 답글이면 "Reply on 글 제목" · 1줄, 넘치면 …
+  - 글이 지워졌으면: "On a deleted post", 누를 수 없음, 말풍선을 흐리게
+  - 시간 (timeAgo):
+      1분 안 "Just now" · 1시간 안 "5m" · 오늘 "3h" · 어제 "Yesterday"
+      · 7일 안 "3d" · 올해 "Oct 10" · 작년 이전 "Oct 10, 2025"
 */
 const PROFILE = { name: "Sam", country: "Canada", flag: "🇨🇦" };
 
-/** 내가 쓴 한마디 — 목업 (외국인 화면에서 한마디 쓰기가 붙으면 실제 기록으로) */
-const MY_COMMENTS: { id: string; postId: string; text: string; reply: boolean; time: string }[] = [
-  { id: "c1", postId: MY_POST_ID, text: "Thanks! I'll try it with rice next time 🍚", reply: true, time: "2h" },
-  { id: "c2", postId: "2", text: "Cheese is never too much 🧀", reply: false, time: "Yesterday" },
-  { id: "c3", postId: "3", text: "Looks so good, I need the recipe!", reply: false, time: "Oct 10" },
+const MIN = 60_000;
+const HOUR = 60 * MIN;
+const DAY = 24 * HOUR;
+
+/** 내가 쓴 한마디 — 목업 (외국인 화면에서 한마디 쓰기가 붙으면 실제 기록으로). 위 경우들이 다 보이게 구성 */
+const MY_COMMENTS: { id: string; postId: string; text: string; reply: boolean; ago: number }[] = [
+  { id: "c1", postId: MY_POST_ID, text: "Thanks! I'll try it with rice next time 🍚", reply: true, ago: 2 * HOUR },
+  { id: "c2", postId: "2", text: "Cheese is never too much 🧀", reply: false, ago: DAY + 3 * HOUR },
+  {
+    id: "c3",
+    postId: "4",
+    text: "In Canada we eat it late at night, never for breakfast 😂 Is it really a breakfast thing in Korea? I need to know before my trip next month!",
+    reply: false,
+    ago: 3 * DAY,
+  },
+  { id: "c4", postId: "3", text: "Looks so good, I need the recipe!", reply: false, ago: 40 * DAY },
+  { id: "c5", postId: "deleted", text: "Too much gochujang 🌶️", reply: false, ago: 400 * DAY },
 ];
+
+/** 한마디 시간 — 위 "시간" 규칙 */
+function timeAgo(at: number, now = Date.now()) {
+  const d = now - at;
+  if (d < MIN) return "Just now";
+  if (d < HOUR) return `${Math.floor(d / MIN)}m`;
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+  if (at >= today.getTime()) return `${Math.floor(d / HOUR)}h`;
+  if (at >= today.getTime() - DAY) return "Yesterday";
+  if (d < 7 * DAY) return `${Math.ceil(d / DAY)}d`;
+  const date = new Date(at);
+  const sameYear = date.getFullYear() === today.getFullYear();
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", ...(sameYear ? {} : { year: "numeric" }) });
+}
+
+/** 받은 투표 — 위 "받은 투표" 규칙 */
+function votesLabel(n: number) {
+  if (n === 0) return "No votes yet";
+  if (n === 1) return "1 vote";
+  return `${n < 1000 ? n : new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(n)} votes`;
+}
 
 // 말풍선 색 — 상세 화면 한마디처럼 하나씩 다르게
 const BUBBLES = ["bg-content", "bg-lilac", "bg-secondary", "bg-primary"];
 
 type Tab = "posts" | "comments";
 
-export function MyScreen() {
+export function MyScreen({ noComments = false }: { noComments?: boolean }) {
   const router = useRouter();
   const { myPost, logOut } = useFlow();
   const [tab, setTab] = useState<Tab>("posts");
   const [sheet, setSheet] = useState<"logout" | null>(null);
 
-  const posts = myPost ? [{ id: MY_POST_ID, title: myPost.title, photo: coverOf(myPost)?.src, votes: myPost.votes }] : [];
+  const posts = myPost
+    ? [{ id: MY_POST_ID, title: myPost.title.trim() || "Untitled post", photo: coverOf(myPost)?.src, votes: myPost.votes }]
+    : [];
 
-  // 한마디가 달린 글 (내 글은 이 브라우저의 글, 남의 글은 목업 목록에서)
-  const comments = MY_COMMENTS.flatMap((c) => {
-    if (c.postId === MY_POST_ID) return myPost ? [{ ...c, postTitle: myPost.title }] : [];
-    const p = getHomePost(c.postId);
-    return p ? [{ ...c, postTitle: p.en.title }] : [];
-  });
+  // 한마디가 달린 글 — 내 글은 이 브라우저의 글, 남의 글은 목업 목록. 못 찾으면 지워진 글
+  // 시간은 화면을 연 순간 기준 (서버·브라우저 결과가 같도록 처음 한 번만 잼)
+  const [now] = useState(() => Date.now());
+  const comments = noComments
+    ? []
+    : MY_COMMENTS.map((c) => {
+        const title = c.postId === MY_POST_ID ? myPost?.title : getHomePost(c.postId)?.en.title;
+        return { ...c, postTitle: title ?? null, time: timeAgo(now - c.ago, now) };
+      });
 
   useTrackOnce("my_page_viewed", { posts: posts.length, comments: comments.length });
 
@@ -115,12 +171,7 @@ export function MyScreen() {
               title="No posts yet"
               body="Share your K-food and Koreans will vote on it."
               cta={
-                <PillButton
-                  tone="primary"
-                  href="/write"
-                  className="h-12 w-full flex-none"
-                  onClick={() => track("my_item_clicked", { item: "write" })}
-                >
+                <PillButton tone="primary" size="md" href="/write" onClick={() => track("my_item_clicked", { item: "write" })}>
                   Share your K-food
                 </PillButton>
               }
@@ -135,8 +186,12 @@ export function MyScreen() {
                   className="flex flex-col gap-2 rounded-[24px] bg-surface p-2 pb-3 transition active:scale-[0.98]"
                 >
                   <span className="relative aspect-square overflow-hidden rounded-[18px] bg-surface-2">
-                    {p.photo && (
+                    {p.photo ? (
                       <Image src={p.photo} alt="" fill sizes="200px" unoptimized={p.photo.startsWith("blob:")} className="object-cover" />
+                    ) : (
+                      <span className="absolute inset-0 flex items-center justify-center text-muted">
+                        <Icon name="image" size={28} />
+                      </span>
                     )}
                     {/* 받은 투표 */}
                     <span
@@ -144,7 +199,7 @@ export function MyScreen() {
                         p.votes > 0 ? "bg-content text-on-light" : "bg-background/80 text-on-dark"
                       }`}
                     >
-                      {p.votes > 0 ? `${p.votes} voted` : "No votes yet"}
+                      {votesLabel(p.votes)}
                     </span>
                   </span>
                   <span className="line-clamp-2 px-1 text-[14px] font-semibold leading-[1.35]">{p.title}</span>
@@ -155,32 +210,53 @@ export function MyScreen() {
 
         {tab === "comments" &&
           (comments.length === 0 ? (
-            <Empty title="No comments yet" body="Comments you leave on posts will show up here." />
+            <Empty
+              title="No comments yet"
+              body="Comments you leave on posts will show up here."
+              cta={
+                <PillButton tone="soft" size="md" href="/home/en" onClick={() => track("my_item_clicked", { item: "browse" })}>
+                  Browse posts
+                </PillButton>
+              }
+            />
           ) : (
             <div className="flex flex-col gap-5 px-2">
-              {comments.map((c, i) => (
-                <Link
-                  key={c.id}
-                  href={`/posts/${c.postId}`}
-                  onClick={() => track("my_item_clicked", { item: "comment", reply: c.reply })}
-                  className="flex flex-col items-start gap-1.5 transition active:scale-[0.99]"
-                >
-                  {/* 상세 화면 한마디와 같은 말풍선 */}
-                  <span
-                    className={`max-w-[85%] rounded-[22px] rounded-bl-[6px] px-4 py-2.5 text-[15px] font-semibold leading-[1.4] text-on-light ${
-                      BUBBLES[i % BUBBLES.length]
-                    }`}
-                  >
-                    {c.text}
-                  </span>
-                  <span className="flex w-full items-center gap-1 px-1 text-[13px] text-muted">
-                    <span className="line-clamp-1 min-w-0">
-                      {c.reply ? "Reply on" : "On"} {c.postTitle}
+              {comments.map((c, i) => {
+                const deleted = c.postTitle === null;
+                const body = (
+                  <>
+                    {/* 상세 화면 한마디와 같은 말풍선 · 3줄까지 */}
+                    <span
+                      className={`max-w-[85%] rounded-[22px] rounded-bl-[6px] px-4 py-2.5 text-[15px] font-semibold leading-[1.4] text-on-light ${
+                        BUBBLES[i % BUBBLES.length]
+                      } ${deleted ? "opacity-40" : ""}`}
+                    >
+                      {/* 줄 자르기는 안쪽 글에만 (바깥에 걸면 넘친 줄이 아래 여백에 비침) */}
+                      <span className="line-clamp-3">{c.text}</span>
                     </span>
-                    <span className="shrink-0">· {c.time}</span>
-                  </span>
-                </Link>
-              ))}
+                    <span className="flex w-full items-center gap-1 px-1 text-[13px] text-muted">
+                      <span className="line-clamp-1 min-w-0">
+                        {deleted ? "On a deleted post" : `${c.reply ? "Reply on" : "On"} ${c.postTitle}`}
+                      </span>
+                      <span className="shrink-0">· {c.time}</span>
+                    </span>
+                  </>
+                );
+                return deleted ? (
+                  <div key={c.id} className="flex flex-col items-start gap-1.5">
+                    {body}
+                  </div>
+                ) : (
+                  <Link
+                    key={c.id}
+                    href={`/posts/${c.postId}`}
+                    onClick={() => track("my_item_clicked", { item: "comment", reply: c.reply })}
+                    className="flex flex-col items-start gap-1.5 transition active:scale-[0.99]"
+                  >
+                    {body}
+                  </Link>
+                );
+              })}
             </div>
           ))}
       </div>
@@ -214,7 +290,7 @@ export function MyScreen() {
 
 function Empty({ title, body, cta }: { title: string; body: string; cta?: ReactNode }) {
   return (
-    <div className="flex flex-col items-center gap-4 rounded-[24px] bg-surface px-6 py-8 text-center">
+    <div className="flex flex-col items-center gap-5 px-6 pt-14 text-center">
       <div className="flex flex-col gap-1">
         <p className="text-[15px] font-semibold">{title}</p>
         <p className="text-[14px] leading-[1.5] text-muted">{body}</p>

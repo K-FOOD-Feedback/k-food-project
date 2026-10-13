@@ -78,16 +78,28 @@ const PILL_TONES = {
   disabled: "bg-surface-2 text-disabled",
 } as const;
 
-/** 일반 CTA — h64, SemiBold 16. 저장·확인·이동처럼 그 자리에서 끝나는 행동 */
+/** 크기 — lg: 화면 아래 CTA(h64, 칸을 채움) · md: 화면 중간의 작은 버튼(h48, 글자만큼) */
+const PILL_SIZES = {
+  lg: "h-16 min-w-0 flex-1 text-[16px]",
+  md: "h-12 flex-none px-6 text-[15px]",
+} as const;
+
+/** 일반 CTA — SemiBold. 저장·확인·이동처럼 그 자리에서 끝나는 행동 */
 export function PillButton({
   tone = "black",
+  size = "lg",
   children,
   className = "",
   ...props
-}: Clickable & { tone?: keyof typeof PILL_TONES; children: ReactNode; className?: string }) {
+}: Clickable & {
+  tone?: keyof typeof PILL_TONES;
+  size?: keyof typeof PILL_SIZES;
+  children: ReactNode;
+  className?: string;
+}) {
   return (
     <Clickable
-      className={`flex h-16 min-w-0 flex-1 items-center justify-center rounded-full text-[16px] font-semibold leading-[1.5] transition active:scale-[0.99] disabled:cursor-not-allowed ${PILL_TONES[tone]} ${className}`}
+      className={`flex items-center justify-center rounded-full font-semibold leading-[1.5] transition active:scale-[0.99] disabled:cursor-not-allowed ${PILL_SIZES[size]} ${PILL_TONES[tone]} ${className}`}
       {...props}
     >
       {children}
