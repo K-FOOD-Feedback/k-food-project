@@ -317,15 +317,15 @@ export function DetailScreen({ post }: { post: HomePost }) {
     window.scrollTo(0, 0);
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     // 옆으로 넘겨서 왔으면: 0.1초 쉬었다가 넘긴 쪽 반대편에서 "띠용" 하고 튀어나옴
-    // (작게 나타나 크게 넘쳤다가 몇 번 출렁이며 제자리로)
+    // (좌우로만 — 제자리를 지나쳤다가 몇 번 출렁이며 멈춤. 크기는 그대로)
     if (nextIn.swipe) {
       const from = nextIn.swipe === "next" ? 1 : -1;
       const slide = content.animate(
         [
-          { offset: 0, opacity: 0, transform: `translateX(${from * SWIPE_IN_PX}px) scale(0.86)`, easing: "cubic-bezier(0.2, 0.9, 0.3, 1)" },
-          { offset: 0.35, opacity: 1, transform: `translateX(${from * -10}px) scale(1.04)`, easing: "ease-in-out" },
-          { offset: 0.55, transform: `translateX(${from * 5}px) scale(0.985)`, easing: "ease-in-out" },
-          { offset: 0.75, transform: `translateX(${from * -2}px) scale(1.008)`, easing: "ease-in-out" },
+          { offset: 0, opacity: 0, transform: `translateX(${from * SWIPE_IN_PX}px)`, easing: "cubic-bezier(0.2, 0.9, 0.3, 1)" },
+          { offset: 0.35, opacity: 1, transform: `translateX(${from * -22}px)`, easing: "ease-in-out" },
+          { offset: 0.58, transform: `translateX(${from * 9}px)`, easing: "ease-in-out" },
+          { offset: 0.8, transform: `translateX(${from * -3}px)`, easing: "ease-in-out" },
           { offset: 1, opacity: 1, transform: "none" },
         ],
         { duration: SWIPE_IN_MS, delay: SWIPE_IN_DELAY_MS, fill: "backwards" },
@@ -752,7 +752,7 @@ const SWIPE_GO_PX = 90;
 const TAP_SLOP = 6;
 const SWIPE_OUT_PX = 140;
 const SWIPE_OUT_MS = 200;
-const SWIPE_IN_PX = 70;
+const SWIPE_IN_PX = 160;
 const SWIPE_IN_MS = 620;
 const SWIPE_IN_DELAY_MS = 100;
 const NEXT_MS = 700;
