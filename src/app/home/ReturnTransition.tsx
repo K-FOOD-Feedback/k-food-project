@@ -541,8 +541,8 @@ function DetailArticleBody({
         from. {en ? post.en.country : post.author.country}
       </p>
       <h1
-        className={`max-w-[204px] text-[31px] leading-[1.2] tracking-[-0.62px] break-keep ${
-          en ? "font-display" : "font-(family-name:--font-paperlogy)"
+        className={`max-w-[204px] text-[31px] tracking-[-0.62px] break-keep ${
+          en ? "font-title-en leading-[1.05]" : "font-(family-name:--font-paperlogy) leading-[1.2]"
         }`}
       >
         {en ? post.en.title : post.title}

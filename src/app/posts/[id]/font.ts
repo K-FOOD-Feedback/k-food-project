@@ -8,5 +8,5 @@ export const paperlogy = localFont({
   display: "swap",
 });
 
-/** Paperlogy 자리의 글꼴 — 영어 화면이면 Gilroy ExtraBold(font-display), 한국어면 Paperlogy */
-export const titleFont = (lang: "ko" | "en") => (lang === "en" ? "font-display" : "font-(family-name:--font-paperlogy)");
+/** Paperlogy 자리의 글꼴 — 영어 화면이면 Gilroy(font-title-en, 한글과 크기가 맞게 보정), 한국어면 Paperlogy */
+export const titleFont = (lang: "ko" | "en") => (lang === "en" ? "font-title-en" : "font-(family-name:--font-paperlogy)");
