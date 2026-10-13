@@ -3,7 +3,7 @@
 import { PillButton } from "@/components/Buttons";
 import { Icon } from "@/components/Icon";
 import { HEADER_BUTTON, PageHeader } from "@/components/PageHeader";
-import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type FormEvent, type Ref } from "react";
+import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type FormEvent, type PointerEvent, type Ref } from "react";
 import { COMMENT_MAX, whoOf, type Comment } from "./comments";
 import { COMMENTS_COPY, type CommentsCopy, type Lang } from "./copy";
 import { HIDDEN_COLOR } from "./hidden";
@@ -96,6 +96,8 @@ export function CommentModal({
   // 신고 확인 모달을 띄운 답글
   const [reporting, setReporting] = useState<Comment | null>(null);
   const activeScroll = useRef(0);
+  // 흐린 답글을 밀어 가운데로 데려오는 중 — 그 스크롤로는 펼친 버튼을 접지 않음
+  const autoScroll = useRef(false);
   const input = useRef<HTMLInputElement>(null);
   const byId = new Map([comment, ...replies].map((c) => [c.id, c]));
   const replyCounts = new Map<string, number>();
@@ -260,11 +262,69 @@ export function CommentModal({
       if (target?.id === r.id) setTarget(null);
       return;
     }
+    openReply(r);
+  };
+
+  /** 답글 버튼 펼치기 + 그 답글을 답글 달 대상으로 (누르기·왼쪽으로 밀기 공통) */
+  const openReply = (r: Comment) => {
     activeScroll.current = list.current?.scrollTop ?? 0;
     setActiveId(r.id);
     setTarget(r);
     // 바로 답글을 쓸 수 있게 입력칸에 커서를 둡니다.
     input.current?.focus({ preventScroll: true });
+  };
+
+  /**
+    답글 말풍선을 왼쪽으로 밀면 누른 것과 같은 동작 (버튼 펼치기 + 답글 대상), 오른쪽으로 밀면 접기.
+    흐린 답글을 밀면 가운데로 데려오면서 바로 펼칩니다. 미는 동안 말풍선이 손을 살짝 따라옵니다.
+  */
+  const swipe = useRef<{ id: string; x: number; y: number; dx: number; mode: "?" | "x" | "y"; row: HTMLElement | null } | null>(null);
+  const swiped = useRef(false);
+  const onSwipeStart = (e: PointerEvent<HTMLElement>, r: Comment) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    swipe.current = { id: r.id, x: e.clientX, y: e.clientY, dx: 0, mode: "?", row: e.currentTarget.querySelector("[data-row]") };
+  };
+  const onSwipeMove = (e: PointerEvent<HTMLElement>) => {
+    const g = swipe.current;
+    if (!g || g.mode === "y") return;
+    const dx = e.clientX - g.x;
+    const dy = e.clientY - g.y;
+    if (g.mode === "?") {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      // 옆으로 더 많이 움직였을 때만 밀기 (위아래면 목록 스크롤)
+      g.mode = Math.abs(dx) > Math.abs(dy) * 1.2 ? "x" : "y";
+      if (g.mode === "y") return;
+      e.currentTarget.setPointerCapture(e.pointerId);
+    }
+    g.dx = dx;
+    if (g.row) {
+      g.row.style.transition = "none";
+      // 손을 따라오되 점점 무겁게 (왼쪽 최대 약 48px)
+      g.row.style.translate = `${dx < 0 ? -48 * Math.tanh(-dx / 90) : 16 * Math.tanh(dx / 90)}px 0`;
+    }
+  };
+  const onSwipeEnd = (r: Comment, item: HTMLElement) => {
+    const g = swipe.current;
+    swipe.current = null;
+    if (!g || g.mode !== "x") return;
+    swiped.current = true; // 손을 뗄 때 따라오는 click은 무시
+    if (g.row) {
+      g.row.style.transition = "translate 260ms cubic-bezier(0.34, 1.4, 0.64, 1)";
+      g.row.style.translate = "0 0";
+    }
+    if (g.dx <= -SWIPE_MIN) {
+      if (hiddenIds.has(r.id)) return centerReply(item);
+      openReply(r);
+      if (r.id !== centerId && !compact && list.current) {
+        // 가운데로 데려오면서 펼친 채로 (도착할 스크롤 위치를 기준으로)
+        activeScroll.current = scrollFor(list.current, item);
+        autoScroll.current = Math.abs(activeScroll.current - list.current.scrollTop) > 1;
+        centerReply(item);
+      }
+    } else if (g.dx >= SWIPE_MIN && activeId === r.id) {
+      setActiveId(null);
+      if (target?.id === r.id) setTarget(null);
+    }
   };
 
   /**
@@ -293,7 +353,10 @@ export function CommentModal({
     updateWheel();
     scheduleSettle();
     // 스크롤하면 펼친 버튼은 접습니다 (답글 달 대상은 그대로).
-    if (activeId && Math.abs((list.current?.scrollTop ?? 0) - activeScroll.current) > 4) setActiveId(null);
+    const st = list.current?.scrollTop ?? 0;
+    if (autoScroll.current) {
+      if (Math.abs(st - activeScroll.current) <= 1) autoScroll.current = false;
+    } else if (activeId && Math.abs(st - activeScroll.current) > 4) setActiveId(null);
   };
 
   useEffect(() => {
@@ -458,10 +521,21 @@ export function CommentModal({
                   <div
                     key={r.id}
                     data-reply-id={r.id}
-                    onClick={(e) => tapReply(r, e.currentTarget)}
+                    onClick={(e) => {
+                      if (swiped.current) {
+                        swiped.current = false;
+                        return;
+                      }
+                      tapReply(r, e.currentTarget);
+                    }}
+                    onPointerDown={(e) => onSwipeStart(e, r)}
+                    onPointerMove={onSwipeMove}
+                    onPointerUp={(e) => onSwipeEnd(r, e.currentTarget)}
+                    onPointerCancel={(e) => onSwipeEnd(r, e.currentTarget)}
                     // 아래 답글일수록 뒤에 깔리게
                     style={{ zIndex: thread.length - i }}
-                    className="relative shrink-0 cursor-pointer transition-[opacity,translate] duration-300 ease-out starting:translate-y-2 starting:opacity-0"
+                    // 위아래는 목록 스크롤, 옆으로는 밀기
+                    className="relative shrink-0 cursor-pointer touch-pan-y transition-[opacity,translate] duration-300 ease-out starting:translate-y-2 starting:opacity-0"
                   >
                     {/* 휠 크기·흐림·당김은 스크롤할 때 updateWheel이 직접 바꿉니다. */}
                     {/* 말풍선 사이는 늘 뱃지 높이만큼(12px) 띄웁니다. 답글에 단 답글은 "↪ 원 답글" 줄 위를 띄우고,
@@ -681,6 +755,9 @@ function scrollFor(el: HTMLElement, item: HTMLElement) {
   if (c <= top + 2 * range) return Math.max(0, (c - top) / 2);
   return c - el.clientHeight / 2;
 }
+
+/** 이만큼(px) 옆으로 밀어야 밀기로 침 */
+const SWIPE_MIN = 36;
 
 /** 휠 한 칸: 답글 말풍선 높이(약 68px) + 간격 */
 const WHEEL_STEP = 70;
