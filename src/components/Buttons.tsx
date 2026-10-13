@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 import { Icon, type IconName } from "./Icon";
+import { HEADER_BUTTON } from "./PageHeader";
 
 type Clickable =
   | ({ href: string } & Omit<ComponentProps<typeof Link>, "href" | "className">)
@@ -24,7 +25,8 @@ export function IconButton({
   return (
     <Clickable
       aria-label={label}
-      className={`flex size-12 shrink-0 items-center justify-center rounded-full bg-surface text-on-dark transition active:scale-95 ${className}`}
+      // 모든 화면 상단 버튼은 메인 헤더와 같은 64px 원형 (PageHeader의 HEADER_BUTTON)
+      className={`${HEADER_BUTTON} ${className}`}
       {...props}
     >
       <Icon name={icon} />
