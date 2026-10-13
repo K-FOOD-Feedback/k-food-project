@@ -105,8 +105,8 @@
 ## 마이 · 외국인 /my/en (송희)
 | 이벤트 | 어디서 | 속성 |
 |---|---|---|
-| `my_page_viewed` | 마이 열림 | `posts`(내 글 수), `has_draft` |
-| `my_item_clicked` | 마이에서 누름 | `item`(post/draft/write/notifications), 쓰다 만 글은 `step` |
+| `my_page_viewed` | 마이 열림 | `posts`(내 글 수), `has_draft`, `comments`(내 한마디 수) |
+| `my_item_clicked` | 마이에서 누름 | `item`(post/draft/comment/write/notifications), 쓰다 만 글은 `step`, 한마디는 `reply` |
 | `logged_out` | 로그아웃 확인 | `from` |
 | `account_deleted` | 계정 삭제 확인 | `posts` |
 

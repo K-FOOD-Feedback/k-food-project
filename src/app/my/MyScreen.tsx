@@ -7,6 +7,7 @@ import { useState, type ReactNode } from "react";
 import { IconButton, PillButton } from "@/components/Buttons";
 import { Icon, type IconName } from "@/components/Icon";
 import { BottomSheet, Screen, TopBar } from "@/components/Layout";
+import { getHomePost } from "@/app/home/mockPosts";
 import { track, useTrackOnce } from "@/lib/analytics";
 import { MY_POST_ID } from "@/lib/write-data";
 import { coverOf, useFlow, type DraftStep } from "@/lib/write-store";
@@ -18,10 +19,18 @@ import { coverOf, useFlow, type DraftStep } from "@/lib/write-store";
   - 외국인은 투표를 하지 않으므로 "내 투표" 같은 숫자는 없음. 받은 투표·한마디는 내 글 줄마다
   - 쓰다 만 글 (있을 때만) → 저장한 단계로 이어서 쓰기
   - 내 글 목록 → 상세 화면
+  - 내가 쓴 한마디 (남의 글에 남긴 것 · 내 글 댓글에 단 답글) → 그 글 상세 화면
   - 설정: 알림 · 로그아웃 · 계정 삭제
   서버 전까지: 프로필은 목업(Sam · Canada), 글은 이 브라우저에 있는 내 글 1개
 */
 const PROFILE = { name: "Sam", country: "Canada", flag: "🇨🇦" };
+
+/** 내가 쓴 한마디 — 서버 전까지 목업 (외국인 화면에서 한마디 쓰기가 붙으면 실제 기록으로) */
+const MY_COMMENTS: { id: string; postId: string; text: string; reply: boolean; time: string }[] = [
+  { id: "c1", postId: MY_POST_ID, text: "Thanks! I'll try it with rice next time 🍚", reply: true, time: "2h" },
+  { id: "c2", postId: "2", text: "Cheese is never too much 🧀", reply: false, time: "Yesterday" },
+  { id: "c3", postId: "3", text: "Looks so good, I need the recipe!", reply: false, time: "Oct 10" },
+];
 
 const STEP_HREF: Record<DraftStep, string> = { photos: "/write", post: "/write/post", vote: "/write/vote" };
 const STEP_LABEL: Record<DraftStep, string> = { photos: "Photos", post: "Your post", vote: "Ask Koreans" };
@@ -34,7 +43,17 @@ export function MyScreen() {
   const posts = myPost ? [myPost] : [];
   const hasDraft = draft.savedStep !== null && draft.photos.length > 0;
 
-  useTrackOnce("my_page_viewed", { posts: posts.length, has_draft: hasDraft });
+  // 한마디가 달린 글 (내 글은 이 브라우저의 글, 남의 글은 목업 목록에서)
+  const comments = MY_COMMENTS.flatMap((c) => {
+    if (c.postId === MY_POST_ID) {
+      if (!myPost) return [];
+      return [{ ...c, postTitle: myPost.title, thumb: coverOf(myPost)?.src }];
+    }
+    const p = getHomePost(c.postId);
+    return p ? [{ ...c, postTitle: p.en.title, thumb: p.cardPhoto }] : [];
+  });
+
+  useTrackOnce("my_page_viewed", { posts: posts.length, has_draft: hasDraft, comments: comments.length });
 
   return (
     <Screen className="pb-16">
@@ -88,6 +107,27 @@ export function MyScreen() {
                 thumb={coverOf(p)?.src}
                 title={p.title}
                 meta={`${p.votes === 0 ? "No votes yet" : `${p.votes} ${p.votes === 1 ? "Korean" : "Koreans"} voted`} · ${p.comments} ${p.comments === 1 ? "comment" : "comments"}`}
+              />
+            ))
+          )}
+        </Section>
+
+        {/* 내가 쓴 한마디 */}
+        <Section title="My comments" count={comments.length}>
+          {comments.length === 0 ? (
+            <p className="rounded-[24px] bg-surface px-6 py-6 text-center text-[14px] leading-[1.5] text-muted">
+              Comments you leave on posts will show up here.
+            </p>
+          ) : (
+            comments.map((c) => (
+              <Row
+                key={c.id}
+                href={`/posts/${c.postId}`}
+                onClick={() => track("my_item_clicked", { item: "comment", reply: c.reply })}
+                thumb={c.thumb}
+                title={`“${c.text}”`}
+                meta={`${c.reply ? "Reply on" : "On"} ${c.postTitle}`}
+                time={c.time}
               />
             ))
           )}
@@ -175,12 +215,15 @@ function Row({
   thumb,
   title,
   meta,
+  time,
 }: {
   href: string;
   onClick: () => void;
   thumb?: string;
   title: string;
   meta: string;
+  /** 오른쪽 위 시간 (알림함과 같은 자리) */
+  time?: string;
 }) {
   return (
     <Link
@@ -201,8 +244,11 @@ function Row({
         {thumb && <Image src={thumb} alt="" fill sizes="56px" unoptimized={thumb.startsWith("blob:")} className="object-cover" />}
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="line-clamp-2 text-[15px] font-semibold leading-[1.4]">{title}</span>
-        <span className="text-[13px] tabular-nums text-muted">{meta}</span>
+        <span className="flex items-start gap-2">
+          <span className="line-clamp-2 min-w-0 flex-1 text-[15px] font-semibold leading-[1.4]">{title}</span>
+          {time && <span className="shrink-0 pt-0.5 text-[12px] font-medium tabular-nums text-muted">{time}</span>}
+        </span>
+        <span className="line-clamp-1 text-[13px] tabular-nums text-muted">{meta}</span>
       </span>
       <Icon name="chevron-right" size={18} className="shrink-0 text-muted" />
     </Link>
