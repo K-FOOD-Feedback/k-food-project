@@ -11,17 +11,19 @@ import {
   type ReturnTransition,
 } from "./cardTransition";
 
-const RETURN_MS = 490;
+const RETURN_MS = 680;
 const EASING = "cubic-bezier(0.2, 0.8, 0.2, 1)";
 /*
-  두 단계로 이어집니다.
-  ① 합치기 (0 ~ MERGE, 약 0.11초): 상세 디자인 그대로, 사진이 살짝 작아지고 본문 카드가 위로 늘어나 사진을 감싸며 한 장이 됨
-  ② 줄어들기 (MERGE ~ 1): 한 장이 된 카드가 메인 맨 앞 카드로 줄어들고, 사진은 카드 속 모양 사진으로,
-     상세 본문 글은 사라지고 카드 글이 떠오름
+  세 단계로 이어집니다. (상세 글은 ①② 동안 그대로)
+  ① 합치기 (0 ~ MERGE): 사진이 살짝 작아지고, 본문 카드가 위로 늘어나 사진을 감싸며 한 장의 카드가 됨
+  ② 모양 바꾸기 (MERGE ~ MORPH): 큰 카드 그대로, 네모 사진이 카드 모양으로 오므라들고(랜딩과 같은 방식)
+     "00명 참여 중!" 칩이 스티커가 됨 — 메인 카드와 같은 배치를 큰 카드 크기로 키운 자리로
+  ③ 줄어들기 (MORPH ~ 1): 그 카드가 통째로 메인 맨 앞 카드로 줄어들고, 상세 글은 카드 글로 바뀜
 */
-const MERGE = 0.235;
-/** 합칠 때 사진이 안쪽으로 줄어드는 여백 (본문 카드 색이 사진 둘레로 보임) */
-const INSET = 14;
+const MERGE = 0.17;
+const MORPH = 0.5;
+/** 합친 카드 안에서 사진 둘레로 보이는 카드 색 여백 */
+const INSET = 22;
 /** 상세에서 첫 사진이 아닌 사진을 보고 있었으면, 먼저 첫 사진으로 넘기는 시간 */
 const SWIPE_MS = 220;
 const SWIPE_EASE = "cubic-bezier(0.3, 0, 0.2, 1)";
@@ -32,6 +34,7 @@ const MASK_OPEN = "340% 340%";
 /** 마스크가 오므라드는 움직임 — 튕기지 않고 부드럽게 감속하며 닫힘 */
 const MASK_EASE = "cubic-bezier(0.45, 0, 0.2, 1)";
 const MERGE_EASE = "cubic-bezier(0.4, 0, 0.2, 1)";
+const MORPH_EASE = "cubic-bezier(0.45, 0, 0.2, 1)";
 const SHRINK_EASE = "cubic-bezier(0.25, 0.8, 0.25, 1)";
 /** 카드 스티커 크기 (CardStack의 size-[68px]) — 회전된 요소의 바깥 상자 대신 이 크기로 가운데를 맞춥니다 */
 const STICKER = 68;
@@ -160,19 +163,40 @@ export function ReturnGhosts({
       { opacity: 0 },
     ];
 
-    // ① 합쳐진 한 장: 본문 카드가 사진 자리 위끝까지 늘어나고, 사진은 그 안에서 INSET만큼 작아짐
+    // ① 합쳐진 한 장: 본문 카드가 사진 자리 근처까지 늘어나고, 사진은 그 안에서 여백만큼 작아짐 (상세 글 자리는 그대로)
+    const mergedTop = t.photo.top + 8;
     const merged = {
       left: t.card.left,
-      top: Math.min(t.photo.top, t.card.top),
+      top: mergedTop,
       width: t.card.width,
-      height: t.card.top + t.card.height - Math.min(t.photo.top, t.card.top),
+      height: t.card.top + t.card.height - mergedTop,
     };
     const mergedPhoto = {
-      left: t.photo.left + INSET,
-      top: t.photo.top + INSET,
-      width: t.photo.width - INSET * 2,
-      height: t.photo.height - INSET * 2,
+      left: merged.left + INSET,
+      top: merged.top + INSET,
+      width: merged.width - INSET * 2,
+      height: Math.max(40, t.card.top - 10 - (merged.top + INSET)),
     };
+    // ② 큰 카드 안의 카드 모양 사진·스티커: 메인 카드 속 배치를 큰 카드 폭에 맞게 키운 자리
+    //    (상세 글을 가리지 않도록, 사진 아래끝이 상세 글 위에 오게 비율을 줄임)
+    const rel = (b: Box) => ({
+      left: b.left - to.card.left,
+      top: b.top - to.card.top,
+      width: b.width,
+      height: b.height,
+    });
+    const photoRel = rel(to.photo);
+    const k = Math.min(
+      merged.width / to.card.width,
+      (t.card.top - 6 - merged.top) / (photoRel.top + photoRel.height),
+    );
+    const grow = (r: Box): Box => ({
+      left: merged.left + merged.width / 2 + (r.left - to.card.width / 2) * k,
+      top: merged.top + r.top * k,
+      width: r.width * k,
+      height: r.height * k,
+    });
+    const bigPhoto = grow(photoRel);
 
     const fade = (el: HTMLElement | null, frames: Keyframe[]) =>
       el ? [el.animate(frames, staged)] : [];
@@ -186,8 +210,9 @@ export function ReturnGhosts({
       height: pct(CARD_PHOTO_IN_MASK.height),
     };
     const frameKeys: Keyframe[] = [
-      { ...fullFrame, easing: MERGE_EASE },
-      { ...fullFrame, offset: MERGE, easing: SHRINK_EASE },
+      { ...fullFrame },
+      { ...fullFrame, offset: MERGE, easing: MORPH_EASE },
+      { ...cardFrame, offset: MORPH },
       cardFrame,
     ];
 
@@ -209,7 +234,8 @@ export function ReturnGhosts({
           card!.animate(
             [
               { ...place(t.card, "32px"), easing: MERGE_EASE },
-              { ...place(merged, "32px"), offset: MERGE, easing: SHRINK_EASE },
+              { ...place(merged, "32px"), offset: MERGE },
+              { ...place(merged, "32px"), offset: MORPH, easing: SHRINK_EASE },
               place(to.card, "34.8px"),
             ],
             staged,
@@ -218,7 +244,8 @@ export function ReturnGhosts({
           photo!.animate(
             [
               { ...boxOnly(t.photo), easing: MERGE_EASE },
-              { ...boxOnly(mergedPhoto), offset: MERGE, easing: SHRINK_EASE },
+              { ...boxOnly(mergedPhoto), offset: MERGE, easing: MORPH_EASE },
+              { ...boxOnly(bigPhoto), offset: MORPH, easing: SHRINK_EASE },
               boxOnly(to.photo),
             ],
             staged,
@@ -233,11 +260,8 @@ export function ReturnGhosts({
                 rectLayer.current.animate(
                   [
                     { borderRadius: "32px", easing: MERGE_EASE },
-                    {
-                      borderRadius: "22px",
-                      offset: MERGE,
-                      easing: SHRINK_EASE,
-                    },
+                    { borderRadius: "16px", offset: MERGE, easing: MORPH_EASE },
+                    { borderRadius: "0px", offset: MORPH },
                     { borderRadius: "0px" },
                   ],
                   staged,
@@ -251,6 +275,11 @@ export function ReturnGhosts({
                       offset: MERGE,
                       easing: MASK_EASE,
                     },
+                    {
+                      maskSize: "100% 100%",
+                      webkitMaskSize: "100% 100%",
+                      offset: MORPH,
+                    },
                     { maskSize: "100% 100%", webkitMaskSize: "100% 100%" },
                   ],
                   staged,
@@ -261,14 +290,14 @@ export function ReturnGhosts({
           // 두 글이 겹쳐 보이지 않게 상세 글이 먼저 다 사라진 뒤 카드 글이 떠오름
           ...fade(detailText.current, [
             { opacity: 1 },
-            { opacity: 1, offset: MERGE },
-            { opacity: 0, offset: 0.36 },
+            { opacity: 1, offset: MORPH },
+            { opacity: 0, offset: MORPH + 0.1 },
             { opacity: 0 },
           ]),
           ...fade(cardText.current, [
             { opacity: 0 },
-            { opacity: 0, offset: 0.4 },
-            { opacity: 1, offset: 0.6 },
+            { opacity: 0, offset: MORPH + 0.12 },
+            { opacity: 1, offset: MORPH + 0.3 },
             { opacity: 1 },
           ]),
           front.animate(reveal, staged),
@@ -305,6 +334,8 @@ export function ReturnGhosts({
         width: size,
         height: size,
       };
+      // ② 큰 카드 안의 스티커 자리
+      const bigSticker = grow(rel(sticker));
       // 글자도 "00명 참여 중!" → 스티커의 "00 / 명 참여"로 바뀜 (스티커 내용을 복사, 기울기는 유령이 맡음)
       const stickerEl = front.querySelector("[data-card-sticker]");
       if (stickerEl && chipFrom.current && chipTo.current) {
@@ -315,13 +346,13 @@ export function ReturnGhosts({
           ...fade(chipFrom.current, [
             { opacity: 1 },
             { opacity: 1, offset: MERGE },
-            { opacity: 0, offset: 0.6 },
+            { opacity: 0, offset: MERGE + 0.12 },
             { opacity: 0 },
           ]),
           ...fade(chipTo.current, [
             { opacity: 0 },
-            { opacity: 0, offset: 0.5 },
-            { opacity: 1, offset: 0.75 },
+            { opacity: 0, offset: MERGE + 0.1 },
+            { opacity: 1, offset: MORPH - 0.05 },
             { opacity: 1 },
           ]),
         );
@@ -329,7 +360,7 @@ export function ReturnGhosts({
       animations.push(
         chipGhost.current.animate(
           [
-            // 사진과 함께 안쪽으로 살짝 들어갔다가, 한 장이 된 뒤 스티커 자리로
+            // 사진과 함께 안쪽으로 들어갔다가(①), 큰 카드의 스티커 자리에서 스티커가 되고(②), 같이 줄어듦(③)
             {
               ...place(t.chip, `${t.chip.height / 2}px`),
               rotate: "0deg",
@@ -339,13 +370,19 @@ export function ReturnGhosts({
               ...place(
                 {
                   ...t.chip,
-                  left: t.chip.left + INSET,
-                  top: t.chip.top + INSET,
+                  left: mergedPhoto.left + 10,
+                  top: mergedPhoto.top + 10,
                 },
                 `${t.chip.height / 2}px`,
               ),
               rotate: "0deg",
               offset: MERGE,
+              easing: MORPH_EASE,
+            },
+            {
+              ...place(bigSticker, `${bigSticker.height / 2}px`),
+              rotate: "12deg",
+              offset: MORPH,
               easing: SHRINK_EASE,
             },
             { ...place(sticker, `${size / 2}px`), rotate: "12deg" },
