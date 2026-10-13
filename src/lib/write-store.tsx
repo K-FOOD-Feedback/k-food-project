@@ -94,6 +94,7 @@ export const SAMPLE_MY_POST: MyPost = {
 
 type FlowActions = {
   logIn: () => void;
+  logOut: () => void;
   addPhotos: (
     files: FileList | File[],
     opts?: { fresh?: boolean },
@@ -126,6 +127,10 @@ export function FlowProvider({ children }: { children: ReactNode }) {
 
   const logIn = useCallback(() => {
     setState((s) => ({ ...s, loggedIn: true }));
+  }, []);
+
+  const logOut = useCallback(() => {
+    setState((s) => ({ ...s, loggedIn: false }));
   }, []);
 
   const photoCount = state.draft.photos.length;
@@ -251,6 +256,7 @@ export function FlowProvider({ children }: { children: ReactNode }) {
     () => ({
       ...state,
       logIn,
+      logOut,
       addPhotos,
       removePhoto,
       setCover,
@@ -267,6 +273,7 @@ export function FlowProvider({ children }: { children: ReactNode }) {
     [
       state,
       logIn,
+      logOut,
       addPhotos,
       removePhoto,
       setCover,

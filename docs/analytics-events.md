@@ -102,6 +102,14 @@
 | `notifications_viewed` | 알림함 열림 (열면 다 읽은 것) | `count`, `viewer` |
 | `notification_clicked` | 알림 누름 | `type`, `viewer` |
 
+## 마이 · 외국인 /my/en (송희)
+| 이벤트 | 어디서 | 속성 |
+|---|---|---|
+| `my_page_viewed` | 마이 열림 | `posts`(내 글 수), `has_draft` |
+| `my_item_clicked` | 마이에서 누름 | `item`(post/draft/write/notifications), 쓰다 만 글은 `step` |
+| `logged_out` | 로그아웃 확인 | `from` |
+| `account_deleted` | 계정 삭제 확인 | `posts` |
+
 투표 로그인: `login_sheet_opened` / `login_cancelled` / `login_completed` 에 `from: "vote"` (한국인이 로그인 없이 투표하려 할 때).
 
 ## 아직 없음 (기능 생기면 추가)
