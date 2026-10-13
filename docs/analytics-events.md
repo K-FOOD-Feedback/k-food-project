@@ -20,7 +20,8 @@
 | `landing_login_clicked` | 랜딩 Already joined? Log in | |
 | `landing_scrolled` | 랜딩 스크롤 이야기 단계 도달 | `step`(1~4) |
 | `landing_skipped` | 랜딩 오른쪽 위 건너뛰기 | `at`(어디까지 보다가 눌렀는지 0~1) |
-| `language_clicked` | 🌐 (메인·상세) | `from`, `viewer` |
+| `language_clicked` | 🌐 (모든 화면) · 언어 창에서 언어 고름 | `from`, `viewer` · 언어 창: `from`=language_picker, `screen`, `selected`, `available` |
+| `auto_translate_toggled` | 언어 창 하단 자동 번역 켬/끔 | `on`, `screen`, `viewer` |
 | `my_page_clicked` | 👤 (메인) | `from`, `viewer` |
 | `login_sheet_opened` | 로그인 시트 열림 | `from` |
 | `login_completed` | Continue with Google | `from`, `method` |

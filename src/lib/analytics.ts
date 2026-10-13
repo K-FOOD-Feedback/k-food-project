@@ -24,6 +24,7 @@ export type EventName =
   | "landing_scrolled"
   | "landing_skipped"
   | "language_clicked"
+  | "auto_translate_toggled"
   | "my_page_clicked"
   | "login_sheet_opened"
   | "login_completed"

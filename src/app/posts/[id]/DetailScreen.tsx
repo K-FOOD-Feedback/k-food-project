@@ -316,17 +316,21 @@ export function DetailScreen({ post }: { post: HomePost }) {
     if (!nextIn || !content) return;
     window.scrollTo(0, 0);
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    // 옆으로 넘겨서 왔으면: 넘긴 쪽 반대편에서 화면 전체가 미끄러져 들어옴
+    // 옆으로 넘겨서 왔으면: 0.1초 쉬었다가 넘긴 쪽 반대편에서 "띠용" 하고 튀어나옴
+    // (좌우로만 — 제자리를 지나쳤다가 몇 번 출렁이며 멈춤. 크기는 그대로)
     if (nextIn.swipe) {
       const from = nextIn.swipe === "next" ? 1 : -1;
       const slide = content.animate(
         [
-          { opacity: 0, transform: `translateX(${from * SWIPE_IN_PX}px)` },
-          { opacity: 1, transform: "none" },
+          { offset: 0, opacity: 0, transform: `translateX(${from * SWIPE_IN_PX}px)`, easing: "cubic-bezier(0.2, 0.9, 0.3, 1)" },
+          { offset: 0.35, opacity: 1, transform: `translateX(${from * -22}px)`, easing: "ease-in-out" },
+          { offset: 0.58, transform: `translateX(${from * 9}px)`, easing: "ease-in-out" },
+          { offset: 0.8, transform: `translateX(${from * -3}px)`, easing: "ease-in-out" },
+          { offset: 1, opacity: 1, transform: "none" },
         ],
-        { duration: SWIPE_IN_MS, easing: NEXT_EASE, fill: "backwards" },
+        { duration: SWIPE_IN_MS, delay: SWIPE_IN_DELAY_MS, fill: "backwards" },
       );
-      const done = window.setTimeout(() => slide.finish(), SWIPE_IN_MS + 300);
+      const done = window.setTimeout(() => slide.finish(), SWIPE_IN_DELAY_MS + SWIPE_IN_MS + 300);
       return () => {
         clearTimeout(done);
         slide.cancel();
@@ -748,8 +752,9 @@ const SWIPE_GO_PX = 90;
 const TAP_SLOP = 6;
 const SWIPE_OUT_PX = 140;
 const SWIPE_OUT_MS = 200;
-const SWIPE_IN_PX = 120;
-const SWIPE_IN_MS = 460;
+const SWIPE_IN_PX = 160;
+const SWIPE_IN_MS = 620;
+const SWIPE_IN_DELAY_MS = 100;
 const NEXT_MS = 700;
 const NEXT_STAGGER_MS = 130;
 const NEXT_EASE = "cubic-bezier(0.22, 1, 0.36, 1)"; // 빠르게 출발해 길게 감속

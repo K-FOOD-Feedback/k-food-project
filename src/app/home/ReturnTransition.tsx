@@ -27,6 +27,10 @@ const SWIPE_MS = 220;
 const SWIPE_EASE = "cubic-bezier(0.3, 0, 0.2, 1)";
 /** 상세를 내려 본 상태(사진이 절반 넘게 화면 위로 지나감)에서 돌아오면, 위에서 날아오는 대신 진짜 카드가 제자리에 내려앉음 */
 const SETTLE_MS = 420;
+/** 모양 마스크를 이만큼 크게 씌우면 사진 칸 전체가 보여 네모처럼 보임 (랜딩 photo-frame과 같은 값) */
+const MASK_OPEN = "340% 340%";
+/** 마스크가 오므라드는 움직임 — 튕기지 않고 부드럽게 감속하며 닫힘 */
+const MASK_EASE = "cubic-bezier(0.45, 0, 0.2, 1)";
 const MERGE_EASE = "cubic-bezier(0.4, 0, 0.2, 1)";
 const SHRINK_EASE = "cubic-bezier(0.25, 0.8, 0.25, 1)";
 /** 카드 스티커 크기 (CardStack의 size-[68px]) — 회전된 요소의 바깥 상자 대신 이 크기로 가운데를 맞춥니다 */
@@ -68,6 +72,7 @@ export function ReturnGhosts({
   transition: t,
   post,
   shape,
+  fit,
   onDone,
 }: {
   transition: ReturnTransition;
@@ -75,6 +80,8 @@ export function ReturnGhosts({
   post: HomePost;
   /** 맨 앞 카드의 사진 모양 (cardShapes) */
   shape: CardShape;
+  /** 화면이 낮아 카드 더미를 줄인 비율 (1 = 원래 크기) */
+  fit: number;
   onDone: () => void;
 }) {
   const cardGhost = useRef<HTMLDivElement>(null);
@@ -83,8 +90,6 @@ export function ReturnGhosts({
   const photoGhost = useRef<HTMLDivElement>(null);
   const rectLayer = useRef<HTMLDivElement>(null);
   const rectFrame = useRef<HTMLDivElement>(null);
-  const waveLayer = useRef<HTMLDivElement>(null);
-  const waveFrame = useRef<HTMLDivElement>(null);
   const firstImg = useRef<HTMLImageElement>(null);
   const shownImg = useRef<HTMLImageElement>(null);
   const chipFrom = useRef<HTMLSpanElement>(null);
@@ -109,7 +114,7 @@ export function ReturnGhosts({
       onDone();
       return;
     }
-    const to = measureCard(front, cardMaskBox(shape.scale));
+    const to = measureCard(front, cardMaskBox(shape.scale * fit));
 
     // 카드 유령 안에 맨 앞 카드의 글(질문·제목·작성자)을 복사해 넣어, 처음부터 글이 같이 움직이게 합니다.
     // 글은 카드 아래쪽에 붙어 있어서, 유령의 아래 가운데에 진짜 카드 크기로 붙여 둡니다. 사진·스티커는 따로 움직이는 유령이 맡습니다.
@@ -124,9 +129,11 @@ export function ReturnGhosts({
       left: "50%",
       top: "auto",
       bottom: "0px",
-      width: `${to.card.width}px`,
-      height: `${to.card.height}px`,
-      transform: "translateX(-50%)",
+      // 카드 더미가 줄어 있으면 글도 원래 크기로 놓고 같은 비율로 줄임 (줄바꿈이 진짜 카드와 같게)
+      width: `${to.card.width / fit}px`,
+      height: `${to.card.height / fit}px`,
+      transform: `translateX(-50%) scale(${fit})`,
+      transformOrigin: "bottom center",
       transition: "none",
       background: "transparent",
     });
@@ -216,13 +223,10 @@ export function ReturnGhosts({
             ],
             staged,
           ),
-          // 깜빡임 없이: 그림은 처음부터 끝까지 같은 사진(첫 사진) 하나이고, 자리·구도만 이어서 바뀜.
-          // 바깥 모양(모서리 둥근 사각형 → 카드 모양)만 겹쳐서 바뀌는데, 두 겹 안의 그림이 똑같아서 그림은 흔들리지 않음.
+          // 깜빡임 없이: 그림은 처음부터 끝까지 같은 사진(첫 사진) 한 장이고, 자리·구도만 이어서 바뀜.
+          // 모양은 랜딩과 같은 방식 — 아주 크게 씌워 둔 카드 모양 마스크가 오므라들며 네모 사진이 카드 모양이 됨
           ...(rectFrame.current
             ? [rectFrame.current.animate(frameKeys, staged)]
-            : []),
-          ...(waveFrame.current
-            ? [waveFrame.current.animate(frameKeys, staged)]
             : []),
           ...(rectLayer.current
             ? [
@@ -234,26 +238,25 @@ export function ReturnGhosts({
                       offset: MERGE,
                       easing: SHRINK_EASE,
                     },
-                    { borderRadius: "45%", offset: 0.6 },
-                    { borderRadius: "45%" },
+                    { borderRadius: "0px" },
+                  ],
+                  staged,
+                ),
+                rectLayer.current.animate(
+                  [
+                    { maskSize: MASK_OPEN, webkitMaskSize: MASK_OPEN },
+                    {
+                      maskSize: MASK_OPEN,
+                      webkitMaskSize: MASK_OPEN,
+                      offset: MERGE,
+                      easing: MASK_EASE,
+                    },
+                    { maskSize: "100% 100%", webkitMaskSize: "100% 100%" },
                   ],
                   staged,
                 ),
               ]
             : []),
-          // 카드 모양이 위에 다 떠오른 뒤에 아래 사각형을 걷어 냄 (둘 다 반투명한 순간이 없음)
-          ...fade(waveLayer.current, [
-            { opacity: 0 },
-            { opacity: 0, offset: 0.3 },
-            { opacity: 1, offset: 0.46 },
-            { opacity: 1 },
-          ]),
-          ...fade(rectLayer.current, [
-            { opacity: 1 },
-            { opacity: 1, offset: 0.46 },
-            { opacity: 0, offset: 0.6 },
-            { opacity: 0 },
-          ]),
           // 글: 합칠 때까지는 상세 본문 그대로 → 줄어들기 시작하면 상세 글은 사라지고 카드 글이 떠오름
           // 두 글이 겹쳐 보이지 않게 상세 글이 먼저 다 사라진 뒤 카드 글이 떠오름
           ...fade(detailText.current, [
@@ -295,11 +298,12 @@ export function ReturnGhosts({
     if (t.chip && to.sticker && chipGhost.current) {
       const cx = to.sticker.left + to.sticker.width / 2;
       const cy = to.sticker.top + to.sticker.height / 2;
+      const size = STICKER * fit;
       const sticker = {
-        left: cx - STICKER / 2,
-        top: cy - STICKER / 2,
-        width: STICKER,
-        height: STICKER,
+        left: cx - size / 2,
+        top: cy - size / 2,
+        width: size,
+        height: size,
       };
       // 글자도 "00명 참여 중!" → 스티커의 "00 / 명 참여"로 바뀜 (스티커 내용을 복사, 기울기는 유령이 맡음)
       const stickerEl = front.querySelector("[data-card-sticker]");
@@ -344,7 +348,7 @@ export function ReturnGhosts({
               offset: MERGE,
               easing: SHRINK_EASE,
             },
-            { ...place(sticker, `${STICKER / 2}px`), rotate: "12deg" },
+            { ...place(sticker, `${size / 2}px`), rotate: "12deg" },
           ],
           staged,
         ),
@@ -434,11 +438,21 @@ export function ReturnGhosts({
             className="fixed z-30"
             style={boxStyle(t.photo)}
           >
-            {/* 상세 사진 칸 모양(모서리 둥근 사각형) — 처음엔 보던 사진, 넘기면 첫 사진 */}
+            {/* 사진 한 장 — 처음엔 상세 사진 칸 모양(마스크를 아주 크게 씌워 네모로 보임), 줄어들며 카드 모양으로 오므라듦 */}
             <div
               ref={rectLayer}
               className="absolute inset-0 overflow-hidden"
-              style={{ borderRadius: 32 }}
+              style={{
+                borderRadius: 32,
+                maskImage: shape.mask,
+                WebkitMaskImage: shape.mask,
+                maskSize: MASK_OPEN,
+                WebkitMaskSize: MASK_OPEN,
+                maskPosition: "center",
+                WebkitMaskPosition: "center",
+                maskRepeat: "no-repeat",
+                WebkitMaskRepeat: "no-repeat",
+              }}
             >
               <div ref={rectFrame} className="absolute inset-0 overflow-hidden">
                 {/* eslint-disable-next-line @next/next/no-img-element -- 전환용 사진 */}
@@ -459,29 +473,6 @@ export function ReturnGhosts({
                     className="absolute inset-0 size-full object-cover"
                   />
                 )}
-              </div>
-            </div>
-            {/* 카드 속 사진 모양 — 같은 첫 사진, 같은 자리·구도 */}
-            <div
-              ref={waveLayer}
-              className="absolute inset-0 opacity-0"
-              style={{
-                maskImage: shape.mask,
-                WebkitMaskImage: shape.mask,
-                maskSize: "100% 100%",
-                WebkitMaskSize: "100% 100%",
-                maskRepeat: "no-repeat",
-                WebkitMaskRepeat: "no-repeat",
-              }}
-            >
-              <div ref={waveFrame} className="absolute inset-0">
-                {/* eslint-disable-next-line @next/next/no-img-element -- 전환용 사진 */}
-                <img
-                  src={firstPhoto}
-                  alt=""
-                  decoding="sync"
-                  className="absolute inset-0 size-full object-cover"
-                />
               </div>
             </div>
           </div>

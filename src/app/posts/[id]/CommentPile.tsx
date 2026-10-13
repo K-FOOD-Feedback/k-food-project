@@ -1,13 +1,15 @@
 "use client";
 
 import { useMyVote } from "@/app/home/votes";
+import { useAutoTranslate } from "@/components/LanguagePicker";
 import { useSearchParams } from "next/navigation";
 import { TrackedLink } from "@/components/Track";
 import { track } from "@/lib/analytics";
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { CommentModal } from "./CommentModal";
-import { COMMENT_MAX, QUICK_EMOJIS, useComments, type Comment } from "./comments";
-import { HIDDEN_COLOR, HIDDEN_TEXT, useHiddenComments } from "./hidden";
+import { COMMENT_MAX, QUICK_EMOJIS, translateToEnglish, useComments, type Comment } from "./comments";
+import { COMMENTS_COPY, type Lang } from "./copy";
+import { HIDDEN_COLOR, useHiddenComments } from "./hidden";
 import { estimateWidth, GravityPile, type PileHandle } from "./GravityPile";
 
 /** 날아가는 원의 지름. 실제 말풍선보다 작게 날아가서, 떨어질 때 본래 크기로 커집니다. */
@@ -45,6 +47,7 @@ export function CommentPile({
   authorFlag,
   postTitle,
   variant = "preview",
+  lang = "ko",
 }: {
   postId: string;
   commentCount: number;
@@ -52,15 +55,28 @@ export function CommentPile({
   /** 전체 화면 제목 아래에 보이는 게시글 제목 */
   postTitle?: string;
   variant?: "preview" | "full";
+  /** 화면 문구 언어 — 한마디 전체 화면에서 지구본으로 바꿀 수 있음 */
+  lang?: Lang;
 }) {
   const full = variant === "full";
   const scrolledOld = useRef(false); // 분석: 전체 화면에서 예전 댓글까지 스크롤했는지
   const { comments: all, addedCount, add, edit, remove, nextColor, ready } = useComments(postId, authorFlag);
+  const t = COMMENTS_COPY[lang];
+  // 영어 화면에서 자동 번역이 켜져 있으면 한마디도 영어로 보여 줍니다 (언어 창 아래 켬/끔).
+  const autoTranslate = useAutoTranslate();
+  const translate = lang === "en" && autoTranslate;
   // 내가 신고해서 가린 한마디는 빼지 않고 회색 "가려진 한마디예요"로 보여 줍니다 (숫자도 그대로).
   const { hidden, hide } = useHiddenComments(postId);
-  const comments = hidden.size
-    ? all.map((c) => (hidden.has(c.id) ? { ...c, kind: "text" as const, text: HIDDEN_TEXT, color: HIDDEN_COLOR } : c))
-    : all;
+  const comments =
+    hidden.size || translate
+      ? all.map((c) =>
+          hidden.has(c.id)
+            ? { ...c, kind: "text" as const, text: t.hidden, color: HIDDEN_COLOR }
+            : translate
+              ? translateToEnglish(c)
+              : c,
+        )
+      : all;
   const [draft, setDraft] = useState("");
   const card = useRef<HTMLElement>(null);
   const zone = useRef<HTMLDivElement>(null);
@@ -231,7 +247,7 @@ export function CommentPile({
           key={emoji}
           type="button"
           onClick={(e) => launch("emoji", emoji, e.currentTarget)}
-          aria-label={`${emoji} 남기기`}
+          aria-label={t.leaveEmoji(emoji)}
           className="flex aspect-square min-w-0 flex-1 items-center justify-center rounded-full bg-white/10 text-[20px] transition-transform active:scale-90"
         >
           {emoji}
@@ -248,7 +264,7 @@ export function CommentPile({
       <div className="flex min-h-0 flex-1 flex-col gap-4">
         <div ref={titleRow} className="flex flex-col gap-3 px-5">
           <h2 className="flex items-center gap-1.5 text-[18px] leading-[1.3] font-bold tracking-[-0.54px]">
-            한마디 <span className="text-neutral-400">{count}</span>
+            {t.title} <span className="text-neutral-400">{count}</span>
           </h2>
           {postTitle && (
             <p className="font-(family-name:--font-paperlogy) text-[24px] leading-[1.4] tracking-[-0.48px] break-keep text-neutral-400">
@@ -257,7 +273,7 @@ export function CommentPile({
           )}
         </div>
 
-        <section aria-label="댓글" className="relative flex min-h-0 flex-1 flex-col">
+        <section aria-label={t.section} className="relative flex min-h-0 flex-1 flex-col">
           <div
             ref={zone}
             className="flex min-h-0 flex-1 flex-col"
@@ -276,6 +292,7 @@ export function CommentPile({
               className="min-h-0 flex-1"
               scrollable
               rainOnOpen={14}
+              lang={lang}
               onOverflowChange={measureFades}
               onSelect={select}
             />
@@ -302,11 +319,11 @@ export function CommentPile({
             }}
             className="flex h-16 min-w-0 flex-1 items-center gap-2 rounded-full bg-surface-2 px-5 font-semibold"
           >
-            <span className="sr-only">한마디 남기기</span>
+            <span className="sr-only">{t.leaveLabel}</span>
             <input
               value={draft}
               onChange={(e) => setDraft(limitDraft(e.target.value.replace(/\n/g, "")))}
-              placeholder="한마디를 남겨보세요"
+              placeholder={t.leave}
               enterKeyHint="send"
               className="min-w-0 flex-1 bg-transparent text-[16px] text-on-dark outline-none placeholder:text-white/40"
             />
@@ -317,7 +334,7 @@ export function CommentPile({
           <button
             type="submit"
             disabled={!draft.trim()}
-            aria-label="보내기"
+            aria-label={t.send}
             className="flex size-16 shrink-0 items-center justify-center rounded-full bg-white transition-transform active:scale-90"
           >
             {/* eslint-disable-next-line @next/next/no-img-element -- 작은 SVG 아이콘 */}
@@ -344,6 +361,7 @@ export function CommentPile({
             onDeleteReply={remove}
             onReport={(id) => hide(id)}
             hiddenIds={hidden}
+            lang={lang}
             onEdit={(text) => edit(opened.id, text)}
             onDelete={() => {
               remove(opened.id);

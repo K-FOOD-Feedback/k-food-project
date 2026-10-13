@@ -3,6 +3,7 @@
 import Matter from "matter-js";
 import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type Ref } from "react";
 import type { Comment } from "./comments";
+import { COMMENTS_COPY, type CommentsCopy, type Lang } from "./copy";
 
 const { Engine, Bodies, Body, Composite, Events, Sleeping } = Matter;
 
@@ -473,6 +474,7 @@ export function GravityPile({
   ready = true,
   onOverflowChange,
   onSelect,
+  lang = "ko",
 }: {
   comments: Comment[];
   ref?: Ref<PileHandle>;
@@ -489,7 +491,10 @@ export function GravityPile({
   onOverflowChange?: (overflowing: boolean) => void;
   /** 말풍선을 누르면 (없으면 누를 수 없는 그냥 말풍선). el: 누른 말풍선 요소 (이모지가 떠오를 자리) */
   onSelect?: (comment: Comment, el: HTMLElement) => void;
+  /** 태그(나·글쓴이)와 읽어 주기 문구의 언어 */
+  lang?: Lang;
 }) {
+  const t = COMMENTS_COPY[lang];
   const zone = useRef<HTMLDivElement>(null);
   const content = useRef<HTMLDivElement>(null);
   const nodes = useRef(new Map<string, HTMLElement>());
@@ -576,7 +581,7 @@ export function GravityPile({
       className={`relative w-full select-none ${className} ${
         scrollable ? "overflow-x-hidden overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" : ""
       }`}
-      aria-label="최근 댓글"
+      aria-label={t.recent}
     >
       {/* 스크롤 칸: 기울어진 이모지 원의 모서리가 아래로 삐져나와 스크롤이 생기지 않도록 잘라 냅니다.
           (상세 화면 칸은 제목 줄에서 떨어지는 말풍선이 보여야 해서 자르지 않음) */}
@@ -592,7 +597,7 @@ export function GravityPile({
             {...(onSelect && {
               role: "button",
               tabIndex: 0,
-              "aria-label": c.kind === "emoji" ? `${c.text} 띄우기` : `한마디 보기: ${c.text.replace(/\n/g, " ")}`,
+              "aria-label": c.kind === "emoji" ? t.floatEmoji(c.text) : t.openComment(c.text.replace(/\n/g, " ")),
               onClick: (e: MouseEvent<HTMLDivElement>) => onSelect(c, e.currentTarget),
               onKeyDown: (e: KeyboardEvent<HTMLDivElement>) => {
                 if (e.key === "Enter" || e.key === " ") {
@@ -602,7 +607,7 @@ export function GravityPile({
               },
             })}
           >
-            <Bubble comment={c} tags={tagsOf(c, replyCounts)} />
+            <Bubble comment={c} tags={tagsOf(c, replyCounts, t)} replyLabel={t.replyCount} />
           </div>
         ))}
       </div>
@@ -612,16 +617,16 @@ export function GravityPile({
 
 /** 말풍선 위 태그 줄에 들어갈 내용 */
 type Tags = {
-  /** 내가 쓴 한마디면 "나", 게시글 작성자가 쓴 한마디면 "글쓴이" */
-  who: "나" | "글쓴이" | null;
+  /** 내가 쓴 한마디면 "나"(Me), 게시글 작성자가 쓴 한마디면 "글쓴이"(Author) — 화면 언어에 맞춰서 */
+  who: string | null;
   /** 이 한마디에 달린 답글 수 */
   replies: number;
 };
 
 // 답글이 어느 글에 단 것인지("↩ 원글") 태그는 뱃지가 너무 많아 지저분해서 뺐습니다.
-function tagsOf(comment: Comment, replyCounts: Map<string, number>): Tags {
+function tagsOf(comment: Comment, replyCounts: Map<string, number>, t: CommentsCopy): Tags {
   return {
-    who: comment.mine ? "나" : comment.author.kind === "author" ? "글쓴이" : null,
+    who: comment.mine ? t.me : comment.author.kind === "author" ? t.author : null,
     replies: replyCounts.get(comment.id) ?? 0,
   };
 }
@@ -637,7 +642,7 @@ const HOVER =
   - 태그가 있으면 말풍선 위로 튀어나온 만큼 위쪽 여백을 둡니다.
     물리 몸체는 말풍선 + 태그 줄 두 조각이라, 태그 자리만 막히고 나머지 윗부분은 다른 댓글과 같은 간격입니다.
 */
-function Bubble({ comment, tags }: { comment: Comment; tags: Tags }) {
+function Bubble({ comment, tags, replyLabel }: { comment: Comment; tags: Tags; replyLabel: (n: number) => string }) {
   const { author } = comment;
   const emoji = comment.kind === "emoji";
   const bubble = emoji ? (
@@ -672,7 +677,7 @@ function Bubble({ comment, tags }: { comment: Comment; tags: Tags }) {
       <span data-part="tag" className={`absolute top-0 flex gap-0.5 ${emoji ? "inset-x-0 justify-center" : "left-6"}`}>
         {tags.who && <span className={`${TAG} px-1.5`}>{tags.who}</span>}
         {tags.replies > 0 && (
-          <span className={`${TAG} pr-1.5 pl-1`} aria-label={`답글 ${tags.replies}개`}>
+          <span className={`${TAG} pr-1.5 pl-1`} aria-label={replyLabel(tags.replies)}>
             <RepliesIcon />
             {tags.replies}
           </span>
