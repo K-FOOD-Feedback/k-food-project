@@ -48,6 +48,24 @@ function seedsFor(postId: string, authorFlag: string): Comment[] {
   ];
 }
 
+/*
+  자동 번역 (목업) — 번역 서버가 붙기 전까지 처음부터 달려 있는 한마디만 미리 옮겨 둔 영어로 보여 줍니다.
+  내가 새로 남긴 한마디는 번역할 수 없어서 쓴 그대로 보입니다.
+*/
+const SEED_EN: Record<string, string> = {
+  "보기만해도 맵네요ㅠㅠ": "Looks so spicy ㅠㅠ",
+  "참치마요 삼김이랑\n같이 먹어보세요": "Try it with a tuna mayo rice ball",
+  "소시지 칼집 미쳤다": "Those sausage cuts are insane",
+  "치즈는 많을수록\n맛있죠!": "The more cheese, the better!",
+  "고마워요 다음에\n시도해볼게요!": "Thanks, I'll try it next time!",
+};
+
+/** 한마디를 영어로 옮깁니다 (옮겨 둔 문장이 없으면 그대로). */
+export function translateToEnglish(comment: Comment): Comment {
+  const en = comment.kind === "text" ? SEED_EN[comment.text] : undefined;
+  return en ? { ...comment, text: en } : comment;
+}
+
 const storageKey = (postId: string) => `kfood:comments:${postId}`;
 const CHANGE = "kfood:comments-change";
 const EMPTY: Comment[] = [];

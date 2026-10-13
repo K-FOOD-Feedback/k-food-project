@@ -1,13 +1,10 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getHomePost } from "@/app/home/mockPosts";
 import { MyPostComments } from "@/app/write/MyPostDetail";
 import { MY_POST_ID } from "@/lib/write-data";
 import { backHrefFrom } from "@/lib/back";
-import { HEADER_BUTTON, PageHeader } from "@/components/PageHeader";
-import { LanguageButton } from "@/components/LanguagePicker";
-import { CommentPile } from "../CommentPile";
 import { paperlogy } from "../font";
+import { CommentsScreen } from "./CommentsScreen";
 import { VoteGate } from "./VoteGate";
 
 /**
@@ -15,6 +12,7 @@ import { VoteGate } from "./VoteGate";
   상세 화면의 댓글 영역과 같은 댓글·같은 인터랙션을, 화면 높이를 다 써서 크게 보여 줍니다.
   댓글 칸을 스크롤하면 그라데이션 아래로 묻힌 예전 댓글도 볼 수 있습니다.
   투표한 사람만 볼 수 있습니다 (VoteGate).
+  지구본으로 언어를 바꾸면 이 화면 글자만 바뀝니다 (CommentsScreen).
 */
 export default async function Page(props: PageProps<"/posts/[id]/comments">) {
   const { id } = await props.params;
@@ -27,45 +25,24 @@ export default async function Page(props: PageProps<"/posts/[id]/comments">) {
   if (id === MY_POST_ID) return <MyPostComments backHref={backHref} />;
   const post = getHomePost(id);
   if (!post) notFound();
+  // 화면 언어: 지구본으로 고른 언어(?lang=)가 있으면 그것, 없으면 외국인은 영어
+  const lang = sp.lang === "en" || sp.lang === "ko" ? sp.lang : foreigner ? "en" : "ko";
 
   return (
     <VoteGate postId={post.id} open={foreigner}>
       <main
         className={`${paperlogy.variable} mx-auto flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-background text-on-dark`}
       >
-        {/* 공통 상단 바 (src/components/PageHeader — 모든 화면이 같은 위치·크기·디자인) */}
-        <PageHeader
-          left={
-            <Link
-              href={backHref}
-              aria-label={backHref === `/posts/${id}` ? "상세로 돌아가기" : "알림으로 돌아가기"}
-              className={HEADER_BUTTON}
-            >
-              <ChevronLeftIcon />
-            </Link>
-          }
-          right={<LanguageButton lang="ko" from="comments" />}
+        <CommentsScreen
+          initialLang={lang}
+          backHref={backHref}
+          isDetailBack={backHref === `/posts/${id}`}
+          postId={post.id}
+          commentCount={post.commentCount}
+          authorFlag={post.author.flag}
+          title={{ ko: post.title, en: post.en.title }}
         />
-
-        <div className="flex min-h-0 flex-1 flex-col pb-[calc(24px+env(safe-area-inset-bottom))]">
-          <CommentPile
-            postId={post.id}
-            commentCount={post.commentCount}
-            authorFlag={post.author.flag}
-            postTitle={post.title}
-            variant="full"
-          />
-        </div>
       </main>
     </VoteGate>
-  );
-}
-
-// Lucide chevron-left (MIT)
-function ChevronLeftIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="m15 18-6-6 6-6" />
-    </svg>
   );
 }
