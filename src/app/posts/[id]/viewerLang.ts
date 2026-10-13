@@ -41,3 +41,29 @@ export function saveViewerLang(lang: Lang) {
 export function useViewerLang() {
   return useSyncExternalStore(subscribe, read, () => "en" as Lang);
 }
+
+/*
+  한국인 상세 화면에서 지구본으로 고른 언어 (기본 한국어). 외국인 쪽과 따로 기억합니다.
+  화면 문구는 이 언어로 바뀌고, 글·한마디는 원어 그대로 — 자동 번역이 켜져 있으면 이 언어로 번역해 보여 줌.
+*/
+const KO_KEY = "kfood:korean-lang";
+const readKo = (): Lang => {
+  try {
+    return localStorage.getItem(KO_KEY) === "en" ? "en" : "ko";
+  } catch {
+    return "ko";
+  }
+};
+
+export function saveKoreanLang(lang: Lang) {
+  try {
+    localStorage.setItem(KO_KEY, lang);
+  } catch {
+    // 저장이 막힌 브라우저면 이번 화면에서만 바뀌지 않음
+  }
+  window.dispatchEvent(new Event(EVENT));
+}
+
+export function useKoreanLang() {
+  return useSyncExternalStore(subscribe, readKo, () => "ko" as Lang);
+}
