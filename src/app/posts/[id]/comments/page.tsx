@@ -33,7 +33,8 @@ export default async function Page(props: PageProps<"/posts/[id]/comments">) {
   const post = getHomePost(id);
   if (!post) notFound();
   // 화면 언어: 지구본으로 고른 언어(?lang=). 외국인은 상세에서 고른 언어를 따름 (CommentsScreen)
-  const lang = sp.lang === "en" || sp.lang === "ko" ? sp.lang : "ko";
+  // 주소에 ?lang= 이 있을 때만 그 언어로 시작 (없으면 상세 화면에서 고른 언어 그대로 — CommentsScreen)
+  const lang = sp.lang === "en" || sp.lang === "ko" ? sp.lang : null;
 
   return (
     <VoteGate postId={post.id} open={foreigner}>
