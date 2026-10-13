@@ -24,7 +24,6 @@ export function CommentsScreen({
   postId,
   commentCount,
   authorFlag,
-  authorName,
   title,
 }: {
   /** 주소 ?lang= 으로 정해진 언어 (없으면 null → 저장된 언어) */
@@ -37,7 +36,7 @@ export function CommentsScreen({
   postId: string;
   commentCount: number;
   authorFlag: string;
-  /** 글쓴이 닉네임 (글쓴이 한마디 뱃지) */
+  /** 안 씀 — 한마디에는 닉네임을 보여 주지 않음 (내 글 화면 MyPostDetail이 아직 넘겨서 받아만 둠) */
   authorName?: string;
   title: Record<Lang, string>;
 }) {
@@ -78,7 +77,6 @@ export function CommentsScreen({
           postId={postId}
           commentCount={commentCount}
           authorFlag={authorFlag}
-          authorName={authorName}
           postTitle={title[lang]}
           variant="full"
           lang={lang}

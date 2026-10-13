@@ -626,8 +626,7 @@ type Tags = {
 // 답글이 어느 글에 단 것인지("↩ 원글") 태그는 뱃지가 너무 많아 지저분해서 뺐습니다.
 function tagsOf(comment: Comment, replyCounts: Map<string, number>, t: CommentsCopy): Tags {
   return {
-    // 한마디 칸 말풍선에서는 닉네임 없이 "글쓴이"만 (답글 레이어에서는 닉네임까지)
-    who: whoOf(comment, t, false),
+    who: whoOf(comment, t),
     replies: replyCounts.get(comment.id) ?? 0,
   };
 }
