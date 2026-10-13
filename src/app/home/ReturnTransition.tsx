@@ -5,8 +5,16 @@ import { CARD_PHOTO_IN_MASK, cardMaskBox } from "./CardStack";
 import type { CardShape } from "./cardShapes";
 import { clearReturnTransition, measureCard, type Box, type ReturnTransition } from "./cardTransition";
 
-const RETURN_MS = 420;
+const RETURN_MS = 600;
 const EASING = "cubic-bezier(0.2, 0.8, 0.2, 1)";
+/*
+  두 단계로 이어집니다.
+  ① 합치기 (0 ~ MERGE): 본문 카드가 위로 늘어나 사진 밑까지 받치고, 사진 아래 모서리가 펴지며 둘이 한 장의 카드가 됨
+  ② 줄어들기 (MERGE ~ 1): 한 장이 된 카드가 그대로 메인 맨 앞 카드로 줄어들고, 사진은 카드 속 모양 사진 자리로 들어감
+*/
+const MERGE = 0.38;
+const MERGE_EASE = "cubic-bezier(0.4, 0, 0.2, 1)";
+const SHRINK_EASE = "cubic-bezier(0.25, 0.8, 0.25, 1)";
 /** 카드 스티커 크기 (CardStack의 size-[68px]) — 회전된 요소의 바깥 상자 대신 이 크기로 가운데를 맞춥니다 */
 const STICKER = 68;
 
@@ -80,21 +88,64 @@ export function ReturnGhosts({
     cardGhost.current.replaceChildren(clone);
 
     const timing = { duration: RETURN_MS, easing: EASING, fill: "forwards" as const };
-    // 유령이 글까지 들고 움직이므로, 위치가 거의 맞았을 때(65%면 99% 가까이 도착) 진짜 카드로 넘겨 줍니다.
+    // 단계별 easing은 각 키프레임에 두고 전체는 고르게 흘러가게 함
+    const staged = { duration: RETURN_MS, easing: "linear", fill: "forwards" as const };
+    // 유령이 글까지 들고 움직이므로, 위치가 거의 맞았을 때 진짜 카드로 넘겨 줍니다.
     // 둘이 같이 반투명해지면 뒤 카드가 비쳐 보이므로, 진짜 카드를 유령 밑에서 먼저 다 보이게 한 뒤 유령을 걷어 냅니다.
-    const reveal = [{ opacity: 0 }, { opacity: 0, offset: 0.63 }, { opacity: 1, offset: 0.65 }, { opacity: 1 }];
-    const vanish = [{ opacity: 1 }, { opacity: 1, offset: 0.66 }, { opacity: 0, offset: 0.86 }, { opacity: 0 }];
+    const reveal = [{ opacity: 0 }, { opacity: 0, offset: 0.84 }, { opacity: 1, offset: 0.86 }, { opacity: 1 }];
+    const vanish = [{ opacity: 1 }, { opacity: 1, offset: 0.87 }, { opacity: 0, offset: 0.97 }, { opacity: 0 }];
+
+    // ① 합쳐진 한 장: 사진과 본문 카드를 감싸는 상자
+    const top = Math.min(t.photo.top, t.card.top);
+    const left = Math.min(t.photo.left, t.card.left);
+    const merged = {
+      left,
+      top,
+      width: Math.max(t.photo.left + t.photo.width, t.card.left + t.card.width) - left,
+      height: Math.max(t.photo.top + t.photo.height, t.card.top + t.card.height) - top,
+    };
+    const mergedPhoto = { left: merged.left, top: t.photo.top, width: merged.width, height: t.photo.height };
 
     const fade = (el: HTMLElement | null, frames: Keyframe[]) =>
       el ? [el.animate(frames, { duration: RETURN_MS, easing: "linear", fill: "forwards" as const })] : [];
 
     const animations = [
-      cardGhost.current.animate([place(t.card, "32px"), place(to.card, "34.8px")], timing),
-      photoGhost.current.animate([boxOnly(t.photo), boxOnly(to.photo)], timing),
-      // 상세 사진(모서리 둥근 사각형)이 줄어드는 동안, 카드와 똑같은 모양·구도의 사진이 그 위로 서서히 겹쳐 나타남
-      ...(detailPhoto.current ? [detailPhoto.current.animate([{ borderRadius: "32px" }, { borderRadius: "45%" }], timing)] : []),
-      ...fade(wavePhoto.current, [{ opacity: 0 }, { opacity: 1, offset: 0.45 }, { opacity: 1 }]),
-      ...fade(detailPhoto.current, [{ opacity: 1 }, { opacity: 1, offset: 0.2 }, { opacity: 0, offset: 0.55 }, { opacity: 0 }]),
+      // 본문 카드: 위로 늘어나 사진까지 받쳐 한 장이 됨 → 그 한 장이 메인 카드로 줄어듦
+      cardGhost.current.animate(
+        [
+          { ...place(t.card, "32px"), easing: MERGE_EASE },
+          { ...place(merged, "32px"), offset: MERGE, easing: SHRINK_EASE },
+          place(to.card, "34.8px"),
+        ],
+        staged,
+      ),
+      // 사진: 합치는 동안은 제자리에서 카드 폭에 맞추고, 그다음 카드 속 사진 자리로
+      photoGhost.current.animate(
+        [
+          { ...boxOnly(t.photo), easing: MERGE_EASE },
+          { ...boxOnly(mergedPhoto), offset: MERGE, easing: SHRINK_EASE },
+          boxOnly(to.photo),
+        ],
+        staged,
+      ),
+      // 사진 아래 모서리가 펴져 본문과 이어짐 → 줄어들며 카드 속 모양으로
+      ...(detailPhoto.current
+        ? [
+            detailPhoto.current.animate(
+              [
+                { borderRadius: "32px", easing: MERGE_EASE },
+                { borderRadius: "32px 32px 0px 0px", offset: MERGE, easing: SHRINK_EASE },
+                { borderRadius: "45%" },
+              ],
+              staged,
+            ),
+          ]
+        : []),
+      // 줄어드는 동안 카드와 똑같은 모양·구도의 사진이 겹쳐 나타남
+      ...fade(wavePhoto.current, [{ opacity: 0 }, { opacity: 0, offset: MERGE }, { opacity: 1, offset: 0.72 }, { opacity: 1 }]),
+      ...fade(detailPhoto.current, [{ opacity: 1 }, { opacity: 1, offset: 0.5 }, { opacity: 0, offset: 0.82 }, { opacity: 0 }]),
+      // 카드 글은 합쳐지는 동안 떠오름
+      ...fade(clone, [{ opacity: 0 }, { opacity: 0, offset: 0.12 }, { opacity: 1, offset: MERGE }, { opacity: 1 }]),
       front.animate(reveal, { duration: RETURN_MS, easing: "linear" }),
       ...(ghosts.current ? [ghosts.current.animate(vanish, { duration: RETURN_MS, easing: "linear", fill: "forwards" as const })] : []),
     ];
@@ -111,17 +162,19 @@ export function ReturnGhosts({
         chipFrom.current.textContent = `${copy.firstElementChild?.textContent ?? ""}명 참여 중!`;
         chipTo.current.replaceChildren(...copy.childNodes);
         animations.push(
-          ...fade(chipFrom.current, [{ opacity: 1 }, { opacity: 0, offset: 0.3 }, { opacity: 0 }]),
-          ...fade(chipTo.current, [{ opacity: 0 }, { opacity: 0, offset: 0.2 }, { opacity: 1, offset: 0.5 }, { opacity: 1 }]),
+          ...fade(chipFrom.current, [{ opacity: 1 }, { opacity: 1, offset: MERGE }, { opacity: 0, offset: 0.6 }, { opacity: 0 }]),
+          ...fade(chipTo.current, [{ opacity: 0 }, { opacity: 0, offset: 0.5 }, { opacity: 1, offset: 0.75 }, { opacity: 1 }]),
         );
       }
       animations.push(
         chipGhost.current.animate(
           [
+            // 사진에 붙어 있다가, 한 장이 된 뒤 스티커 자리로
             { ...place(t.chip, `${t.chip.height / 2}px`), rotate: "0deg" },
+            { ...place(t.chip, `${t.chip.height / 2}px`), rotate: "0deg", offset: MERGE, easing: SHRINK_EASE },
             { ...place(sticker, `${STICKER / 2}px`), rotate: "12deg" },
           ],
-          timing,
+          staged,
         ),
       );
     }
