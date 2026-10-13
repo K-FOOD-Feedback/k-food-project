@@ -401,7 +401,8 @@ export function CommentPile({
           {/* 칸이 작아서 맨 위에 쌓일 최신 6개만 쏟아집니다 (많아도 금방 끝나게) */}
           <GravityPile ref={pile} comments={comments} ready={ready} rainOnOpen={6} />
         </div>
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[92px] bg-linear-to-b from-[#292929]/0 to-[#292929]" />
+        {/* data-fade: 상세 화면이 잠금 상태에서 칸 내용을 흐릴 때 이 그라데이션은 흐리지 않도록 (흐리면 아래 끝이 비쳐 보임) */}
+        <div data-fade className="pointer-events-none absolute inset-x-0 bottom-0 h-[92px] bg-linear-to-b from-[#292929]/0 to-[#292929]" />
       </section>
 
       {/* 이모지 키 → 한마디 입력 카드 순서 (Figma 332:3426) */}
