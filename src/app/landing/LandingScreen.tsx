@@ -289,7 +289,8 @@ export function LandingScreen() {
   return (
     <main className="mx-auto w-full max-w-[430px] bg-background text-on-dark">
       {/* 상단: 로고 · 건너뛰기 · 언어(🌐) */}
-      <header className="fixed inset-x-0 top-0 z-40 mx-auto flex h-[calc(56px+env(safe-area-inset-top))] w-full max-w-[430px] items-center justify-between px-5 pt-[env(safe-area-inset-top)]">
+      {/* 위치·버튼 크기는 메인 상단 바(PageHeader)와 같게 — 위·아래·오른쪽 8px, 🌐는 메인과 같은 64px 버튼 */}
+      <header className="fixed inset-x-0 top-0 z-40 mx-auto flex w-full max-w-[430px] items-center justify-between pt-[calc(8px+env(safe-area-inset-top))] pr-2 pb-2 pl-5">
         <span className="font-display text-[19px] leading-none">{t.brand}</span>
         <div className="flex items-center gap-2">
         {/* 건너뛰기 — 스토리를 생략하고 바로 "당신은 누구인가요?" (마지막 장면에선 숨김) */}
@@ -310,8 +311,6 @@ export function LandingScreen() {
         <LanguageButton
           lang={lang}
           from="landing"
-          // 랜딩 상단 높이(56)에 맞춰 메인보다 작게
-          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-surface/85 transition-transform active:scale-95"
           onPick={(l) => {
             setChosen(l as LandingLang);
             track("language_clicked", { from: "landing", to: l });
@@ -633,7 +632,7 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
               }}
             >
             <div
-              className={`flex size-14 touch-none select-none items-center justify-center rounded-full bg-on-dark text-[26px] ${
+              className={`flex size-14 touch-none select-none items-center justify-center rounded-full bg-on-light text-[26px] shadow-[0_6px_16px_rgba(0,0,0,0.35)] ${
                 drag ? "cursor-grabbing" : "cursor-grab"
               }`}
               style={{ transform: drag ? `translate(${drag.x}px, ${drag.y}px) scale(1.12)` : undefined }}
@@ -661,7 +660,8 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
               role="img"
               aria-label={t.pickHint}
             >
-              <span className="inline-block origin-[70%_80%] animate-[wave_1s_ease-in-out_1300ms_both]">👋</span>
+              {/* 상세 투표 토큰과 같은 모양 — 어두운 원 · 그림자, 고르기 전까지 계속 손 흔들기 */}
+              <span className="inline-block origin-[70%_80%] animate-[wave_1.2s_ease-in-out_1300ms_infinite]">👋</span>
             </div>
             </div>
           )}
@@ -765,7 +765,7 @@ function ColumnText({ role, action, dark = false, picked = false }: { role: stri
       <span className="flex items-end justify-between gap-1">
         <span className={`text-[13px] font-semibold leading-[1.35] ${dark ? "opacity-70" : "text-neutral-400"}`}>{action}</span>
         {picked && (
-          <span className="flex size-9 shrink-0 animate-pop items-center justify-center rounded-full bg-on-dark text-[18px]">👋</span>
+          <span className="flex size-9 shrink-0 animate-pop items-center justify-center rounded-full bg-on-light text-[18px] shadow-[0_6px_16px_rgba(0,0,0,0.35)]">👋</span>
         )}
       </span>
     </span>

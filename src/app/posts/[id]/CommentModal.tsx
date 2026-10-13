@@ -371,6 +371,8 @@ export function CommentModal({
         onClick={(e) => {
           if (editing || reporting) return;
           if ((e.target as Element).closest("button, a, input, textarea, label, form, [data-keep-open], [data-reply-id]")) return;
+          // 답글을 골라 둔 상태면 첫 탭은 선택만 풀고, 한 번 더 누르면 닫힘
+          if (activeId) return setActiveId(null);
           onClose();
         }}
       >
