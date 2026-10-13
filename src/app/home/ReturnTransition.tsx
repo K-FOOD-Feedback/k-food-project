@@ -1,7 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useRef } from "react";
-import { CARD_PHOTO_IN_MASK, cardMaskBox } from "./CardStack";
+import { CARD_PHOTO_IN_MASK, cardMaskBox, cardPhotoOf } from "./CardStack";
 import type { CardShape } from "./cardShapes";
 import type { HomePost } from "./mockPosts";
 import { clearReturnTransition, measureCard, type Box, type ReturnTransition } from "./cardTransition";
@@ -17,6 +17,9 @@ const EASING = "cubic-bezier(0.2, 0.8, 0.2, 1)";
 const MERGE = 0.235;
 /** 합칠 때 사진이 안쪽으로 줄어드는 여백 (본문 카드 색이 사진 둘레로 보임) */
 const INSET = 14;
+/** 상세에서 첫 사진이 아닌 사진을 보고 있었으면, 먼저 첫 사진으로 넘기는 시간 */
+const SWIPE_MS = 220;
+const SWIPE_EASE = "cubic-bezier(0.3, 0, 0.2, 1)";
 const MERGE_EASE = "cubic-bezier(0.4, 0, 0.2, 1)";
 const SHRINK_EASE = "cubic-bezier(0.25, 0.8, 0.25, 1)";
 /** 카드 스티커 크기 (CardStack의 size-[68px]) — 회전된 요소의 바깥 상자 대신 이 크기로 가운데를 맞춥니다 */
@@ -41,14 +44,12 @@ const pct = (v: number) => `${v * 100}%`;
 */
 export function ReturnGhosts({
   transition: t,
-  cardPhoto,
   post,
   shape,
   onDone,
 }: {
   transition: ReturnTransition;
-  cardPhoto?: string;
-  /** 상세 본문 글을 전환 중에 그대로 보여 주려고 씀 */
+  /** 상세 본문 글·첫 사진을 전환 중에 그대로 보여 주려고 씀 */
   post: HomePost;
   /** 맨 앞 카드의 사진 모양 (cardShapes) */
   shape: CardShape;
@@ -58,9 +59,12 @@ export function ReturnGhosts({
   const cardText = useRef<HTMLDivElement>(null);
   const detailText = useRef<HTMLDivElement>(null);
   const photoGhost = useRef<HTMLDivElement>(null);
-  const detailPhoto = useRef<HTMLDivElement>(null);
-  const waveDetail = useRef<HTMLDivElement>(null);
-  const wavePhoto = useRef<HTMLDivElement>(null);
+  const rectLayer = useRef<HTMLDivElement>(null);
+  const rectFrame = useRef<HTMLDivElement>(null);
+  const waveLayer = useRef<HTMLDivElement>(null);
+  const waveFrame = useRef<HTMLDivElement>(null);
+  const firstImg = useRef<HTMLImageElement>(null);
+  const shownImg = useRef<HTMLImageElement>(null);
   const chipFrom = useRef<HTMLSpanElement>(null);
   const chipTo = useRef<HTMLSpanElement>(null);
   const ctaGhost = useRef<HTMLDivElement>(null);
@@ -68,6 +72,9 @@ export function ReturnGhosts({
   const ctaTo = useRef<HTMLSpanElement>(null);
   const chipGhost = useRef<HTMLDivElement>(null);
   const ghosts = useRef<HTMLDivElement>(null);
+  // 메인 카드 사진 = 상세 첫 사진 (같은 사진이라 전환 중에 그림이 바뀌지 않음)
+  const firstPhoto = cardPhotoOf(post);
+  const swipe = !!t.photoSrc && t.photoSrc !== firstPhoto;
 
   useLayoutEffect(() => {
     clearReturnTransition();
@@ -97,9 +104,12 @@ export function ReturnGhosts({
     });
     cardText.current?.replaceChildren(clone);
 
-    const timing = { duration: RETURN_MS, easing: EASING, fill: "forwards" as const };
+    // 첫 사진이 아닌 사진을 보고 있었으면 먼저 첫 사진으로 넘긴 뒤(SWIPE_MS) 합치기 시작
+    const delay = swipe ? SWIPE_MS : 0;
+    const run = { duration: RETURN_MS, delay, fill: "both" as const };
+    const timing = { ...run, easing: EASING };
     // 단계별 easing은 각 키프레임에 두고 전체는 고르게 흘러가게 함
-    const staged = { duration: RETURN_MS, easing: "linear", fill: "forwards" as const };
+    const staged = { ...run, easing: "linear" };
     // 유령이 글까지 들고 움직이므로, 위치가 거의 맞았을 때 진짜 카드로 넘겨 줍니다.
     // 둘이 같이 반투명해지면 뒤 카드가 비쳐 보이므로, 진짜 카드를 유령 밑에서 먼저 다 보이게 한 뒤 유령을 걷어 냅니다.
     const reveal = [{ opacity: 0 }, { opacity: 0, offset: 0.84 }, { opacity: 1, offset: 0.86 }, { opacity: 1 }];
@@ -119,8 +129,21 @@ export function ReturnGhosts({
       height: t.photo.height - INSET * 2,
     };
 
-    const fade = (el: HTMLElement | null, frames: Keyframe[]) =>
-      el ? [el.animate(frames, { duration: RETURN_MS, easing: "linear", fill: "forwards" as const })] : [];
+    const fade = (el: HTMLElement | null, frames: Keyframe[]) => (el ? [el.animate(frames, staged)] : []);
+
+    // 사진 안의 그림 자리: 상세 사진 칸을 꽉 채우던 그림이, 카드 속 사진과 똑같은 구도(더 넓은 그림을 모양으로 잘라 냄)로
+    const fullFrame = { left: "0%", top: "0%", width: "100%", height: "100%" };
+    const cardFrame = {
+      left: pct(CARD_PHOTO_IN_MASK.left),
+      top: pct(CARD_PHOTO_IN_MASK.top),
+      width: pct(CARD_PHOTO_IN_MASK.width),
+      height: pct(CARD_PHOTO_IN_MASK.height),
+    };
+    const frameKeys: Keyframe[] = [
+      { ...fullFrame, easing: MERGE_EASE },
+      { ...fullFrame, offset: MERGE, easing: SHRINK_EASE },
+      cardFrame,
+    ];
 
     const animations = [
       // 본문 카드: 위로 늘어나 사진까지 받쳐 한 장이 됨 → 그 한 장이 메인 카드로 줄어듦
@@ -141,10 +164,13 @@ export function ReturnGhosts({
         ],
         staged,
       ),
-      // 모서리: 카드 안에 들어간 사진답게 조금 덜 둥글게 → 줄어들며 카드 속 모양으로
-      ...(detailPhoto.current
+      // 깜빡임 없이: 그림은 처음부터 끝까지 같은 사진(첫 사진) 하나이고, 자리·구도만 이어서 바뀜.
+      // 바깥 모양(모서리 둥근 사각형 → 카드 모양)만 겹쳐서 바뀌는데, 두 겹 안의 그림이 똑같아서 그림은 흔들리지 않음.
+      ...(rectFrame.current ? [rectFrame.current.animate(frameKeys, staged)] : []),
+      ...(waveFrame.current ? [waveFrame.current.animate(frameKeys, staged)] : []),
+      ...(rectLayer.current
         ? [
-            detailPhoto.current.animate(
+            rectLayer.current.animate(
               [
                 { borderRadius: "32px", easing: MERGE_EASE },
                 { borderRadius: "22px", offset: MERGE, easing: SHRINK_EASE },
@@ -155,19 +181,25 @@ export function ReturnGhosts({
             ),
           ]
         : []),
-      // 사진 바뀜은 두 번에 나눠 깜빡임 없이: (모양과 사진이 한꺼번에 바뀌면 두 사진이 반투명하게 겹쳐 깜빡여 보임)
-      //  ① 모양만: 같은 상세 사진이 카드 모양으로 — 카드 모양 사진이 위에 떠오른 뒤 아래 사각형 사진이 걷힘
-      //  ② 사진만: 같은 카드 모양 안에서 카드 사진이 위에 덮이듯 떠오름 (아래 사진은 그대로라 어두워지지 않음)
-      ...fade(waveDetail.current, [{ opacity: 0 }, { opacity: 0, offset: MERGE }, { opacity: 1, offset: 0.42 }, { opacity: 1 }]),
-      ...fade(detailPhoto.current, [{ opacity: 1 }, { opacity: 1, offset: 0.4 }, { opacity: 0, offset: 0.58 }, { opacity: 0 }]),
-      ...fade(wavePhoto.current, [{ opacity: 0 }, { opacity: 0, offset: 0.5 }, { opacity: 1, offset: 0.76 }, { opacity: 1 }]),
+      // 카드 모양이 위에 다 떠오른 뒤에 아래 사각형을 걷어 냄 (둘 다 반투명한 순간이 없음)
+      ...fade(waveLayer.current, [{ opacity: 0 }, { opacity: 0, offset: 0.3 }, { opacity: 1, offset: 0.46 }, { opacity: 1 }]),
+      ...fade(rectLayer.current, [{ opacity: 1 }, { opacity: 1, offset: 0.46 }, { opacity: 0, offset: 0.6 }, { opacity: 0 }]),
       // 글: 합칠 때까지는 상세 본문 그대로 → 줄어들기 시작하면 상세 글은 사라지고 카드 글이 떠오름
       // 두 글이 겹쳐 보이지 않게 상세 글이 먼저 다 사라진 뒤 카드 글이 떠오름
       ...fade(detailText.current, [{ opacity: 1 }, { opacity: 1, offset: MERGE }, { opacity: 0, offset: 0.36 }, { opacity: 0 }]),
       ...fade(cardText.current, [{ opacity: 0 }, { opacity: 0, offset: 0.4 }, { opacity: 1, offset: 0.6 }, { opacity: 1 }]),
-      front.animate(reveal, { duration: RETURN_MS, easing: "linear" }),
-      ...(ghosts.current ? [ghosts.current.animate(vanish, { duration: RETURN_MS, easing: "linear", fill: "forwards" as const })] : []),
+      front.animate(reveal, staged),
+      ...(ghosts.current ? [ghosts.current.animate(vanish, staged)] : []),
     ];
+
+    // 보고 있던 사진이 오른쪽으로 빠지고 첫 사진이 왼쪽에서 들어옴 (상세에서 이전 사진으로 넘기는 것과 같은 방향)
+    if (swipe && firstImg.current && shownImg.current) {
+      const slide = { duration: SWIPE_MS, easing: SWIPE_EASE, fill: "both" as const };
+      animations.push(
+        firstImg.current.animate([{ transform: "translateX(-100%)" }, { transform: "translateX(0)" }], slide),
+        shownImg.current.animate([{ transform: "translateX(0)" }, { transform: "translateX(100%)" }], slide),
+      );
+    }
 
     // 검은 알약 칩 → 12° 기운 원형 스티커
     if (t.chip && to.sticker && chipGhost.current) {
@@ -218,7 +250,7 @@ export function ReturnGhosts({
         ),
         ...fade(ctaFrom.current, [{ opacity: 1 }, { opacity: 0, offset: 0.4 }, { opacity: 0 }]),
         ...fade(ctaTo.current, [{ opacity: 0 }, { opacity: 0, offset: 0.2 }, { opacity: 1, offset: 0.55 }, { opacity: 1 }]),
-        mainCta.animate(reveal, { duration: RETURN_MS, easing: "linear" }),
+        mainCta.animate(reveal, staged),
       );
     }
 
@@ -230,7 +262,7 @@ export function ReturnGhosts({
       onDone();
     };
     animations[0].onfinish = finish;
-    const timer = window.setTimeout(finish, RETURN_MS + 100);
+    const timer = window.setTimeout(finish, delay + RETURN_MS + 100);
     return () => {
       window.clearTimeout(timer);
       animations.forEach((a) => a.cancel());
@@ -254,36 +286,28 @@ export function ReturnGhosts({
         <div ref={cardText} className="absolute inset-0 opacity-0" />
       </div>
       <div ref={photoGhost} className="fixed z-30" style={boxStyle(t.photo)}>
-        <div ref={detailPhoto} className="absolute inset-0 overflow-hidden" style={{ borderRadius: 32 }}>
-          {/* eslint-disable-next-line @next/next/no-img-element -- 전환용 사진 */}
-          <img src={t.photoSrc} alt="" className="absolute inset-0 size-full object-cover" />
-        </div>
-        {/* 상세 사진을 카드 모양으로 (모양만 바뀌는 단계) */}
-        <div ref={waveDetail} className="absolute inset-0 opacity-0" style={{ maskImage: shape.mask, WebkitMaskImage: shape.mask, maskSize: "100% 100%", WebkitMaskSize: "100% 100%", maskRepeat: "no-repeat", WebkitMaskRepeat: "no-repeat" }}>
-          {/* eslint-disable-next-line @next/next/no-img-element -- 전환용 사진 */}
-          <img src={t.photoSrc} alt="" className="absolute inset-0 size-full object-cover" />
-        </div>
-        {cardPhoto && (
-          // 카드 속 사진과 똑같은 모양·구도 (사진 영역 크기에 맞춰 함께 늘었다 줄었다 함)
-          <div
-            ref={wavePhoto}
-            className="absolute inset-0 opacity-0"
-            style={{ maskImage: shape.mask, WebkitMaskImage: shape.mask, maskSize: "100% 100%", WebkitMaskSize: "100% 100%", maskRepeat: "no-repeat", WebkitMaskRepeat: "no-repeat" }}
-          >
+        {/* 상세 사진 칸 모양(모서리 둥근 사각형) — 처음엔 보던 사진, 넘기면 첫 사진 */}
+        <div ref={rectLayer} className="absolute inset-0 overflow-hidden" style={{ borderRadius: 32 }}>
+          <div ref={rectFrame} className="absolute inset-0 overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element -- 전환용 사진 */}
-            <img
-              src={cardPhoto}
-              alt=""
-              className="absolute max-w-none object-cover"
-              style={{
-                left: pct(CARD_PHOTO_IN_MASK.left),
-                top: pct(CARD_PHOTO_IN_MASK.top),
-                width: pct(CARD_PHOTO_IN_MASK.width),
-                height: pct(CARD_PHOTO_IN_MASK.height),
-              }}
-            />
+            <img ref={firstImg} src={firstPhoto} alt="" className="absolute inset-0 size-full object-cover" />
+            {swipe && (
+              // eslint-disable-next-line @next/next/no-img-element -- 전환용 사진
+              <img ref={shownImg} src={t.photoSrc} alt="" className="absolute inset-0 size-full object-cover" />
+            )}
           </div>
-        )}
+        </div>
+        {/* 카드 속 사진 모양 — 같은 첫 사진, 같은 자리·구도 */}
+        <div
+          ref={waveLayer}
+          className="absolute inset-0 opacity-0"
+          style={{ maskImage: shape.mask, WebkitMaskImage: shape.mask, maskSize: "100% 100%", WebkitMaskSize: "100% 100%", maskRepeat: "no-repeat", WebkitMaskRepeat: "no-repeat" }}
+        >
+          <div ref={waveFrame} className="absolute inset-0">
+            {/* eslint-disable-next-line @next/next/no-img-element -- 전환용 사진 */}
+            <img src={firstPhoto} alt="" className="absolute inset-0 size-full object-cover" />
+          </div>
+        </div>
       </div>
       {t.chip && (
         <div

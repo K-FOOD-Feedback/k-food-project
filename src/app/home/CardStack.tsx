@@ -15,6 +15,9 @@ const IMAGE = { width: 402.251, height: 280.106, dx: 0.89, dy: -60 };
 const MASK = { x: 64.255, y: 1.914, width: 272.822, height: 271.214 };
 /** 사진 요소 안에서 모양 사진이 보이는 영역 (상세 화면 전환에서 사진의 출발 위치로 씀).
     모양 크기(scale)를 반영 — 사진 요소와 모양이 같은 가운데를 두고 함께 커지거나 작아짐 */
+/** 메인 카드 사진 = 상세 첫 사진 (상세에서 돌아올 때 같은 사진이 그대로 이어지게) */
+export const cardPhotoOf = (post: Post) => post.photos[0] ?? post.cardPhoto;
+
 export const cardMaskBox = (scale: number) => ({
   left: MASK.x * scale,
   top: MASK.y * scale,
@@ -270,7 +273,7 @@ export function CardStack({
 /** 카드 한 장 (Figma: KF/Feed Card) */
 function CardContent({ lang, post, voted, shape }: { lang: Lang; post: Post; voted: boolean; shape: CardShape }) {
   const en = lang === "en";
-  const photo = post.cardPhoto;
+  const photo = cardPhotoOf(post);
   const { mask, scale: k } = shape;
   const m = cardMaskBox(k);
   return (

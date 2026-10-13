@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { ShareKfoodButton } from "@/components/ShareKfoodButton";
 import { track, useTrackOnce } from "@/lib/analytics";
 import { measureCard, peekReturnTransition, setCardTransition } from "./cardTransition";
-import { CardStack, cardMaskBox, type Lang } from "./CardStack";
+import { CardStack, cardMaskBox, cardPhotoOf, type Lang } from "./CardStack";
 import { cardShapeAt } from "./cardShapes";
 import { MainHeader } from "./MainHeader";
 import { ReturnGhosts } from "./ReturnTransition";
@@ -57,7 +57,7 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
       setCardTransition({
         postId: post.id,
         ...measureCard(cardEl, cardMaskBox(shape.scale)),
-        cardPhoto: post.cardPhoto,
+        cardPhoto: cardPhotoOf(post),
         photoMask: shape.mask,
         color: post.color,
       });
@@ -88,7 +88,7 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
       </div>
 
       {returning && (
-        <ReturnGhosts transition={returning} cardPhoto={current.cardPhoto} post={current} shape={cardShapeAt(index)} onDone={() => setReturning(null)} />
+        <ReturnGhosts transition={returning} post={current} shape={cardShapeAt(index)} onDone={() => setReturning(null)} />
       )}
 
       {lang === "en" ? (
