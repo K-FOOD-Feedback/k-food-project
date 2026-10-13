@@ -83,7 +83,7 @@ export function DoneScreen() {
                     author="Sam · Canada"
                     photo={coverOf(post).src}
                     votesLabel="0 votes yet"
-                    questionLabel={getQuestion(post.questionId).label}
+                    questionLabel={post.questionId === "custom" ? post.voteQuestion : getQuestion(post.questionId).label}
                     color="bg-content"
                     scale={0.72}
                     priority

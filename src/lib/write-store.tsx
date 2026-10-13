@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -251,7 +252,9 @@ export function FlowProvider({ children }: { children: ReactNode }) {
     setState((s) => {
       const d = s.draft;
       const dish = d.dish || AI_DISH;
-      const vote = aiVoteFor(d.questionId, dish, d, variant);
+      const made = aiVoteFor(d.questionId, dish, d, variant);
+      // 직접 쓰기는 사용자가 쓴 질문을 그대로 둠 (선택지만 새로)
+      const vote = d.questionId === "custom" ? { ...made, voteQuestion: d.voteQuestion } : made;
       const ai = { ...d.ai, voteQuestion: vote.voteQuestion, options: vote.options };
       return { ...s, draft: { ...d, ...vote, ai, voteBasis: voteBasisOf({ ...d, dish }) } };
     });
@@ -355,6 +358,26 @@ export function FlowProvider({ children }: { children: ReactNode }) {
   const deleteMyPost = useCallback(() => {
     setState((s) => ({ ...s, myPost: null }));
   }, []);
+
+  /*
+    AI 흐름 — 화면과 상관없이 사진을 고른 순간부터 (메인에서 사진을 골라도, ① 화면에서 골라도)
+    사진 검사가 끝나면 음식 인식 → 알아본 순간 제목·본문 미리 쓰기
+    사진을 다 빼면 처음부터 · 이어 쓰는 초안(이미 음식·본문이 있음)은 다시 돌리지 않음
+  */
+  const photos = state.draft.photos;
+  const photosChecked = photos.length > 0 && photos.every((p) => p.check !== "checking" && p.check !== "not_food");
+  useEffect(() => {
+    // 상태 바꾸기는 다음 틱에 (그리는 중에 연달아 바뀌지 않게)
+    const t = window.setTimeout(() => {
+      if (photos.length === 0) {
+        if (state.ai.dish !== "idle" || state.draft.dish) resetAi();
+        return;
+      }
+      if (photosChecked && state.ai.dish === "idle" && !state.draft.dish) recognizeDish();
+      else if (state.ai.dish === "ready" && state.ai.story === "idle" && !state.draft.story) writeStory();
+    }, 0);
+    return () => window.clearTimeout(t);
+  }, [photos.length, photosChecked, state.ai.dish, state.ai.story, state.draft.dish, state.draft.story, recognizeDish, writeStory, resetAi]);
 
   const value = useMemo(
     () => ({

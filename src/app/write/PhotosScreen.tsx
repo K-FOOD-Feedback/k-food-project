@@ -10,6 +10,7 @@ import { usePhotoPicker } from "@/components/PhotoPicker";
 import { MAX_PHOTOS } from "@/lib/write-data";
 import { track } from "@/lib/analytics";
 import { coverOf, useFlow } from "@/lib/write-store";
+import { AnalyzingView } from "./AnalyzingView";
 import { DishCard, useDishFlow } from "./DishCard";
 import { PhotoCheckNotice } from "./PhotoCheckNotice";
 import { usePhotoActions } from "./usePhotoActions";
@@ -55,73 +56,80 @@ export function PhotosScreen({ backHref = "/home/en" }: { backHref?: string }) {
       />
       <StepProgress step={1} />
 
-      <div className="stagger flex flex-col gap-1 px-2">
-        {cover ? (
-          <div className="relative aspect-square w-full overflow-hidden rounded-[32px] bg-surface">
-            {/* 대표 사진이 바뀌면 부드럽게 교체 */}
-            <div key={cover.id} className="absolute inset-0 animate-fade-in">
-              <PhotoImage src={cover.src} sizes="(max-width: 430px) 100vw, 430px" priority />
-            </div>
-            {/* 대표 사진이 음식이 아니면 크게도 알려 줌 */}
-            {cover.check === "not_food" && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70 text-white">
-                <Icon name="alert" size={32} />
-                <span className="text-[15px] font-bold">This doesn&apos;t look like food</span>
+      {/* 사진을 고른 직후: 분석이 끝날 때까지 분석 화면 → 끝나면 결과와 함께 이 화면 */}
+      {dishFlow.analyzing ? (
+        <AnalyzingView />
+      ) : (
+        <div className="stagger flex flex-col gap-1 px-2">
+          {/* AI가 알아본 음식 — 사용자가 먼저 확인할 정보라 맨 위 */}
+          <DishCard onEditingChange={setEditingDish} />
+          {cover ? (
+            <div className="relative aspect-square w-full overflow-hidden rounded-[32px] bg-surface">
+              {/* 대표 사진이 바뀌면 부드럽게 교체 */}
+              <div key={cover.id} className="absolute inset-0 animate-fade-in">
+                <PhotoImage src={cover.src} sizes="(max-width: 430px) 100vw, 430px" priority />
               </div>
-            )}
-            <Chip className="absolute left-4 top-4">
-              <Icon name="check" size={14} strokeWidth={2.5} />
-              Cover
-            </Chip>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={onAdd}
-            className="flex aspect-square w-full flex-col items-center justify-center gap-3 rounded-[32px] border-[1.5px] border-dashed border-on-dark/40 bg-surface text-muted transition active:scale-[0.99]"
-          >
-            <span className="flex size-16 animate-float items-center justify-center rounded-full bg-primary text-on-light">
-              <Icon name="plus" size={28} />
-            </span>
-            <span className="text-[15px] font-semibold">Add photos of your dish</span>
-            <span className="text-[13px]">Up to {MAX_PHOTOS} photos</span>
-          </button>
-        )}
-
-        {draft.photos.length > 0 && (
-          <Tile>
-            <div className="px-5 pt-4 pb-3">
-              <PhotoGrid
-                photos={draft.photos}
-                onRemove={photo.remove}
-                onMove={photo.move}
-                onAdd={onAdd}
-              />
+              {/* 대표 사진이 음식이 아니면 크게도 알려 줌 */}
+              {cover.check === "not_food" && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70 text-white">
+                  <Icon name="alert" size={32} />
+                  <span className="text-[15px] font-bold">This doesn&apos;t look like food</span>
+                </div>
+              )}
+              <Chip className="absolute left-4 top-4">
+                <Icon name="check" size={14} strokeWidth={2.5} />
+                Cover
+              </Chip>
             </div>
-            <p className="px-5 pt-1 pb-5 text-[13px] leading-[1.4] text-muted">
-              Drag to reorder · The first photo is the cover · {draft.photos.length}/{MAX_PHOTOS}
-            </p>
-          </Tile>
-        )}
-        {draft.photos.length > 0 && (
-          <div className="px-2 pt-2 empty:hidden">
-            <PhotoCheckNotice step="photos" />
-          </div>
-        )}
-        {/* AI가 알아본 음식 — 맞는지 확인 (틀리면 고침) */}
-        <DishCard onEditingChange={setEditingDish} />
-      </div>
+          ) : (
+            <button
+              type="button"
+              onClick={onAdd}
+              className="flex aspect-square w-full flex-col items-center justify-center gap-3 rounded-[32px] border-[1.5px] border-dashed border-on-dark/40 bg-surface text-muted transition active:scale-[0.99]"
+            >
+              <span className="flex size-16 animate-float items-center justify-center rounded-full bg-primary text-on-light">
+                <Icon name="plus" size={28} />
+              </span>
+              <span className="text-[15px] font-semibold">Add photos of your dish</span>
+              <span className="text-[13px]">Up to {MAX_PHOTOS} photos</span>
+            </button>
+          )}
 
-      <StickyBottom>
-        <ArrowCta
-          title="Next"
-          compact
-          caption={dishFlow.working ? "Looking at your photos…" : undefined}
-          {...(dishFlow.canGo && !editingDish
-            ? { href: "/write/post", onClick: () => track("photos_completed", { count: draft.photos.length }) }
-            : { disabled: true })}
-        />
-      </StickyBottom>
+          {draft.photos.length > 0 && (
+            <Tile>
+              <div className="px-5 pt-4 pb-3">
+                <PhotoGrid
+                  photos={draft.photos}
+                  onRemove={photo.remove}
+                  onMove={photo.move}
+                  onAdd={onAdd}
+                />
+              </div>
+              <p className="px-5 pt-1 pb-5 text-[13px] leading-[1.4] text-muted">
+                Drag to reorder · The first photo is the cover · {draft.photos.length}/{MAX_PHOTOS}
+              </p>
+            </Tile>
+          )}
+          {draft.photos.length > 0 && (
+            <div className="px-2 pt-2 empty:hidden">
+              <PhotoCheckNotice step="photos" />
+            </div>
+          )}
+        </div>
+      )}
+
+      {!dishFlow.analyzing && (
+        <StickyBottom>
+          <ArrowCta
+            title="Next"
+            compact
+            caption={dishFlow.working ? "Looking at your photos…" : undefined}
+            {...(dishFlow.canGo && !editingDish
+              ? { href: "/write/post", onClick: () => track("photos_completed", { count: draft.photos.length }) }
+              : { disabled: true })}
+          />
+        </StickyBottom>
+      )}
 
       <Toast
         open={limitToast}

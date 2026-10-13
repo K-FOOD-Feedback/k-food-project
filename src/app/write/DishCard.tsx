@@ -8,33 +8,22 @@ import { useFlow } from "@/lib/write-store";
 import { usePhotoCheck } from "./PhotoCheckNotice";
 
 /**
- * ① 사진 화면 — AI가 알아본 음식 "Is this right?" (담당 송희)
- * - 사진 검사가 끝나면 음식을 알아봄 (검사 중이거나 음식 아닌 사진이 있으면 기다림)
- * - 알아본 순간 뒤에서 제목·본문을 미리 씀 → ②로 넘어가면 대부분 이미 써져 있음
+ * ① 사진 화면 맨 위 — AI가 알아본 음식 "Is this right?" (담당 송희)
+ * - 음식 인식은 사진을 고른 순간부터 (write-store) → 이 화면에 들어올 땐 보통 이미 끝나 있음
  * - Edit로 고치면 미리 쓰던 글은 버리고 고친 이름으로 다시 씀
- * - 이어 쓰는 초안(이미 음식·본문이 있음)은 다시 돌리지 않음
  */
 export function useDishFlow() {
-  const { draft, ai, recognizeDish, writeStory, resetAi } = useFlow();
+  const { draft, ai } = useFlow();
   const check = usePhotoCheck();
   const hasPhotos = draft.photos.length > 0;
-  const dishReady = ai.dish === "ready" || (ai.dish === "idle" && !!draft.dish);
-
-  // 사진 검사가 끝나면 음식 알아보기 / 사진을 다 빼면 처음부터
-  useEffect(() => {
-    if (!hasPhotos) {
-      if (ai.dish !== "idle" || draft.dish) resetAi();
-      return;
-    }
-    if (check.canGo && ai.dish === "idle" && !draft.dish) recognizeDish();
-  }, [hasPhotos, check.canGo, ai.dish, draft.dish, recognizeDish, resetAi]);
-
-  // 음식을 알아본 순간 본문 미리 쓰기
-  useEffect(() => {
-    if (ai.dish === "ready" && ai.story === "idle" && !draft.story) writeStory();
-  }, [ai.dish, ai.story, draft.story, writeStory]);
-
-  return { dishReady, working: hasPhotos && ai.dish === "working", canGo: hasPhotos && check.canGo && dishReady };
+  const dishReady = !!draft.dish && ai.dish !== "working";
+  return {
+    dishReady,
+    working: hasPhotos && ai.dish === "working",
+    canGo: hasPhotos && check.canGo && dishReady,
+    // 처음 사진을 고른 뒤 분석 중 (검사 중이거나 음식 인식 중, 아직 음식 모름) → 분석 화면
+    analyzing: hasPhotos && !draft.dish && check.notFood === 0 && (check.checking || ai.dish !== "ready"),
+  };
 }
 
 export function DishCard({ onEditingChange }: { onEditingChange?: (editing: boolean) => void }) {

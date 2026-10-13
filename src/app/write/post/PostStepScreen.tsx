@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 import { ArrowCta, IconButton } from "@/components/Buttons";
 import { TextField } from "@/components/Field";
 import { Icon } from "@/components/Icon";
@@ -20,13 +19,8 @@ import { WriteExit } from "../WriteExit";
 */
 export function PostStepScreen() {
   const router = useRouter();
-  const { draft, ai, updateDraft, writeStory, saveDraftForLater } = useFlow();
+  const { draft, ai, updateDraft, saveDraftForLater } = useFlow();
   const writing = ai.story === "working";
-
-  // ①을 거치지 않고 바로 들어왔는데 글이 없으면 여기서 씀 (이어 쓰기 등)
-  useEffect(() => {
-    if (ai.story === "idle" && !draft.story && draft.photos.length > 0) writeStory();
-  }, [ai.story, draft.story, draft.photos.length, writeStory]);
 
   const canNext = !writing && draft.title.trim().length > 0 && draft.story.trim().length > 0;
 

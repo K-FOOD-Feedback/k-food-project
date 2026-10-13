@@ -3,9 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowCta, IconButton } from "@/components/Buttons";
+import { TextField } from "@/components/Field";
 import { Icon } from "@/components/Icon";
 import { Screen, StepProgress, StickyBottom, Tile, TopBar } from "@/components/Layout";
-import { getQuestion, rankQuestions, voteBasisOf, type QuestionId } from "@/lib/write-data";
+import { getQuestion, rankQuestions, VOTE_TITLE_MAX, voteBasisOf, type QuestionId } from "@/lib/write-data";
 import { keptRatio, track } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
 import { OptionsEditor } from "../OptionsEditor";
@@ -20,6 +21,7 @@ const MAKING_MS = 1400;
   - 질문을 바꾸면 아래 투표가 그 질문에 맞게 바로 다시 만들어짐
   - 휠 = 투표 주제. 고른 주제 문구가 그대로 투표 질문 (예: "Did I add too much?")
     AI가 ②의 글을 보고 순서를 매겨 1순위를 미리 골라 둠
+  - 휠 맨 끝 "Write my own" → 질문을 직접 씀 (선택지는 AI가 무난하게 만들어 두고 고칠 수 있음)
   - AI가 사진 + 주제 + 제목·본문을 보고 선택지를 만듦 (2~4개, 고칠 수 있음)
   - ③에서 글을 고치고 오면 "선택지도 다시 맞출까요?" 안내 (자동으로 덮어쓰지 않음)
 */
@@ -135,6 +137,19 @@ export function VoteStepScreen() {
               />
             </div>
             <p className="px-5 text-center text-[13px] leading-[1.4] text-muted">{question.hint}</p>
+            {/* 휠 맨 끝 "Write my own" — 질문을 직접 씀 (이 문장이 투표 질문) */}
+            {draft.questionId === "custom" && (
+              <div className="animate-fade-in">
+                <TextField
+                  label="Your question"
+                  placeholder="e.g. Is cheese allowed on tteokbokki?"
+                  value={draft.voteQuestion}
+                  maxLength={VOTE_TITLE_MAX}
+                  onChange={(voteQuestion) => updateDraft({ voteQuestion })}
+                  onBlur={(v) => v && track("vote_title_edited", { length: v.length, source: "write_custom" })}
+                />
+              </div>
+            )}
           </div>
 
           {making ? (

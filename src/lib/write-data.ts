@@ -45,7 +45,8 @@ export type QuestionId =
   | "name"
   | "toomuch"
   | "nailed"
-  | "better";
+  | "better"
+  | "custom"; // 직접 쓰기 (휠 맨 끝)
 
 export type Question = {
   id: QuestionId;
@@ -73,6 +74,8 @@ export const QUESTIONS: Question[] = [
   { id: "toomuch", label: "Did I add too much?", hint: "Cheese, sauce, toppings… too much?", icon: "layers" }, // 너무 많이 넣었어요?
   { id: "nailed", label: "Did I nail it?", hint: "Tell me I got it right.", icon: "star" }, // 저 해냈어요?
   { id: "better", label: "Better than a Korean made it?", hint: "Bold question. Let them judge.", icon: "chef-hat" }, // 한국인이 만든 것보다 나아요?
+  // 직접 쓰기 — 항상 휠 맨 끝. 고르면 질문을 직접 씀 (투표 질문 = 쓴 문장)
+  { id: "custom", label: "Write my own", hint: "Ask anything, in your own words.", icon: "pencil" },
 ];
 
 export function getQuestion(id: QuestionId): Question {
@@ -163,10 +166,14 @@ export function aiVoteFor(
     toomuch: { q: `Too much ${main}?`, options: [[`Way too much 🙈`, `Just right 👌`, `Need more!`]] },
     nailed: { q: `Did I nail this ${dish}?`, options: [[`Nailed it 🎯`, `Almost 🤏`, `Not yet 😅`]] },
     better: { q: `Better than a Korean made it?`, options: [[`Yes, honestly 🏆`, `Same level`, `Nice try 😂`]] },
+    // 직접 쓴 질문 — 실제 AI는 쓴 문장을 보고 선택지를 만듦. 목업은 무난한 3개
+    custom: { q: "", options: [[`Yes 👍`, `Kind of 🤔`, `No 👎`]] },
   };
   const set = sets[questionId] ?? sets.line; // 예전 질문 id로 저장된 글도 깨지지 않게
   // 투표 질문은 고른 주제 문구 그대로 (예: "Did I add too much?") — 구체적인 문장(set.q)은 선택지 만들 때 참고만
-  return { voteQuestion: getQuestion(questionId).label, options: set.options[variant % set.options.length] };
+  // 직접 쓰기면 질문은 비워 두고 사용자가 씀
+  const voteQuestion = questionId === "custom" ? "" : getQuestion(questionId).label;
+  return { voteQuestion, options: set.options[variant % set.options.length] };
 }
 
 /**
@@ -179,8 +186,8 @@ export function rankQuestions(post: { title: string; story: string }): QuestionI
   if (/too |a lot|extra|lots of|chees|mozzarella/.test(t)) first.push("toomuch");
   if (/first time|my first|tried/.test(t)) first.push("nailed");
   if (/added|instead|mix|with /.test(t)) first.push("line");
-  const rest = QUESTIONS.map((q) => q.id).filter((id) => !first.includes(id));
-  return [...first, ...rest];
+  const rest = QUESTIONS.map((q) => q.id).filter((id) => !first.includes(id) && id !== "custom");
+  return [...first, ...rest, "custom"]; // 직접 쓰기는 항상 맨 끝
 }
 
 /** 투표가 만들어질 때 쓴 재료 — 이게 바뀌면 "선택지 다시 맞출까요?" */

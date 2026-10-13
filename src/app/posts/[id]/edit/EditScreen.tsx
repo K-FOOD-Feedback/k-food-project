@@ -136,7 +136,7 @@ export function EditScreen() {
               }`}
             >
               <Icon name={question.icon} size={18} />
-              <span className="text-[17px] font-bold">{question.label}</span>
+              <span className="text-[17px] font-bold">{form.questionId === "custom" ? form.voteQuestion : question.label}</span>
               <Icon name="lock" size={16} className="text-neutral-400" />
             </button>
           </div>
