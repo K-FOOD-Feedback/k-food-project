@@ -2,6 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
+import { ShareSheet } from "@/app/write/done/ShareSheet";
+import type { ShareCardPost } from "@/app/write/done/ShareCard";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type Ref } from "react";
 import { clearCardTransition, peekCardTransition, setReturnTransition, type Box } from "@/app/home/cardTransition";
 import { HOME_POSTS, participantsOf, type HomePost } from "@/app/home/mockPosts";
@@ -616,7 +619,7 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
         </div>
 
         {/* 투표 완료 후: 투표 ↔ 한마디 사이 공유 카드 (누르면 휴대폰·브라우저 공유창) — 한국인만 */}
-        {(voted || foreigner) && <ShareVoteCard post={post} lang={lang} title={titleOf(post)} foreigner={foreigner} />}
+        {(voted || foreigner) && <ShareVoteCard post={post} lang={lang} contentLang={contentLang} foreigner={foreigner} />}
 
         <div
           className="relative"
@@ -843,55 +846,37 @@ const EASE = "cubic-bezier(0.2, 0.8, 0.2, 1)";
 function ShareVoteCard({
   post,
   lang,
-  title,
+  contentLang,
   foreigner = false,
 }: {
   post: HomePost;
   lang: Lang;
-  title: string;
+  /** 공유 카드에 들어갈 글(제목·투표 칸) 언어 — 화면에 보이는 글과 같게 */
+  contentLang: Lang;
   /** 외국인 화면: 투표 없이 결과만 보므로 처음부터 보이고, 문구도 "한국인들의 생각"을 나누는 쪽으로 */
   foreigner?: boolean;
 }) {
   const T = DETAIL_COPY[lang];
-  const [toast, setToast] = useState<string | null>(null);
-  useEffect(() => {
-    if (!toast) return;
-    const t = window.setTimeout(() => setToast(null), 2200);
-    return () => window.clearTimeout(t);
-  }, [toast]);
-
-  const share = async () => {
-    const url = `${window.location.origin}/posts/${post.id}`;
-    if (navigator.share) {
-      try {
-        // 받는 사람이 한국인이든 외국인이든 읽을 수 있게 한국어·영어 같이
-        await navigator.share({
-          title,
-          text: foreigner
-            ? `${post.question.text}\n한국인들은 어떻게 생각할까? 같이 보자!\nWhat do Koreans think? Come see!`
-            : `${post.question.text}\n난 벌써 한 표 던졌어. 이제 네 차례!\nI already voted. Your turn!`,
-          url,
-        });
-        track("post_shared", { channel: "native", from: "detail_vote", post_id: post.id, viewer: foreigner ? "foreigner" : "korean" });
-      } catch {
-        // 사용자가 공유창을 닫음
-      }
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(url);
-      track("post_shared", { channel: "copy_link", from: "detail_vote", post_id: post.id, viewer: foreigner ? "foreigner" : "korean" });
-      setToast(T.copied);
-    } catch {
-      setToast(T.copyFail);
-    }
+  // 누르면 송희 공유 바텀시트(카드 디자인 고르기 + 저장·스토리·링크 복사·메시지…)를 띄움 — ⋯ 메뉴 "공유하기"와 같은 시트
+  const [open, setOpen] = useState(false);
+  const en = contentLang === "en";
+  const card: ShareCardPost = {
+    title: en ? post.en.title : post.title,
+    dish: en ? post.en.title : post.title,
+    photo: post.cardPhoto,
+    voteQuestion: post.question.text,
+    options: ((en && post.en.options) || post.question.options).map((o) => o.replace(/\n/g, " ")),
+    author: `${post.author.flag} ${post.author.name}`,
   };
 
   return (
     <>
       <button
         type="button"
-        onClick={share}
+        onClick={() => {
+          track("share_sheet_opened", { from: "detail_vote", post_id: post.id, viewer: foreigner ? "foreigner" : "korean" });
+          setOpen(true);
+        }}
         className="flex w-full items-center gap-4 rounded-[32px] bg-secondary py-5 pr-4 pl-7 text-left text-on-light transition-[scale,opacity,translate] duration-500 active:scale-[0.98] starting:translate-y-3 starting:opacity-0"
       >
         <span className="flex min-w-0 flex-1 flex-col gap-1">
@@ -907,14 +892,12 @@ function ShareVoteCard({
           <Icon name="share" />
         </span>
       </button>
-      {toast && (
-        <p
-          role="status"
-          className="fixed bottom-[calc(24px+env(safe-area-inset-bottom))] left-1/2 z-40 -translate-x-1/2 rounded-full bg-on-dark px-5 py-3 text-[15px] font-semibold whitespace-nowrap text-on-light"
-        >
-          {toast}
-        </p>
-      )}
+      {/* 상세 내용은 넘기기·전환 때 움직이므로(transform) 시트는 body에 띄움 */}
+      {open &&
+        createPortal(
+          <ShareSheet open onClose={() => setOpen(false)} postId={post.id} post={card} from="detail_menu" lang={lang} />,
+          document.body,
+        )}
     </>
   );
 }
