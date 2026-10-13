@@ -223,8 +223,12 @@ function LanguagePicker({
                 track("auto_translate_toggled", { on: !autoTranslate, screen: from, viewer: en ? "foreigner" : "korean" });
                 setAutoTranslate(!autoTranslate);
               }}
-              className="flex w-full items-center gap-3 rounded-[32px] bg-surface-2 py-3 pr-3 pl-5 text-left text-white transition-transform active:scale-[0.97]"
+              className="relative flex w-full items-center gap-3 rounded-[32px] bg-surface-2 py-3 pr-3 pl-5 text-left text-white transition-transform active:scale-[0.97]"
             >
+              {/* 켜 두기를 권하는 표시 — 칸 위쪽 테두리에 걸쳐 붙임 */}
+              <span className="absolute -top-2.5 left-5 rounded-full bg-secondary px-2.5 py-1 text-[11px] leading-none font-bold text-background">
+                {en ? "Recommended" : "추천"}
+              </span>
               <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span className="font-(family-name:--font-paperlogy) text-[16px] leading-[1.3] tracking-[-0.32px]">자동 번역</span>
                 <span className="font-display text-[18px] leading-[1.3] tracking-[-0.36px]">Auto-translate</span>
