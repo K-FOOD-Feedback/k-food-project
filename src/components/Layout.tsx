@@ -15,7 +15,9 @@ export function Screen({
   className?: string;
 }) {
   return (
-    <main className={`relative mx-auto flex min-h-dvh w-full max-w-[430px] flex-col text-on-dark ${bg} ${className}`}>
+    <main
+      className={`relative mx-auto flex min-h-dvh w-full max-w-[430px] flex-col text-on-dark ${bg} ${className}`}
+    >
       {children}
     </main>
   );
@@ -40,20 +42,29 @@ export function TopBar({
 }) {
   return (
     // 위치·간격은 공통 상단 바(PageHeader)와 같게 — 위·아래·좌우 8px, 버튼 64px(IconButton), 버튼 사이 4px
-    <header
-      className={`${sticky ? "sticky top-0 z-30" : "relative"} ${bg} pt-[calc(8px+env(safe-area-inset-top))] pb-2`}
-    >
-      <div className="relative flex h-16 items-center gap-1 px-2">
-        <div className="flex items-center gap-1">{left}</div>
-        <div className="flex-1" />
-        <div className="flex items-center gap-1">{right}</div>
-        {title && (
-          <h1 className="pointer-events-none absolute left-1/2 top-1/2 w-[219px] -translate-x-1/2 -translate-y-1/2 text-center font-display text-[20px] leading-[1.15] text-on-dark">
-            {title}
-          </h1>
-        )}
-      </div>
-    </header>
+    // sticky(기본)면 화면 맨 위에 고정(fixed)하고, 헤더 높이만큼 빈 자리를 같이 둠
+    <>
+      {sticky && (
+        <div
+          aria-hidden
+          className="h-[calc(80px+env(safe-area-inset-top))] shrink-0"
+        />
+      )}
+      <header
+        className={`${sticky ? "fixed inset-x-0 top-0 z-30 mx-auto w-full max-w-[430px]" : "relative"} ${bg} pt-[calc(8px+env(safe-area-inset-top))] pb-2`}
+      >
+        <div className="relative flex h-16 items-center gap-1 px-2">
+          <div className="flex items-center gap-1">{left}</div>
+          <div className="flex-1" />
+          <div className="flex items-center gap-1">{right}</div>
+          {title && (
+            <h1 className="pointer-events-none absolute left-1/2 top-1/2 w-[219px] -translate-x-1/2 -translate-y-1/2 text-center font-display text-[20px] leading-[1.15] text-on-dark">
+              {title}
+            </h1>
+          )}
+        </div>
+      </header>
+    </>
   );
 }
 
@@ -129,7 +140,10 @@ export function BottomSheet({
         tabIndex={-1}
         className="absolute inset-x-0 bottom-0 mx-auto flex w-full max-w-[430px] animate-sheet-up flex-col items-center gap-6 rounded-t-[32px] bg-surface px-2 pt-3 pb-[calc(28px+env(safe-area-inset-bottom))] text-on-dark outline-none"
       >
-        <div className="h-1 w-10 shrink-0 rounded-full bg-white/20" aria-hidden="true" />
+        <div
+          className="h-1 w-10 shrink-0 rounded-full bg-white/20"
+          aria-hidden="true"
+        />
         {children}
       </div>
     </div>,
@@ -174,7 +188,12 @@ export function Toast({
           </p>
           {body && <p className="opacity-70">{body}</p>}
         </div>
-        <button type="button" onClick={onClose} aria-label="Close" className="shrink-0">
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="shrink-0"
+        >
           <Icon name="x" size={20} />
         </button>
       </div>
@@ -193,11 +212,23 @@ export function Tile({
   className?: string;
   as?: "section" | "div";
 }) {
-  return <Tag className={`flex w-full flex-col gap-1 overflow-hidden rounded-[32px] bg-surface p-1 ${className}`}>{children}</Tag>;
+  return (
+    <Tag
+      className={`flex w-full flex-col gap-1 overflow-hidden rounded-[32px] bg-surface p-1 ${className}`}
+    >
+      {children}
+    </Tag>
+  );
 }
 
 /** 작성 단계 진행 바 (Photos · Post · Question+Vote) */
-export function StepProgress({ step, total = 3 }: { step: number; total?: number }) {
+export function StepProgress({
+  step,
+  total = 3,
+}: {
+  step: number;
+  total?: number;
+}) {
   return (
     <div
       className="flex gap-1 px-2 pb-3"
