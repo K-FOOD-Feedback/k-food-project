@@ -18,15 +18,16 @@ export type Lang = "ko" | "en";
 
 // 카드 크기·위치는 Figma(node 259:7795) 기준이고 가로 가운데 정렬입니다.
 // 뒤에 깔린 카드들은 앞 카드를 회전·축소한 것이라, 모든 자리를 앞 카드의 transform으로 표현합니다.
-// 투표 주제 칩을 빼면서 사진~제목 사이가 비지 않게 카드 높이를 24px 줄임 (Figma 438.578). 사진은 위에서 같은 자리에 두려고 dy를 절반만큼 내림
+// 투표 주제 칩을 빼면서 사진~제목 사이가 비지 않게 카드 높이를 줄이고(Figma 438.578 → -24), 제목~닉네임 간격 8px을 늘린 만큼 다시 +8.
+// 사진은 위에서 같은 자리에 두려고 높이 변화의 절반만큼 dy를 옮김
 const CARD = {
   left: 31.3,
   top: 31.61,
   width: 312.4,
-  height: 414.578,
+  height: 422.578,
   radius: 34.808,
 };
-const IMAGE = { width: 402.251, height: 280.106, dx: 0.89, dy: -48 };
+const IMAGE = { width: 402.251, height: 280.106, dx: 0.89, dy: -52 };
 const MASK = { x: 64.255, y: 1.914, width: 272.822, height: 271.214 };
 /** 사진 요소 안에서 모양 사진이 보이는 영역 (상세 화면 전환에서 사진의 출발 위치로 씀).
     모양 크기(scale)를 반영 — 사진 요소와 모양이 같은 가운데를 두고 함께 커지거나 작아짐 */
@@ -465,11 +466,11 @@ function CardContent({
       )}
 
       <span className="absolute right-5 bottom-5 left-5 flex flex-col items-start gap-2 text-black">
-        {/* 제목 — 줄 수 제한(line-clamp)에 g·p 같은 글자 아래가 잘리지 않게 아래 8px 여유(pb-2), 배치는 그대로(-mb-2)
+        {/* 제목 — 줄 수 제한(line-clamp)에 g·p 같은 글자 아래가 잘리지 않게 아래 8px 여유(pb-2) — 이 8px이 제목~닉네임 간격에 더해짐
             한국어는 상세 제목과 같은 Paperlogy, 영어는 Gilroy를 한글 크기에 맞춘 font-title-en (행간 0.15 좁게) */}
         <span
           // 띄어쓰기 없는 긴 단어도 칸 안에서 줄을 바꾸고, 3줄을 넘으면 … (제목 글자 수 한도 TITLE_MAX가 3줄에 맞춰져 있음 — …는 번역이 길어질 때의 안전장치, 점검 화면 /dev/edge-cases)
-          className={`-mb-2 w-full pb-2 text-[23px] font-extrabold tracking-[-0.69px] break-keep text-balance [overflow-wrap:anywhere] ${
+          className={`w-full pb-2 text-[23px] font-extrabold tracking-[-0.69px] break-keep text-balance [overflow-wrap:anywhere] ${
             enTitle
               ? "line-clamp-3 font-title-en leading-[1.03]"
               : "line-clamp-3 font-(family-name:--font-paperlogy) leading-[1.18]"
