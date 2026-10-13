@@ -22,8 +22,10 @@ import { COPY, REACTIONS, SAMPLE_PCTS, type LandingLang } from "./copy";
 // 스크롤 이야기 구간 (0~1)
 const STEP_AT = [0, 0.1, 0.42, 0.74];
 // 스크롤이 멈추는 자리 (진행도). 섹션 높이 400svh - 화면 100svh = 300svh 기준
-// 한마디는 스크롤 한 번에 하나씩 (0.5 · 0.58 · 0.66)
-const SNAP_AT = [0, 0.345, 0.5, 0.58, 0.66, 0.83, 1];
+// 한마디는 스크롤 한 번(0.5)에 첫 번째가 오고, 두·세 번째는 스크롤 없이 시간차로 이어서 옴
+const SNAP_AT = [0, 0.345, 0.5, 0.83, 1];
+/** 첫 한마디가 붙은 뒤 나머지 둘이 이어서 오는 시간 */
+const TALK_MS = 1500;
 
 const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 /** p가 a→b 사이에서 0→1 */
@@ -237,6 +239,29 @@ export function LandingScreen() {
     return () => window.clearInterval(id);
   }, []);
   const typed = Math.min(t.story.length, Math.max(clock - 36, 0));
+
+  // 한마디: 첫 번째가 붙으면(p≈0.5) 두·세 번째는 시간 따라 저절로 (talk 0→1), 위로 돌아가면 빠르게 되감음
+  const [talk, setTalk] = useState(0);
+  const talkRef = useRef(0);
+  const talkOn = p >= 0.495;
+  useEffect(() => {
+    const goal = talkOn ? 1 : 0;
+    let frame = 0;
+    let last = 0;
+    const tick = (now: number) => {
+      const dt = last ? Math.min(now - last, 64) : 16;
+      last = now;
+      const v = talkRef.current;
+      const next = noMotion() ? goal : clamp(v + (talkOn ? dt / TALK_MS : (-dt / TALK_MS) * 3));
+      talkRef.current = next;
+      setTalk(next);
+      if (next !== goal) frame = requestAnimationFrame(tick);
+    };
+    if (talkRef.current !== goal) frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [talkOn]);
+  // 두·세 번째 한마디가 쓰는 진행도: 스크롤 위치와 시간 중 앞선 쪽
+  const talkP = Math.max(p, 0.5 + 0.16 * talk);
 
   return (
     <main className="mx-auto w-full max-w-[430px] bg-background text-on-dark">
@@ -454,13 +479,13 @@ export function LandingScreen() {
               lang={lang}
               r={REACTIONS[1]}
               className="-right-2 top-[17%] max-w-[200px] bg-content"
-              style={fly(p, 0.52, 0.58, { x: 300, y: 20, r: 25 }, 5)}
+              style={fly(talkP, 0.52, 0.58, { x: 300, y: 20, r: 25 }, 5)}
             />
             <Bubble
               lang={lang}
               r={REACTIONS[2]}
               className="-left-1 top-[30%] bg-lilac"
-              style={fly(p, 0.6, 0.66, { x: -300, y: 60, r: -20 }, 3)}
+              style={fly(talkP, 0.6, 0.66, { x: -300, y: 60, r: -20 }, 3)}
             />
           </div>
           </div>
