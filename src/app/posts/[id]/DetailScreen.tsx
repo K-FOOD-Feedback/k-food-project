@@ -143,6 +143,7 @@ export function DetailScreen({ post }: { post: HomePost }) {
   const [intro] = useState(() => peekCardTransition(post.id));
   const [introDone, setIntroDone] = useState(!intro);
   const tileRef = useRef<HTMLDivElement>(null);
+  const shownPhoto = useRef(0); // 사진 칸에서 지금 보고 있는 사진 번호
   const articleRef = useRef<HTMLElement>(null);
   const chipRef = useRef<HTMLParagraphElement>(null);
   const ctaRef = useRef<HTMLButtonElement>(null);
@@ -239,7 +240,8 @@ export function DetailScreen({ post }: { post: HomePost }) {
       return {
         postId: post.id,
         photo: toBox(tile.getBoundingClientRect()),
-        photoSrc: post.photos[0],
+        // 떠날 때 보고 있던 사진 (메인이 이 사진에서 첫 사진으로 넘긴 뒤 카드로 합침)
+        photoSrc: post.photos[shownPhoto.current] ?? post.photos[0],
         card: toBox(article.getBoundingClientRect()),
         color: post.color,
         ...(chip && { chip: toBox(chip.getBoundingClientRect()) }),
@@ -550,6 +552,9 @@ export function DetailScreen({ post }: { post: HomePost }) {
             title={post.title}
             chipRef={chipRef}
             hideChip={!!intro?.sticker && !introDone}
+            onShow={(i) => {
+              shownPhoto.current = i;
+            }}
           />
         </div>
 
@@ -849,6 +854,7 @@ function PhotoTile({
   title,
   chipRef,
   hideChip = false,
+  onShow,
 }: {
   postId: string;
   photos: string[];
@@ -857,6 +863,8 @@ function PhotoTile({
   chipRef?: Ref<HTMLParagraphElement>;
   /** 메인 카드 스티커에서 이어지는 전환 중에는 숨김 */
   hideChip?: boolean;
+  /** 지금 보이는 사진 번호가 바뀔 때 (메인으로 돌아갈 때 보던 사진을 넘기려고) */
+  onShow?: (index: number) => void;
 }) {
   const [index, setIndex] = useState(0);
   const furthest = useRef(0); // 분석: 몇 번째 사진까지 봤는지
@@ -978,6 +986,7 @@ function PhotoTile({
           const slot = Math.round(el.scrollLeft / el.clientWidth);
           const next = (slot - 1 + count) % count;
           setIndex(next);
+          onShow?.(next);
           if (next > furthest.current) {
             furthest.current = next;
             track("photo_swiped", { post_id: postId, index: next, total: count });
