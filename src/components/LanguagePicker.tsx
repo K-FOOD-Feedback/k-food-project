@@ -158,8 +158,13 @@ function LanguagePicker({
   };
 
   return (
-    // 바깥(430px 틀 밖)은 비워 두고 누르는 것만 막음
-    <div className="fixed inset-0 z-40">
+    // 배경(언어 버튼·자동 번역 스위치·닫기 버튼이 아닌 곳)을 누르면 닫힘 — 430px 틀 밖도 마찬가지 (바텀시트와 같은 동작)
+    <div
+      className="fixed inset-0 z-40"
+      onClick={(e) => {
+        if (!(e.target as Element).closest("button, a, input")) onClose();
+      }}
+    >
       <div
         role="dialog"
         aria-modal="true"
