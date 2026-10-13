@@ -124,11 +124,12 @@ export function VoteStepScreen() {
           </Tile>
         )}
 
-        <Tile>
+        {/* 바깥 카드 없이 — 위아래로 굴리는 질문 휠만 카드로 감쌈 */}
+        <div className="flex flex-col">
           {/* 한국인에게 물어볼 질문 — 투표 주제 — iOS 알람처럼 위아래로 굴려서 고르기. 가운데 띠가 선택, 처음엔 AI 추천 1순위 */}
-          <div className="flex flex-col gap-2 pt-5 pb-1">
+          <div className="flex flex-col gap-3 pt-3 pb-1">
             <h2 className="px-5 font-display text-[20px] leading-[1.2]">What do you want to ask?</h2>
-            <div className="px-3">
+            <div className="rounded-[32px] bg-surface px-3 py-2">
               <QuestionWheel
                 items={ranked}
                 value={draft.questionId}
@@ -174,7 +175,7 @@ export function VoteStepScreen() {
               </div>
             </div>
           )}
-        </Tile>
+        </div>
 
         <p className="flex items-center gap-1.5 px-6 pt-3 text-[13px] font-medium leading-[1.3] text-muted">
           <Icon name="info" size={14} />

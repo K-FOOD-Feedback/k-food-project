@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { ArrowCta, IconButton } from "@/components/Buttons";
 import { TextField } from "@/components/Field";
 import { Icon } from "@/components/Icon";
-import { Screen, StepProgress, StickyBottom, Tile, TopBar } from "@/components/Layout";
+import { Screen, StepProgress, StickyBottom, TopBar } from "@/components/Layout";
 import { STORY_MAX, TITLE_MAX } from "@/lib/write-data";
 import { keptRatio, track } from "@/lib/analytics";
 import { currentFrom, withFrom } from "@/lib/back";
@@ -45,7 +45,8 @@ export function PostStepScreen() {
       <StepProgress step={2} />
 
       <div className="stagger flex flex-col gap-1 px-2">
-        <Tile>
+        {/* 바깥 카드 없이 입력칸만 */}
+        <div>
           {writing ? (
             <WritingSkeleton dish={draft.dish} />
           ) : (
@@ -61,7 +62,7 @@ export function PostStepScreen() {
               <div className="pb-2" />
             </div>
           )}
-        </Tile>
+        </div>
 
         <p className="flex items-center gap-1.5 px-6 pt-3 text-[13px] font-medium leading-[1.3] text-muted">
           <Icon name="info" size={14} />
