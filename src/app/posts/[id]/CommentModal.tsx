@@ -5,6 +5,7 @@ import { Icon } from "@/components/Icon";
 import { HEADER_BUTTON, PageHeader } from "@/components/PageHeader";
 import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type FormEvent, type Ref } from "react";
 import { COMMENT_MAX, type Comment } from "./comments";
+import { COMMENTS_COPY, type CommentsCopy, type Lang } from "./copy";
 import { HIDDEN_COLOR } from "./hidden";
 import { splitLines } from "./GravityPile";
 
@@ -43,6 +44,7 @@ export function CommentModal({
   onDeleteReply,
   onReport,
   hiddenIds,
+  lang = "ko",
 }: {
   comment: Comment;
   /** 이 한마디 아래 모든 답글 — 답글에 단 답글 포함 (오래된 순) */
@@ -60,7 +62,10 @@ export function CommentModal({
   onReport: (id: string, reason: string) => void;
   /** 내가 신고해서 가린 한마디 (회색, 누를 수 없음) */
   hiddenIds: Set<string>;
+  /** 화면 문구 언어 (한마디 전체 화면의 지구본으로 바꿈) */
+  lang?: Lang;
 }) {
+  const t = COMMENTS_COPY[lang];
   const closeButton = useRef<HTMLButtonElement>(null);
   const root = useRef<HTMLDivElement>(null);
   const rootCard = useRef<HTMLDivElement>(null);
@@ -343,7 +348,7 @@ export function CommentModal({
       ref={root}
       role="dialog"
       aria-modal="true"
-      aria-label={`한마디: ${comment.text.replace(/\n/g, " ")}`}
+      aria-label={t.layer(comment.text.replace(/\n/g, " "))}
       className="fixed inset-y-0 left-1/2 z-40 w-full max-w-[430px] -translate-x-1/2"
     >
       {/* 흐린 배경 — 눌러도 닫힘. 어둡기와 흐림을 0부터 같이 올립니다
@@ -360,7 +365,7 @@ export function CommentModal({
         <div className="relative z-30">
         <PageHeader
           left={
-            <button ref={closeButton} type="button" onClick={back} aria-label={editing ? "수정 취소" : "닫기"} className={HEADER_BUTTON}>
+            <button ref={closeButton} type="button" onClick={back} aria-label={editing ? t.cancelEdit : t.close} className={HEADER_BUTTON}>
               <Icon name="x" />
             </button>
           }
@@ -369,7 +374,7 @@ export function CommentModal({
               <button
                 type="button"
                 onClick={finishEdit}
-                aria-label="수정 완료"
+                aria-label={t.doneEdit}
                 className="flex size-16 shrink-0 items-center justify-center rounded-full bg-white text-black transition-transform active:scale-95"
               >
                 <Icon name="check" />
@@ -377,10 +382,10 @@ export function CommentModal({
             ) : (
               canEdit && (
                 <>
-                  <button type="button" onClick={() => startEdit(comment)} aria-label="한마디 수정" className={HEADER_BUTTON}>
+                  <button type="button" onClick={() => startEdit(comment)} aria-label={t.editComment} className={HEADER_BUTTON}>
                     <Icon name="pencil" />
                   </button>
-                  <button type="button" onClick={onDelete} aria-label="한마디 삭제" className={HEADER_BUTTON}>
+                  <button type="button" onClick={onDelete} aria-label={t.deleteComment} className={HEADER_BUTTON}>
                     <Icon name="trash" />
                   </button>
                 </>
@@ -400,8 +405,8 @@ export function CommentModal({
             style={{ background: comment.color }}
           >
             <p className="text-center text-[22px] leading-[1.45] font-bold tracking-[-0.44px] whitespace-pre-line text-black">{lines}</p>
-            <Badges comment={comment} replies={replyCounts.get(comment.id) ?? 0} card />
-            {comment.edited && <span className="absolute bottom-3 text-[12px] leading-none font-semibold text-black/50">수정됨</span>}
+            <Badges comment={comment} replies={replyCounts.get(comment.id) ?? 0} t={t} card />
+            {comment.edited && <span className="absolute bottom-3 text-[12px] leading-none font-semibold text-black/50">{t.edited}</span>}
           </div>
         </div>
 
@@ -409,7 +414,7 @@ export function CommentModal({
         <div className="relative min-h-0 flex-1">
           {replies.length === 0 ? (
             <p className="absolute inset-0 flex items-center justify-center text-center text-[20px] leading-[1.45] font-extrabold tracking-[-0.4px] whitespace-pre-line text-white/70">
-              {"이 한마디에 대해\n어떻게 생각하나요?"}
+              {t.emptyReplies}
             </p>
           ) : (
             <div
@@ -468,8 +473,8 @@ export function CommentModal({
                             {r.author.kind === "korean" ? "🇰🇷" : r.author.flag}
                           </span>
                           {splitLines(r.text.replace(/\n/g, " ")).join("\n")}
-                          {r.edited && !isHidden && <span className="self-end pb-1 text-[11px] leading-none font-semibold text-black/45">수정됨</span>}
-                          <Badges comment={r} replies={replyCounts.get(r.id) ?? 0} />
+                          {r.edited && !isHidden && <span className="self-end pb-1 text-[11px] leading-none font-semibold text-black/45">{t.edited}</span>}
+                          <Badges comment={r} replies={replyCounts.get(r.id) ?? 0} t={t} />
                         </p>
                         {/* 가운데 답글을 누르면 오른쪽에 펼쳐지는 버튼 (펼치는 동안 말풍선이 왼쪽으로 비켜남) */}
                         <div
@@ -481,7 +486,7 @@ export function CommentModal({
                         >
                           {r.mine ? (
                             <>
-                              <button type="button" tabIndex={active ? 0 : -1} onClick={() => startEdit(r)} aria-label="답글 수정" className={REPLY_BUTTON}>
+                              <button type="button" tabIndex={active ? 0 : -1} onClick={() => startEdit(r)} aria-label={t.editReply} className={REPLY_BUTTON}>
                                 <Icon name="pencil" />
                               </button>
                               <button
@@ -492,7 +497,7 @@ export function CommentModal({
                                   if (target?.id === r.id) setTarget(null);
                                   onDeleteReply(r.id);
                                 }}
-                                aria-label="답글 삭제"
+                                aria-label={t.deleteReply}
                                 className={REPLY_BUTTON}
                               >
                                 <Icon name="trash" />
@@ -506,7 +511,7 @@ export function CommentModal({
                                 setActiveId(null);
                                 setReporting(r);
                               }}
-                              aria-label="답글 신고"
+                              aria-label={t.reportReply}
                               className={REPLY_BUTTON}
                             >
                               <ReportIcon />
@@ -533,7 +538,7 @@ export function CommentModal({
                 <button
                   type="button"
                   onClick={() => setTarget(null)}
-                  aria-label="답글 대상 취소"
+                  aria-label={t.cancelReplyTo}
                   className="flex size-7 shrink-0 items-center justify-center rounded-full text-white/60"
                 >
                   <Icon name="x" size={16} />
@@ -541,12 +546,12 @@ export function CommentModal({
               </div>
             )}
           <label className="flex h-16 min-w-0 items-center gap-2 px-5">
-            <span className="sr-only">답글 남기기</span>
+            <span className="sr-only">{t.leaveReplyLabel}</span>
             <input
               ref={input}
               value={draft}
               onChange={(e) => setDraft(e.target.value.slice(0, COMMENT_MAX))}
-              placeholder="답글을 남겨보세요"
+              placeholder={t.leaveReply}
               enterKeyHint="send"
               tabIndex={editing ? -1 : 0}
               className="min-w-0 flex-1 bg-transparent text-[16px] text-on-dark outline-none placeholder:text-white/40"
@@ -559,7 +564,7 @@ export function CommentModal({
           <button
             type="submit"
             disabled={!draft.trim()}
-            aria-label="답글 보내기"
+            aria-label={t.sendReply}
             tabIndex={editing ? -1 : 0}
             className="flex size-16 shrink-0 items-center justify-center rounded-full bg-white transition-transform active:scale-90"
           >
@@ -579,18 +584,20 @@ export function CommentModal({
           container={() => root.current}
           source={editSource}
           onClosed={() => setEditTarget(null)}
+          t={t}
         />
       )}
 
       {reporting && (
         <ReportDialog
+          t={t}
           reply={reporting}
           onCancel={() => setReporting(null)}
           onSubmit={(reason) => {
             onReport(reporting.id, reason);
             if (target?.id === reporting.id) setTarget(null);
             setReporting(null);
-            setToast("신고가 접수됐어요");
+            setToast(t.reported);
           }}
         />
       )}
@@ -699,6 +706,7 @@ function EditCard({
   container,
   source,
   onClosed,
+  t,
 }: {
   ref: Ref<EditCardHandle>;
   comment: Comment;
@@ -708,6 +716,7 @@ function EditCard({
   container: () => HTMLElement | null;
   source: () => HTMLElement | null;
   onClosed: () => void;
+  t: CommentsCopy;
 }) {
   const card = useRef<HTMLDivElement>(null);
   const flipper = useRef<HTMLDivElement>(null);
@@ -799,12 +808,12 @@ function EditCard({
             <p className="text-center text-[22px] leading-[1.45] font-bold tracking-[-0.44px] whitespace-pre-line text-black">
               {splitLines(front.text.replace(/\n/g, " ")).join("\n")}
             </p>
-            {front.edited && <span className="absolute bottom-3 text-[12px] leading-none font-semibold text-black/50">수정됨</span>}
+            {front.edited && <span className="absolute bottom-3 text-[12px] leading-none font-semibold text-black/50">{t.edited}</span>}
           </div>
           {/* 뒷면: 수정 칸 */}
           <div className="absolute inset-0 flex rotate-y-180 items-center justify-center rounded-[32px] bg-surface-2 px-10 shadow-[0_4px_15px_rgba(0,0,0,0.25)] backface-hidden">
             <label className="w-full">
-              <span className="sr-only">한마디 고치기</span>
+              <span className="sr-only">{t.editLabel}</span>
               <textarea
                 ref={field}
                 value={draft}
@@ -837,14 +846,14 @@ const EDIT_H = 130;
   말풍선 위 뱃지 (더미 말풍선 태그와 같은 모양, 조금 크게): 나 / 글쓴이, 답글이 달렸으면 ↪ 답글 수
   card: 원글 카드 — 카드 안쪽 위에 붙임
 */
-function Badges({ comment, replies, card = false }: { comment: Comment; replies: number; card?: boolean }) {
-  const who = comment.mine ? "나" : comment.author.kind === "author" ? "글쓴이" : null;
+function Badges({ comment, replies, t, card = false }: { comment: Comment; replies: number; t: CommentsCopy; card?: boolean }) {
+  const who = comment.mine ? t.me : comment.author.kind === "author" ? t.author : null;
   if (!who && !replies) return null;
   return (
     <span className={`absolute flex gap-1 ${card ? "top-3 left-1/2 -translate-x-1/2" : "-top-2.5 left-6"}`}>
       {who && <span className={BADGE}>{who}</span>}
       {replies > 0 && (
-        <span className={`${BADGE} gap-0.5 pl-1.5`} aria-label={`답글 ${replies}개`}>
+        <span className={`${BADGE} gap-0.5 pl-1.5`} aria-label={t.replyCount(replies)}>
           <ReplyArrowIcon size={12} />
           {replies}
         </span>
@@ -859,7 +868,17 @@ const BADGE = "flex h-[22px] items-center rounded-full bg-black px-2 text-[12px]
   답글 신고 확인 모달 — 답글 레이어 위에 한 겹 더 뜹니다.
   이유를 적어야 신고할 수 있고, 신고하면 그 답글은 내 화면에서 가려진다고 알려 줍니다.
 */
-function ReportDialog({ reply, onCancel, onSubmit }: { reply: Comment; onCancel: () => void; onSubmit: (reason: string) => void }) {
+function ReportDialog({
+  reply,
+  onCancel,
+  onSubmit,
+  t,
+}: {
+  reply: Comment;
+  onCancel: () => void;
+  onSubmit: (reason: string) => void;
+  t: CommentsCopy;
+}) {
   const [reason, setReason] = useState("");
   const field = useRef<HTMLTextAreaElement>(null);
   useEffect(() => field.current?.focus(), []);
@@ -881,18 +900,18 @@ function ReportDialog({ reply, onCancel, onSubmit }: { reply: Comment; onCancel:
       >
         <div className="flex flex-col gap-2">
           <h2 id="report-title" className="font-display text-[22px] leading-[1.25]">
-            이 답글을 신고할까요?
+            {t.reportTitle}
           </h2>
           <p className="truncate text-[15px] leading-[1.5] text-white/60">“{reply.text.replace(/\n/g, " ")}”</p>
         </div>
         <label className="flex flex-col gap-2">
-          <span className="text-[14px] font-semibold">왜 신고하려고 하나요?</span>
+          <span className="text-[14px] font-semibold">{t.reportAsk}</span>
           <textarea
             ref={field}
             value={reason}
             onChange={(e) => setReason(e.target.value.slice(0, REPORT_MAX))}
             rows={3}
-            placeholder="신고하는 이유를 적어주세요"
+            placeholder={t.reportPlaceholder}
             className="resize-none rounded-[20px] bg-surface-2 px-4 py-3 text-[15px] leading-[1.5] outline-none placeholder:text-white/40"
           />
           <span className="self-end text-[12px] text-white/40">
@@ -901,14 +920,14 @@ function ReportDialog({ reply, onCancel, onSubmit }: { reply: Comment; onCancel:
         </label>
         <p className="flex items-start gap-2 text-[14px] leading-[1.5] text-white/70">
           <Icon name="info" size={18} className="mt-0.5 shrink-0" />
-          신고하면 이 답글은 내 화면에서 가려져요. 확인한 뒤 조치할게요.
+          {t.reportNote}
         </p>
         <div className="flex gap-1">
           <PillButton tone="soft" onClick={onCancel}>
-            취소
+            {t.cancel}
           </PillButton>
           <PillButton type="submit" tone={ok ? "error" : "disabled"} disabled={!ok}>
-            신고하기
+            {t.report}
           </PillButton>
         </div>
       </form>
