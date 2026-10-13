@@ -8,6 +8,7 @@ import { Screen, StickyBottom, TopBar } from "@/components/Layout";
 import { track } from "@/lib/analytics";
 import { getQuestion } from "@/lib/write-data";
 import { coverOf, SAMPLE_MY_POST, useFlow, MY_POST_ID } from "@/lib/write-store";
+import { useMyAuthor } from "@/app/my/profile";
 import { ShareSheet } from "./ShareSheet";
 
 /*
@@ -25,6 +26,9 @@ const STAGE_HEIGHT = 420;
 export function DoneScreen() {
   const { myPost } = useFlow();
   const post = myPost ?? SAMPLE_MY_POST;
+  // 글쓴이 = 나 (가입 때 정한 닉네임 · 나라)
+  const me = useMyAuthor();
+  const byline = `${me.name || "Sam"} · ${me.country.en}`;
 
   const [tilt, setTilt] = useState({ x: 0, y: 0, active: false });
   const [burst, setBurst] = useState(0); // 탭할 때마다 +1 → 색종이 다시
@@ -99,7 +103,7 @@ export function DoneScreen() {
                 <div key={`squash-${burst}`} className="relative animate-squash" style={{ animationDelay: `${stampDelay + 40}ms` }}>
                   <FeedCard
                     title={post.title}
-                    author="Sam · Canada"
+                    author={byline}
                     photo={coverOf(post).src}
                     votesLabel="0 votes yet"
                     questionLabel={post.questionId === "custom" ? post.voteQuestion : getQuestion(post.questionId).label}
@@ -179,7 +183,7 @@ export function DoneScreen() {
           photo: coverOf(post).src,
           voteQuestion: post.voteQuestion,
           options: post.options.filter((o) => o.trim()),
-          author: "Sam · Canada",
+          author: byline,
         }}
         from="posted"
       />

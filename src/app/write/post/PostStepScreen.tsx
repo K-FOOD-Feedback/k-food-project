@@ -7,6 +7,7 @@ import { Icon } from "@/components/Icon";
 import { Screen, StepProgress, StickyBottom, Tile, TopBar } from "@/components/Layout";
 import { STORY_MAX, TITLE_MAX } from "@/lib/write-data";
 import { keptRatio, track } from "@/lib/analytics";
+import { currentFrom, withFrom } from "@/lib/back";
 import { useFlow } from "@/lib/write-store";
 import { WriteExit } from "../WriteExit";
 
@@ -34,7 +35,7 @@ export function PostStepScreen() {
             onClick={() => {
               saveDraftForLater("post");
               track("draft_saved", { step: "post" });
-              router.push("/write");
+              router.push(withFrom("/write", currentFrom())); // 들어온 곳(?from=)은 이어서
             }}
           />
         }
@@ -74,15 +75,16 @@ export function PostStepScreen() {
           title="Next"
           {...(canNext
             ? {
-                href: "/write/vote",
-                onClick: () =>
+                onClick: () => {
                   track("post_step_completed", {
                     title_kept: keptRatio(draft.ai.title, draft.title),
                     story_kept: keptRatio(draft.ai.story, draft.story),
                     title_length: draft.title.length,
                     story_length: draft.story.length,
                     photos: draft.photos.length,
-                  }),
+                  });
+                  router.push(withFrom("/write/vote", currentFrom())); // 들어온 곳(?from=)은 이어서
+                },
               }
             : { disabled: true })}
         />

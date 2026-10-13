@@ -5,10 +5,12 @@ import { useState } from "react";
 import { getHomePost } from "@/app/home/mockPosts";
 import { IconButton, PillButton } from "@/components/Buttons";
 import { Screen, TopBar } from "@/components/Layout";
+import { ShareKfoodButton } from "@/components/ShareKfoodButton";
 import { track, useTrackOnce } from "@/lib/analytics";
 import { MY_POST_ID } from "@/lib/write-data";
 import { coverOf, useFlow } from "@/lib/write-store";
 import { CommentCard, Empty, LogoutSheet, MyTabs, PhotoTile, TIME, timeAgo } from "./parts";
+import { forgetRole } from "@/lib/role";
 import { AccountFooter, countryFlag, countryName, ProfileHeader, ProfileSheet, useCountry, useNickname } from "./profile";
 
 /*
@@ -143,14 +145,13 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
               title="No posts yet"
               body="Share your K-food and Koreans will vote on it."
               cta={
-                <PillButton
-                  tone="primary"
-                  size="md"
-                  href="/write?from=my-en"
-                  onClick={() => track("my_item_clicked", { item: "write", viewer: "foreigner" })}
+                // 메인의 Share 버튼과 같은 흐름 (로그인 → 가입 → 이어 쓰기 → 사진 고르기). 모양은 PillButton md primary와 같게
+                <ShareKfoodButton
+                  from="my-en"
+                  className="flex h-12 flex-none items-center justify-center rounded-full bg-primary px-6 text-[15px] font-semibold leading-[1.5] text-on-light transition active:scale-[0.99]"
                 >
                   Share your K-food
-                </PillButton>
+                </ShareKfoodButton>
               }
             />
           ) : (
@@ -212,6 +213,7 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
         onDelete={() => {
           deleteMyPost();
           discardDraft();
+          forgetRole(); // 다음에 / 로 오면 메인이 아니라 랜딩부터
           logOut();
           router.push("/");
         }}

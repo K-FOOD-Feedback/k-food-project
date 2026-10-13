@@ -11,14 +11,18 @@ import {
   type ReturnTransition,
 } from "./cardTransition";
 
-const RETURN_MS = 560;
+const RETURN_MS = 620;
 const EASING = "cubic-bezier(0.3, 0.7, 0.2, 1)";
 /*
-  한 번에 같이 움직입니다 (따로 놀지 않게 같은 시간·같은 곡선):
-  - 상세 사진이 카드 모양으로 오므라들며(랜딩과 같은 방식) 메인 카드 사진 자리로 줄어듦
-  - 아래 본문 카드가 메인 카드 자리로 넓어지며 사진을 감쌈
-  - 상세 글이 사라지고 카드 글이 떠오름 · 참여 칩은 스티커로 · 뒤 카드들이 나타남
+  ① 하나로 (0 ~ MERGE, 약 0.09초): 상세 화면 크기 그대로, 본문 카드 색이 사진 뒤까지 바로 올라오고
+     사진이 살짝 안쪽으로 들어가 사진+본문이 한 장의 카드가 됨
+  ② 줄이기 (MERGE ~ 1): 그 한 장이 통째로 메인 카드로 줄어듦 — 사진은 카드 모양으로 오므라들며 카드 사진 자리로,
+     상세 글은 카드 글로, 참여 칩은 스티커로, 뒤 카드들이 나타남 (모두 같은 시간·같은 곡선)
 */
+const MERGE = 0.15;
+const MERGE_EASE = "cubic-bezier(0.2, 0.8, 0.3, 1)";
+/** 하나로 합칠 때 사진 둘레로 보이는 카드 색 여백 */
+const INSET = 12;
 /** 상세에서 첫 사진이 아닌 사진을 보고 있었으면, 먼저 첫 사진으로 넘기는 시간 */
 const SWIPE_MS = 220;
 const SWIPE_EASE = "cubic-bezier(0.3, 0, 0.2, 1)";
@@ -167,10 +171,24 @@ export function ReturnGhosts({
       width: pct(CARD_PHOTO_IN_MASK.width),
       height: pct(CARD_PHOTO_IN_MASK.height),
     };
-    // 모양 오므라들기는 조금 일찍 끝내 줄어드는 끝 무렵엔 이미 카드 모양 (전체 움직임과 같은 시간대)
-    const SHAPED = 0.7;
+    // ① 한 장: 본문 카드가 사진 자리 위끝까지 올라오고, 사진은 그 안에서 여백만큼 안쪽으로
+    const merged = {
+      left: t.card.left,
+      top: t.photo.top,
+      width: t.card.width,
+      height: t.card.top + t.card.height - t.photo.top,
+    };
+    const mergedPhoto = {
+      left: t.photo.left + INSET,
+      top: t.photo.top + INSET,
+      width: t.photo.width - INSET * 2,
+      height: t.photo.height - INSET * 2,
+    };
+    // 모양 오므라들기는 줄이는 동안 조금 일찍 끝내 끝 무렵엔 이미 카드 모양
+    const SHAPED = MERGE + (1 - MERGE) * 0.7;
     const frameKeys: Keyframe[] = [
       { ...fullFrame },
+      { ...fullFrame, offset: MERGE, easing: EASING },
       { ...cardFrame, offset: SHAPED },
       cardFrame,
     ];
@@ -189,17 +207,28 @@ export function ReturnGhosts({
           ...(ghosts.current ? [ghosts.current.animate(vanish, staged)] : []),
         ]
       : [
-          // 본문 카드: 메인 카드 자리로 (위로 넓어지며 사진을 감쌈)
+          // 본문 카드: 사진 뒤까지 바로 올라와 한 장이 됨 → 통째로 메인 카드로
           card!.animate(
-            [place(t.card, "32px"), place(to.card, "34.8px")],
-            timing,
+            [
+              { ...place(t.card, "32px"), easing: MERGE_EASE },
+              { ...place(merged, "32px"), offset: MERGE, easing: EASING },
+              place(to.card, "34.8px"),
+            ],
+            staged,
           ),
-          // 사진: 카드 모양으로 오므라들며 메인 카드 사진 자리로
-          photo!.animate([boxOnly(t.photo), boxOnly(to.photo)], timing),
+          // 사진: 한 장 안쪽으로 살짝 들어감 → 카드 모양으로 오므라들며 메인 카드 사진 자리로
+          photo!.animate(
+            [
+              { ...boxOnly(t.photo), easing: MERGE_EASE },
+              { ...boxOnly(mergedPhoto), offset: MERGE, easing: EASING },
+              boxOnly(to.photo),
+            ],
+            staged,
+          ),
           // 깜빡임 없이: 그림은 처음부터 끝까지 같은 사진(첫 사진) 한 장이고, 자리·구도만 이어서 바뀜.
           // 모양은 랜딩과 같은 방식 — 아주 크게 씌워 둔 카드 모양 마스크가 오므라들며 네모 사진이 카드 모양이 됨
           ...(rectFrame.current
-            ? [rectFrame.current.animate(frameKeys, timing)]
+            ? [rectFrame.current.animate(frameKeys, staged)]
             : []),
           ...(rectLayer.current
             ? [
@@ -207,26 +236,33 @@ export function ReturnGhosts({
                   [
                     { maskSize: MASK_OPEN, webkitMaskSize: MASK_OPEN },
                     {
+                      maskSize: MASK_OPEN,
+                      webkitMaskSize: MASK_OPEN,
+                      offset: MERGE,
+                      easing: EASING,
+                    },
+                    {
                       maskSize: "100% 100%",
                       webkitMaskSize: "100% 100%",
                       offset: SHAPED,
                     },
                     { maskSize: "100% 100%", webkitMaskSize: "100% 100%" },
                   ],
-                  timing,
+                  staged,
                 ),
               ]
             : []),
-          // 글: 움직이는 동안 상세 글이 사라지고 카드 글이 떠오름 (겹쳐 보이지 않게 살짝 엇갈림)
+          // 글: 줄어드는 동안 상세 글이 사라지고 카드 글이 떠오름 (겹쳐 보이지 않게 살짝 엇갈림)
           ...fade(detailText.current, [
             { opacity: 1 },
-            { opacity: 0, offset: 0.22 },
+            { opacity: 1, offset: MERGE },
+            { opacity: 0, offset: MERGE + 0.16 },
             { opacity: 0 },
           ]),
           ...fade(cardText.current, [
             { opacity: 0 },
-            { opacity: 0, offset: 0.2 },
-            { opacity: 1, offset: 0.5 },
+            { opacity: 0, offset: MERGE + 0.14 },
+            { opacity: 1, offset: MERGE + 0.4 },
             { opacity: 1 },
           ]),
           front.animate(reveal, staged),
@@ -237,7 +273,11 @@ export function ReturnGhosts({
             ),
           ].map((el) =>
             el.animate(
-              [{ opacity: 0 }, { opacity: 0, offset: 0.25 }, { opacity: 1 }],
+              [
+                { opacity: 0 },
+                { opacity: 0, offset: MERGE + 0.1 },
+                { opacity: 1 },
+              ],
               staged,
             ),
           ),
@@ -283,13 +323,14 @@ export function ReturnGhosts({
         animations.push(
           ...fade(chipFrom.current, [
             { opacity: 1 },
-            { opacity: 0, offset: 0.2 },
+            { opacity: 1, offset: MERGE },
+            { opacity: 0, offset: MERGE + 0.16 },
             { opacity: 0 },
           ]),
           ...fade(chipTo.current, [
             { opacity: 0 },
-            { opacity: 0, offset: 0.15 },
-            { opacity: 1, offset: 0.45 },
+            { opacity: 0, offset: MERGE + 0.1 },
+            { opacity: 1, offset: MERGE + 0.36 },
             { opacity: 1 },
           ]),
         );
@@ -297,11 +338,28 @@ export function ReturnGhosts({
       animations.push(
         chipGhost.current.animate(
           [
-            // 사진과 함께 움직이며 스티커가 됨
-            { ...place(t.chip, `${t.chip.height / 2}px`), rotate: "0deg" },
+            // 사진과 함께 안쪽으로 들어갔다가, 같이 줄어들며 스티커가 됨
+            {
+              ...place(t.chip, `${t.chip.height / 2}px`),
+              rotate: "0deg",
+              easing: MERGE_EASE,
+            },
+            {
+              ...place(
+                {
+                  ...t.chip,
+                  left: t.chip.left + INSET,
+                  top: t.chip.top + INSET,
+                },
+                `${t.chip.height / 2}px`,
+              ),
+              rotate: "0deg",
+              offset: MERGE,
+              easing: EASING,
+            },
             { ...place(sticker, `${size / 2}px`), rotate: "12deg" },
           ],
-          timing,
+          staged,
         ),
       );
     }

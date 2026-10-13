@@ -37,7 +37,8 @@ export default async function Page(props: PageProps<"/posts/[id]/comments">) {
   const lang = sp.lang === "en" || sp.lang === "ko" ? sp.lang : null;
 
   return (
-    <VoteGate postId={post.id} open={foreigner}>
+    // 답글 알림에서 왔으면 이미 한마디를 남긴(= 투표한) 사람이라 바로 보여 줌 — 서버 전엔 이 브라우저에 투표 기록이 없을 수 있어서
+    <VoteGate postId={post.id} open={foreigner || from === "notifications"}>
       <main
         className={`${paperlogy.variable} mx-auto flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-background text-on-dark`}
       >

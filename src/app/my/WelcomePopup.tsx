@@ -13,6 +13,7 @@ import {
   markOnboarded,
   NicknameSlot,
   randomNickname,
+  readNickname,
   saveCountry,
   saveNickname,
 } from "./profile";
@@ -105,7 +106,7 @@ const COPY = {
   ko: {
     label: "가입 환영",
     title: "반가워요! 👋",
-    sub: "시작하기 전에 두 가지만 확인할게요.",
+    sub: "시작하기 전에 닉네임만 정해 주세요.",
     nickname: "내 닉네임",
     country: "",
     all: "전체 동의",
@@ -155,7 +156,8 @@ export function WelcomePopup({
   if (open !== wasOpen) {
     setWasOpen(open);
     if (open) {
-      setNickname(randomNickname(lang));
+      // 이미 정해진 닉네임이 있으면(가입 전에 마이를 열어 봤으면) 그대로 — 방금 본 닉네임이 바뀌지 않게
+      setNickname(readNickname(lang) || randomNickname(lang));
       setCountry(foreigner ? guessCountry() : "");
       setAgreed([false, false, false]);
       setExpanded(false);
@@ -187,7 +189,7 @@ export function WelcomePopup({
         />
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto px-4 pt-2 pb-6 break-keep">
+      <div className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto px-4 pt-[30px] pb-6 break-keep">
         <div className="flex flex-col gap-2 px-2">
           <h1 className="font-display text-[32px] leading-[1.1]">{t.title}</h1>
           <p className="text-[15px] leading-[1.5] text-muted">{t.sub}</p>
