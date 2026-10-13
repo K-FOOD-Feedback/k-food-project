@@ -351,11 +351,14 @@ export function ProfileSheet({
 }
 
 /** 마이 맨 아래 — Google 계정 · 계정 삭제 (회색 작은 글씨, 잘 안 보이게) */
-/** 마이 맨 아래 회색 작은 글씨 — 로그인한 Google 계정 (계정 삭제는 오른쪽 위 ⋯ 메뉴로) */
+/**
+ * 마이 맨 아래 회색 작은 글씨 — 로그인한 Google 계정 (계정 삭제는 오른쪽 위 ⋯ 메뉴로)
+ * 내용이 짧으면 화면 맨 아래에 붙고(mt-auto), 길면 스크롤 맨 끝에 옴
+ */
 export function AccountFooter({ lang, email }: { lang: MyLang; email: string }) {
   const t = COPY[lang];
   return (
-    <p className="mt-16 px-6 text-center text-[12px] text-neutral-400">
+    <p className="mt-auto px-6 pt-16 text-center text-[12px] text-neutral-400">
       {t.account} · {email}
     </p>
   );

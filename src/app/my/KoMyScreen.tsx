@@ -67,7 +67,7 @@ export function KoMyScreen() {
   };
 
   return (
-    <Screen className="pb-16">
+    <Screen className="pb-[calc(24px+env(safe-area-inset-bottom))]">
       <TopBar
         left={<IconButton icon="chevron-left" label="뒤로" href="/home" />}
         // ⋯ — 로그아웃 · 계정 삭제
