@@ -1,17 +1,30 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+  type PointerEvent,
+} from "react";
 import { track } from "@/lib/analytics";
 import { cardShapeAt, type CardShape } from "./cardShapes";
 import { participantsOf, type HomePost as Post } from "./mockPosts";
 
-/** ko = 한국인 메인(/home), en = 외국인 메인(/home?lang=en) */
+/** 화면·글 언어 (버전과 별개 — 버전은 한국인 /home · 외국인 /home?lang=en 로 정해지고, 언어는 지구본으로 바꿈) */
 export type Lang = "ko" | "en";
 
 // 카드 크기·위치는 Figma(node 259:7795) 기준이고 가로 가운데 정렬입니다.
 // 뒤에 깔린 카드들은 앞 카드를 회전·축소한 것이라, 모든 자리를 앞 카드의 transform으로 표현합니다.
 // 투표 주제 칩을 빼면서 사진~제목 사이가 비지 않게 카드 높이를 24px 줄임 (Figma 438.578). 사진은 위에서 같은 자리에 두려고 dy를 절반만큼 내림
-const CARD = { left: 31.3, top: 31.61, width: 312.4, height: 414.578, radius: 34.808 };
+const CARD = {
+  left: 31.3,
+  top: 31.61,
+  width: 312.4,
+  height: 414.578,
+  radius: 34.808,
+};
 const IMAGE = { width: 402.251, height: 280.106, dx: 0.89, dy: -48 };
 const MASK = { x: 64.255, y: 1.914, width: 272.822, height: 271.214 };
 /** 사진 요소 안에서 모양 사진이 보이는 영역 (상세 화면 전환에서 사진의 출발 위치로 씀).
@@ -28,6 +41,8 @@ export const cardMaskBox = (scale: number) => ({
 /** 물결 영역을 기준(1 = 물결 영역 크기)으로 본 카드 사진의 위치·크기 — 전환 유령이 카드와 똑같이 사진을 보여 줄 때 씀 */
 /** 카드 더미 틀 위끝에서 맨 앞 카드 위끝까지 거리 (틀 위로 뒤 카드가 비져 나올 자리) */
 export const CARD_TOP = CARD.top;
+/** 맨 앞 카드 폭 */
+export const CARD_WIDTH = CARD.width;
 /** 카드 더미 틀 위끝에서 맨 앞 카드 아래끝까지 거리 */
 export const CARD_BOTTOM = CARD.top + CARD.height;
 export const CARD_PHOTO_IN_MASK = {
@@ -37,7 +52,13 @@ export const CARD_PHOTO_IN_MASK = {
   height: IMAGE.height / MASK.height,
 };
 
-type Pose = { x: number; y: number; rotate: number; scale: number; dim: number };
+type Pose = {
+  x: number;
+  y: number;
+  rotate: number;
+  scale: number;
+  dim: number;
+};
 type Place = Pose & { z: number };
 
 const FRONT: Pose = { x: 0, y: 0, rotate: 0, scale: 1, dim: 0 };
@@ -84,17 +105,25 @@ function placeOf(rel: number, n: number): Place {
   return { ...HIDDEN, z };
 }
 
-const toTransform = (p: Pose) => `translate(${p.x}px, ${p.y}px) rotate(${p.rotate}deg) scale(${p.scale})`;
+const toTransform = (p: Pose) =>
+  `translate(${p.x}px, ${p.y}px) rotate(${p.rotate}deg) scale(${p.scale})`;
 
 export function CardStack({
   lang = "ko",
+  contentLang = lang,
+  viewer = "korean",
   posts,
   index,
   votedIds,
   onIndexChange,
   onOpen,
 }: {
+  /** 화면 문구 언어 (참여·투표 완료 등) */
   lang?: Lang;
+  /** 글(제목) 언어 — 자동 번역이 켜져 있으면 화면 언어, 꺼져 있으면 원문 */
+  contentLang?: Lang;
+  /** 버전 (분석용) */
+  viewer?: "korean" | "foreigner";
   posts: Post[];
   index: number;
   /** 내가 이미 투표한 게시글 */
@@ -106,9 +135,18 @@ export function CardStack({
   const n = posts.length;
   const [dragX, setDragX] = useState<number | null>(null);
   const [phases, setPhases] = useState<Record<string, Phase>>({});
-  const start = useRef<{ x: number; y: number; id: number; horizontal: boolean | null } | null>(null);
+  const start = useRef<{
+    x: number;
+    y: number;
+    id: number;
+    horizontal: boolean | null;
+  } | null>(null);
   // 손을 뗄 때의 속도를 재기 위한 최근 위치
-  const lastMove = useRef<{ x: number; t: number; v: number }>({ x: 0, t: 0, v: 0 });
+  const lastMove = useRef<{ x: number; t: number; v: number }>({
+    x: 0,
+    t: 0,
+    v: 0,
+  });
   const moved = useRef(false);
   const timers = useRef<number[]>([]);
 
@@ -134,7 +172,12 @@ export function CardStack({
   const goNext = () => {
     if (n < 2) return;
     const id = posts[index].id;
-    track("card_swiped", { direction: "next", post_id: id, position: index, viewer: lang === "en" ? "foreigner" : "korean" });
+    track("card_swiped", {
+      direction: "next",
+      post_id: id,
+      position: index,
+      viewer,
+    });
     setPhase(id, "out");
     onIndexChange((index + 1) % n);
     later(SWING_MS, () => setPhase(id, "tuck"));
@@ -144,7 +187,12 @@ export function CardStack({
   const goPrev = () => {
     if (n < 2) return;
     const prevIndex = (index - 1 + n) % n;
-    track("card_swiped", { direction: "prev", post_id: posts[index].id, position: index, viewer: lang === "en" ? "foreigner" : "korean" });
+    track("card_swiped", {
+      direction: "prev",
+      post_id: posts[index].id,
+      position: index,
+      viewer,
+    });
     const id = posts[prevIndex].id;
     // 끌던 자리(또는 덱 뒤 자리)에서 바로 맨 앞으로 — 중간에 멈추는 단계 없이 한 번에 이어집니다.
     setPhase(id, "land");
@@ -153,7 +201,12 @@ export function CardStack({
   };
 
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
-    start.current = { x: e.clientX, y: e.clientY, id: e.pointerId, horizontal: null };
+    start.current = {
+      x: e.clientX,
+      y: e.clientY,
+      id: e.pointerId,
+      horizontal: null,
+    };
     lastMove.current = { x: e.clientX, t: e.timeStamp, v: 0 };
     moved.current = false;
   };
@@ -171,7 +224,12 @@ export function CardStack({
     if (s.horizontal) setDragX(dx);
     const last = lastMove.current;
     const dt = e.timeStamp - last.t;
-    if (dt > 0) lastMove.current = { x: e.clientX, t: e.timeStamp, v: (e.clientX - last.x) / dt };
+    if (dt > 0)
+      lastMove.current = {
+        x: e.clientX,
+        t: e.timeStamp,
+        v: (e.clientX - last.x) / dt,
+      };
   };
 
   const onPointerEnd = (e: PointerEvent<HTMLDivElement>) => {
@@ -180,7 +238,10 @@ export function CardStack({
     const v = e.timeStamp - lastMove.current.t < 80 ? lastMove.current.v : 0;
     start.current = null;
     setDragX(null);
-    const flick = Math.abs(dx) >= FLICK_MIN && Math.abs(v) >= FLICK_VELOCITY && Math.sign(v) === Math.sign(dx);
+    const flick =
+      Math.abs(dx) >= FLICK_MIN &&
+      Math.abs(v) >= FLICK_VELOCITY &&
+      Math.sign(v) === Math.sign(dx);
     if (dx <= -SWIPE_THRESHOLD || (flick && dx < 0)) goNext();
     else if (dx >= SWIPE_THRESHOLD || (flick && dx > 0)) goPrev();
   };
@@ -195,18 +256,30 @@ export function CardStack({
     const top = n + 5;
     switch (phase) {
       case "out":
-        return { transform: ASIDE, zIndex: top, transition: `transform ${SWING_MS}ms ease-out` };
+        return {
+          transform: ASIDE,
+          zIndex: top,
+          transition: `transform ${SWING_MS}ms ease-out`,
+        };
       case "tuck":
         return { transform: toTransform(place), zIndex: place.z };
       case "land":
-        return { transform: toTransform(FRONT), zIndex: top, transition: `transform ${PREV_MS}ms ${PREV_EASE}` };
+        return {
+          transform: toTransform(FRONT),
+          zIndex: top,
+          transition: `transform ${PREV_MS}ms ${PREV_EASE}`,
+        };
     }
 
     const zIndex = place.z;
     if (dragX !== null) {
       // 앞 카드는 손가락을 따라 왼쪽으로 움직입니다.
       if (rel === 0 && dragX < 0) {
-        return { transform: `translate(${dragX}px, 0) rotate(${dragX / 18}deg)`, zIndex, transition: "none" };
+        return {
+          transform: `translate(${dragX}px, 0) rotate(${dragX / 18}deg)`,
+          zIndex,
+          transition: "none",
+        };
       }
       // 오른쪽으로 끌면 맨 뒤 카드가 왼쪽 아래에서 빠져나옵니다.
       if (rel === n - 1 && dragX > 0 && n > 1) {
@@ -218,7 +291,11 @@ export function CardStack({
         };
       }
       if (rel === 0 && dragX > 0) {
-        return { transform: `translate(${dragX * 0.15}px, 0) rotate(${dragX / 60}deg)`, zIndex, transition: "none" };
+        return {
+          transform: `translate(${dragX * 0.15}px, 0) rotate(${dragX / 60}deg)`,
+          zIndex,
+          transition: "none",
+        };
       }
     }
     return { transform: toTransform(place), zIndex };
@@ -240,7 +317,8 @@ export function CardStack({
         const rel = relOf(i);
         const phase = phases[post.id];
         const isFront = rel === 0 && !phase;
-        const dim = phase === "out" || phase === "land" ? 0 : placeOf(rel, n).dim;
+        const dim =
+          phase === "out" || phase === "land" ? 0 : placeOf(rel, n).dim;
         return (
           <button
             key={post.id}
@@ -258,12 +336,18 @@ export function CardStack({
             tabIndex={isFront ? 0 : -1}
             aria-hidden={!isFront}
             data-front-card={isFront || undefined}
-            aria-label={`${lang === "en" ? post.en.title : post.title} (${i + 1}/${n})`}
+            aria-label={`${contentLang === "en" ? post.en.title : post.title} (${i + 1}/${n})`}
             onClick={(e) => {
               if (isFront && !moved.current) onOpen(post, e.currentTarget);
             }}
           >
-            <CardContent lang={lang} post={post} voted={votedIds.has(post.id)} shape={cardShapeAt(i)} />
+            <CardContent
+              lang={lang}
+              contentLang={contentLang}
+              post={post}
+              voted={votedIds.has(post.id)}
+              shape={cardShapeAt(i)}
+            />
             <span
               className="pointer-events-none absolute inset-0 bg-black/32 transition-opacity duration-[420ms]"
               style={{ opacity: dim / 0.32 }}
@@ -276,15 +360,29 @@ export function CardStack({
 }
 
 /** 카드 한 장 (Figma: KF/Feed Card) */
-function CardContent({ lang, post, voted, shape }: { lang: Lang; post: Post; voted: boolean; shape: CardShape }) {
+function CardContent({
+  lang,
+  contentLang,
+  post,
+  voted,
+  shape,
+}: {
+  lang: Lang;
+  contentLang: Lang;
+  post: Post;
+  voted: boolean;
+  shape: CardShape;
+}) {
   const en = lang === "en";
+  const enTitle = contentLang === "en";
   const photo = cardPhotoOf(post);
   const { mask, scale: k } = shape;
   const m = cardMaskBox(k);
   // 사진(모양) 영역의 카드 안 위치 → 투표 완료 표시 자리: 사진 아래끝에 걸치고, 왼쪽 아래와 가운데 사이
   const photoLeft = CARD.width / 2 + IMAGE.dx - (IMAGE.width * k) / 2 + m.left;
-  const photoBottom = CARD.height / 2 + IMAGE.dy - (IMAGE.height * k) / 2 + m.top + m.height;
-  const badge = { left: photoLeft + m.width * 0.12, top: photoBottom - 34 };
+  const photoBottom =
+    CARD.height / 2 + IMAGE.dy - (IMAGE.height * k) / 2 + m.top + m.height;
+  const badge = { left: photoLeft + m.width * 0.12 - 16, top: photoBottom - 54 };
   return (
     <>
       {photo && (
@@ -306,14 +404,26 @@ function CardContent({ lang, post, voted, shape }: { lang: Lang; post: Post; vot
           }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element -- 업로드한 사진(blob/외부 URL)도 그대로 보여 줘야 해서 img 사용 */}
-          <img src={photo} alt="" draggable={false} className="pointer-events-none size-full object-cover" />
+          <img
+            src={photo}
+            alt=""
+            draggable={false}
+            className="pointer-events-none size-full object-cover"
+          />
         </span>
       )}
 
       {/* 참여 인원 스티커 */}
-      <span data-card-sticker className="absolute top-[14px] right-[14px] flex size-[68px] rotate-12 flex-col items-center justify-center gap-0.5 rounded-full bg-background text-white shadow-[0_4px_12px_rgba(0,0,0,0.18)]">
-        <span className="text-[20px] leading-none font-extrabold tracking-[-0.4px]">{participantsOf(post)}</span>
-        <span className="text-[11px] leading-none font-semibold">{en ? "joined" : "명 참여"}</span>
+      <span
+        data-card-sticker
+        className="absolute top-[14px] right-[14px] flex size-[68px] rotate-12 flex-col items-center justify-center gap-0.5 rounded-full bg-background text-white shadow-[0_4px_12px_rgba(0,0,0,0.18)]"
+      >
+        <span className="text-[20px] leading-none font-extrabold tracking-[-0.4px]">
+          {participantsOf(post)}
+        </span>
+        <span className="text-[11px] leading-none font-semibold">
+          {en ? "joined" : "명 참여"}
+        </span>
       </span>
 
       {/* 투표 완료 표시 — 참여 인원 스티커처럼 사진 위에 붙임 (사진 왼쪽 아래 ~ 가운데 사이, 사진 아래 테두리에 걸치게) */}
@@ -323,7 +433,17 @@ function CardContent({ lang, post, voted, shape }: { lang: Lang; post: Post; vot
           className="absolute flex -rotate-6 items-center gap-1 rounded-full bg-background px-3 py-2 text-[13px] leading-none font-bold whitespace-nowrap text-white shadow-[0_4px_12px_rgba(0,0,0,0.18)]"
           style={{ left: badge.left, top: badge.top }}
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+          >
             <path d="M20 6 9 17l-5-5" />
           </svg>
           {en ? "Voted" : "투표 완료"}
@@ -331,25 +451,37 @@ function CardContent({ lang, post, voted, shape }: { lang: Lang; post: Post; vot
       )}
 
       <span className="absolute right-5 bottom-5 left-5 flex flex-col items-start gap-2 text-black">
-        {/* 제목: 한국어는 상세 제목과 같은 Paperlogy, 영어는 Gilroy를 한글 크기에 맞춘 font-title-en (행간 0.15 좁게) */}
+        {/* 제목 — 줄 수 제한(line-clamp)에 g·p 같은 글자 아래가 잘리지 않게 아래 8px 여유(pb-2), 배치는 그대로(-mb-2)
+            한국어는 상세 제목과 같은 Paperlogy, 영어는 Gilroy를 한글 크기에 맞춘 font-title-en (행간 0.15 좁게) */}
         <span
-          className={`w-full text-[23px] font-extrabold tracking-[-0.69px] break-keep text-balance ${
-            en ? "line-clamp-3 font-title-en leading-[1.03]" : "line-clamp-2 font-(family-name:--font-paperlogy) leading-[1.18]"
+          className={`-mb-2 w-full pb-2 text-[23px] font-extrabold tracking-[-0.69px] break-keep text-balance ${
+            enTitle
+              ? "line-clamp-3 font-title-en leading-[1.03]"
+              : "line-clamp-2 font-(family-name:--font-paperlogy) leading-[1.18]"
           }`}
         >
-          {en ? post.en.title : post.title}
+          {enTitle ? post.en.title : post.title}
         </span>
         <span className="flex w-full items-center justify-between text-[13px] font-semibold text-black/60">
           {/* 작성자: 하얀 원 속 국기 + 닉네임 (상세 화면 작성자와 같은 디자인, 언어 상관없이) */}
           <span className="flex min-w-0 items-center gap-1.5 font-sans text-[14px] leading-none font-semibold tracking-[-0.28px] text-[#242424]">
-            <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-white text-[14px]" aria-hidden>
+            <span
+              className="flex size-6 shrink-0 items-center justify-center rounded-full bg-white text-[14px]"
+              aria-hidden
+            >
               {post.author.flag}
             </span>
             <span className="truncate">{post.author.name}</span>
           </span>
           {/* 한마디 수 — 채워진 말풍선 아이콘 */}
           <span className="flex shrink-0 items-center gap-1">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              aria-hidden
+            >
               <path d="M12 2C6.48 2 2 6.03 2 11c0 2.38 1.03 4.55 2.72 6.17L4 21.5a.5.5 0 0 0 .7.55l4.34-1.93c.94.25 1.93.38 2.96.38 5.52 0 10-4.03 10-9S17.52 2 12 2Z" />
             </svg>
             <span className="sr-only">{en ? "Comments" : "한마디"}</span>

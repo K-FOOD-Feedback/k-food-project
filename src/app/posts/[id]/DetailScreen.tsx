@@ -56,7 +56,8 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
   const open = foreigner || voted;
   const voteRef = useRef<HTMLDivElement>(null);
   // 투표 영역을 한 번이라도 봤으면(스크롤 또는 버튼) 플로팅 버튼을 다시 띄우지 않습니다.
-  const [seenVote, setSeenVote] = useState(false);
+  // 투표 영역이 지금 화면에 보이는지 — 보이면 플로팅 "투표하기"를 숨기고, 벗어나면(투표 전이면) 다시 띄움
+  const [voteVisible, setVoteVisible] = useState(false);
 
   // ── 분석: 투표·댓글 영역을 봤는지, 얼마나 머물렀는지 (Mixpanel)
   const commentRef = useRef<HTMLDivElement | null>(null);
@@ -103,29 +104,27 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
   useEffect(() => {
     const el = voteRef.current;
     if (!el) return;
-    // 투표 영역 윗부분이 화면 안으로 올라왔으면(이미 지나친 경우 포함) 본 것으로 칩니다.
-    // 화면 아래쪽 140px은 플로팅 버튼에 가려지므로 제외합니다.
-    // 스크롤 위치로 판단해서, 투표 영역을 한 번에 건너뛰어 내려가도 놓치지 않습니다.
+    // 투표 영역이 화면 안(위 상단 바 80px, 아래 플로팅 버튼 140px 제외)에 걸쳐 있으면 보이는 것으로 칩니다.
+    // 분석(vote_section_viewed)은 윗부분이 한 번이라도 올라오면(지나친 경우 포함) 한 번만 보냅니다.
     const check = () => {
-      if (el.getBoundingClientRect().top < window.innerHeight - 140) {
-        markVoteSeen("scroll");
-        setSeenVote(true);
-        window.removeEventListener("scroll", check);
-      }
+      const r = el.getBoundingClientRect();
+      if (r.top < window.innerHeight - 140) markVoteSeen("scroll");
+      setVoteVisible(r.top < window.innerHeight - 140 && r.bottom > 80);
     };
     window.addEventListener("scroll", check, { passive: true });
+    window.addEventListener("resize", check);
     // 화면이 길어서 처음부터 투표 영역이 보이는 경우
     const frame = requestAnimationFrame(check);
     return () => {
       cancelAnimationFrame(frame);
       window.removeEventListener("scroll", check);
+      window.removeEventListener("resize", check);
     };
   }, [markVoteSeen]);
 
   const goToVote = () => {
     track("vote_cta_clicked", { post_id: post.id });
     markVoteSeen("cta");
-    setSeenVote(true);
     voteRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
@@ -165,7 +164,7 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
   }, [open]);
 
   // 플로팅 "투표하기"는 한국인만 (외국인은 투표할 수 없음)
-  const showCta = !foreigner && !voted && !seenVote;
+  const showCta = !foreigner && !voted && !voteVisible;
 
 
   // 다음 훈수 거리: 메인 카드 순서상 다음 게시글 (마지막이면 처음으로), 이전은 그 반대
@@ -329,7 +328,6 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
         if (window.location.hash !== "#vote") return;
         voteRef.current?.scrollIntoView({ block: "center" });
         markVoteSeen("scroll");
-        setSeenVote(true);
       }, 150);
     };
     if (document.readyState === "complete") center();
@@ -747,7 +745,7 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
         onClick={goToVote}
         tabIndex={showCta ? 0 : -1}
         aria-hidden={!showCta}
-        className={`fixed bottom-[calc(40px+env(safe-area-inset-bottom))] left-1/2 z-20 -translate-x-1/2 rounded-full bg-primary px-8 py-6 text-[20px] leading-none font-extrabold tracking-[-0.4px] whitespace-nowrap text-white shadow-[0_18px_48px_4px_rgba(0,0,0,0.55),0_10px_24px_-6px_rgba(255,135,196,0.55)] transition-[opacity,translate,scale] duration-300 active:scale-95 ${
+        className={`fixed bottom-[calc(40px+env(safe-area-inset-bottom))] left-1/2 z-50 -translate-x-1/2 rounded-full bg-primary px-8 py-6 text-[20px] leading-none font-extrabold tracking-[-0.4px] whitespace-nowrap text-white shadow-[0_18px_48px_4px_rgba(0,0,0,0.55),0_10px_24px_-6px_rgba(255,135,196,0.55)] transition-[opacity,translate,scale] duration-300 active:scale-95 ${
           showCta ? "opacity-100" : "pointer-events-none translate-y-6 opacity-0"
         } ${ctaIntro && !introDone ? "invisible" : ""}`}
       >
