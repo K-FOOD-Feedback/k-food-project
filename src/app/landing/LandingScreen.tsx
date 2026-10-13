@@ -163,6 +163,11 @@ export function LandingScreen() {
   const authorRef = useRef<HTMLSpanElement>(null);
   const replyRef = useRef<HTMLDivElement>(null);
   const slotRef = useRef<HTMLSpanElement>(null);
+  // 투표 토큰: 토큰 자리(제목 아래) → 내 칸 앉을 자리 (투표 카드 기준 좌표, 카드·칸이 날아드는 움직임과 상관없이)
+  const tokenSlotRef = useRef<HTMLSpanElement>(null);
+  const tokenLandRef = useRef<HTMLSpanElement>(null);
+  const mineColRef = useRef<HTMLDivElement>(null);
+  const [tok, setTok] = useState({ slot: { x: 0, y: 0 }, land: { x: 0, y: 0 } });
   // 가운데 정렬용: 제목 아래 남는 높이, 게시물만의 높이, 투표·답글까지 붙은 높이
   const [box, setBox] = useState({
     room: 0,
@@ -176,6 +181,17 @@ export function LandingScreen() {
   });
   useEffect(() => {
     const measure = () => {
+      // 투표 토큰 자리 (offset은 transform 영향을 안 받음 — 칸이 날아드는 중에도 정확)
+      // 토큰 자리·내 칸은 투표 카드(relative) 기준, 앉을 자리는 내 칸 기준
+      const tSlot = tokenSlotRef.current;
+      const tLand = tokenLandRef.current;
+      const col = mineColRef.current;
+      if (tSlot && tLand && col) {
+        setTok({
+          slot: { x: tSlot.offsetLeft, y: tSlot.offsetTop },
+          land: { x: col.offsetLeft + tLand.offsetLeft, y: col.offsetTop + tLand.offsetTop },
+        });
+      }
       const card = cardRef.current;
       const post = postRef.current;
       const stage = card?.parentElement;
@@ -240,6 +256,12 @@ export function LandingScreen() {
     return () => window.clearInterval(id);
   }, []);
   const typed = Math.min(t.story.length, Math.max(clock - 36, 0));
+
+  // 투표 토큰: 떨어지기(0.14~0.19) → 내 칸으로 날아가기(0.2~0.27, 상세처럼 살짝 지나쳤다 제자리)
+  const tokenDrop = backOut(seg(p, 0.14, 0.19));
+  const tokenFlyRaw = seg(p, 0.2, 0.27);
+  const tokenFly = backOut(tokenFlyRaw);
+  const tokenLanded = tokenFlyRaw >= 1;
 
   // 한마디: 첫 번째가 붙으면(p≈0.5) 두·세 번째는 시간 따라 저절로 (talk 0→1), 위로 돌아가면 빠르게 되감음
   const [talk, setTalk] = useState(0);
@@ -429,36 +451,42 @@ export function LandingScreen() {
             <div className="mt-3" style={{ opacity: 1 - voteOut, translate: `0 ${voteOut * 60}px` }} aria-hidden={voteOut >= 1}>
             <div className="relative rounded-[32px] bg-surface-2/75 px-4 pt-5 pb-4" style={fly(p, 0.1, 0.17, { y: 260, r: -6 })}>
               <p className="text-center font-display text-[18px] leading-[1.3]">{t.voteTitle}</p>
-              <div className="mt-3 flex h-[min(128px,15svh)] gap-1.5">
+              {/* 토큰 자리 (상세 투표 카드처럼 제목과 칸 사이 가운데) — 실제 토큰은 아래 하나가 여기서 내 칸으로 날아감 */}
+              <div className="flex h-12 items-center justify-center">
+                <span ref={tokenSlotRef} className="size-10" aria-hidden="true" />
+              </div>
+              <div className="flex h-[min(128px,15svh)] gap-1.5">
                 {t.options.map((opt, i) => {
-                  const fill = seg(p, 0.24 + i * 0.02, 0.34) * SAMPLE_PCTS[i];
+                  const fill = seg(p, 0.27 + i * 0.015, 0.36) * SAMPLE_PCTS[i];
                   const mine = i === 0;
                   return (
                     <div
                       key={opt}
+                      ref={mine ? mineColRef : undefined}
                       className="relative min-w-0 flex-1 rounded-[20px] bg-surface"
-                      style={fly(p, 0.14 + i * 0.03, 0.21 + i * 0.03, { y: 120 })}
+                      style={fly(p, 0.12 + i * 0.02, 0.18 + i * 0.02, { y: 120 })}
                     >
-                      <span
-                        className={`absolute inset-x-0 bottom-0 rounded-b-[20px] ${mine ? "bg-primary" : "bg-white/10"}`}
-                        style={{ height: `${fill}%` }}
-                      />
-                      {/* 🇰🇷 토큰이 위에서 떨어져 내가 고른 칸으로 */}
+                      <span className="absolute inset-0 overflow-hidden rounded-[20px]">
+                        <span
+                          className={`absolute inset-x-0 bottom-0 ${mine ? "wave-fill bg-primary" : "bg-white/10"}`}
+                          style={{ height: `${fill}%` }}
+                        />
+                      </span>
+                      {/* 토큰이 앉을 자리 — 상세처럼 칸 이름과 % 사이, 차오를 색 바로 위 가운데 */}
                       {mine && (
                         <span
+                          ref={tokenLandRef}
                           aria-hidden="true"
-                          className="absolute right-1.5 top-1.5 flex size-9 items-center justify-center rounded-full bg-on-dark text-[16px]"
-                          style={fly(p, 0.2, 0.27, { y: -420, r: 120, s: 0.6 })}
-                        >
-                          🇰🇷
-                        </span>
+                          className="invisible absolute left-[calc(50%-20px)] size-10"
+                          style={{ bottom: `min(max(calc(${SAMPLE_PCTS[0]}% + 6px), 34px), calc(100% - 64px))` }}
+                        />
                       )}
-                      <span className="absolute left-3 top-2.5 whitespace-pre-line pr-1 text-[12px] font-medium leading-[1.25] opacity-60">
+                      <span className="absolute left-3 top-2.5 whitespace-pre-line pr-1 text-[13px] font-semibold leading-[1.25]">
                         {opt}
                       </span>
                       <span
                         className={`absolute bottom-2 left-3 font-display text-[18px] tabular-nums ${mine ? "text-on-light" : "text-on-dark"}`}
-                        style={{ opacity: seg(p, 0.24, 0.28) }}
+                        style={{ opacity: seg(p, 0.28, 0.32) }}
                       >
                         {Math.round(fill)}%
                       </span>
@@ -466,6 +494,28 @@ export function LandingScreen() {
                   );
                 })}
               </div>
+              {/* 🇰🇷 토큰 — 상세 투표와 같은 모양(어두운 원 · 그림자 · 손 흔들기)
+                  위에서 톡 떨어져 토큰 자리에서 흔들다가, 120° 돌며 내 칸으로 날아가 살짝 지나쳤다 제자리 (상세의 BACK_OUT) */}
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute z-10 flex size-10 items-center justify-center rounded-full bg-on-light text-[16px] leading-none shadow-[0_6px_16px_rgba(0,0,0,0.35)]"
+                style={{
+                  left: tok.slot.x,
+                  top: tok.slot.y,
+                  opacity: clamp(seg(p, 0.15, 0.19) * 3),
+                  translate: `${(tok.land.x - tok.slot.x) * tokenFly}px ${(tok.land.y - tok.slot.y) * tokenFly - 50 * (1 - tokenDrop)}px`,
+                  rotate: `${120 * (1 - tokenFly) * (tokenFlyRaw > 0 ? 1 : 0)}deg`,
+                }}
+              >
+                <span
+                  key={tokenLanded ? "landed" : "waiting"}
+                  className={`inline-block origin-[50%_85%] ${
+                    tokenLanded ? "animate-[wave_1s_ease-in-out_150ms_both]" : "animate-[wave_1.2s_ease-in-out_infinite]"
+                  }`}
+                >
+                  🇰🇷
+                </span>
+              </span>
             </div>
             </div>
 
