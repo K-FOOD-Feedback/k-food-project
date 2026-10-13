@@ -9,6 +9,7 @@ import { BottomSheet } from "./Layout";
  * 버튼은 Google 브랜드 가이드의 밝은 버튼(흰 바탕 + 공식 로고) 기준.
  * OAuth 리다이렉트 때문에 사진 선택 "전에" 로그인합니다.
  * 지금은 실제 OAuth 없이 로그인된 것으로 처리합니다.
+ * 약관 동의는 처음 가입 화면(WelcomePopup)에서 전체 동의로 따로 받아서, 여기엔 약관 문구를 두지 않습니다.
  */
 const COPY = {
   en: {
@@ -16,15 +17,12 @@ const COPY = {
     title: "Log in to share your K-food",
     body: "One quick step and Koreans can start judging your dish.",
     google: "Continue with Google",
-    // [앞, 이용약관, 가운데, 개인정보처리방침, 뒤] — 두 이름은 링크
-    terms: ["By continuing, you agree to our ", "Terms", " and ", "Privacy Policy", "."],
   },
   ko: {
     label: "로그인",
     title: "로그인하고 한마디 보태기",
-    body: "투표는 로그인한 한국인만 할 수 있어요. 구글로 3초면 끝나요.",
+    body: "투표는 로그인한 한국인만 할 수 있어요.\n구글로 3초면 끝나요.",
     google: "Google로 계속하기",
-    terms: ["계속하면 ", "이용약관", "과 ", "개인정보처리방침", "에 동의하게 돼요."],
   },
 };
 
@@ -51,35 +49,21 @@ export function LoginSheet({
   return (
     <BottomSheet open={open} onClose={onClose} label={t.label}>
       {children}
-      <div className="flex w-full flex-col gap-2 px-6 pt-2 break-keep">
+      {/* 제목·안내는 가운데 정렬 (위 그림·아래 버튼과 같은 축) */}
+      <div className="flex w-full flex-col items-center gap-2 px-6 pt-2 text-center break-keep">
         <h2 className="font-display text-[22px] leading-[1.25]">
           {title ?? t.title}
         </h2>
-        <p className="text-[15px] leading-[1.5] text-muted">{body ?? t.body}</p>
+        <p className="text-[15px] leading-[1.5] whitespace-pre-line text-muted">{body ?? t.body}</p>
       </div>
-      {/* 버튼과 약관은 한 묶음 */}
-      <div className="flex w-full flex-col gap-3">
-        <button
-          type="button"
-          onClick={onLoggedIn}
-          className="flex h-16 w-full items-center justify-center gap-3 rounded-full bg-white font-display text-[20px] leading-none text-on-light transition active:scale-[0.99]"
-        >
-          <Image src="/logos/google.svg" alt="" width={20} height={20} />
-          {t.google}
-        </button>
-        <p className="w-full break-keep px-6 text-center text-[12px] font-medium leading-[1.4] text-muted">
-          {/* 새 탭으로 (이 시트·고르던 것이 사라지지 않게) — 약관 화면의 ×로 닫고 돌아옴 */}
-          {t.terms[0]}
-          <a href="/terms" target="_blank" className="underline underline-offset-2">
-            {t.terms[1]}
-          </a>
-          {t.terms[2]}
-          <a href="/privacy" target="_blank" className="underline underline-offset-2">
-            {t.terms[3]}
-          </a>
-          {t.terms[4]}
-        </p>
-      </div>
+      <button
+        type="button"
+        onClick={onLoggedIn}
+        className="flex h-16 w-full items-center justify-center gap-3 rounded-full bg-white font-display text-[20px] leading-none text-on-light transition active:scale-[0.99]"
+      >
+        <Image src="/logos/google.svg" alt="" width={20} height={20} />
+        {t.google}
+      </button>
     </BottomSheet>
   );
 }
