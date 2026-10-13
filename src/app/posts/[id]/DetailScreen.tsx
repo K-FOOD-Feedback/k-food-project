@@ -824,6 +824,9 @@ const NEXT_EASE = "cubic-bezier(0.22, 1, 0.36, 1)"; // 빠르게 출발해 길�
 const TRIP_TTL_MS = 30 * 60_000;
 // 게시글 원어 — 지금 글은 모두 외국인이 쓴 글이라 영어 (자동 번역을 끄면 이 언어로 보임)
 const POST_ORIGINAL_LANG: Lang = "en";
+// 상세 제목: 최대 줄 수, 줄이다가 멈추는 가장 작은 글자 크기
+const TITLE_MAX_LINES = 3;
+const TITLE_MIN_PX = 18;
 const BACK_CARD_MS = 320;
 // 사진 자동 넘김 간격 (가만히 있은 지 이만큼 지나면 다음 사진)
 const AUTOPLAY_MS = 3500;
@@ -920,6 +923,26 @@ function ShareVoteCard({
 function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: HomePost; lang?: Lang; contentLang?: Lang }) {
   // contentLang: 글쓴이가 쓴 제목·본문 (원어 또는 자동 번역)
   const enText = contentLang === "en";
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const titleText = enText ? post.en.title : post.title;
+  useLayoutEffect(() => {
+    const el = titleRef.current;
+    if (!el) return;
+    const fit = () => {
+      el.style.fontSize = "";
+      let size = parseFloat(getComputedStyle(el).fontSize);
+      const lines = () => Math.round(el.scrollHeight / parseFloat(getComputedStyle(el).lineHeight));
+      while (lines() > TITLE_MAX_LINES && size > TITLE_MIN_PX) {
+        size -= 1;
+        el.style.fontSize = `${size}px`;
+      }
+    };
+    fit();
+    // 글꼴이 늦게 들어오거나 화면 폭이 바뀌면 다시 맞춤
+    document.fonts?.ready.then(fit);
+    window.addEventListener("resize", fit);
+    return () => window.removeEventListener("resize", fit);
+  }, [titleText]);
   return (
     <>
       {/* 글쓴이: 하얀 원(24px) 안 국기 + 닉네임 (메인 카드와 같은 디자인, 한마디는 익명) */}
@@ -929,11 +952,12 @@ function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: HomePost
         </span>
         {post.author.name}
       </p>
-      {/* 영어는 소문자가 낮아 같은 행간이면 줄 사이가 비어 보여서 좁게 (한국어 1.2 → 영어 1.05)
-          폭은 본문과 같은 글 영역 전체(카드 안쪽 여백은 그대로) — 204px로 막으면 영어·긴 제목이 4줄 이상으로 쪼개짐
-          줄 길이는 메인 카드처럼 고르게(text-balance) → 끊기는 자리가 메인과 비슷하게 */}
+      {/* 제목: 글 영역 폭의 3/5, 최대 3줄 — 3줄을 넘으면 넘지 않을 때까지 글자를 조금씩 줄임(최소 18px, 그래도 넘치면 3줄에서 자름)
+          영어는 소문자가 낮아 같은 행간이면 줄 사이가 비어 보여서 좁게 (한국어 1.2 → 영어 1.05)
+          줄 길이는 고르게(text-balance) */}
       <h1
-        className={`${titleFont(contentLang)} text-[31px] ${enText ? "leading-[1.05]" : "leading-[1.2]"} tracking-[-0.62px] break-keep text-balance`}
+        ref={titleRef}
+        className={`line-clamp-3 w-3/5 ${titleFont(contentLang)} text-[31px] ${enText ? "leading-[1.05]" : "leading-[1.2]"} tracking-[-0.62px] break-keep text-balance`}
       >
         {enText ? post.en.title : post.title}
       </h1>
