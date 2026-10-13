@@ -106,7 +106,7 @@
 | 이벤트 | 어디서 | 속성 |
 |---|---|---|
 | `my_page_viewed` | 마이 열림 | `posts`(내 글 수), `comments`(내 한마디 수) |
-| `my_item_clicked` | 마이에서 누름 | `item`(post/comment/write/tab_posts/tab_comments/settings/notifications), 한마디는 `reply` |
+| `my_item_clicked` | 마이에서 누름 | `item`(post/comment/write/tab_posts/tab_comments/logout), 한마디는 `reply` |
 | `logged_out` | 로그아웃 확인 | `from` |
 
 투표 로그인: `login_sheet_opened` / `login_cancelled` / `login_completed` 에 `from: "vote"` (한국인이 로그인 없이 투표하려 할 때).

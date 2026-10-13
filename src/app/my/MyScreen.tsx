@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { getHomePost } from "@/app/home/mockPosts";
 import { IconButton, PillButton } from "@/components/Buttons";
-import { Icon, type IconName } from "@/components/Icon";
 import { BottomSheet, Screen, TopBar } from "@/components/Layout";
 import { track, useTrackOnce } from "@/lib/analytics";
 import { MY_POST_ID } from "@/lib/write-data";
@@ -19,7 +18,7 @@ import { coverOf, useFlow } from "@/lib/write-store";
   - Posts / Comments 탭
     · Posts: 2열 사진 타일 (음식 사진이 주인공) + 받은 투표 칩 → 상세
     · Comments: 상세 화면 한마디와 같은 말풍선 + 어느 글에 썼는지 → 상세
-  - 설정(알림 · 로그아웃)은 오른쪽 위 ⚙️ 시트로
+  - 오른쪽 위는 로그아웃만 (알림은 메인 🔔에 있어서 여기엔 두지 않음)
   - 쓰다 만 글은 여기 없음 (글 쓰기를 시작할 때 이어 쓰기로 보여 줌)
   서버 전까지: 프로필은 목업(Sam · Canada), 내 글은 이 브라우저의 글 1개, 한마디는 목업
 */
@@ -41,7 +40,7 @@ export function MyScreen() {
   const router = useRouter();
   const { myPost, logOut } = useFlow();
   const [tab, setTab] = useState<Tab>("posts");
-  const [sheet, setSheet] = useState<"settings" | "logout" | null>(null);
+  const [sheet, setSheet] = useState<"logout" | null>(null);
 
   const posts = myPost ? [{ id: MY_POST_ID, title: myPost.title, photo: coverOf(myPost)?.src, votes: myPost.votes }] : [];
 
@@ -61,11 +60,11 @@ export function MyScreen() {
         left={<IconButton icon="chevron-left" label="Back" href="/home/en" />}
         right={
           <IconButton
-            icon="settings"
-            label="Settings"
+            icon="log-out"
+            label="Log out"
             onClick={() => {
-              track("my_item_clicked", { item: "settings" });
-              setSheet("settings");
+              track("my_item_clicked", { item: "logout" });
+              setSheet("logout");
             }}
           />
         }
@@ -186,19 +185,6 @@ export function MyScreen() {
           ))}
       </div>
 
-      {/* 설정 */}
-      <BottomSheet open={sheet === "settings"} onClose={() => setSheet(null)} label="Settings">
-        <div className="flex w-full flex-col overflow-hidden rounded-[24px] bg-surface-2">
-          <SettingRow
-            icon="bell"
-            label="Notifications"
-            href="/notifications/en"
-            onClick={() => track("my_item_clicked", { item: "notifications" })}
-          />
-          <SettingRow icon="log-out" label="Log out" onClick={() => setSheet("logout")} />
-        </div>
-      </BottomSheet>
-
       {/* 로그아웃 확인 */}
       <BottomSheet open={sheet === "logout"} onClose={() => setSheet(null)} label="Log out">
         <div className="flex w-full flex-col gap-2 px-6 pt-2">
@@ -235,36 +221,5 @@ function Empty({ title, body, cta }: { title: string; body: string; cta?: ReactN
       </div>
       {cta}
     </div>
-  );
-}
-
-function SettingRow({
-  icon,
-  label,
-  href,
-  onClick,
-}: {
-  icon: IconName;
-  label: string;
-  href?: string;
-  onClick: () => void;
-}) {
-  const cls =
-    "flex h-14 w-full items-center gap-3 px-5 text-left text-[15px] font-semibold transition active:bg-white/5 [&+&]:border-t [&+&]:border-white/5";
-  const inner = (
-    <>
-      <Icon name={icon} size={20} />
-      <span className="flex-1">{label}</span>
-      {href && <Icon name="chevron-right" size={18} className="text-muted" />}
-    </>
-  );
-  return href ? (
-    <Link href={href} onClick={onClick} className={cls}>
-      {inner}
-    </Link>
-  ) : (
-    <button type="button" onClick={onClick} className={cls}>
-      {inner}
-    </button>
   );
 }
