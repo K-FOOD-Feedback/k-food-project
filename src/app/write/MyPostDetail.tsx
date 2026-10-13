@@ -50,7 +50,8 @@ export function MyPostComments({ backHref }: { backHref: string }) {
   const post = useMyPostAsHome();
   const circle = "flex size-16 items-center justify-center rounded-full bg-white/8";
   return (
-    <VoteGate postId={post.id}>
+    // 내 글의 한마디는 작성자(외국인)라 투표 없이 봄
+    <VoteGate postId={post.id} open>
       <main
         className={`${paperlogy.variable} mx-auto flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-background text-on-dark`}
       >

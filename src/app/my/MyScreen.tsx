@@ -18,7 +18,7 @@ import { coverOf, useFlow } from "@/lib/write-store";
   - 프로필: 이름 · 나라만 (프로필 사진은 받지 않음)
   - Posts / Comments 탭
     · Posts: 2열 사진 타일 (음식 사진이 주인공) + 받은 투표 칩 → 상세
-    · Comments: 알림함과 같은 카드 (왼쪽 그 글 사진 · 한마디 · 어느 글에 썼는지 · 시간) → 상세
+    · Comments: 알림함과 같은 카드 (왼쪽 그 글 사진 · 한마디 · 어느 글에 썼는지 · 시간) → 그 한마디 상세(레이어)
   - 오른쪽 위는 로그아웃만 (알림은 메인 🔔에 있어서 여기엔 두지 않음)
   - 쓰다 만 글은 여기 없음 (글 쓰기를 시작할 때 이어 쓰기로 보여 줌)
   서버 전까지: 프로필은 목업(Sam · Canada), 내 글은 이 브라우저의 글 1개, 한마디는 목업
@@ -45,10 +45,14 @@ const MIN = 60_000;
 const HOUR = 60 * MIN;
 const DAY = 24 * HOUR;
 
-/** 내가 쓴 한마디 — 목업 (외국인 화면에서 한마디 쓰기가 붙으면 실제 기록으로). 위 경우들이 다 보이게 구성 */
+/**
+ * 내가 쓴 한마디 — 목업 (외국인 화면에서 한마디 쓰기가 붙으면 실제 기록으로). 위 경우들이 다 보이게 구성
+ * id는 한마디 목록(posts/[id]/comments.ts)에 실제로 있는 것과 맞춰서, 누르면 그 한마디 레이어가 열림
+ * (목업 id인 c3·c4는 레이어 없이 한마디 화면만 열림)
+ */
 const MY_COMMENTS: { id: string; postId: string; text: string; reply: boolean; ago: number }[] = [
-  { id: "c1", postId: MY_POST_ID, text: "Thanks! I'll try it with rice next time 🍚", reply: true, ago: 2 * HOUR },
-  { id: "c2", postId: "2", text: "Cheese is never too much 🧀", reply: false, ago: DAY + 3 * HOUR },
+  { id: "mine-seed-9", postId: MY_POST_ID, text: "고마워요 다음에 시도해볼게요!", reply: true, ago: 2 * HOUR },
+  { id: "2-seed-8", postId: "2", text: "치즈는 많을수록 맛있죠!", reply: true, ago: DAY + 3 * HOUR },
   {
     id: "c3",
     postId: "4",
@@ -259,7 +263,7 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
                 ) : (
                   <Link
                     key={c.id}
-                    href={`/posts/${c.postId}`}
+                    href={`/posts/${c.postId}/comments?comment=${encodeURIComponent(c.id)}&viewer=en`}
                     onClick={() => track("my_item_clicked", { item: "comment", reply: c.reply })}
                     className={`${card} transition active:scale-[0.99]`}
                   >

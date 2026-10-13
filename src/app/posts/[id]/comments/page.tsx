@@ -19,14 +19,17 @@ import { VoteGate } from "./VoteGate";
 export default async function Page(props: PageProps<"/posts/[id]/comments">) {
   const { id } = await props.params;
   // 알림함에서 들어왔으면 뒤로가기는 알림함으로 (송희) — 그 외에는 원래대로 상세로
-  const backHref = backHrefFrom((await props.searchParams).from, `/posts/${id}`);
+  const sp = await props.searchParams;
+  const backHref = backHrefFrom(sp.from, `/posts/${id}`);
+  // 외국인은 투표를 못 해서 투표 없이 한마디를 봄 (송희·지현 합의) — 외국인 화면에서 온 링크는 ?viewer=en
+  const foreigner = sp.viewer === "en" || sp.from === "notifications-en";
   // 내가 올린 글(송희) — 같은 댓글 화면 모양으로
   if (id === MY_POST_ID) return <MyPostComments backHref={backHref} />;
   const post = getHomePost(id);
   if (!post) notFound();
 
   return (
-    <VoteGate postId={post.id}>
+    <VoteGate postId={post.id} open={foreigner}>
       <main
         className={`${paperlogy.variable} mx-auto flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-background text-on-dark`}
       >
