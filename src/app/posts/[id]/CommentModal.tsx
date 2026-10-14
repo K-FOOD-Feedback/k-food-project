@@ -241,10 +241,19 @@ export function CommentModal({
   }, [replies.length]);
 
   // 답글 말풍선을 눌러 열었으면 그 답글을 가운데로 데려와 톡 강조합니다.
+  // 원글 말풍선을 눌러 열었으면 원글 카드가 같은 모션으로 톡.
   useLayoutEffect(() => {
     const el = list.current;
     const item = focusId ? el?.querySelector<HTMLElement>(`[data-reply-id="${CSS.escape(focusId)}"]`) : null;
-    if (!el || !item) return;
+    if (!item) {
+      rootCard.current?.animate([{ scale: "1" }, { scale: "1.08", offset: 0.35 }, { scale: "1" }], {
+        duration: 420,
+        delay: 200,
+        easing: "ease-out",
+      });
+      return;
+    }
+    if (!el) return;
     el.scrollTop = scrollFor(el, item);
     updateRef.current();
     (item.firstElementChild as HTMLElement).animate(
