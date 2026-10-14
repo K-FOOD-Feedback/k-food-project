@@ -109,9 +109,12 @@ const ASIDE = "translate(-250px, 28px) rotate(-14deg) scale(0.96)";
 
 // 이만큼 끌거나, 짧아도 빠르게 튕기면(FLICK) 넘어갑니다.
 const SWIPE_THRESHOLD = 36;
-/** 트랙패드 두 손가락 가로 쓸기: 이만큼(px) 밀면 넘어감 — 넘어간 뒤에는 관성 스크롤이 멈출 때까지(WHEEL_IDLE_MS 동안 조용) 한 장만 */
-const WHEEL_THRESHOLD = 60;
-const WHEEL_IDLE_MS = 160;
+/** 트랙패드 두 손가락 가로 쓸기: 이만큼(px) 밀면 넘어감 */
+const WHEEL_THRESHOLD = 45;
+/** 이만큼(ms) 조용하면 한 번의 쓸기가 끝난 것으로 봄 */
+const WHEEL_IDLE_MS = 140;
+/** 넘긴 직후 이 시간(ms) 동안은 관성으로 보고 무시 — 그 뒤 움직임이 다시 세지면 새 쓸기 */
+const WHEEL_REARM_MS = 180;
 const FLICK_MIN = 14;
 const FLICK_VELOCITY = 0.35; // px/ms
 const TAP_TOLERANCE = 6;
@@ -281,42 +284,60 @@ export function CardStack({
   };
 
   // 트랙패드 두 손가락 가로 쓸기 — 누르고 끌지 않아도 손가락을 따라 카드가 움직이다가 WHEEL_THRESHOLD를 넘으면 넘어감
-  // (방향은 끌기와 같음: 손가락을 왼쪽으로 = 다음 카드). 세로 쓸기는 건드리지 않음.
-  // 가로일 때는 preventDefault — 브라우저의 "뒤로 가기" 쓸기 제스처가 같이 일어나지 않게
+  // (방향은 끌기와 같음: 손가락을 왼쪽으로 = 다음 카드). 세로 쓸기·핀치 확대는 건드리지 않음.
+  // - 카드 더미 위가 아니어도 메인 화면 어디서든 (창 전체에서 받음, 열린 시트·모달 안은 제외)
+  // - 한 장 넘긴 뒤 이어지는 관성 스크롤(점점 약해짐)은 무시하고, 움직임이 다시 세지면(새로 쓸기 시작) 바로 다음 장
+  //   → 예전엔 관성이 다 멈출 때까지(1초 넘게) 잠겨 있어서 연달아 쓸면 안 넘어갔음
+  // - 가로일 때는 preventDefault — 브라우저의 "뒤로 가기" 쓸기 제스처가 같이 일어나지 않게
   const deck = useRef<HTMLDivElement>(null);
   const nav = useRef({ goNext, goPrev });
   useEffect(() => {
     nav.current = { goNext, goPrev };
   });
   useEffect(() => {
-    const el = deck.current;
-    if (!el) return;
     let acc = 0;
     let locked = false;
+    let lockedAt = 0;
+    let lastMag = 0;
     let idle = 0;
     const onWheel = (e: WheelEvent) => {
-      if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+      if (e.ctrlKey) return; // 핀치 확대
+      const unit = e.deltaMode === 1 ? 16 : 1;
+      const dx = e.deltaX * unit;
+      if (Math.abs(dx) <= Math.abs(e.deltaY * unit)) return;
+      if (e.target instanceof Element && e.target.closest('[role="dialog"]')) return;
       e.preventDefault();
       window.clearTimeout(idle);
       idle = window.setTimeout(() => {
         acc = 0;
         locked = false;
+        lastMag = 0;
         setDragX(null);
       }, WHEEL_IDLE_MS);
-      if (locked) return;
-      acc -= e.deltaX * (e.deltaMode === 1 ? 16 : 1);
+      const mag = Math.abs(dx);
+      if (locked) {
+        // 관성 꼬리는 점점 약해짐 — 일정 시간 뒤 움직임이 확 세지면 새로 쓸기 시작으로 보고 잠금 풀기
+        const rearm = e.timeStamp - lockedAt > WHEEL_REARM_MS && mag > 4 && mag > lastMag * 1.5;
+        lastMag = mag;
+        if (!rearm) return;
+        locked = false;
+        acc = 0;
+      }
+      lastMag = mag;
+      acc -= dx;
       if (Math.abs(acc) < WHEEL_THRESHOLD) {
         setDragX(acc);
         return;
       }
       locked = true;
+      lockedAt = e.timeStamp;
       setDragX(null);
       if (acc < 0) nav.current.goNext();
       else nav.current.goPrev();
     };
-    el.addEventListener("wheel", onWheel, { passive: false });
+    window.addEventListener("wheel", onWheel, { passive: false });
     return () => {
-      el.removeEventListener("wheel", onWheel);
+      window.removeEventListener("wheel", onWheel);
       window.clearTimeout(idle);
     };
   }, []);
