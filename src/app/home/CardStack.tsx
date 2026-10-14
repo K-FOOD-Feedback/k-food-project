@@ -13,22 +13,12 @@ import { compactCount } from "@/lib/format";
 import type { UiLang } from "../posts/[id]/viewerLang";
 import { titleFont } from "../posts/[id]/font";
 import { nameIn, titleIn } from "./titles";
+import { PhraseText, cjkPhrases, twoLineWidth } from "./phrases";
 import { cardShapeAt, type CardShape } from "./cardShapes";
 import { participantsOf, type HomePost as Post } from "./mockPosts";
 
 /** 화면·글 언어 (버전과 별개 — 버전은 한국인 /home · 외국인 /home?lang=en 로 정해지고, 언어는 지구본으로 바꿈) */
 export type Lang = UiLang;
-
-/**
-  중국어·일본어 제목 폭 — 한 줄로 끝나면 칸이 비어 보이고, 두 줄 길이가 크게 다르면 어색해서
-  글자 수의 절반만큼으로 폭을 제한해 늘 비슷한 길이의 두 줄로 나눔 (한자·가나는 글자 하나가 거의 1em).
-  길어서 3줄이 필요하면 카드 폭(100%)까지 그대로 씀
-*/
-function cjkTitleWidth(title: string) {
-  const n = [...title].length;
-  if (n <= 4) return undefined;
-  return `min(100%, calc(${Math.ceil(n / 2)} * (1em - 0.69px) + 0.6em))`;
-}
 
 /** 카드 위 짧은 문구 (화면 언어) */
 const CARD_TEXT: Record<Lang, { joined: string; voted: string; comments: string; region: string }> = {
@@ -416,7 +406,7 @@ function CardContent({
 }) {
   const t = CARD_TEXT[lang];
   const title = titleIn(post, contentLang);
-  const cjk = contentLang === "zh" || contentLang === "ja";
+  const phrases = contentLang === "zh" || contentLang === "ja" ? cjkPhrases(title, contentLang) : null;
   const photo = cardPhotoOf(post);
   const { mask, scale: k } = shape;
   const m = cardMaskBox(k);
@@ -498,12 +488,12 @@ function CardContent({
               ? "line-clamp-3 break-keep font-title-en leading-[1.03]"
               : contentLang === "ko"
                 ? "line-clamp-3 break-keep font-(family-name:--font-paperlogy) leading-[1.18]"
-                : // 중국어·일본어: 띄어쓰기가 없어 글자 사이에서 줄을 바꾸고(break-keep 빼기), 문장부호가 줄 맨 앞에 혼자 오지 않게(line-break: strict)
-                  `line-clamp-3 [line-break:strict] leading-[1.18] ${titleFont(contentLang)}`
+                : // 중국어·일본어: 말덩이 사이에서만 줄을 바꾸고(phrases.tsx), 짧아도 두 줄로 고르게 나눔
+                  `line-clamp-3 break-keep leading-[1.18] ${titleFont(contentLang)}`
           }`}
-          style={cjk ? { maxWidth: cjkTitleWidth(title) } : undefined}
+          style={phrases ? { maxWidth: twoLineWidth(phrases) } : undefined}
         >
-          {title}
+          {phrases ? <PhraseText phrases={phrases} /> : title}
         </span>
         {/* 닉네임이 길면 … (한마디 수와 겹치지 않게 사이 12px) */}
         <span className="flex w-full items-center justify-between gap-3 text-[13px] font-semibold text-black/60">

@@ -7,6 +7,7 @@ import { DETAIL_COPY } from "../posts/[id]/copy";
 import { titleFont } from "../posts/[id]/font";
 import type { UiLang } from "../posts/[id]/viewerLang";
 import { nameIn, titleIn } from "./titles";
+import { PhraseText, cjkPhrases } from "./phrases";
 import { participantsOf, type HomePost } from "./mockPosts";
 import {
   clearReturnTransition,
@@ -553,7 +554,8 @@ function DetailArticleBody({
   post: HomePost;
   lang: UiLang;
 }) {
-  const cjk = lang === "zh" || lang === "ja";
+  const title = titleIn(post, lang);
+  const phrases = lang === "zh" || lang === "ja" ? cjkPhrases(title, lang) : null;
   return (
     <>
       <p className="flex items-center gap-1.5 font-sans text-[14px] leading-none font-semibold tracking-[-0.28px] text-[#242424]">
@@ -566,12 +568,12 @@ function DetailArticleBody({
         {nameIn(post, lang)}
       </p>
       <h1
-        // 상세 제목과 같게 (글 영역 폭의 3/5, 최대 3줄, 중·일은 글자 단위 줄바꿈)
+        // 상세 제목과 같게 (글 영역 폭의 3/5, 최대 3줄, 중·일은 말덩이 사이에서만 줄바꿈 — phrases.tsx)
         className={`line-clamp-3 w-3/5 pb-[0.15em] ${titleFont(lang)} text-[31px] ${
           lang === "en" ? "leading-[1.05]" : "leading-[1.2]"
-        } tracking-[-0.62px] ${cjk ? "" : "break-keep"} text-balance`}
+        } tracking-[-0.62px] break-keep text-balance [overflow-wrap:anywhere]`}
       >
-        {titleIn(post, lang)}
+        {phrases ? <PhraseText phrases={phrases} /> : title}
       </h1>
       <p className="text-[16px] leading-[1.55] font-medium tracking-[-0.32px] whitespace-pre-line text-[#444]">
         {(lang !== "ko" && post.en.body) || post.body}
