@@ -7,7 +7,7 @@ import { TrackedLink } from "@/components/Track";
 import { track } from "@/lib/analytics";
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { CommentModal } from "./CommentModal";
-import { avoidColor, COMMENT_MAX, QUICK_EMOJIS, translateToEnglish, useComments, type Comment } from "./comments";
+import { avoidColor, COMMENT_MAX, QUICK_EMOJIS, translateTo, useComments, type Comment } from "./comments";
 import { COMMENTS_COPY, type CommentsLang } from "./copy";
 import { titleFont } from "./font";
 import { HIDDEN_COLOR, useHiddenComments } from "./hidden";
@@ -82,9 +82,10 @@ export function CommentPile({
   const { addedCount, add, edit, remove, nextColor, ready } = stored;
   const all = fixture ?? stored.comments;
   const t = COMMENTS_COPY[lang];
-  // 영어 화면에서 자동 번역이 켜져 있으면 한마디도 영어로 보여 줍니다 (언어 창 아래 켬/끔).
+  // 영어·중국어·일본어 화면에서 자동 번역이 켜져 있으면 한마디도 그 언어로 보여 줍니다 (언어 창 아래 켬/끔).
   const autoTranslate = useAutoTranslate();
-  const translate = lang === "en" && autoTranslate;
+  const translateLang = autoTranslate && lang !== "ko" ? lang : null;
+  const translate = translateLang !== null;
   // 내가 신고해서 가린 한마디는 빼지 않고 회색 "가려진 한마디예요"로 보여 줍니다 (숫자도 그대로).
   const { hidden, hide } = useHiddenComments(postId);
   // 글쓴이가 남긴 한마디(글·이모지)는 그 글의 카드 색으로 (색이 너무 많지 않게 — 지현 요청)
@@ -100,7 +101,7 @@ export function CommentPile({
       ? all.map((c, i) =>
           hidden.has(c.id)
             ? { ...c, kind: "text" as const, text: t.hidden, color: HIDDEN_COLOR }
-            : recolor(translate ? translateToEnglish(c) : c, i),
+            : recolor(translateLang ? translateTo(c, translateLang) : c, i),
         )
       : all;
   const [draft, setDraft] = useState("");

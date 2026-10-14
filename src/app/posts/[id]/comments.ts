@@ -97,7 +97,7 @@ function seedsFor(postId: string, authorFlag: string, authorName?: string): Comm
 }
 
 /*
-  자동 번역 (목업) — 번역 서버가 붙기 전까지 처음부터 달려 있는 한마디만 미리 옮겨 둔 영어로 보여 줍니다.
+  자동 번역 (목업) — 번역 서버가 붙기 전까지 처음부터 달려 있는 한마디만 미리 옮겨 둔 영어·중국어·일본어로 보여 줍니다.
   내가 새로 남긴 한마디는 번역할 수 없어서 쓴 그대로 보입니다.
 */
 const SEED_EN: Record<string, string> = {
@@ -108,10 +108,28 @@ const SEED_EN: Record<string, string> = {
   "고마워요 다음에\n시도해볼게요!": "Thanks, I'll try it next time!",
 };
 
-/** 한마디를 영어로 옮깁니다 (옮겨 둔 문장이 없으면 그대로). */
-export function translateToEnglish(comment: Comment): Comment {
-  const en = comment.kind === "text" ? SEED_EN[comment.text] : undefined;
-  return en ? { ...comment, text: en } : comment;
+const SEED_ZH: Record<string, string> = {
+  "보기만해도 맵네요ㅠㅠ": "光看着就好辣ㅠㅠ",
+  "참치마요 삼김이랑\n같이 먹어보세요": "配金枪鱼蛋黄酱饭团一起吃试试",
+  "소시지 칼집 미쳤다": "香肠切花刀太绝了",
+  "치즈는 많을수록\n맛있죠!": "芝士越多越好吃！",
+  "고마워요 다음에\n시도해볼게요!": "谢谢，下次试试！",
+};
+
+const SEED_JA: Record<string, string> = {
+  "보기만해도 맵네요ㅠㅠ": "見るだけで辛そうㅠㅠ",
+  "참치마요 삼김이랑\n같이 먹어보세요": "ツナマヨおにぎりと一緒に食べてみて",
+  "소시지 칼집 미쳤다": "ソーセージの切り込みやばい",
+  "치즈는 많을수록\n맛있죠!": "チーズは多いほどおいしい！",
+  "고마워요 다음에\n시도해볼게요!": "ありがとう、今度やってみます！",
+};
+
+const SEED_BY_LANG = { en: SEED_EN, zh: SEED_ZH, ja: SEED_JA };
+
+/** 한마디를 그 언어로 옮깁니다 (영어·중국어·일본어 — 옮겨 둔 문장이 없으면 그대로). */
+export function translateTo(comment: Comment, lang: "en" | "zh" | "ja"): Comment {
+  const text = comment.kind === "text" ? SEED_BY_LANG[lang][comment.text] : undefined;
+  return text ? { ...comment, text } : comment;
 }
 
 const storageKey = (postId: string) => `kfood:comments:${postId}`;
