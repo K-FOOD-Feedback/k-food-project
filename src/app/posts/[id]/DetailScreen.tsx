@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { ShareSheet } from "@/app/write/done/ShareSheet";
 import type { ShareCardPost } from "@/app/write/done/ShareCard";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type Ref } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type Ref } from "react";
 import { clearCardTransition, peekCardTransition, setReturnTransition, type Box } from "@/app/home/cardTransition";
 import { HOME_POSTS, participantsOf, type HomePost } from "@/app/home/mockPosts";
 import { ArrowCta } from "@/components/Buttons";
@@ -19,10 +19,11 @@ import { track } from "@/lib/analytics";
 import { useCommentLogin } from "./CommentLogin";
 import { backHrefFrom, withFrom, type BackFrom } from "@/lib/back";
 import { CommentPile } from "./CommentPile";
-import { DETAIL_COPY, type Lang } from "./copy";
-import { paperlogy, titleFont } from "./font";
+import { DETAIL_COPY, type CommentsLang, type Lang } from "./copy";
+import { titleIn } from "@/app/home/titles";
+import { notoSansJP, notoSansSC, paperlogy, titleFont } from "./font";
 import { isForeignFrom, withViewer } from "./viewer";
-import { saveKoreanLang, saveViewerLang, useKoreanLang, useViewerLang } from "./viewerLang";
+import { saveKoreanLang, saveViewerLang, useKoreanUiLang, useViewerUiLang } from "./viewerLang";
 import { VoteBowl } from "./VoteBowl";
 
 /**
@@ -44,14 +45,17 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
   // 한마디 전체 화면 — ← 가 이 상세로 오도록 via=detail, 들어온 곳(from)은 이어 붙임
   const commentsHref = link(`/posts/${post.id}/comments?via=detail`);
   // 화면 문구 언어: 지구본으로 고른 언어 (외국인 기본 영어, 한국인 기본 한국어 — 따로 기억)
-  const viewerLang = useViewerLang();
-  const koreanLang = useKoreanLang();
-  const lang: Lang = foreigner ? viewerLang : koreanLang;
+  // (한국어·영어·중국어·일본어 — 중·일도 그 자리에서. 한·영만 아는 공통 부품(⋯ 메뉴·공유 시트·로그인)에는 baseLang)
+  const viewerLang = useViewerUiLang();
+  const koreanLang = useKoreanUiLang();
+  const lang: CommentsLang = foreigner ? viewerLang : koreanLang;
+  const baseLang: Lang = lang === "ko" ? "ko" : "en";
   const T = DETAIL_COPY[lang];
   // 글(제목·본문·투표 칸) 언어: 원어(글쓴이 언어 = 영어) 그대로, 자동 번역이 켜져 있으면 화면 언어로 번역해 보여 줌
   const autoTranslate = useAutoTranslate();
-  const contentLang: Lang = autoTranslate ? lang : POST_ORIGINAL_LANG;
-  const titleOf = (p: HomePost) => (contentLang === "en" ? p.en.title : p.title);
+  // 제목은 중·일 번역까지(메인 카드와 같은 titleIn), 본문·투표 칸은 한·영만 있어서 중·일이면 영어 원문
+  const contentLang: CommentsLang = autoTranslate ? lang : POST_ORIGINAL_LANG;
+  const titleOf = (p: HomePost) => titleIn(p, contentLang);
   const login = useCommentLogin({ enabled: foreigner, lang, postId: post.id, screen: "detail" });
   const voted = useMyVote(post.id) !== null;
   // 한마디를 볼 수 있는지 — 한국인은 투표한 뒤, 외국인은 처음부터
@@ -590,12 +594,12 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
           <>
             {/* 지구본: 메인과 같은 언어 변경 창 (공통 LanguageButton) */}
             {/* 메인으로 가지 않고 이 화면 글자만 바뀜 (외국인은 한마디 전체 화면도 같은 언어로) */}
-            <LanguageButton lang={lang} from="detail" onChange={foreigner ? saveViewerLang : saveKoreanLang} />
+            <LanguageButton lang={lang} from="detail" onPick={foreigner ? saveViewerLang : saveKoreanLang} />
             {/* 더보기 메뉴 (송희 PostMenu) — 내 글이면 수정·삭제, 남의 글이면 링크 복사·신고 */}
             <PostMenu
               postId={post.id}
               isMine={post.id === MY_POST_ID}
-              lang={lang}
+              lang={baseLang}
               className={HEADER_BUTTON}
               onOpen={() => track("post_more_clicked", { post_id: post.id })}
             >
@@ -690,7 +694,15 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
         </div>
 
         {/* 화면 맨 아래 "다음 훈수 거리" (Figma 332:3426 Question CTA) — 떠 있지 않고 내용 끝에 놓임 */}
-        <div className="mt-[46px]">
+        {/* 중·일 제목 글꼴은 next/font 클래스라 ArrowCta 안쪽에 바로 못 붙여서, 글꼴 이름을 변수로 넘김 */}
+        <div
+          className="mt-[46px]"
+          style={
+            {
+              "--cta-title-font": contentLang === "zh" ? notoSansSC.style.fontFamily : contentLang === "ja" ? notoSansJP.style.fontFamily : undefined,
+            } as CSSProperties
+          }
+        >
           <ArrowCta
             href={link(`/posts/${next.id}`)}
             caption={T.next}
@@ -702,7 +714,9 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
             className={
               contentLang === "en"
                 ? "[&>span>span:last-child]:font-title-en [&>span>span:last-child]:truncate"
-                : "[&>span>span:last-child]:font-(family-name:--font-paperlogy) [&>span>span:last-child]:truncate [&>span>span:last-child]:font-normal"
+                : contentLang === "ko"
+                  ? "[&>span>span:last-child]:font-(family-name:--font-paperlogy) [&>span>span:last-child]:truncate [&>span>span:last-child]:font-normal"
+                  : "[&>span>span:last-child]:truncate [&>span>span:last-child]:font-(family-name:--cta-title-font) [&>span>span:last-child]:font-extrabold"
             }
             onClick={() => {
               track("post_opened", { post_id: next.id, from: "next", from_post_id: post.id });
@@ -856,7 +870,7 @@ const NEXT_STAGGER_MS = 130;
 const NEXT_EASE = "cubic-bezier(0.22, 1, 0.36, 1)"; // 빠르게 출발해 길게 감속
 const TRIP_TTL_MS = 30 * 60_000;
 // 게시글 원어 — 지금 글은 모두 외국인이 쓴 글이라 영어 (자동 번역을 끄면 이 언어로 보임)
-const POST_ORIGINAL_LANG: Lang = "en";
+const POST_ORIGINAL_LANG: CommentsLang = "en";
 // 상세 제목: 최대 줄 수, 줄이다가 멈추는 가장 작은 글자 크기
 const TITLE_MAX_LINES = 3;
 const TITLE_MIN_PX = 18;
@@ -880,19 +894,19 @@ function ShareVoteCard({
   foreigner = false,
 }: {
   post: HomePost;
-  lang: Lang;
+  lang: CommentsLang;
   /** 공유 카드에 들어갈 글(제목·투표 칸) 언어 — 화면에 보이는 글과 같게 */
-  contentLang: Lang;
+  contentLang: CommentsLang;
   /** 외국인 화면: 투표 없이 결과만 보므로 처음부터 보이고, 문구도 "한국인들의 생각"을 나누는 쪽으로 */
   foreigner?: boolean;
 }) {
   const T = DETAIL_COPY[lang];
   // 누르면 송희 공유 바텀시트(카드 디자인 고르기 + 저장·스토리·링크 복사·메시지…)를 띄움 — ⋯ 메뉴 "공유하기"와 같은 시트
   const [open, setOpen] = useState(false);
-  const en = contentLang === "en";
+  const en = contentLang !== "ko";
   const card: ShareCardPost = {
-    title: en ? post.en.title : post.title,
-    dish: en ? post.en.title : post.title,
+    title: titleIn(post, contentLang),
+    dish: titleIn(post, contentLang),
     photo: post.cardPhoto,
     voteQuestion: post.question.text,
     options: ((en && post.en.options) || post.question.options).map((o) => o.replace(/\n/g, " ")),
@@ -910,10 +924,10 @@ function ShareVoteCard({
         className="flex w-full items-center gap-4 rounded-[32px] bg-secondary py-5 pr-4 pl-7 text-left text-on-light transition-[scale,opacity,translate] duration-500 active:scale-[0.98] starting:translate-y-3 starting:opacity-0"
       >
         <span className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className={`${titleFont(lang)} text-[22px] ${lang === "en" ? "leading-[1.1]" : "leading-[1.25]"} tracking-[-0.44px] break-keep`}>
+          <span className={`${titleFont(lang)} text-[22px] ${lang === "en" ? "leading-[1.1]" : "leading-[1.25]"} tracking-[-0.44px] ${lang === "zh" || lang === "ja" ? "" : "break-keep"}`}>
             {foreigner ? T.shareTitleForeign : T.shareTitle}
           </span>
-          <span className="text-[14px] leading-[1.4] font-semibold break-keep opacity-70">
+          <span className={`text-[14px] leading-[1.4] font-semibold opacity-70 ${lang === "zh" || lang === "ja" ? "" : "break-keep"}`}>
             {foreigner ? T.shareSubForeign : T.shareSub}
           </span>
         </span>
@@ -924,7 +938,7 @@ function ShareVoteCard({
       {/* 상세 내용은 넘기기·전환 때 움직이므로(transform) 시트는 body에 띄움 */}
       {open &&
         createPortal(
-          <ShareSheet open onClose={() => setOpen(false)} postId={post.id} post={card} from="detail_menu" lang={lang} />,
+          <ShareSheet open onClose={() => setOpen(false)} postId={post.id} post={card} from="detail_menu" lang={lang === "ko" ? "ko" : "en"} />,
           document.body,
         )}
     </>
@@ -932,11 +946,11 @@ function ShareVoteCard({
 }
 
 /** 본문 카드 안 글 (진짜 카드와 전환용 카드가 같은 모양을 쓰도록) */
-function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: HomePost; lang?: Lang; contentLang?: Lang }) {
-  // contentLang: 글쓴이가 쓴 제목·본문 (원어 또는 자동 번역)
+function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: HomePost; lang?: CommentsLang; contentLang?: CommentsLang }) {
+  // contentLang: 글쓴이가 쓴 제목·본문 (원어 또는 자동 번역) — 제목은 중·일까지, 본문은 한국어가 아니면 영어
   const enText = contentLang === "en";
   const titleRef = useRef<HTMLHeadingElement>(null);
-  const titleText = enText ? post.en.title : post.title;
+  const titleText = titleIn(post, contentLang);
   useLayoutEffect(() => {
     const el = titleRef.current;
     if (!el) return;
@@ -954,10 +968,14 @@ function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: HomePost
       }
     };
     fit();
-    // 글꼴이 늦게 들어오거나 화면 폭이 바뀌면 다시 맞춤
+    // 글꼴이 늦게 들어오거나(중·일 글꼴은 글자가 나올 때 받음) 화면 폭이 바뀌면 다시 맞춤
     document.fonts?.ready.then(fit);
+    document.fonts?.addEventListener("loadingdone", fit);
     window.addEventListener("resize", fit);
-    return () => window.removeEventListener("resize", fit);
+    return () => {
+      document.fonts?.removeEventListener("loadingdone", fit);
+      window.removeEventListener("resize", fit);
+    };
   }, [titleText]);
   return (
     <>
@@ -973,12 +991,12 @@ function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: HomePost
           줄 길이는 고르게(text-balance) */}
       <h1
         ref={titleRef}
-        className={`line-clamp-3 w-3/5 pb-[0.15em] ${titleFont(contentLang)} text-[31px] ${enText ? "leading-[1.05]" : "leading-[1.2]"} tracking-[-0.62px] break-keep text-balance`}
+        className={`line-clamp-3 w-3/5 pb-[0.15em] ${titleFont(contentLang)} text-[31px] ${enText ? "leading-[1.05]" : "leading-[1.2]"} tracking-[-0.62px] ${contentLang === "zh" || contentLang === "ja" ? "" : "break-keep"} text-balance`}
       >
-        {enText ? post.en.title : post.title}
+        {titleText}
       </h1>
       <p className="text-[16px] leading-[1.55] font-medium tracking-[-0.32px] whitespace-pre-line text-[#444]">
-        {(enText && post.en.body) || post.body}
+        {(contentLang !== "ko" && post.en.body) || post.body}
       </p>
     </>
   );

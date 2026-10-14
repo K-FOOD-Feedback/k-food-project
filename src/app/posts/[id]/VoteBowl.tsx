@@ -10,7 +10,7 @@ import { track } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
 import { burstConfetti } from "./confetti";
 import { CARD_SHAPES } from "@/app/home/cardShapes";
-import { DETAIL_COPY, type Lang } from "./copy";
+import { DETAIL_COPY, type CommentsLang } from "./copy";
 import { titleFont } from "./font";
 
 const titleSize = "text-[24px] tracking-[-0.72px]";
@@ -58,21 +58,23 @@ export function VoteBowl({
   post: HomePost;
   viewOnly?: boolean;
   /** 화면 문구 언어 */
-  lang?: Lang;
+  lang?: CommentsLang;
   /** 투표 칸 이름(글쓴이가 쓴 글) 언어 — 원어 또는 자동 번역 */
-  contentLang?: Lang;
+  contentLang?: CommentsLang;
 }) {
   const storedVote = useMyVote(post.id);
   const myVote = viewOnly ? null : storedVote;
-  const options = (contentLang === "en" && post.en.options) || post.question.options;
+  // 투표 칸은 한·영 데이터만 있어서 한국어가 아니면 영어
+  const optionLang = contentLang === "ko" ? "ko" : "en";
+  const options = (optionLang === "en" && post.en.options) || post.question.options;
   const T = DETAIL_COPY[lang];
   // 제목·칸 이름·% 글꼴 (영어면 Gilroy)
   const font = titleFont(lang);
   // 칸 이름은 글쓴이가 쓴 글이라 글 언어 글꼴 (한국어 Paperlogy · 영어 Gilroy)
-  const optionFont = titleFont(contentLang);
+  const optionFont = titleFont(optionLang);
   // 영어 행간은 한국어보다 0.15 좁게 (소문자가 낮아 같은 행간이면 줄 사이가 비어 보임 — 상세 제목과 같은 규칙)
   const title = `${font} ${titleSize} ${lang === "en" ? "leading-[1.15]" : "leading-[1.3]"}`;
-  const optionLeading = contentLang === "en" ? "leading-[1.15]" : "leading-[1.3]";
+  const optionLeading = optionLang === "en" ? "leading-[1.15]" : "leading-[1.3]";
   // 선택지는 잘리지 않고 전부 보임 (글자 수는 입력할 때 OPTION_MAX로 제한). 4칸이면 칸이 좁아서 글자·%를 조금 작게
   const narrow = options.length >= 4;
   const optionText = narrow ? "pl-3 text-[14px] tracking-[-0.28px]" : "pl-4 text-[16px] tracking-[-0.32px]";
