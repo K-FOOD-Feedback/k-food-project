@@ -5,6 +5,8 @@
 */
 
 export type Lang = "ko" | "en";
+/** 투표 후 내 편: top 가장 많은 칸(동점 포함) · few 20% 미만 소수 · alone 나 혼자 · mid 그 사이 */
+export type SameSide = "top" | "mid" | "few" | "alone";
 /** 한마디 화면은 중국어·일본어 문구까지 있음 (상세 화면 DETAIL_COPY는 아직 한국어·영어만) */
 export type CommentsLang = Lang | "zh" | "ja";
 
@@ -244,7 +246,15 @@ export const DETAIL_COPY = {
     // 한국인 상세 (지구본으로 영어를 고르면 영어로)
     voteAsk: ["나의 생각을", "투표해주세요!"],
     voted: "투표 완료!",
-    sameThink: (total: number, same: number) => [`${total}명 중 `, `${same}명`, "이 같은 생각이에요"],
+    // 편 가르기: [앞, 강조(사람 수 — 0부터 세어 올라감), 뒤] — 투표 후 요약 (VoteBowl SameThink)
+    sameThink: (total: number, same: number, side: SameSide) =>
+      side === "alone"
+        ? [`${total}명 중 `, "나만", " 이 생각이에요 😎"]
+        : side === "top"
+          ? [`${total}명 중 `, `${same}명`, "이 내 편이에요 🤝"]
+          : side === "few"
+            ? [`${total}명 중 `, `${same}명`, "만 나와 같아요… 소수 의견 😎"]
+            : [`${total}명 중 `, `${same}명`, "이 나와 같은 생각이에요"],
     changeHint: "다른 칸을 누르면 선택을 바꿀 수 있어요",
     tokenLabel: "투표 토큰 — 원하는 칸으로 끌어다 놓거나 칸을 눌러 투표하세요",
     optionVote: (label: string) => `${label}에 투표`,
@@ -273,7 +283,14 @@ export const DETAIL_COPY = {
     resultLabel: (label: string, pct: number, top: boolean) => `${label} ${pct}%${top ? " (top pick)" : ""}`,
     voteAsk: ["What do you think?", "Cast your vote!"],
     voted: "Voted!",
-    sameThink: (total: number, same: number) => [`${same}`, ` of ${total} people agree with you`, ""],
+    sameThink: (total: number, same: number, side: SameSide) =>
+      side === "alone"
+        ? ["", "Only you", ` out of ${total} think so 😎`]
+        : side === "top"
+          ? ["", `${same}`, ` of ${total} are on your side 🤝`]
+          : side === "few"
+            ? ["Only ", `${same}`, ` of ${total} agree… a rare take 😎`]
+            : ["", `${same}`, ` of ${total} people agree with you`],
     changeHint: "Tap another option to change your vote",
     tokenLabel: "Vote token — drag it into an option or tap an option to vote",
     optionVote: (label: string) => `Vote for ${label}`,
@@ -302,7 +319,14 @@ export const DETAIL_COPY = {
     resultLabel: (label: string, pct: number, top: boolean) => `${label} ${pct}%${top ? "（最多）" : ""}`,
     voteAsk: ["你怎么看？", "来投一票吧！"],
     voted: "投票完成！",
-    sameThink: (total: number, same: number) => [`${total}人中有 `, `${same}人`, " 和你想法一样"],
+    sameThink: (total: number, same: number, side: SameSide) =>
+      side === "alone"
+        ? [`${total}人中 `, "只有你", " 这么想 😎"]
+        : side === "top"
+          ? [`${total}人中有 `, `${same}人`, " 站在你这边 🤝"]
+          : side === "few"
+            ? [`${total}人中只有 `, `${same}人`, " 和你一样…少数派 😎"]
+            : [`${total}人中有 `, `${same}人`, " 和你想法一样"],
     changeHint: "点其他选项可以改投",
     tokenLabel: "投票令牌 — 拖到选项里，或直接点选项投票",
     optionVote: (label: string) => `投给 ${label}`,
@@ -330,7 +354,14 @@ export const DETAIL_COPY = {
     resultLabel: (label: string, pct: number, top: boolean) => `${label} ${pct}%${top ? "（いちばん多い）" : ""}`,
     voteAsk: ["あなたはどう思う？", "投票してね！"],
     voted: "投票完了！",
-    sameThink: (total: number, same: number) => [`${total}人中 `, `${same}人`, " があなたと同じ考え"],
+    sameThink: (total: number, same: number, side: SameSide) =>
+      side === "alone"
+        ? [`${total}人中 `, "あなただけ", " がこの考え 😎"]
+        : side === "top"
+          ? [`${total}人中 `, `${same}人`, " があなたの味方 🤝"]
+          : side === "few"
+            ? [`${total}人中たった `, `${same}人`, " …少数派 😎"]
+            : [`${total}人中 `, `${same}人`, " があなたと同じ考え"],
     changeHint: "ほかの選択肢を押すと選び直せます",
     tokenLabel: "投票トークン — 選択肢までドラッグするか、選択肢を押して投票",
     optionVote: (label: string) => `${label}に投票`,

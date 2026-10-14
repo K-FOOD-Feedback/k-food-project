@@ -11,7 +11,7 @@ import { useFlow } from "@/lib/write-store";
 import { burstConfetti } from "./confetti";
 import { optionsIn } from "./postText";
 import { CARD_SHAPES } from "@/app/home/cardShapes";
-import { DETAIL_COPY, type CommentsLang } from "./copy";
+import { DETAIL_COPY, type CommentsLang, type SameSide } from "./copy";
 import { titleFont } from "./font";
 
 const titleSize = "text-[24px] tracking-[-0.72px]";
@@ -315,7 +315,7 @@ export function VoteBowl({
       </h2>
 
       {/* 토큰 자리: 투표 전엔 토큰, 투표 후엔 결과 요약 */}
-      <div className="flex h-16 items-center justify-center">
+      <div className="flex min-h-16 items-center justify-center">
         {viewOnly ? (
           <div className="flex flex-col items-center gap-1 text-center">
             <p className="text-[15px] leading-[1.4] font-semibold text-neutral-400">{T.resultsTotal(total)}</p>
@@ -323,20 +323,19 @@ export function VoteBowl({
           </div>
         ) : myVote !== null ? (
           <div className="flex flex-col items-center gap-1 text-center">
-            {/* 투표 완료(24px)보다 작게, 같은 생각인 사람 수(나 포함)만 흰색으로 강조 */}
-            <p className="text-[18px] leading-[1.35] font-bold tracking-[-0.36px] text-neutral-400">
+            {/* 투표 완료(24px)보다 작게, 편 가르기 문구 — 같은 생각인 사람 수(나 포함)만 흰색, 0부터 세어 올라감 */}
+            <p className="text-[18px] leading-[1.35] font-bold tracking-[-0.36px] text-balance text-neutral-400">
               {(() => {
-                const [a, b, c] = T.sameThink(total, votes[myVote]);
-                // 한국어: "N명 중 [M명]이 …" / 영어: "[M] of N people …" — 숫자 부분만 흰색
-                return lang === "en" ? (
-                  <>
-                    <span className="text-on-dark">{a}</span>
-                    {b}
-                  </>
-                ) : (
+                const same = votes[myVote];
+                const side: SameSide =
+                  same <= 1 ? "alone" : same >= Math.max(...votes) ? "top" : same / total < 0.2 ? "few" : "mid";
+                const [a, b, c] = T.sameThink(total, same, side);
+                return (
                   <>
                     {a}
-                    <span className="text-on-dark">{b}</span>
+                    <span className="text-on-dark tabular-nums">
+                      <CountUp text={b} value={same} run={inView} />
+                    </span>
                     {c}
                   </>
                 );
@@ -503,4 +502,34 @@ export function VoteBowl({
       />}
     </section>
   );
+}
+
+/*
+  숫자 카운트업 — text 안의 숫자(value)를 0부터 value까지 빠르게 세어 올림 (끝으로 갈수록 느려짐, 0.9초)
+  run이 켜질 때(투표 영역이 보일 때) 시작. 표를 바꿔 value가 바뀌면 지금 숫자에서 새 숫자로 이어서 셈.
+  숫자가 없는 글("나만")은 그대로. 움직임 줄이기 설정이면 바로 최종 숫자
+*/
+const COUNT_MS = 900;
+function CountUp({ text, value, run }: { text: string; value: number; run: boolean }) {
+  const [shown, setShown] = useState(0);
+  const from = useRef(0);
+  useEffect(() => {
+    if (!run) return;
+    const start = from.current;
+    if (start === value) return;
+    const ms = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : COUNT_MS;
+    const t0 = performance.now();
+    let raf = 0;
+    const tick = (now: number) => {
+      const p = ms ? Math.min((now - t0) / ms, 1) : 1;
+      const eased = 1 - Math.pow(1 - p, 3);
+      const n = Math.round(start + (value - start) * eased);
+      from.current = n;
+      setShown(n);
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [run, value]);
+  return text.replace(String(value), String(shown));
 }
