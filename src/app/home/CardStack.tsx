@@ -19,6 +19,17 @@ import { participantsOf, type HomePost as Post } from "./mockPosts";
 /** 화면·글 언어 (버전과 별개 — 버전은 한국인 /home · 외국인 /home?lang=en 로 정해지고, 언어는 지구본으로 바꿈) */
 export type Lang = UiLang;
 
+/**
+  중국어·일본어 제목 폭 — 한 줄로 끝나면 칸이 비어 보이고, 두 줄 길이가 크게 다르면 어색해서
+  글자 수의 절반만큼으로 폭을 제한해 늘 비슷한 길이의 두 줄로 나눔 (한자·가나는 글자 하나가 거의 1em).
+  길어서 3줄이 필요하면 카드 폭(100%)까지 그대로 씀
+*/
+function cjkTitleWidth(title: string) {
+  const n = [...title].length;
+  if (n <= 4) return undefined;
+  return `min(100%, calc(${Math.ceil(n / 2)} * (1em - 0.69px) + 0.6em))`;
+}
+
 /** 카드 위 짧은 문구 (화면 언어) */
 const CARD_TEXT: Record<Lang, { joined: string; voted: string; comments: string; region: string }> = {
   ko: { joined: "명 참여", voted: "투표 완료", comments: "한마디", region: "K-food 콘텐츠" },
@@ -404,6 +415,8 @@ function CardContent({
   shape: CardShape;
 }) {
   const t = CARD_TEXT[lang];
+  const title = titleIn(post, contentLang);
+  const cjk = contentLang === "zh" || contentLang === "ja";
   const photo = cardPhotoOf(post);
   const { mask, scale: k } = shape;
   const m = cardMaskBox(k);
@@ -480,15 +493,17 @@ function CardContent({
         <span
           // 띄어쓰기 없는 긴 단어도 칸 안에서 줄을 바꾸고, 3줄을 넘으면 … (제목 글자 수 한도 TITLE_MAX가 3줄에 맞춰져 있음 — …는 번역이 길어질 때의 안전장치, 점검 화면 /dev/edge-cases)
           // 글꼴: 한국어 Paperlogy · 영어 Gilroy(font-title-en) · 중국어 Noto Sans SC · 일본어 Noto Sans JP (titleFont)
-          className={`w-full pb-2 text-[23px] font-extrabold tracking-[-0.69px] break-keep text-balance [overflow-wrap:anywhere] ${
+          className={`w-full pb-2 text-[23px] font-extrabold tracking-[-0.69px] text-balance [overflow-wrap:anywhere] ${
             contentLang === "en"
-              ? "line-clamp-3 font-title-en leading-[1.03]"
+              ? "line-clamp-3 break-keep font-title-en leading-[1.03]"
               : contentLang === "ko"
-                ? "line-clamp-3 font-(family-name:--font-paperlogy) leading-[1.18]"
-                : `line-clamp-3 leading-[1.18] ${titleFont(contentLang)}`
+                ? "line-clamp-3 break-keep font-(family-name:--font-paperlogy) leading-[1.18]"
+                : // 중국어·일본어: 띄어쓰기가 없어 글자 사이에서 줄을 바꾸고(break-keep 빼기), 문장부호가 줄 맨 앞에 혼자 오지 않게(line-break: strict)
+                  `line-clamp-3 [line-break:strict] leading-[1.18] ${titleFont(contentLang)}`
           }`}
+          style={cjk ? { maxWidth: cjkTitleWidth(title) } : undefined}
         >
-          {titleIn(post, contentLang)}
+          {title}
         </span>
         {/* 닉네임이 길면 … (한마디 수와 겹치지 않게 사이 12px) */}
         <span className="flex w-full items-center justify-between gap-3 text-[13px] font-semibold text-black/60">
