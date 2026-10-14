@@ -19,7 +19,7 @@ import { track } from "@/lib/analytics";
 import { useCommentLogin } from "./CommentLogin";
 import { backHrefFrom, withFrom, type BackFrom } from "@/lib/back";
 import { CommentPile } from "./CommentPile";
-import { DETAIL_COPY, type CommentsLang, type Lang } from "./copy";
+import { DETAIL_COPY, type CommentsLang } from "./copy";
 import { nameIn, titleIn } from "@/app/home/titles";
 import { notoSansJP, notoSansSC, paperlogy, titleFont } from "./font";
 import { isForeignFrom, withViewer } from "./viewer";
@@ -45,11 +45,10 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
   // 한마디 전체 화면 — ← 가 이 상세로 오도록 via=detail, 들어온 곳(from)은 이어 붙임
   const commentsHref = link(`/posts/${post.id}/comments?via=detail`);
   // 화면 문구 언어: 지구본으로 고른 언어 (외국인 기본 영어, 한국인 기본 한국어 — 따로 기억)
-  // (한국어·영어·중국어·일본어 — 중·일도 그 자리에서. 한·영만 아는 공통 부품(⋯ 메뉴·공유 시트·로그인)에는 baseLang)
+  // (한국어·영어·중국어·일본어 — 중·일도 그 자리에서. ⋯ 메뉴·공유 시트·로그인도 네 언어 모두)
   const viewerLang = useViewerUiLang();
   const koreanLang = useKoreanUiLang();
   const lang: CommentsLang = foreigner ? viewerLang : koreanLang;
-  const baseLang: Lang = lang === "ko" ? "ko" : "en";
   const T = DETAIL_COPY[lang];
   // 글(제목·본문·투표 칸) 언어: 원어(글쓴이 언어 = 영어) 그대로, 자동 번역이 켜져 있으면 화면 언어로 번역해 보여 줌
   const autoTranslate = useAutoTranslate();
@@ -599,7 +598,7 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
             <PostMenu
               postId={post.id}
               isMine={post.id === MY_POST_ID}
-              lang={baseLang}
+              lang={lang}
               className={HEADER_BUTTON}
               onOpen={() => track("post_more_clicked", { post_id: post.id })}
             >
@@ -910,7 +909,7 @@ function ShareVoteCard({
     photo: post.cardPhoto,
     voteQuestion: post.question.text,
     options: ((en && post.en.options) || post.question.options).map((o) => o.replace(/\n/g, " ")),
-    author: `${post.author.flag} ${post.author.name}`,
+    author: `${post.author.flag} ${nameIn(post, contentLang)}`,
   };
 
   return (
@@ -938,7 +937,7 @@ function ShareVoteCard({
       {/* 상세 내용은 넘기기·전환 때 움직이므로(transform) 시트는 body에 띄움 */}
       {open &&
         createPortal(
-          <ShareSheet open onClose={() => setOpen(false)} postId={post.id} post={card} from="detail_menu" lang={lang === "ko" ? "ko" : "en"} />,
+          <ShareSheet open onClose={() => setOpen(false)} postId={post.id} post={card} from="detail_menu" lang={lang} />,
           document.body,
         )}
     </>

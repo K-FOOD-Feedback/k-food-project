@@ -42,7 +42,7 @@ export function useCommentLogin({
     <>
       <LoginSheet
         // 로그인 시트는 아직 한국어·영어만 (중국어·일본어는 영어로)
-        lang={lang === "ko" ? "ko" : "en"}
+        lang={lang}
         open={open}
         title={t.loginTitle}
         body={t.loginBody}

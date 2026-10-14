@@ -35,12 +35,12 @@ function StarPhoto({ src, size, className = "" }: { src: string; size: number; c
 
 export type CardStyle = "photo" | "vote" | "verdict";
 /** 카드 글 언어 — 한국인 화면(상세)은 한국어, 외국인 화면(글 올린 뒤)은 영어 */
-export type CardLang = "en" | "ko";
+export type CardLang = "en" | "ko" | "zh" | "ja";
 
 export const CARD_STYLES: { id: CardStyle; label: Record<CardLang, string> }[] = [
-  { id: "photo", label: { en: "Photo", ko: "사진" } },
-  { id: "vote", label: { en: "Vote", ko: "투표" } },
-  { id: "verdict", label: { en: "Verdict", ko: "판결" } },
+  { id: "photo", label: { en: "Photo", ko: "사진", zh: "照片", ja: "写真" } },
+  { id: "vote", label: { en: "Vote", ko: "투표", zh: "投票", ja: "投票" } },
+  { id: "verdict", label: { en: "Verdict", ko: "판결", zh: "判决", ja: "判決" } },
 ];
 
 // 카드 안 글
@@ -71,6 +71,32 @@ const COPY = {
     pending: "판결 대기 중",
     voteNow: "지금 투표하기!",
   },
+  zh: {
+    footer: "韩国人，点链接投票 👉",
+    court: "韩餐法庭",
+    caseNo: "案件编号 0001 · 🇰🇷",
+    exhibit: "证物 A",
+    cook: "厨师",
+    charge: "罪名",
+    jury: "陪审团",
+    juryValue: "招募韩国人",
+    verdict: "判决",
+    pending: "等待判决",
+    voteNow: "现在投票！",
+  },
+  ja: {
+    footer: "韓国の人、リンクから投票 👉",
+    court: "韓国料理法廷",
+    caseNo: "事件番号 0001 · 🇰🇷",
+    exhibit: "証拠 A",
+    cook: "料理人",
+    charge: "容疑",
+    jury: "陪審員",
+    juryValue: "韓国人募集中",
+    verdict: "判決",
+    pending: "判決待ち",
+    voteNow: "今すぐ投票！",
+  },
 };
 
 export type CardTheme = { bg: string; fg: string };
@@ -97,6 +123,8 @@ const STICKER_TEXTS: Record<CardLang, string[]> = {
     "One vote please 🙏",
   ],
   ko: ["찐 한식?", "지금 투표!", "선 넘었나요? 🚫", "한국인 출동 🚨", "이거 합법? 😳", "한식이냐 범죄냐", "한 표 부탁 🙏", "판결 부탁 ⚖️"],
+  zh: ["正宗韩餐？", "快来投票！", "越界了吗？🚫", "韩国人集合 🚨", "这合法吗？😳", "韩餐还是犯罪？", "求一票 🙏", "请判决 ⚖️"],
+  ja: ["本物の韓国料理？", "今すぐ投票！", "やりすぎ？🚫", "韓国人集合 🚨", "これって合法？😳", "韓国料理か犯罪か", "一票ください 🙏", "判決をお願い ⚖️"],
 };
 const STICKER_COLORS = ["var(--color-primary)", "var(--color-content)", "var(--color-secondary)", "var(--color-lilac)", "#ffffff"];
 // 카드 스타일마다 스티커가 붙을 만한 자리 — 모두 카드 안쪽(가장자리에서 8 이상)에 둬서 잘리지 않게

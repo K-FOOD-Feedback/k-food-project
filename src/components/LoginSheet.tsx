@@ -24,6 +24,19 @@ const COPY = {
     body: "투표는 로그인한 한국인만 할 수 있어요.\n구글로 3초면 끝나요.",
     google: "Google로 계속하기",
   },
+  // 중국어·일본어 (지구본으로 고르면 — 송희 확인)
+  zh: {
+    label: "登录",
+    title: "登录后分享你的韩餐",
+    body: "只需一步，韩国人就能开始评判你的菜。",
+    google: "使用 Google 继续",
+  },
+  ja: {
+    label: "ログイン",
+    title: "ログインして韓国料理をシェア",
+    body: "ワンステップで、韓国の人があなたの料理をジャッジし始めます。",
+    google: "Googleで続ける",
+  },
 };
 
 export function LoginSheet({
@@ -39,7 +52,7 @@ export function LoginSheet({
   onClose: () => void;
   onLoggedIn: () => void;
   /** 외국인(작성) = en, 한국인(투표) = ko */
-  lang?: "en" | "ko";
+  lang?: "en" | "ko" | "zh" | "ja";
   title?: string;
   body?: string;
   /** 제목 위에 들어갈 그림 등 */
