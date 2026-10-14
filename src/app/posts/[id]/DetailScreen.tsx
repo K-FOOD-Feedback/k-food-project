@@ -2,6 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
+import { ShareSheet } from "@/app/write/done/ShareSheet";
+import type { ShareCardPost } from "@/app/write/done/ShareCard";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type Ref } from "react";
 import { clearCardTransition, peekCardTransition, setReturnTransition, type Box } from "@/app/home/cardTransition";
 import { HOME_POSTS, participantsOf, type HomePost } from "@/app/home/mockPosts";
@@ -11,7 +14,6 @@ import { LanguageButton, useAutoTranslate } from "@/components/LanguagePicker";
 import { HEADER_BUTTON, PageHeader } from "@/components/PageHeader";
 import { useMyVote } from "@/app/home/votes";
 import { PostMenu } from "@/components/PostMenu";
-import { TrackedLink } from "@/components/Track";
 import { MY_POST_ID } from "@/lib/write-data";
 import { track } from "@/lib/analytics";
 import { useCommentLogin } from "./CommentLogin";
@@ -415,21 +417,25 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
       dx = 0;
       content.style.transition = "";
     };
+    // 좌우로 넘기는 중이면 true (터치에서는 이때 화면이 위아래로 같이 움직이지 않게 막음)
     const drag = (x0: number, y0: number) => {
-      if (!start) return;
+      if (!start) return false;
       const x = x0 - start.x;
       const y = y0 - start.y;
-      if (mode === "undecided" && Math.hypot(x, y) > 10) {
-        mode = Math.abs(x) > Math.abs(y) * 1.4 ? "swipe" : "scroll";
+      // 처음 조금 움직인 방향으로 결정: 옆이 더 크면 넘기기, 아니면 그냥 스크롤
+      // (기울어진 대각선도 넘기기로 잡히게 조금 넉넉하게 — 옆 > 위아래)
+      if (mode === "undecided" && Math.hypot(x, y) > 8) {
+        mode = Math.abs(x) > Math.abs(y) ? "swipe" : "scroll";
         if (mode === "swipe") {
           // 마우스로 끌 때 글자가 같이 선택되지 않게
           window.getSelection()?.removeAllRanges();
           document.body.style.userSelect = "none";
         }
       }
-      if (mode !== "swipe") return;
+      if (mode !== "swipe") return false;
       dx = x;
-      setOffset(x * 0.6); // 살짝 무겁게 따라옴
+      setOffset(x * 0.6); // 살짝 무겁게 따라옴 (위아래로는 움직이지 않음)
+      return true;
     };
     const finish = () => {
       document.body.style.userSelect = "";
@@ -461,11 +467,23 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
       nextTrip = { postId: target.id, at: Date.now(), swipe: dir };
       window.setTimeout(() => router.push(withViewer(withFrom(`/posts/${target.id}`, from), keepViewer)), SWIPE_OUT_MS - 40);
     };
+    // 시스템이 터치를 가로채면(전화 등) 넘기지 않고 제자리로
+    const cancel = () => {
+      document.body.style.userSelect = "";
+      if (start && mode === "swipe") {
+        content.style.transition = "transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 300ms";
+        setOffset(0);
+      }
+      start = null;
+    };
     const onTouchStart = (e: TouchEvent) => {
       if (e.touches.length !== 1) return void (start = null);
       begin(e.touches[0].clientX, e.touches[0].clientY, e.target as Element);
     };
-    const onTouchMove = (e: TouchEvent) => drag(e.touches[0].clientX, e.touches[0].clientY);
+    // 넘기는 중에는 브라우저 기본 동작(위아래 스크롤·옆으로 밀림·확대 축소)을 막아 좌우로만 움직이게
+    const onTouchMove = (e: TouchEvent) => {
+      if (drag(e.touches[0].clientX, e.touches[0].clientY) && e.cancelable) e.preventDefault();
+    };
     // 웹(마우스): 왼쪽 버튼으로 끌기
     const onMouseDown = (e: PointerEvent) => {
       if (e.pointerType === "mouse" && e.button === 0) begin(e.clientX, e.clientY, e.target as Element);
@@ -477,9 +495,13 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
       if (e.pointerType === "mouse") finish();
     };
     document.addEventListener("touchstart", onTouchStart, { passive: true });
-    document.addEventListener("touchmove", onTouchMove, { passive: true });
+    document.addEventListener("touchmove", onTouchMove, { passive: false });
+    // 화면 가장자리에서 옆으로 밀 때 브라우저 뒤로 가기·페이지 통째로 밀림이 같이 일어나지 않게
+    const html = document.documentElement;
+    const prevOverscroll = html.style.overscrollBehaviorX;
+    html.style.overscrollBehaviorX = "none";
     document.addEventListener("touchend", finish);
-    document.addEventListener("touchcancel", finish);
+    document.addEventListener("touchcancel", cancel);
     document.addEventListener("pointerdown", onMouseDown);
     document.addEventListener("pointermove", onMouseMove);
     document.addEventListener("pointerup", onMouseUp);
@@ -488,8 +510,9 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
       document.body.style.userSelect = "";
       document.removeEventListener("touchstart", onTouchStart);
       document.removeEventListener("touchmove", onTouchMove);
+      html.style.overscrollBehaviorX = prevOverscroll;
       document.removeEventListener("touchend", finish);
-      document.removeEventListener("touchcancel", finish);
+      document.removeEventListener("touchcancel", cancel);
       document.removeEventListener("pointerdown", onMouseDown);
       document.removeEventListener("pointermove", onMouseMove);
       document.removeEventListener("pointerup", onMouseUp);
@@ -616,13 +639,22 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
         </div>
 
         {/* 투표 완료 후: 투표 ↔ 한마디 사이 공유 카드 (누르면 휴대폰·브라우저 공유창) — 한국인만 */}
-        {(voted || foreigner) && <ShareVoteCard post={post} lang={lang} title={titleOf(post)} foreigner={foreigner} />}
+        {(voted || foreigner) && <ShareVoteCard post={post} lang={lang} contentLang={contentLang} foreigner={foreigner} />}
 
         <div
-          className="relative"
+          className={`relative ${open ? "[&>div>div>section]:cursor-pointer" : ""}`}
           ref={(el) => {
             fadeIns.current[1] = el;
             commentRef.current = el;
+          }}
+          // 투표 후: 한마디 칸을 "탭"하면 한마디 전체 화면으로 (칸 안은 스크롤할 수 있어서 덮개 링크 대신 클릭으로 받음.
+          // 스크롤·끌기는 클릭이 생기지 않고, ↗ 같은 링크·버튼은 각자 동작)
+          onClick={(e) => {
+            const target = e.target as Element;
+            if (!open || !target.closest("section") || target.closest("a, button, input, textarea")) return;
+            track("comments_opened", { post_id: post.id, comment_count: post.commentCount, from: "detail", viewer: foreigner ? "foreigner" : "korean" });
+            commentsTrip = { postId: post.id, scrollY: window.scrollY, at: Date.now() };
+            router.push(commentsHref);
           }}
         >
           {/*
@@ -631,19 +663,22 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
           */}
           <div
             inert={!open}
-            className={
+            // 한마디 칸 ↔ 이모지 줄 간격: CommentPile 기본 32px에서 16px로 (칸 아래만 당김)
+            className={`[&>div>section]:-mb-4 ${
               open
                 ? "[&>div>*:not(section)]:transition-opacity [&>div>*:not(section)]:duration-500 [&>div>*:not(section)]:starting:opacity-0"
                 : // 잠금 레이어 아래 한마디 칸은 칸 안 내용 자체를 흐리게 (위에 backdrop-blur를 얹으면
                   // 움직이는 말풍선 위에서 블러가 매 프레임 다시 그려지며 세로 줄·깜빡임이 생김)
                   // 아래 그라데이션(data-fade)은 흐리지 않음 — 흐리면 그라데이션 끝이 반투명해져 말풍선 색이 비쳐 보임
                   "[&>div>*:not(section)]:hidden [&>div>section>*:not([data-fade])]:blur-[8px]"
-            }
+            }`}
           >
             <CommentPile
               postId={post.id}
               commentCount={post.commentCount}
               authorFlag={post.author.flag}
+              // 글쓴이 말풍선은 이 글의 카드 색 (화면 색을 카드 색 하나로 맞춤)
+              authorColor={post.color}
               // 한마디에는 닉네임을 보이지 않음 (글쓴이 뱃지는 "글쓴이"만) — 닉네임은 본문 카드에만
               lang={lang}
               fullHref={commentsHref}
@@ -651,17 +686,7 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
               onLockedWrite={login.ask}
             />
           </div>
-          {!foreigner && <CommentLock locked={!voted} onVote={goToVote} lines={T.lock} button={T.voteNow} />}
-          {/* 투표 후: 한마디 칸 어디를 눌러도 한마디 전체 화면으로 (상세에서는 말풍선 호버·모달 없이 칸 전체가 하나의 링크) */}
-          {open && (
-            <TrackedLink
-              href={commentsHref}
-              event="comments_opened"
-              props={{ post_id: post.id, comment_count: post.commentCount, from: "detail", viewer: foreigner ? "foreigner" : "korean" }}
-              aria-label={T.openComments}
-              className="absolute inset-x-0 top-0 z-10 h-[362px] rounded-[32px]"
-            />
-          )}
+          {!foreigner && <CommentLock locked={!voted} onVote={goToVote} lines={T.lock} button={T.voteNow} color={post.color} />}
         </div>
 
         {/* 화면 맨 아래 "다음 훈수 거리" (Figma 332:3426 Question CTA) — 떠 있지 않고 내용 끝에 놓임 */}
@@ -766,11 +791,14 @@ function CommentLock({
   onVote,
   lines,
   button,
+  color,
 }: {
   locked: boolean;
   onVote: () => void;
   lines: readonly string[];
   button: string;
+  /** 포인트 색 (자물쇠·투표하기 버튼) = 이 글의 카드 색 */
+  color: string;
 }) {
   return (
     <div
@@ -782,8 +810,12 @@ function CommentLock({
       <div className="flex w-[178px] flex-col items-center gap-[30px]">
         <div className="flex flex-col items-center gap-5">
           <span className="flex size-[60px] items-center justify-center rounded-full bg-[#292929]">
-            {/* eslint-disable-next-line @next/next/no-img-element -- 작은 SVG 아이콘 */}
-            <img src="/images/icon-lock.svg" width={32} height={32} alt="" />
+            {/* 자물쇠 모양(icon-lock.svg)을 마스크로 써서 카드 색으로 칠함 */}
+            <span
+              aria-hidden
+              className="size-8 mask-[url(/images/icon-lock.svg)] mask-contain mask-center mask-no-repeat"
+              style={{ backgroundColor: color }}
+            />
           </span>
           <p className="text-center font-(family-name:--font-paperlogy) text-[20px] leading-[1.45] tracking-[-0.4px] whitespace-nowrap text-white">
             {lines[0]}
@@ -795,7 +827,8 @@ function CommentLock({
           type="button"
           onClick={onVote}
           tabIndex={locked ? 0 : -1}
-          className="rounded-full bg-primary px-5 py-3.5 text-[18px] leading-[1.45] font-extrabold tracking-[-0.36px] text-white transition-transform active:scale-95"
+          className="rounded-full px-5 py-3.5 text-[18px] leading-[1.45] font-extrabold tracking-[-0.36px] text-on-light transition-transform active:scale-95"
+          style={{ backgroundColor: color }}
         >
           {button}
         </button>
@@ -843,55 +876,37 @@ const EASE = "cubic-bezier(0.2, 0.8, 0.2, 1)";
 function ShareVoteCard({
   post,
   lang,
-  title,
+  contentLang,
   foreigner = false,
 }: {
   post: HomePost;
   lang: Lang;
-  title: string;
+  /** 공유 카드에 들어갈 글(제목·투표 칸) 언어 — 화면에 보이는 글과 같게 */
+  contentLang: Lang;
   /** 외국인 화면: 투표 없이 결과만 보므로 처음부터 보이고, 문구도 "한국인들의 생각"을 나누는 쪽으로 */
   foreigner?: boolean;
 }) {
   const T = DETAIL_COPY[lang];
-  const [toast, setToast] = useState<string | null>(null);
-  useEffect(() => {
-    if (!toast) return;
-    const t = window.setTimeout(() => setToast(null), 2200);
-    return () => window.clearTimeout(t);
-  }, [toast]);
-
-  const share = async () => {
-    const url = `${window.location.origin}/posts/${post.id}`;
-    if (navigator.share) {
-      try {
-        // 받는 사람이 한국인이든 외국인이든 읽을 수 있게 한국어·영어 같이
-        await navigator.share({
-          title,
-          text: foreigner
-            ? `${post.question.text}\n한국인들은 어떻게 생각할까? 같이 보자!\nWhat do Koreans think? Come see!`
-            : `${post.question.text}\n난 벌써 한 표 던졌어. 이제 네 차례!\nI already voted. Your turn!`,
-          url,
-        });
-        track("post_shared", { channel: "native", from: "detail_vote", post_id: post.id, viewer: foreigner ? "foreigner" : "korean" });
-      } catch {
-        // 사용자가 공유창을 닫음
-      }
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(url);
-      track("post_shared", { channel: "copy_link", from: "detail_vote", post_id: post.id, viewer: foreigner ? "foreigner" : "korean" });
-      setToast(T.copied);
-    } catch {
-      setToast(T.copyFail);
-    }
+  // 누르면 송희 공유 바텀시트(카드 디자인 고르기 + 저장·스토리·링크 복사·메시지…)를 띄움 — ⋯ 메뉴 "공유하기"와 같은 시트
+  const [open, setOpen] = useState(false);
+  const en = contentLang === "en";
+  const card: ShareCardPost = {
+    title: en ? post.en.title : post.title,
+    dish: en ? post.en.title : post.title,
+    photo: post.cardPhoto,
+    voteQuestion: post.question.text,
+    options: ((en && post.en.options) || post.question.options).map((o) => o.replace(/\n/g, " ")),
+    author: `${post.author.flag} ${post.author.name}`,
   };
 
   return (
     <>
       <button
         type="button"
-        onClick={share}
+        onClick={() => {
+          track("share_sheet_opened", { from: "detail_vote", post_id: post.id, viewer: foreigner ? "foreigner" : "korean" });
+          setOpen(true);
+        }}
         className="flex w-full items-center gap-4 rounded-[32px] bg-secondary py-5 pr-4 pl-7 text-left text-on-light transition-[scale,opacity,translate] duration-500 active:scale-[0.98] starting:translate-y-3 starting:opacity-0"
       >
         <span className="flex min-w-0 flex-1 flex-col gap-1">
@@ -902,19 +917,16 @@ function ShareVoteCard({
             {foreigner ? T.shareSubForeign : T.shareSub}
           </span>
         </span>
-        {/* 공유 원이 둥실둥실 떠서 눈길을 끔 */}
-        <span className="flex size-16 shrink-0 animate-float items-center justify-center rounded-full bg-background text-on-dark">
+        <span className="flex size-16 shrink-0 items-center justify-center rounded-full bg-background text-on-dark">
           <Icon name="share" />
         </span>
       </button>
-      {toast && (
-        <p
-          role="status"
-          className="fixed bottom-[calc(24px+env(safe-area-inset-bottom))] left-1/2 z-40 -translate-x-1/2 rounded-full bg-on-dark px-5 py-3 text-[15px] font-semibold whitespace-nowrap text-on-light"
-        >
-          {toast}
-        </p>
-      )}
+      {/* 상세 내용은 넘기기·전환 때 움직이므로(transform) 시트는 body에 띄움 */}
+      {open &&
+        createPortal(
+          <ShareSheet open onClose={() => setOpen(false)} postId={post.id} post={card} from="detail_menu" lang={lang} />,
+          document.body,
+        )}
     </>
   );
 }
@@ -931,7 +943,11 @@ function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: HomePost
     const fit = () => {
       el.style.fontSize = "";
       let size = parseFloat(getComputedStyle(el).fontSize);
-      const lines = () => Math.round(el.scrollHeight / parseFloat(getComputedStyle(el).lineHeight));
+      // 아래 여백(pb, g·y 같은 글자 꼬리가 잘리지 않게 둔 자리)은 빼고 줄 수를 셈
+      const lines = () => {
+        const cs = getComputedStyle(el);
+        return Math.round((el.scrollHeight - parseFloat(cs.paddingBottom)) / parseFloat(cs.lineHeight));
+      };
       while (lines() > TITLE_MAX_LINES && size > TITLE_MIN_PX) {
         size -= 1;
         el.style.fontSize = `${size}px`;
@@ -952,12 +968,12 @@ function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: HomePost
         </span>
         {post.author.name}
       </p>
-      {/* 제목: 글 영역 폭의 3/5, 최대 3줄 — 3줄을 넘으면 넘지 않을 때까지 글자를 조금씩 줄임(최소 18px, 그래도 넘치면 3줄에서 자름)
+      {/* 제목: 글 영역 폭의 3/5, 최대 3줄 (아래 0.15em 여백: 행간이 좁아도 g·y 꼬리가 잘리지 않게) — 3줄을 넘으면 넘지 않을 때까지 글자를 조금씩 줄임(최소 18px, 그래도 넘치면 3줄에서 자름)
           영어는 소문자가 낮아 같은 행간이면 줄 사이가 비어 보여서 좁게 (한국어 1.2 → 영어 1.05)
           줄 길이는 고르게(text-balance) */}
       <h1
         ref={titleRef}
-        className={`line-clamp-3 w-3/5 ${titleFont(contentLang)} text-[31px] ${enText ? "leading-[1.05]" : "leading-[1.2]"} tracking-[-0.62px] break-keep text-balance`}
+        className={`line-clamp-3 w-3/5 pb-[0.15em] ${titleFont(contentLang)} text-[31px] ${enText ? "leading-[1.05]" : "leading-[1.2]"} tracking-[-0.62px] break-keep text-balance`}
       >
         {enText ? post.en.title : post.title}
       </h1>

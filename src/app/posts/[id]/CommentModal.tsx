@@ -3,7 +3,7 @@
 import { PillButton } from "@/components/Buttons";
 import { Icon } from "@/components/Icon";
 import { HEADER_BUTTON, PageHeader } from "@/components/PageHeader";
-import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type FormEvent, type Ref } from "react";
+import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type FormEvent, type PointerEvent, type Ref } from "react";
 import { COMMENT_MAX, whoOf, type Comment } from "./comments";
 import { COMMENTS_COPY, type CommentsCopy, type Lang } from "./copy";
 import { HIDDEN_COLOR } from "./hidden";
@@ -85,8 +85,6 @@ export function CommentModal({
   const [overflowing, setOverflowing] = useState(false);
   // 휠 가운데에 온 답글, 버튼을 펼친 답글(가운데 답글만), 답글을 다는 대상
   const [centerId, setCenterId] = useState<string | null>(null);
-  // 답글이 칸에 다 들어가서 휠·스크롤 없이 가운데에 모여 있는지
-  const [compact, setCompact] = useState(true);
   // 손가락으로 끄는 중인지 (그동안은 가운데 답글에 붙이지 않음), 스크롤이 멈추면 붙이는 타이머
   const touching = useRef(false);
   const settleTimer = useRef(0);
@@ -96,6 +94,8 @@ export function CommentModal({
   // 신고 확인 모달을 띄운 답글
   const [reporting, setReporting] = useState<Comment | null>(null);
   const activeScroll = useRef(0);
+  // 흐린 답글을 밀어 가운데로 데려오는 중 — 그 스크롤로는 펼친 버튼을 접지 않음
+  const autoScroll = useRef(false);
   const input = useRef<HTMLInputElement>(null);
   const byId = new Map([comment, ...replies].map((c) => [c.id, c]));
   const replyCounts = new Map<string, number>();
@@ -158,8 +158,8 @@ export function CommentModal({
     const lastEl = items[items.length - 1];
     const content = lastEl.offsetTop + lastEl.offsetHeight - items[0].offsetTop;
     // 칸에 다 들어가면(맨 위 답글이 원글 아래 24px보다 내려와 있으면) 휠 없이 묶음째 가운데에
-    const fits = content <= el.clientHeight - 2 * TOP_GAP;
-    setCompact((prev) => (prev === fits ? prev : fits));
+    // (키보드 위에 답글 대상을 둘 때는 늘 스크롤 목록으로)
+    const fits = !el.dataset.line && content <= el.clientHeight - 2 * TOP_GAP;
     if (fits) {
       el.dataset.compact = "1";
       el.style.paddingTop = `${(el.clientHeight - content) / 2}px`;
@@ -177,10 +177,12 @@ export function CommentModal({
     }
     delete el.dataset.compact;
     // 위는 원글 바로 아래까지만, 아래는 끝 답글도 가운데까지 올 수 있게
-    el.style.paddingTop = `${TOP_GAP}px`;
+    // 키보드 위 기준선이 있으면 맨 위 답글도 거기(칸 맨 아래)까지 내려올 수 있게 위 여백을 늘림
+    el.style.paddingTop = el.dataset.line ? `${Math.max(TOP_GAP, Number(el.dataset.line) - first / 2)}px` : `${TOP_GAP}px`;
     el.style.paddingBottom = `${Math.max(0, el.clientHeight / 2 - last / 2)}px`;
     setOverflowing(el.scrollHeight > el.clientHeight + 1);
     // 휠 기준선: 맨 위에서는 첫 답글 자리, 내리는 만큼 내려와 칸 가운데에서 멈춥니다.
+    // (키보드가 떠 있고 답글 대상이 있으면 기준선은 칸 맨 아래 — 입력칸 바로 위)
     const { line, t } = wheelLine(el, first);
     // 위쪽 그라데이션도 기준선이 내려오는 만큼만 (원글 바로 아래 첫 답글이 흐려지지 않게)
     el.style.setProperty("--fade-top", `${Math.round(56 * t)}px`);
@@ -247,10 +249,12 @@ export function CommentModal({
     el.scrollTo({ top: scrollFor(el, item), behavior: "smooth" });
   };
 
-  /** 답글을 누르면: 흐린 답글은 가운데로, 가운데 답글은 버튼 펼치기/접기 (남의 답글이면 답글 달 대상으로) */
+  /**
+    답글을 한 번 누르면: 가운데로 데려와 강조 + 오른쪽 버튼 + 답글 대상(입력칸에 커서)까지 한 번에.
+    펼친 답글을 다시 누르면 접기. 가려진 답글은 가운데로만.
+  */
   const tapReply = (r: Comment, item: HTMLElement) => {
-    // (답글이 몇 개 안 될 때는 휠이 없어서 어느 답글이든 바로 버튼)
-    if ((r.id !== centerId && !compact) || hiddenIds.has(r.id)) {
+    if (hiddenIds.has(r.id)) {
       setActiveId(null);
       centerReply(item);
       return;
@@ -260,6 +264,21 @@ export function CommentModal({
       if (target?.id === r.id) setTarget(null);
       return;
     }
+    openAndCenter(r, item);
+  };
+
+  /** 펼치면서 (흐린 답글이면) 가운데로 — 그 스크롤로는 펼친 버튼을 접지 않음 */
+  const openAndCenter = (r: Comment, item: HTMLElement) => {
+    openReply(r);
+    const el = list.current;
+    if (!el || el.dataset.compact) return;
+    activeScroll.current = scrollFor(el, item);
+    autoScroll.current = Math.abs(activeScroll.current - el.scrollTop) > 1;
+    if (autoScroll.current) centerReply(item);
+  };
+
+  /** 답글 버튼 펼치기 + 그 답글을 답글 달 대상으로 (누르기·왼쪽으로 밀기 공통) */
+  const openReply = (r: Comment) => {
     activeScroll.current = list.current?.scrollTop ?? 0;
     setActiveId(r.id);
     setTarget(r);
@@ -268,12 +287,59 @@ export function CommentModal({
   };
 
   /**
+    답글 말풍선을 왼쪽으로 밀면 누른 것과 같은 동작 (버튼 펼치기 + 답글 대상), 오른쪽으로 밀면 접기.
+    흐린 답글을 밀면 가운데로 데려오면서 바로 펼칩니다. 미는 동안 말풍선이 손을 살짝 따라옵니다.
+  */
+  const swipe = useRef<{ id: string; x: number; y: number; dx: number; mode: "?" | "x" | "y"; row: HTMLElement | null } | null>(null);
+  const swiped = useRef(false);
+  const onSwipeStart = (e: PointerEvent<HTMLElement>, r: Comment) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    swipe.current = { id: r.id, x: e.clientX, y: e.clientY, dx: 0, mode: "?", row: e.currentTarget.querySelector("[data-row]") };
+  };
+  const onSwipeMove = (e: PointerEvent<HTMLElement>) => {
+    const g = swipe.current;
+    if (!g || g.mode === "y") return;
+    const dx = e.clientX - g.x;
+    const dy = e.clientY - g.y;
+    if (g.mode === "?") {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      // 옆으로 더 많이 움직였을 때만 밀기 (위아래면 목록 스크롤)
+      g.mode = Math.abs(dx) > Math.abs(dy) * 1.2 ? "x" : "y";
+      if (g.mode === "y") return;
+      e.currentTarget.setPointerCapture(e.pointerId);
+    }
+    g.dx = dx;
+    if (g.row) {
+      g.row.style.transition = "none";
+      // 손을 따라오되 점점 무겁게 (왼쪽 최대 약 48px)
+      g.row.style.translate = `${dx < 0 ? -48 * Math.tanh(-dx / 90) : 16 * Math.tanh(dx / 90)}px 0`;
+    }
+  };
+  const onSwipeEnd = (r: Comment, item: HTMLElement) => {
+    const g = swipe.current;
+    swipe.current = null;
+    if (!g || g.mode !== "x") return;
+    swiped.current = true; // 손을 뗄 때 따라오는 click은 무시
+    if (g.row) {
+      g.row.style.transition = "translate 260ms cubic-bezier(0.34, 1.4, 0.64, 1)";
+      g.row.style.translate = "0 0";
+    }
+    if (g.dx <= -SWIPE_MIN) {
+      if (hiddenIds.has(r.id)) return centerReply(item);
+      openAndCenter(r, item);
+    } else if (g.dx >= SWIPE_MIN && activeId === r.id) {
+      setActiveId(null);
+      if (target?.id === r.id) setTarget(null);
+    }
+  };
+
+  /**
     스크롤이 멈추면 휠 기준선에 가장 가까운 답글로 착 붙입니다.
     (브라우저의 scroll-snap은 늘 칸 가운데 기준이라, 맨 위 구간에서 기준선과 어긋나 튀어서 직접 붙임)
   */
   const settle = () => {
     const el = list.current;
-    if (!el || el.dataset.compact || touching.current) return;
+    if (!el || el.dataset.compact || el.dataset.line || touching.current) return;
     const item = centerId ? el.querySelector<HTMLElement>(`[data-reply-id="${CSS.escape(centerId)}"]`) : null;
     if (!item) return;
     const top = scrollFor(el, item);
@@ -293,8 +359,60 @@ export function CommentModal({
     updateWheel();
     scheduleSettle();
     // 스크롤하면 펼친 버튼은 접습니다 (답글 달 대상은 그대로).
-    if (activeId && Math.abs((list.current?.scrollTop ?? 0) - activeScroll.current) > 4) setActiveId(null);
+    const st = list.current?.scrollTop ?? 0;
+    if (autoScroll.current) {
+      if (Math.abs(st - activeScroll.current) <= 1) autoScroll.current = false;
+    } else if (activeId && Math.abs(st - activeScroll.current) > 4) setActiveId(null);
   };
+
+  /*
+    폰 키보드: 아이폰은 키보드가 떠도 화면(레이어) 높이가 그대로라 입력칸·버튼이 키보드에 가려집니다.
+    보이는 영역(visualViewport)에 레이어를 맞춰서 입력칸이 키보드 바로 위에 오게 하고,
+    답글 대상이 있으면 그 답글을 입력칸 바로 위(목록 맨 아래)로 데려옵니다.
+  */
+  const [keyboard, setKeyboard] = useState(false);
+  // 키보드가 올라오는 동안 보이는 높이가 여러 번 바뀌므로, 바뀔 때마다 대상 위치를 다시 맞춤
+  const [viewHeight, setViewHeight] = useState(0);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    const box = root.current;
+    if (!vv || !box) return;
+    const fit = () => {
+      const open = window.innerHeight - vv.height > 120;
+      box.style.top = `${vv.offsetTop}px`;
+      box.style.height = `${vv.height}px`;
+      box.style.bottom = "auto";
+      setKeyboard((prev) => (prev === open ? prev : open));
+      setViewHeight(Math.round(vv.height));
+    };
+    fit();
+    vv.addEventListener("resize", fit);
+    vv.addEventListener("scroll", fit);
+    return () => {
+      vv.removeEventListener("resize", fit);
+      vv.removeEventListener("scroll", fit);
+    };
+  }, []);
+
+  // 키보드가 떠 있는 동안 답글 대상을 입력칸 바로 위에, 내려가면 보통 휠로
+  useLayoutEffect(() => {
+    const el = list.current;
+    if (!el) return;
+    const item = keyboard && target ? el.querySelector<HTMLElement>(`[data-reply-id="${CSS.escape(target.id)}"]`) : null;
+    if (item) el.dataset.line = String(el.clientHeight - item.offsetHeight / 2 - KEYBOARD_GAP);
+    else delete el.dataset.line;
+    updateRef.current();
+    // 키보드가 뜨면 대상을 입력칸 바로 위로, 내려가면 다시 가운데로 (펼친 버튼은 그대로)
+    const goal = item ?? (target ? el.querySelector<HTMLElement>(`[data-reply-id="${CSS.escape(target.id)}"]`) : null);
+    if (goal && !el.dataset.compact) {
+      activeScroll.current = scrollFor(el, goal);
+      autoScroll.current = Math.abs(activeScroll.current - el.scrollTop) > 1;
+      if (item) el.scrollTop = activeScroll.current; // 키보드가 올라오는 동안 바로 맞춤
+      else el.scrollTo({ top: activeScroll.current, behavior: "smooth" });
+      updateRef.current();
+    }
+    // 대상 답글이 바뀌거나 키보드가 뜨고 내릴 때, 보이는 높이가 바뀔 때
+  }, [keyboard, target, viewHeight]);
 
   useEffect(() => {
     if (!toast) return;
@@ -458,10 +576,21 @@ export function CommentModal({
                   <div
                     key={r.id}
                     data-reply-id={r.id}
-                    onClick={(e) => tapReply(r, e.currentTarget)}
+                    onClick={(e) => {
+                      if (swiped.current) {
+                        swiped.current = false;
+                        return;
+                      }
+                      tapReply(r, e.currentTarget);
+                    }}
+                    onPointerDown={(e) => onSwipeStart(e, r)}
+                    onPointerMove={onSwipeMove}
+                    onPointerUp={(e) => onSwipeEnd(r, e.currentTarget)}
+                    onPointerCancel={(e) => onSwipeEnd(r, e.currentTarget)}
                     // 아래 답글일수록 뒤에 깔리게
                     style={{ zIndex: thread.length - i }}
-                    className="relative shrink-0 cursor-pointer transition-[opacity,translate] duration-300 ease-out starting:translate-y-2 starting:opacity-0"
+                    // 위아래는 목록 스크롤, 옆으로는 밀기
+                    className="relative shrink-0 cursor-pointer touch-pan-y transition-[opacity,translate] duration-300 ease-out starting:translate-y-2 starting:opacity-0"
                   >
                     {/* 휠 크기·흐림·당김은 스크롤할 때 updateWheel이 직접 바꿉니다. */}
                     {/* 말풍선 사이는 늘 뱃지 높이만큼(12px) 띄웁니다. 답글에 단 답글은 "↪ 원 답글" 줄 위를 띄우고,
@@ -664,6 +793,10 @@ const TOP_GAP = 12;
   맨 위에서는 첫 답글 가운데에 있다가, 스크롤한 만큼 내려와 칸 가운데에서 멈춥니다.
 */
 function wheelLine(el: HTMLElement, firstHeight: number) {
+  if (el.dataset.line) {
+    const line = Number(el.dataset.line);
+    return { line, t: 1, top: line, range: 1 };
+  }
   const top = TOP_GAP + firstHeight / 2;
   const mid = el.clientHeight / 2;
   const range = Math.max(1, mid - top);
@@ -674,6 +807,8 @@ function wheelLine(el: HTMLElement, firstHeight: number) {
 /** 이 답글이 휠 기준선에 오는 스크롤 위치 (wheelLine의 반대 계산) */
 function scrollFor(el: HTMLElement, item: HTMLElement) {
   if (el.dataset.compact) return el.scrollTop; // 휠 없는 짧은 목록은 그대로
+  const c0 = item.offsetTop + item.offsetHeight / 2;
+  if (el.dataset.line) return Math.max(0, c0 - Number(el.dataset.line)); // 키보드 위 고정 기준선
   const first = el.firstElementChild as HTMLElement;
   const { top, range } = wheelLine(el, first.offsetHeight);
   const c = item.offsetTop + item.offsetHeight / 2;
@@ -681,6 +816,12 @@ function scrollFor(el: HTMLElement, item: HTMLElement) {
   if (c <= top + 2 * range) return Math.max(0, (c - top) / 2);
   return c - el.clientHeight / 2;
 }
+
+/** 키보드가 떠 있을 때 답글 대상과 입력칸 사이 */
+const KEYBOARD_GAP = 12;
+
+/** 이만큼(px) 옆으로 밀어야 밀기로 침 */
+const SWIPE_MIN = 36;
 
 /** 휠 한 칸: 답글 말풍선 높이(약 68px) + 간격 */
 const WHEEL_STEP = 70;

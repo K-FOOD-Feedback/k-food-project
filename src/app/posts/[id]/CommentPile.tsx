@@ -47,6 +47,7 @@ export function CommentPile({
   commentCount,
   authorFlag,
   authorName,
+  authorColor,
   postTitle,
   variant = "preview",
   lang = "ko",
@@ -60,6 +61,8 @@ export function CommentPile({
   authorFlag: string;
   /** 글쓴이 닉네임 — 글쓴이 한마디 뱃지에 (한마디는 익명, 이름은 글쓴이만) */
   authorName?: string;
+  /** 글쓴이 한마디·답글 말풍선 색 — 그 글의 카드 색(post.color)으로 맞춤. 없으면 저장된 색 그대로 */
+  authorColor?: string;
   /** ↗(한마디 전체 보기) 주소 — 상세가 들어온 곳(?from=)을 이어 붙일 때 (없으면 기본 주소) */
   fullHref?: string;
   /** 전체 화면 제목 아래에 보이는 게시글 제목 */
@@ -84,14 +87,14 @@ export function CommentPile({
   const translate = lang === "en" && autoTranslate;
   // 내가 신고해서 가린 한마디는 빼지 않고 회색 "가려진 한마디예요"로 보여 줍니다 (숫자도 그대로).
   const { hidden, hide } = useHiddenComments(postId);
+  // 글쓴이가 남긴 한마디(글·이모지)는 그 글의 카드 색으로 (색이 너무 많지 않게 — 지현 요청)
+  const recolor = (c: Comment) => (authorColor && c.author.kind === "author" ? { ...c, color: authorColor } : c);
   const comments =
-    hidden.size || translate
+    hidden.size || translate || authorColor
       ? all.map((c) =>
           hidden.has(c.id)
             ? { ...c, kind: "text" as const, text: t.hidden, color: HIDDEN_COLOR }
-            : translate
-              ? translateToEnglish(c)
-              : c,
+            : recolor(translate ? translateToEnglish(c) : c),
         )
       : all;
   const [draft, setDraft] = useState("");
@@ -119,7 +122,7 @@ export function CommentPile({
   useEffect(() => {
     const box = zone.current?.firstElementChild;
     const content = box?.firstElementChild;
-    if (!full || !box || !content) return;
+    if (!box || !content) return;
     const observer = new ResizeObserver(() => measureRef.current());
     observer.observe(box);
     observer.observe(content);
@@ -210,7 +213,7 @@ export function CommentPile({
     // 댓글창 윗부분이 화면 밖이면 먼저 보이게 올려 줍니다 (떨어지는 모습이 보이도록).
     // 전체 화면: 댓글 칸을 아래로 스크롤해 둔 상태면 맨 위로 올려서 떨어지는 모습이 보이게
     const scrollBox = zoneEl.firstElementChild;
-    if (full && scrollBox && scrollBox.scrollTop > 0) {
+    if (scrollBox && scrollBox.scrollTop > 0) {
       pile.current.scrollToTop();
       await new Promise((r) => setTimeout(r, 300));
     }
@@ -424,16 +427,21 @@ export function CommentPile({
             </TrackedLink>
         </div>
 
-        <div ref={zone} className="relative">
+        <div ref={zone} className="relative" onScrollCapture={measureFades}>
           {/* 칸이 작아서 맨 위에 쌓일 최신 6개만 쏟아집니다 (많아도 금방 끝나게) */}
           {/* 한마디가 하나도 없으면 칸을 낮추고 안내만 (첫 한마디가 날아와 앉을 자리는 남겨 둠) */}
+          {/* 한마디 전체 화면처럼 칸을 스크롤해 묻힌 한마디까지 볼 수 있음. 상세에서는 말풍선 호버·클릭 없음
+              (칸을 탭하면 전체 화면으로 — DetailScreen) */}
           <GravityPile
             ref={pile}
             comments={comments}
             ready={ready}
             rainOnOpen={6}
             lang={lang}
-            className={ready && comments.length === 0 ? "h-[132px]" : undefined}
+            scrollable
+            hover={false}
+            onOverflowChange={measureFades}
+            className={ready && comments.length === 0 ? "h-[132px]" : "h-[286px]"}
           />
           {ready && comments.length === 0 && (
             <p className="pointer-events-none absolute inset-0 flex items-center justify-center pb-6 text-center text-[15px] leading-[1.45] font-semibold whitespace-pre-line text-white/50">
@@ -441,8 +449,19 @@ export function CommentPile({
             </p>
           )}
         </div>
-        {/* data-fade: 상세 화면이 잠금 상태에서 칸 내용을 흐릴 때 이 그라데이션은 흐리지 않도록 (흐리면 아래 끝이 비쳐 보임) */}
-        <div data-fade className="pointer-events-none absolute inset-x-0 bottom-0 h-[92px] bg-linear-to-b from-[#292929]/0 to-[#292929]" />
+        {/* 칸 위·아래 그라데이션 — 스크롤로 가려졌을 때만 (전체 화면과 같은 규칙, 색은 칸 바탕색).
+            data-fade: 상세 화면이 잠금 상태에서 칸 내용을 흐릴 때 이 그라데이션은 흐리지 않도록 (흐리면 끝이 비쳐 보임).
+            위 그라데이션은 제목 줄 아래(칸 시작 72px)부터 */}
+        <div
+          data-fade
+          className={`pointer-events-none absolute inset-x-0 top-[72px] h-[80px] transition-opacity duration-300 ${fades.top ? "opacity-100" : "opacity-0"}`}
+          style={{ background: scrim("to bottom", CARD_BG) }}
+        />
+        <div
+          data-fade
+          className={`pointer-events-none absolute inset-x-0 bottom-0 h-[100px] transition-opacity duration-300 ${fades.bottom ? "opacity-100" : "opacity-0"}`}
+          style={{ background: scrim("to top", CARD_BG) }}
+        />
       </section>
 
       {/* 이모지 키 → 한마디 입력 카드 순서 (Figma 332:3426) */}
@@ -587,10 +606,12 @@ const SCRIM_STOPS: [number, number][] = [
   [0.92, 0.05],
   [1, 0],
 ];
-const scrim = (direction: "to top" | "to bottom") =>
+const scrim = (direction: "to top" | "to bottom", color = "var(--color-background)") =>
   `linear-gradient(${direction}, ${SCRIM_STOPS.map(
-    ([at, alpha]) => `color-mix(in srgb, var(--color-background) ${Math.round(alpha * 100)}%, transparent) ${at * 100}%`,
+    ([at, alpha]) => `color-mix(in srgb, ${color} ${Math.round(alpha * 100)}%, transparent) ${at * 100}%`,
   ).join(", ")})`;
+/** 상세 화면 한마디 칸 바탕색 (화면 바탕 위 bg-white/10 → 보이는 색) */
+const CARD_BG = "#292929";
 
 type Burst = { id: number; emoji: string; x: number; y: number };
 

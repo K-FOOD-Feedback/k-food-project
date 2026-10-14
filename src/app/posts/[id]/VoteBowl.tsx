@@ -389,8 +389,8 @@ export function VoteBowl({
                     ref={(el) => {
                       peeks.current[i] = el;
                     }}
-                    className="wave-fill absolute inset-x-0 bottom-0 bg-primary transition-[height] duration-700 ease-[cubic-bezier(0.3,1.15,0.5,1)]"
-                    style={{ height: hover === i ? "38%" : "0%" }}
+                    className="wave-fill absolute inset-x-0 bottom-0 transition-[height] duration-700 ease-[cubic-bezier(0.3,1.15,0.5,1)]"
+                    style={{ height: hover === i ? "38%" : "0%", backgroundColor: post.color }}
                   />
                 </span>
               )}
@@ -405,12 +405,14 @@ export function VoteBowl({
                     key={mine ? "mine" : "other"}
                     className={`absolute inset-x-0 bottom-0 h-(--fill) transition-[height] duration-700 starting:h-0 ${
                       mine
-                        ? "wave-fill bg-primary ease-[cubic-bezier(0.3,1.15,0.5,1)]"
+                        ? "wave-fill ease-[cubic-bezier(0.3,1.15,0.5,1)]"
                         : "bg-white/10 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
                     }`}
                     style={
                       {
                         "--fill": `${pcts[i]}%`,
+                        // 물결 색 = 이 글의 카드 색 (화면 색을 카드 색 하나로 맞춤)
+                        ...(mine && { backgroundColor: post.color }),
                         transitionDelay: `${FILL_DELAY_MS + i * FILL_STAGGER_MS}ms`,
                       } as CSSProperties
                     }
