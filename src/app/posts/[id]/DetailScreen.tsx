@@ -20,7 +20,7 @@ import { useCommentLogin } from "./CommentLogin";
 import { backHrefFrom, withFrom, type BackFrom } from "@/lib/back";
 import { CommentPile } from "./CommentPile";
 import { DETAIL_COPY, type CommentsLang, type Lang } from "./copy";
-import { titleIn } from "@/app/home/titles";
+import { nameIn, titleIn } from "@/app/home/titles";
 import { notoSansJP, notoSansSC, paperlogy, titleFont } from "./font";
 import { isForeignFrom, withViewer } from "./viewer";
 import { saveKoreanLang, saveViewerLang, useKoreanUiLang, useViewerUiLang } from "./viewerLang";
@@ -984,7 +984,8 @@ function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: HomePost
         <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-white text-[14px]" aria-hidden>
           {post.author.flag}
         </span>
-        {post.author.name}
+        {/* 닉네임도 글 언어를 따라감 (중·일 번역 — 메인 카드와 같은 nameIn) */}
+        {nameIn(post, contentLang)}
       </p>
       {/* 제목: 글 영역 폭의 3/5, 최대 3줄 (아래 0.15em 여백: 행간이 좁아도 g·y 꼬리가 잘리지 않게) — 3줄을 넘으면 넘지 않을 때까지 글자를 조금씩 줄임(최소 18px, 그래도 넘치면 3줄에서 자름)
           영어는 소문자가 낮아 같은 행간이면 줄 사이가 비어 보여서 좁게 (한국어 1.2 → 영어 1.05)
