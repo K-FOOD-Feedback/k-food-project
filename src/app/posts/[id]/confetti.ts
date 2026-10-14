@@ -3,6 +3,7 @@
   - 터지는 곳(x, y)에서 조각들이 사방으로 튀어 올랐다가 중력처럼 떨어지며 돌고 사라짐
   - 화면 전체 위에 잠깐 띄웠다가 끝나면 지움. 누르기는 그대로 통과 (pointer-events: none)
   - 색은 디자인 토큰(globals.css)만 씀
+  - mask를 주면 조각 모양이 그 모양(콘텐츠 카드 사진을 자르는 물결·클로버·꽃… — src/app/home/cardShapes.ts)이 됨
 */
 
 const COLORS = [
@@ -16,7 +17,7 @@ const PIECES = 70;
 const DURATION = 1300;
 const GRAVITY = 1400; // px/s²
 
-export function burstConfetti(x: number, y: number) {
+export function burstConfetti(x: number, y: number, mask?: string) {
   if (typeof window === "undefined") return;
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
@@ -29,16 +30,35 @@ export function burstConfetti(x: number, y: number) {
   for (let i = 0; i < PIECES; i++) {
     const piece = document.createElement("span");
     const kind = i % 3; // 0 길쭉한 종이, 1 동그라미, 2 네모
-    const size = 6 + Math.random() * 6;
-    Object.assign(piece.style, {
-      position: "absolute",
-      left: `${x}px`,
-      top: `${y}px`,
-      width: `${kind === 0 ? size * 0.5 : size}px`,
-      height: `${kind === 0 ? size * 1.8 : size}px`,
-      borderRadius: kind === 1 ? "9999px" : "2px",
-      background: COLORS[i % COLORS.length],
-    });
+    const size = mask ? 10 + Math.random() * 10 : 6 + Math.random() * 6;
+    Object.assign(
+      piece.style,
+      mask
+        ? {
+            // 카드 사진 모양 조각 (정사각 상자에 모양 마스크)
+            position: "absolute",
+            left: `${x}px`,
+            top: `${y}px`,
+            width: `${size}px`,
+            height: `${size}px`,
+            background: COLORS[i % COLORS.length],
+            maskImage: mask,
+            webkitMaskImage: mask,
+            maskSize: "100% 100%",
+            webkitMaskSize: "100% 100%",
+            maskRepeat: "no-repeat",
+            webkitMaskRepeat: "no-repeat",
+          }
+        : {
+            position: "absolute",
+            left: `${x}px`,
+            top: `${y}px`,
+            width: `${kind === 0 ? size * 0.5 : size}px`,
+            height: `${kind === 0 ? size * 1.8 : size}px`,
+            borderRadius: kind === 1 ? "9999px" : "2px",
+            background: COLORS[i % COLORS.length],
+          },
+    );
     layer.appendChild(piece);
 
     // 위쪽으로 부채꼴(대부분 위로, 일부는 옆으로) 튀어 나감
