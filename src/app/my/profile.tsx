@@ -396,10 +396,21 @@ export function ProfileSheet({
 
 /** 마이 맨 아래 — Google 계정 · 계정 삭제 (회색 작은 글씨, 잘 안 보이게) */
 /** 마이 맨 아래 회색 작은 글씨 — 로그인한 Google 계정 (계정 삭제는 오른쪽 위 ⋯ 메뉴로) */
-export function AccountFooter({ lang, ui = lang, email }: { lang: MyLang; ui?: UiLang; email: string }) {
+export function AccountFooter({
+  lang,
+  ui = lang,
+  email,
+  className = "mt-16",
+}: {
+  lang: MyLang;
+  ui?: UiLang;
+  email: string;
+  /** 위 간격 (바로 위에 의견 버튼이 있으면 좁게) */
+  className?: string;
+}) {
   const t = COPY[ui];
   return (
-    <p className="mt-16 px-6 text-center text-[12px] text-neutral-400">
+    <p className={`${className} px-6 text-center text-[12px] text-neutral-400`}>
       {t.account} · {email}
     </p>
   );

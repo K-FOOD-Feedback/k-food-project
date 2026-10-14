@@ -14,6 +14,7 @@ import { track, useTrackOnce } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
 import { CommentCard, Empty, LogoutSheet, MyTabs, PhotoTile, timeAgo } from "./parts";
 import { forgetRole } from "@/lib/role";
+import { FEEDBACK_BAR_SPACE, FeedbackButton } from "./FeedbackSheet";
 import { AccountFooter, AccountMenu, ProfileHeader, ProfileSheet, useNickname } from "./profile";
 
 /*
@@ -154,7 +155,7 @@ export function KoMyScreen() {
   };
 
   return (
-    <Screen className="pb-16">
+    <Screen className={FEEDBACK_BAR_SPACE}>
       <TopBar
         left={<IconButton icon="chevron-left" label={T.back} href="/home" />}
         // ⋯ — 로그아웃 · 계정 삭제
@@ -245,7 +246,10 @@ export function KoMyScreen() {
           ))}
       </div>
 
-      <AccountFooter lang="ko" ui={ui} email={PROFILE.email} />
+      {/* 문의·의견 + 계정 줄 — 화면 아래 고정 */}
+      <FeedbackButton ui={ui} viewer="korean">
+        <AccountFooter lang="ko" ui={ui} email={PROFILE.email} className="mt-4" />
+      </FeedbackButton>
 
       <ProfileSheet
         lang="ko"

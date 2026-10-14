@@ -14,6 +14,7 @@ import { MY_POST_ID } from "@/lib/write-data";
 import { coverOf, useFlow } from "@/lib/write-store";
 import { CommentCard, Empty, LogoutSheet, MyTabs, PhotoTile, TIME, timeAgo } from "./parts";
 import { forgetRole } from "@/lib/role";
+import { FEEDBACK_BAR_SPACE, FeedbackButton } from "./FeedbackSheet";
 import { AccountFooter, AccountMenu, countryFlag, countryName, ProfileHeader, ProfileSheet, useCountry, useNickname } from "./profile";
 
 /*
@@ -213,7 +214,7 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
   };
 
   return (
-    <Screen className="pb-16">
+    <Screen className={FEEDBACK_BAR_SPACE}>
       <TopBar
         left={<IconButton icon="chevron-left" label={T.back} href="/home?lang=en" />}
         // ⋯ — 로그아웃 · 계정 삭제
@@ -313,7 +314,10 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
           ))}
       </div>
 
-      <AccountFooter lang="en" ui={ui} email={PROFILE.email} />
+      {/* 문의·의견 + 계정 줄 — 화면 아래 고정 */}
+      <FeedbackButton ui={ui} viewer="foreigner">
+        <AccountFooter lang="en" ui={ui} email={PROFILE.email} className="mt-4" />
+      </FeedbackButton>
 
       <ProfileSheet
         lang="en"
