@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
-import { HOME_POSTS, type HomePost } from "@/app/home/mockPosts";
+import type { HomePost } from "@/app/home/mockPosts";
 import { saveVote, useMyVote } from "@/app/home/votes";
 import { LoginSheet } from "@/components/LoginSheet";
 import { isOnboarded } from "@/app/my/profile";
@@ -9,7 +9,7 @@ import { openWelcome, WelcomePopup } from "@/app/my/WelcomePopup";
 import { track } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
 import { burstConfetti } from "./confetti";
-import { cardShapeAt } from "@/app/home/cardShapes";
+import { CARD_SHAPES } from "@/app/home/cardShapes";
 import { DETAIL_COPY, type Lang } from "./copy";
 import { titleFont } from "./font";
 
@@ -172,9 +172,8 @@ export function VoteBowl({
     if (col) {
       window.setTimeout(() => {
         const r = col.getBoundingClientRect();
-        // 조각 모양 = 이 글 메인 카드의 사진 모양 (덱 순서로 정해짐)
-        const order = HOME_POSTS.findIndex((p) => p.id === post.id);
-        burstConfetti(r.left + r.width / 2, r.top + r.height * 0.45, cardShapeAt(Math.max(0, order)).mask);
+        // 조각 모양 = 메인 카드 사진 모양 전부(물결·클로버·꽃·겹친 알약·동그라미)를 섞어서
+        burstConfetti(r.left + r.width / 2, r.top + r.height * 0.45, CARD_SHAPES.map((s) => s.mask));
       }, TOKEN_MS * 0.5);
     }
   };

@@ -3,7 +3,7 @@
   - 터지는 곳(x, y)에서 조각들이 사방으로 튀어 올랐다가 중력처럼 떨어지며 돌고 사라짐
   - 화면 전체 위에 잠깐 띄웠다가 끝나면 지움. 누르기는 그대로 통과 (pointer-events: none)
   - 색은 디자인 토큰(globals.css)만 씀
-  - mask를 주면 조각 모양이 그 모양(콘텐츠 카드 사진을 자르는 물결·클로버·꽃… — src/app/home/cardShapes.ts)이 됨
+  - masks를 주면 조각마다 그 모양들을 번갈아 씀 (콘텐츠 카드 사진을 자르는 물결·클로버·꽃… — src/app/home/cardShapes.ts)
 */
 
 const COLORS = [
@@ -17,7 +17,7 @@ const PIECES = 70;
 const DURATION = 1300;
 const GRAVITY = 1400; // px/s²
 
-export function burstConfetti(x: number, y: number, mask?: string) {
+export function burstConfetti(x: number, y: number, masks: string[] = []) {
   if (typeof window === "undefined") return;
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
@@ -30,6 +30,7 @@ export function burstConfetti(x: number, y: number, mask?: string) {
   for (let i = 0; i < PIECES; i++) {
     const piece = document.createElement("span");
     const kind = i % 3; // 0 길쭉한 종이, 1 동그라미, 2 네모
+    const mask = masks.length ? masks[i % masks.length] : undefined;
     const size = mask ? 10 + Math.random() * 10 : 6 + Math.random() * 6;
     Object.assign(
       piece.style,
@@ -41,7 +42,8 @@ export function burstConfetti(x: number, y: number, mask?: string) {
             top: `${y}px`,
             width: `${size}px`,
             height: `${size}px`,
-            background: COLORS[i % COLORS.length],
+            // 모양 수와 색 수가 같아서 i로만 고르면 모양마다 색이 고정됨 → 색은 한 칸씩 밀어서 섞음
+            background: COLORS[(i + Math.floor(i / masks.length)) % COLORS.length],
             maskImage: mask,
             webkitMaskImage: mask,
             maskSize: "100% 100%",
