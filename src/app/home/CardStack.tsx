@@ -5,7 +5,6 @@ import {
   useRef,
   useState,
   type CSSProperties,
-  type KeyboardEvent,
   type PointerEvent,
 } from "react";
 import { track } from "@/lib/analytics";
@@ -109,12 +108,12 @@ const ASIDE = "translate(-250px, 28px) rotate(-14deg) scale(0.96)";
 
 // 이만큼 끌거나, 짧아도 빠르게 튕기면(FLICK) 넘어갑니다.
 const SWIPE_THRESHOLD = 36;
-/** 트랙패드 두 손가락 가로 쓸기: 이만큼(px) 밀면 넘어감 */
-const WHEEL_THRESHOLD = 45;
+/** 트랙패드 두 손가락 가로 쓸기: 이만큼(px) 밀면 넘어감 (실제 기록: 관성 끝자락 잡음은 13 이하, 살살 쓴 쓸기는 30~40) */
+const WHEEL_THRESHOLD = 30;
 /** 이만큼(ms) 조용하면 한 번의 쓸기가 끝난 것으로 봄 */
 const WHEEL_IDLE_MS = 140;
-/** 넘긴 직후 이 시간(ms) 동안은 무조건 관성으로 보고 무시 */
-const WHEEL_REARM_MS = 120;
+/** 이벤트가 이만큼(ms) 끊겼다가 작게 다시 시작하면 새 쓸기 (실제 맥 트랙패드 기록: 새 쓸기는 30~60ms 끊긴 뒤 1~6으로 시작) */
+const WHEEL_GAP_MS = 28;
 const FLICK_MIN = 14;
 const FLICK_VELOCITY = 0.35; // px/ms
 const TAP_TOLERANCE = 6;
@@ -286,10 +285,11 @@ export function CardStack({
   // 트랙패드 두 손가락 가로 쓸기 — 누르고 끌지 않아도 손가락을 따라 카드가 움직이다가 WHEEL_THRESHOLD를 넘으면 넘어감
   // (방향은 끌기와 같음: 손가락을 왼쪽으로 = 다음 카드). 세로 쓸기·핀치 확대는 건드리지 않음.
   // - 카드 더미 위가 아니어도 메인 화면 어디서든 (창 전체에서 받음, 열린 시트·모달 안은 제외)
-  // - 한 장 넘긴 뒤 이어지는 관성 스크롤은 무시하고, 새로 쓸기 시작하면 바로 다음 장
-  //   관성은 절대 다시 세지지 않음(점점 약해지기만 함) → 움직임이 한 번에 확 커지거나(빠르게 툭 쓸기),
-  //   두 번 연달아 커지거나(살살 쓸기), 방향이 바뀌면 새 쓸기로 봄
-  //   (맥은 커서를 움직이면 관성이 끊기지만, 커서가 그대로면 관성이 1초 넘게 이어져서 — 그 사이 살살 다시 쓸어도 넘어가야 함)
+  // - 한 번 쓸면 딱 한 장: 넘긴 뒤에는 잠그고, "새 쓸기"가 시작될 때만 풂
+  //   실제 맥 트랙패드 기록으로 정한 구분법 —
+  //   · 손가락 쓸기 중에도 움직임이 오르내리고, 손을 떼면 관성이 "잠깐 끊겼다가 크게 튀며"(15→42) 시작해 점점 약해짐
+  //   · 새 쓸기는 손가락을 대는 순간 관성이 멈추고 "잠깐(30~60ms) 끊겼다가 작게"(1~6) 시작함
+  //   → 끊긴 뒤 첫 움직임이 작으면(바로 앞보다 크지 않고 8 이하) 새 쓸기. 커서를 그대로 둬도 동작
   // - 가로일 때는 preventDefault — 브라우저의 "뒤로 가기" 쓸기 제스처가 같이 일어나지 않게
   const deck = useRef<HTMLDivElement>(null);
   const nav = useRef({ goNext, goPrev });
@@ -299,10 +299,8 @@ export function CardStack({
   useEffect(() => {
     let acc = 0;
     let locked = false;
-    let lockedAt = 0;
     let lastMag = 0;
-    let lastSign = 0;
-    let rising = 0; // 움직임이 연달아 커진 횟수
+    let lastAt = -Infinity;
     let idle = 0;
     const onWheel = (e: WheelEvent) => {
       if (e.ctrlKey) return; // 핀치 확대
@@ -315,20 +313,14 @@ export function CardStack({
       idle = window.setTimeout(() => {
         acc = 0;
         locked = false;
-        lastMag = 0;
-        rising = 0;
         setDragX(null);
       }, WHEEL_IDLE_MS);
       const mag = Math.abs(dx);
-      const sign = Math.sign(dx);
-      rising = mag > lastMag + 0.5 ? rising + 1 : 0;
-      const jumped = mag >= lastMag + 3 && mag > lastMag * 1.25;
-      const flipped = lastSign !== 0 && sign !== lastSign;
+      const newSwipe = e.timeStamp - lastAt >= WHEEL_GAP_MS && mag <= Math.max(lastMag, 8);
       lastMag = mag;
-      lastSign = sign;
+      lastAt = e.timeStamp;
       if (locked) {
-        const rearm = e.timeStamp - lockedAt > WHEEL_REARM_MS && (jumped || rising >= 2 || flipped);
-        if (!rearm) return;
+        if (!newSwipe) return;
         locked = false;
         acc = 0;
       }
@@ -338,7 +330,6 @@ export function CardStack({
         return;
       }
       locked = true;
-      lockedAt = e.timeStamp;
       setDragX(null);
       if (acc < 0) nav.current.goNext();
       else nav.current.goPrev();
@@ -350,10 +341,21 @@ export function CardStack({
     };
   }, []);
 
-  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === "ArrowRight") goNext();
-    if (e.key === "ArrowLeft") goPrev();
-  };
+  // 키보드 ← → 로도 넘기기 — 화면 어디서든 (글 쓰는 칸·열린 시트·모달에서는 그대로 둠)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      const el = e.target instanceof Element ? e.target : null;
+      if (el?.closest('input, textarea, select, [contenteditable="true"], [role="dialog"]')) return;
+      e.preventDefault();
+      if (e.key === "ArrowRight") nav.current.goNext();
+      else nav.current.goPrev();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
 
   const styleFor = (rel: number, phase: Phase | undefined): CSSProperties => {
     const place = placeOf(rel, n);
@@ -413,7 +415,6 @@ export function CardStack({
       onPointerMove={onPointerMove}
       onPointerUp={onPointerEnd}
       onPointerCancel={onPointerEnd}
-      onKeyDown={onKeyDown}
       role="region"
       aria-roledescription="carousel"
       aria-label={CARD_TEXT[lang].region}
