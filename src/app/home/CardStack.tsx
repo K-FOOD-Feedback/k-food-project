@@ -287,7 +287,8 @@ export function CardStack({
   // (방향은 끌기와 같음: 손가락을 왼쪽으로 = 다음 카드). 세로 쓸기·핀치 확대는 건드리지 않음.
   // - 카드 더미 위가 아니어도 메인 화면 어디서든 (창 전체에서 받음, 열린 시트·모달 안은 제외)
   // - 한 장 넘긴 뒤 이어지는 관성 스크롤은 무시하고, 새로 쓸기 시작하면 바로 다음 장
-  //   관성은 절대 다시 세지지 않음(점점 약해지기만 함) → 움직임이 두 번 연달아 커지거나 방향이 바뀌면 새 쓸기로 봄
+  //   관성은 절대 다시 세지지 않음(점점 약해지기만 함) → 움직임이 한 번에 확 커지거나(빠르게 툭 쓸기),
+  //   두 번 연달아 커지거나(살살 쓸기), 방향이 바뀌면 새 쓸기로 봄
   //   (맥은 커서를 움직이면 관성이 끊기지만, 커서가 그대로면 관성이 1초 넘게 이어져서 — 그 사이 살살 다시 쓸어도 넘어가야 함)
   // - 가로일 때는 preventDefault — 브라우저의 "뒤로 가기" 쓸기 제스처가 같이 일어나지 않게
   const deck = useRef<HTMLDivElement>(null);
@@ -321,11 +322,12 @@ export function CardStack({
       const mag = Math.abs(dx);
       const sign = Math.sign(dx);
       rising = mag > lastMag + 0.5 ? rising + 1 : 0;
+      const jumped = mag >= lastMag + 3 && mag > lastMag * 1.25;
       const flipped = lastSign !== 0 && sign !== lastSign;
       lastMag = mag;
       lastSign = sign;
       if (locked) {
-        const rearm = e.timeStamp - lockedAt > WHEEL_REARM_MS && (rising >= 2 || flipped);
+        const rearm = e.timeStamp - lockedAt > WHEEL_REARM_MS && (jumped || rising >= 2 || flipped);
         if (!rearm) return;
         locked = false;
         acc = 0;
