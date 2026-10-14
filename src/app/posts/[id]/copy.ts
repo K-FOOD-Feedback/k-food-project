@@ -49,6 +49,10 @@ export const COMMENTS_COPY = {
     reportNote: "신고하면 이 답글은 내 화면에서 가려져요. 확인한 뒤 조치할게요.",
     cancel: "취소",
     report: "신고하기",
+    // 내 한마디·답글 삭제 확인
+    deleteAsk: "삭제하시겠습니까?",
+    no: "아니오",
+    yes: "네",
     reported: "신고가 접수됐어요",
     // 답글 레이어 오른쪽 위 ⋯ (남의 원글 한마디)
     more: "더보기",
@@ -101,6 +105,9 @@ export const COMMENTS_COPY = {
     reportNote: "Once reported, this reply is hidden on your screen. We'll review it and take action.",
     cancel: "Cancel",
     report: "Report",
+    deleteAsk: "Delete this?",
+    no: "No",
+    yes: "Yes",
     reported: "Report received",
     more: "More",
     reportCommentTitle: "Report this comment?",

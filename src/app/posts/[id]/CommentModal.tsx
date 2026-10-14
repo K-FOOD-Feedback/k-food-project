@@ -93,6 +93,8 @@ export function CommentModal({
   const [toast, setToast] = useState<string | null>(null);
   // 신고 확인 모달을 띄운 답글
   const [reporting, setReporting] = useState<Comment | null>(null);
+  // 지우기 전 확인 창을 띄운 내 한마디·답글 (지현 요청: "삭제하시겠습니까?" 아니오/네)
+  const [deleting, setDeleting] = useState<Comment | null>(null);
   // 오른쪽 위 ⋯ 메뉴 (남의 원글 한마디: 신고하기)
   const [menuOpen, setMenuOpen] = useState(false);
   const activeScroll = useRef(0);
@@ -134,7 +136,15 @@ export function CommentModal({
         : (list.current?.querySelector<HTMLElement>(`[data-reply-id="${CSS.escape(editTarget.id)}"] [data-bubble]`) ?? null);
   // X·Esc: 수정 중이면 수정만 취소, 아니면 레이어 닫기
   const back = () =>
-    reporting ? setReporting(null) : menuOpen ? setMenuOpen(false) : editing ? cancelEdit() : onClose();
+    deleting
+      ? setDeleting(null)
+      : reporting
+        ? setReporting(null)
+        : menuOpen
+          ? setMenuOpen(false)
+          : editing
+            ? cancelEdit()
+            : onClose();
   const backRef = useRef(back);
   useLayoutEffect(() => {
     backRef.current = back;
@@ -490,7 +500,7 @@ export function CommentModal({
       <div
         className="pointer-events-none relative flex h-full flex-col transition-opacity duration-200 ease-out starting:opacity-0 [&>*]:pointer-events-auto"
         onClick={(e) => {
-          if (editing || reporting) return;
+          if (editing || reporting || deleting) return;
           if ((e.target as Element).closest("button, a, input, textarea, label, form, [data-keep-open], [data-reply-id]")) return;
           // 답글을 골라 둔 상태면 첫 탭은 선택만 풀고, 한 번 더 누르면 닫힘
           if (activeId) return setActiveId(null);
@@ -520,7 +530,7 @@ export function CommentModal({
                 <button type="button" onClick={() => startEdit(comment)} aria-label={t.editComment} className={HEADER_BUTTON}>
                   <Icon name="pencil" />
                 </button>
-                <button type="button" onClick={onDelete} aria-label={t.deleteComment} className={HEADER_BUTTON}>
+                <button type="button" onClick={() => setDeleting(comment)} aria-label={t.deleteComment} className={HEADER_BUTTON}>
                   <Icon name="trash" />
                 </button>
               </>
@@ -677,11 +687,7 @@ export function CommentModal({
                               <button
                                 type="button"
                                 tabIndex={active ? 0 : -1}
-                                onClick={() => {
-                                  setActiveId(null);
-                                  if (target?.id === r.id) setTarget(null);
-                                  onDeleteReply(r.id);
-                                }}
+                                onClick={() => setDeleting(r)}
                                 aria-label={t.deleteReply}
                                 className={REPLY_BUTTON}
                               >
@@ -772,6 +778,25 @@ export function CommentModal({
           source={editSource}
           onClosed={() => setEditTarget(null)}
           t={t}
+        />
+      )}
+
+      {deleting && (
+        <ConfirmDialog
+          title={t.deleteAsk}
+          quote={deleting.text}
+          no={t.no}
+          yes={t.yes}
+          onNo={() => setDeleting(null)}
+          onYes={() => {
+            if (deleting.id === comment.id) onDelete();
+            else {
+              setActiveId(null);
+              if (target?.id === deleting.id) setTarget(null);
+              onDeleteReply(deleting.id);
+            }
+            setDeleting(null);
+          }}
         />
       )}
 
@@ -1139,6 +1164,55 @@ function ReportDialog({
 }
 
 const REPORT_MAX = 100;
+
+/**
+  지우기 전 확인 창 — 신고 확인 창과 같은 모양. 실수로 지우지 않게 "아니오"에 먼저 초점이 갑니다.
+*/
+function ConfirmDialog({
+  title,
+  quote,
+  no,
+  yes,
+  onNo,
+  onYes,
+}: {
+  title: string;
+  /** 지울 글 (따옴표로 한 줄 미리보기) */
+  quote: string;
+  no: string;
+  yes: string;
+  onNo: () => void;
+  onYes: () => void;
+}) {
+  const noButton = useRef<HTMLDivElement>(null);
+  useEffect(() => noButton.current?.querySelector("button")?.focus(), []);
+
+  return (
+    <div role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" className="absolute inset-0 z-20 flex items-center justify-center px-5">
+      <div
+        className="absolute inset-0 bg-background/60 transition-[background-color] duration-200 starting:bg-background/0"
+        onClick={onNo}
+        aria-hidden
+      />
+      <div className="relative flex w-full flex-col gap-5 rounded-[32px] bg-surface p-6 break-keep text-on-dark shadow-[0_12px_40px_rgba(0,0,0,0.5)] transition-[opacity,scale] duration-250 ease-out starting:scale-95 starting:opacity-0">
+        <div className="flex flex-col gap-2">
+          <h2 id="confirm-title" className="font-display text-[22px] leading-[1.25]">
+            {title}
+          </h2>
+          <p className="truncate text-[15px] leading-[1.5] text-white/60">“{quote.replace(/\n/g, " ")}”</p>
+        </div>
+        <div ref={noButton} className="flex gap-1">
+          <PillButton tone="soft" onClick={onNo}>
+            {no}
+          </PillButton>
+          <PillButton tone="error" onClick={onYes}>
+            {yes}
+          </PillButton>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // mingcute report-line (Apache-2.0) — Figma 377:10788
 function ReportIcon() {
