@@ -7,7 +7,7 @@ import { TrackedLink } from "@/components/Track";
 import { track } from "@/lib/analytics";
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { CommentModal } from "./CommentModal";
-import { COMMENT_MAX, QUICK_EMOJIS, translateToEnglish, useComments, type Comment } from "./comments";
+import { avoidColor, COMMENT_MAX, QUICK_EMOJIS, translateToEnglish, useComments, type Comment } from "./comments";
 import { COMMENTS_COPY, type Lang } from "./copy";
 import { titleFont } from "./font";
 import { HIDDEN_COLOR, useHiddenComments } from "./hidden";
@@ -88,13 +88,19 @@ export function CommentPile({
   // 내가 신고해서 가린 한마디는 빼지 않고 회색 "가려진 한마디예요"로 보여 줍니다 (숫자도 그대로).
   const { hidden, hide } = useHiddenComments(postId);
   // 글쓴이가 남긴 한마디(글·이모지)는 그 글의 카드 색으로 (색이 너무 많지 않게 — 지현 요청)
-  const recolor = (c: Comment) => (authorColor && c.author.kind === "author" ? { ...c, color: authorColor } : c);
+  // 글쓴이가 아닌 한마디는 카드 색과 비슷하면 다른 색으로 (글쓴이 말풍선만 카드 색으로 눈에 띄게)
+  const recolor = (c: Comment, index: number) =>
+    !authorColor
+      ? c
+      : c.author.kind === "author"
+        ? { ...c, color: authorColor }
+        : { ...c, color: avoidColor(c.color, authorColor, index) };
   const comments =
     hidden.size || translate || authorColor
-      ? all.map((c) =>
+      ? all.map((c, i) =>
           hidden.has(c.id)
             ? { ...c, kind: "text" as const, text: t.hidden, color: HIDDEN_COLOR }
-            : recolor(translate ? translateToEnglish(c) : c),
+            : recolor(translate ? translateToEnglish(c) : c, i),
         )
       : all;
   const [draft, setDraft] = useState("");
@@ -231,7 +237,8 @@ export function CommentPile({
       id: nextId.current++,
       kind,
       text,
-      color: nextColor(flights.length),
+      // 새로 쓰는 한마디도 같은 규칙 (날아가는 원과 떨어진 말풍선 색이 같게)
+      color: avoidColor(nextColor(flights.length), authorColor, all.length + flights.length),
       from: fromEl.getBoundingClientRect(),
       fromField: full,
       to: { x: z.left + dropX, y: arriveY },

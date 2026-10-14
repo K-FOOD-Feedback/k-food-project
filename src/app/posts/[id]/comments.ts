@@ -11,6 +11,43 @@ export const COMMENT_MAX = 20;
 export const QUICK_EMOJIS = ["🔥", "👍", "❤️", "🤤", "🥵", "😱"];
 const BUBBLE_COLORS = ["#ffe056", "#ffc6ff", "#c8b5ff", "#ccf54b", "#9fe7ff", "#ffae8f", "#7144ff", "#4ae9ff"];
 
+/** #rrggbb → 색상(0~360°)·채도·밝기(0~1) */
+function hsl(hex: string) {
+  const n = parseInt(hex.replace("#", ""), 16);
+  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => v / 255);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  const d = max - min;
+  if (d === 0) return { h: 0, s: 0, l };
+  const s = d / (1 - Math.abs(2 * l - 1));
+  const h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return { h: (h * 60 + 360) % 360, s, l };
+}
+
+/**
+  두 색이 비슷한지 — 색상 차이 30° 미만, 둘 다 밝은 색, 밝기 차이도 작을 때
+  (진한 보라 #7144ff는 같은 계열이어도 연보라 #c8b5ff와 확연히 달라 보여서 다르게 봄)
+*/
+function similar(a: string, b: string) {
+  const x = hsl(a);
+  const y = hsl(b);
+  const dh = Math.min(Math.abs(x.h - y.h), 360 - Math.abs(x.h - y.h));
+  return dh < 30 && x.l > 0.6 && y.l > 0.6 && Math.abs(x.l - y.l) < 0.2;
+}
+
+/**
+  글쓴이가 아닌 한마디 색이 글쓴이 색(그 글의 카드 색)과 비슷하면 다른 색으로 바꿉니다.
+  글쓴이 말풍선만 카드 색으로 눈에 띄도록 (지현 요청).
+  index: 그 한마디가 목록에서 몇 번째인지 — 바꿀 색을 카드 색과 안 비슷한 색들 중에서 번갈아 골라
+  같은 색이 몰리지 않게 합니다 (날아가는 중인 새 한마디도 같은 번호로 미리 같은 색을 고름).
+*/
+export function avoidColor(color: string, authorColor: string | undefined, index: number) {
+  if (!authorColor || !similar(color, authorColor)) return color;
+  const allowed = BUBBLE_COLORS.filter((c) => !similar(c, authorColor) && c !== color);
+  return allowed.length ? allowed[index % allowed.length] : color;
+}
+
 /** 한국인 댓글은 표시 없음, 외국인·작성자 댓글은 국기를 붙입니다.
  *  한마디는 익명 — 이름은 글쓴이만 (뱃지에 "글쓴이 · 닉네임", 송희·지현 합의) */
 export type CommentAuthor = { kind: "korean" } | { kind: "foreigner"; flag: string } | { kind: "author"; flag: string; name?: string };
