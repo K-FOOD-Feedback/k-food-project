@@ -397,8 +397,8 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
     };
   }, [nextIn]);
 
-  // 좌우로 밀면(휴대폰은 손가락, 웹은 마우스로 끌기) 이전·다음 훈수 거리로: 화면이 옆으로 밀리다가,
-  // 충분히 밀었으면 그 방향으로 빠져나가고 새 글이 반대편에서 들어옴. 덜 밀면 제자리로.
+  // 좌우로 밀면(휴대폰은 손가락, 웹은 마우스로 끌기·트랙패드 두 손가락 쓸기·키보드 ← →) 이전·다음 훈수 거리로:
+  // 화면이 옆으로 밀리다가, 충분히 밀었으면 그 방향으로 빠져나가고 새 글이 반대편에서 들어옴. 덜 밀면 제자리로.
   const router = useRouter();
   useEffect(() => {
     const content = articleRef.current?.parentElement;
@@ -463,14 +463,71 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
         setOffset(0);
         return;
       }
-      const dir = dx < 0 ? "next" : "prev";
+      leave(dx < 0 ? "next" : "prev");
+    };
+    // 그 방향으로 빠져나가고 이전·다음 글로 (한 번만)
+    let leaving = false;
+    const leave = (dir: "next" | "prev") => {
+      if (leaving) return;
+      leaving = true;
       const target = dir === "next" ? next : prev;
       content.style.transition = `transform ${SWIPE_OUT_MS}ms ease-in, opacity ${SWIPE_OUT_MS}ms ease-in`;
-      content.style.transform = `translateX(${dx < 0 ? -SWIPE_OUT_PX : SWIPE_OUT_PX}px)`;
+      content.style.transform = `translateX(${dir === "next" ? -SWIPE_OUT_PX : SWIPE_OUT_PX}px)`;
       content.style.opacity = "0";
       track("post_opened", { post_id: target.id, from: "swipe", from_post_id: post.id, direction: dir });
       nextTrip = { postId: target.id, at: Date.now(), swipe: dir };
       window.setTimeout(() => router.push(withViewer(withFrom(`/posts/${target.id}`, from), keepViewer)), SWIPE_OUT_MS - 40);
+    };
+    // 트랙패드 두 손가락 가로 쓸기 — 메인 카드(src/app/home/CardStack.tsx)와 같은 규칙: 손가락을 따라 화면이 밀리다가
+    // WHEEL_GO_PX를 넘으면 넘어감. 사진 칸 위에서는 사진이 넘어가게 그대로 둠.
+    // 한 번 쓸면 한 번만: 넘긴 뒤엔 잠그고(새 글로 바뀌어도 이어지게 모듈 변수 wheelGate), 새 쓸기가 시작될 때만 풂
+    // (새 쓸기 = 잠깐 끊겼다가 작게 시작 — 관성은 끊겼다가 크게 튀며 시작. 메인과 같은 구분법)
+    // 덜 밀고 멈추면(WHEEL_IDLE_MS 동안 조용) 제자리로. 가로일 때는 브라우저 "뒤로 가기" 쓸기가 같이 일어나지 않게 막음
+    let wheelX = 0;
+    let wheelIdle = 0;
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey) return;
+      const unit = e.deltaMode === 1 ? 16 : 1;
+      const wx = e.deltaX * unit;
+      if (Math.abs(wx) <= Math.abs(e.deltaY * unit)) return;
+      if ((e.target as Element | null)?.closest?.("[data-photo-scroller], [role=dialog]")) return;
+      e.preventDefault();
+      const now = performance.now();
+      const mag = Math.abs(wx);
+      const gap = now - wheelGate.lastAt;
+      const newSwipe = gap >= WHEEL_GAP_MS && mag <= Math.max(wheelGate.lastMag, 8);
+      wheelGate.lastAt = now;
+      wheelGate.lastMag = mag;
+      if (gap >= WHEEL_IDLE_MS) wheelGate.locked = false;
+      if (wheelGate.locked) {
+        if (!newSwipe) return;
+        wheelGate.locked = false;
+      }
+      if (leaving) return;
+      wheelX -= wx;
+      window.clearTimeout(wheelIdle);
+      if (Math.abs(wheelX) >= WHEEL_GO_PX) {
+        const dir = wheelX < 0 ? "next" : "prev";
+        wheelX = 0;
+        wheelGate.locked = true;
+        leave(dir);
+        return;
+      }
+      content.style.transition = "";
+      setOffset(wheelX * 0.6);
+      wheelIdle = window.setTimeout(() => {
+        wheelX = 0;
+        content.style.transition = "transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 300ms";
+        setOffset(0);
+      }, WHEEL_IDLE_MS);
+    };
+    // 키보드 ← → (글 쓰는 칸·열린 창에서는 그대로 둠)
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      if ((e.target as Element | null)?.closest?.('input, textarea, select, [contenteditable="true"], [role=dialog]')) return;
+      e.preventDefault();
+      leave(e.key === "ArrowRight" ? "next" : "prev");
     };
     // 시스템이 터치를 가로채면(전화 등) 넘기지 않고 제자리로
     const cancel = () => {
@@ -511,7 +568,12 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
     document.addEventListener("pointermove", onMouseMove);
     document.addEventListener("pointerup", onMouseUp);
     document.addEventListener("pointercancel", onMouseUp);
+    window.addEventListener("wheel", onWheel, { passive: false });
+    window.addEventListener("keydown", onKey);
     return () => {
+      window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("keydown", onKey);
+      window.clearTimeout(wheelIdle);
       document.body.style.userSelect = "";
       document.removeEventListener("touchstart", onTouchStart);
       document.removeEventListener("touchmove", onTouchMove);
@@ -863,6 +925,14 @@ const SWIPE_GO_PX = 90;
 const TAP_SLOP = 6;
 const SWIPE_OUT_PX = 140;
 const SWIPE_OUT_MS = 200;
+/** 트랙패드 쓸기로 넘어가는 거리 (메인 카드와 같음 — 실제 맥 트랙패드 기록 기준) */
+const WHEEL_GO_PX = 30;
+/** 트랙패드로 덜 밀고 이만큼(ms) 조용하면 제자리로 (잠금도 풂) */
+const WHEEL_IDLE_MS = 140;
+/** 이벤트가 이만큼(ms) 끊겼다가 작게 다시 시작하면 새 쓸기 */
+const WHEEL_GAP_MS = 28;
+/** 트랙패드로 넘긴 뒤 잠금 — 새 글 화면으로 바뀌어도 관성이 이어지므로 컴포넌트 밖에 둠 */
+const wheelGate = { locked: false, lastAt: -Infinity, lastMag: 0 };
 const SWIPE_IN_PX = 160;
 const SWIPE_IN_MS = 620;
 const SWIPE_IN_DELAY_MS = 100;
