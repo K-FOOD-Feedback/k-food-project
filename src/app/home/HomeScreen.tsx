@@ -263,7 +263,12 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
 
       {lang === "en" && (
         // 외국인 메인 하단 CTA (Figma 259:7823): 로그인 시트 → 사진 선택 → /write (동작은 송희 담당 ShareKfoodButton)
-        <ShareKfoodButton className="fixed bottom-[calc(40px+env(safe-area-inset-bottom))] left-1/2 z-10 -translate-x-1/2 rounded-full bg-primary px-8 py-6 text-[20px] leading-none font-extrabold tracking-[-0.4px] whitespace-nowrap text-white shadow-[0_18px_48px_4px_rgba(0,0,0,0.55),0_10px_24px_-6px_rgba(255,135,196,0.55)] transition-transform active:scale-95">
+        // 영어 문구는 Gilroy(font-display), 한국어는 기본 글꼴
+        <ShareKfoodButton
+          className={`fixed bottom-[calc(40px+env(safe-area-inset-bottom))] left-1/2 z-10 -translate-x-1/2 rounded-full bg-primary px-8 py-6 text-[20px] leading-none font-extrabold tracking-[-0.4px] whitespace-nowrap text-white shadow-[0_18px_48px_4px_rgba(0,0,0,0.55),0_10px_24px_-6px_rgba(255,135,196,0.55)] transition-transform active:scale-95 ${
+            ui === "en" ? "font-display" : ""
+          }`}
+        >
           {SHARE_LABEL[ui]}
         </ShareKfoodButton>
       )}
