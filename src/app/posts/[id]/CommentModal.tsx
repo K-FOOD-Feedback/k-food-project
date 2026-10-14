@@ -5,7 +5,7 @@ import { Icon } from "@/components/Icon";
 import { HEADER_BUTTON, PageHeader } from "@/components/PageHeader";
 import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type FormEvent, type PointerEvent, type Ref } from "react";
 import { COMMENT_MAX, whoOf, type Comment } from "./comments";
-import { COMMENTS_COPY, type CommentsCopy, type Lang } from "./copy";
+import { COMMENTS_COPY, type CommentsCopy, type CommentsLang } from "./copy";
 import { HIDDEN_COLOR } from "./hidden";
 import { splitLines } from "./GravityPile";
 
@@ -65,7 +65,7 @@ export function CommentModal({
   /** 내가 신고해서 가린 한마디 (회색, 누를 수 없음) */
   hiddenIds: Set<string>;
   /** 화면 문구 언어 (한마디 전체 화면의 지구본으로 바꿈) */
-  lang?: Lang;
+  lang?: CommentsLang;
   /** 로그인 전 외국인: 답글 칸을 누르면 쓰는 대신 onLockedWrite (로그인 시트) */
   writeLocked?: boolean;
   onLockedWrite?: () => void;

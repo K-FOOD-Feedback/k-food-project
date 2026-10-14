@@ -6,7 +6,7 @@ import { isOnboarded } from "@/app/my/profile";
 import { openWelcome, WelcomePopup } from "@/app/my/WelcomePopup";
 import { track } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
-import { COMMENTS_COPY, type Lang } from "./copy";
+import { COMMENTS_COPY, type CommentsLang } from "./copy";
 
 /**
   외국인은 투표 없이 한마디를 볼 수 있지만, 한마디·답글을 남기려면 로그인해야 합니다.
@@ -24,7 +24,7 @@ export function useCommentLogin({
 }: {
   /** 외국인 화면일 때만 (한국인은 투표하면서 이미 로그인함) */
   enabled: boolean;
-  lang: Lang;
+  lang: CommentsLang;
   postId: string;
   screen: "detail" | "comments";
 }) {
@@ -41,7 +41,8 @@ export function useCommentLogin({
   const sheet = enabled ? (
     <>
       <LoginSheet
-        lang={lang}
+        // 로그인 시트는 아직 한국어·영어만 (중국어·일본어는 영어로)
+        lang={lang === "ko" ? "ko" : "en"}
         open={open}
         title={t.loginTitle}
         body={t.loginBody}

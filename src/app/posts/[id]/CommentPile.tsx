@@ -8,7 +8,7 @@ import { track } from "@/lib/analytics";
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { CommentModal } from "./CommentModal";
 import { avoidColor, COMMENT_MAX, QUICK_EMOJIS, translateToEnglish, useComments, type Comment } from "./comments";
-import { COMMENTS_COPY, type Lang } from "./copy";
+import { COMMENTS_COPY, type CommentsLang } from "./copy";
 import { titleFont } from "./font";
 import { HIDDEN_COLOR, useHiddenComments } from "./hidden";
 import { estimateWidth, GravityPile, type PileHandle } from "./GravityPile";
@@ -69,7 +69,7 @@ export function CommentPile({
   postTitle?: string;
   variant?: "preview" | "full";
   /** 화면 문구 언어 — 한마디 전체 화면에서 지구본으로 바꿀 수 있음 */
-  lang?: Lang;
+  lang?: CommentsLang;
   /** 로그인 전 외국인: 입력칸·이모지·답글 칸을 누르면 쓰는 대신 onLockedWrite (로그인 시트) */
   writeLocked?: boolean;
   onLockedWrite?: () => void;
@@ -305,9 +305,12 @@ export function CommentPile({
           </h2>
           {postTitle && (
             // 한국어는 Paperlogy, 영어는 Gilroy(font-title-en, 한글과 크기 보정) — 메인 카드 제목과 같은 규칙
+            // 중국어·일본어 글자는 두 글꼴에 없어서 기기 기본 글꼴 굵게 (메인과 같은 규칙)
             // 영어 행간은 한국어보다 0.15 좁게 (상세 제목과 같은 규칙)
             <p
-              className={`${titleFont(lang)} text-[24px] ${lang === "en" ? "leading-[1.25]" : "leading-[1.4]"} tracking-[-0.48px] break-keep text-neutral-400`}
+              className={`${lang === "zh" || lang === "ja" ? "font-sans font-extrabold" : titleFont(lang)} text-[24px] ${
+                lang === "en" ? "leading-[1.25]" : "leading-[1.4]"
+              } tracking-[-0.48px] break-keep text-neutral-400`}
             >
               {postTitle}
             </p>

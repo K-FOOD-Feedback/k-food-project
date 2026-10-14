@@ -3,7 +3,7 @@
 import Matter from "matter-js";
 import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type Ref } from "react";
 import { whoOf, type Comment } from "./comments";
-import { COMMENTS_COPY, type CommentsCopy, type Lang } from "./copy";
+import { COMMENTS_COPY, type CommentsCopy, type CommentsLang } from "./copy";
 
 const { Engine, Bodies, Body, Composite, Events, Sleeping } = Matter;
 
@@ -515,7 +515,7 @@ export function GravityPile({
   /** 말풍선을 누르면 (없으면 누를 수 없는 그냥 말풍선). el: 누른 말풍선 요소 (이모지가 떠오를 자리) */
   onSelect?: (comment: Comment, el: HTMLElement) => void;
   /** 태그(나·글쓴이)와 읽어 주기 문구의 언어 */
-  lang?: Lang;
+  lang?: CommentsLang;
   /** PC에서 말풍선에 마우스를 올리면 흰 테두리 (상세 화면 칸은 끔 — 칸 전체가 하나의 버튼) */
   hover?: boolean;
 }) {
