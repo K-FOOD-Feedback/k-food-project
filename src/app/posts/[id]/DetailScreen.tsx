@@ -663,14 +663,15 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
           */}
           <div
             inert={!open}
-            className={
+            // 한마디 칸 ↔ 이모지 줄 간격: CommentPile 기본 32px에서 16px로 (칸 아래만 당김)
+            className={`[&>div>section]:-mb-4 ${
               open
                 ? "[&>div>*:not(section)]:transition-opacity [&>div>*:not(section)]:duration-500 [&>div>*:not(section)]:starting:opacity-0"
                 : // 잠금 레이어 아래 한마디 칸은 칸 안 내용 자체를 흐리게 (위에 backdrop-blur를 얹으면
                   // 움직이는 말풍선 위에서 블러가 매 프레임 다시 그려지며 세로 줄·깜빡임이 생김)
                   // 아래 그라데이션(data-fade)은 흐리지 않음 — 흐리면 그라데이션 끝이 반투명해져 말풍선 색이 비쳐 보임
                   "[&>div>*:not(section)]:hidden [&>div>section>*:not([data-fade])]:blur-[8px]"
-            }
+            }`}
           >
             <CommentPile
               postId={post.id}
