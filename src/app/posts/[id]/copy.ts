@@ -50,6 +50,10 @@ export const COMMENTS_COPY = {
     cancel: "취소",
     report: "신고하기",
     reported: "신고가 접수됐어요",
+    // 답글 레이어 오른쪽 위 ⋯ (남의 원글 한마디)
+    more: "더보기",
+    reportCommentTitle: "이 한마디를 신고할까요?",
+    reportCommentNote: "신고하면 이 한마디는 내 화면에서 가려져요. 확인한 뒤 조치할게요.",
     // 상세 화면 한마디 칸 (기울어진 카드)
     leaveCard: "한마디를\n남겨보세요",
     // 외국인: 로그인 안 하고 한마디·답글을 쓰려 할 때 (LoginSheet)
@@ -98,6 +102,9 @@ export const COMMENTS_COPY = {
     cancel: "Cancel",
     report: "Report",
     reported: "Report received",
+    more: "More",
+    reportCommentTitle: "Report this comment?",
+    reportCommentNote: "Once reported, this comment is hidden on your screen. We'll review it and take action.",
     leaveCard: "Leave a\ncomment",
     loginTitle: "Log in to leave a comment",
     loginBody: "Chat with Koreans about this dish. It only takes a few seconds with Google.",

@@ -93,6 +93,8 @@ export function CommentModal({
   const [toast, setToast] = useState<string | null>(null);
   // 신고 확인 모달을 띄운 답글
   const [reporting, setReporting] = useState<Comment | null>(null);
+  // 오른쪽 위 ⋯ 메뉴 (남의 원글 한마디: 신고하기)
+  const [menuOpen, setMenuOpen] = useState(false);
   const activeScroll = useRef(0);
   // 흐린 답글을 밀어 가운데로 데려오는 중 — 그 스크롤로는 펼친 버튼을 접지 않음
   const autoScroll = useRef(false);
@@ -131,7 +133,8 @@ export function CommentModal({
         ? rootCard.current
         : (list.current?.querySelector<HTMLElement>(`[data-reply-id="${CSS.escape(editTarget.id)}"] [data-bubble]`) ?? null);
   // X·Esc: 수정 중이면 수정만 취소, 아니면 레이어 닫기
-  const back = () => (reporting ? setReporting(null) : editing ? cancelEdit() : onClose());
+  const back = () =>
+    reporting ? setReporting(null) : menuOpen ? setMenuOpen(false) : editing ? cancelEdit() : onClose();
   const backRef = useRef(back);
   useLayoutEffect(() => {
     backRef.current = back;
@@ -512,16 +515,54 @@ export function CommentModal({
               >
                 <Icon name="check" />
               </button>
+            ) : canEdit ? (
+              <>
+                <button type="button" onClick={() => startEdit(comment)} aria-label={t.editComment} className={HEADER_BUTTON}>
+                  <Icon name="pencil" />
+                </button>
+                <button type="button" onClick={onDelete} aria-label={t.deleteComment} className={HEADER_BUTTON}>
+                  <Icon name="trash" />
+                </button>
+              </>
             ) : (
-              canEdit && (
-                <>
-                  <button type="button" onClick={() => startEdit(comment)} aria-label={t.editComment} className={HEADER_BUTTON}>
-                    <Icon name="pencil" />
+              !hiddenIds.has(comment.id) && (
+                // 남의 원글 한마디: ⋯ → 신고하기 (답글 신고와 같은 신고 모달)
+                <div data-keep-open className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setMenuOpen((v) => !v)}
+                    aria-label={t.more}
+                    aria-haspopup="menu"
+                    aria-expanded={menuOpen}
+                    className={HEADER_BUTTON}
+                  >
+                    <Icon name="more" />
                   </button>
-                  <button type="button" onClick={onDelete} aria-label={t.deleteComment} className={HEADER_BUTTON}>
-                    <Icon name="trash" />
-                  </button>
-                </>
+                  {menuOpen && (
+                    <>
+                      {/* 메뉴 밖을 누르면 닫힘 */}
+                      <div className="fixed inset-0 z-0" onClick={() => setMenuOpen(false)} aria-hidden />
+                      <div
+                        role="menu"
+                        className="absolute top-[calc(100%+8px)] right-0 z-10 min-w-[160px] origin-top-right overflow-hidden rounded-[24px] bg-surface p-1.5 shadow-[0_12px_32px_rgba(0,0,0,0.45)] transition-[opacity,scale] duration-150 ease-out starting:scale-95 starting:opacity-0"
+                      >
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            setMenuOpen(false);
+                            setActiveId(null);
+                            setReporting(comment);
+                          }}
+                          className="flex h-12 w-full items-center gap-2.5 rounded-[18px] px-4 text-left text-[15px] font-semibold text-on-dark active:bg-white/10"
+                        >
+                          <ReportIcon />
+                          {t.report}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               )
             )
           }
@@ -738,6 +779,7 @@ export function CommentModal({
         <ReportDialog
           t={t}
           reply={reporting}
+          isRoot={reporting.id === comment.id}
           onCancel={() => setReporting(null)}
           onSubmit={(reason) => {
             onReport(reporting.id, reason);
@@ -1028,11 +1070,14 @@ const BADGE = "flex h-[22px] items-center rounded-full bg-black px-2 text-[12px]
 */
 function ReportDialog({
   reply,
+  isRoot = false,
   onCancel,
   onSubmit,
   t,
 }: {
   reply: Comment;
+  /** 원글 한마디 신고(⋯ 메뉴) — 문구만 "한마디"로 */
+  isRoot?: boolean;
   onCancel: () => void;
   onSubmit: (reason: string) => void;
   t: CommentsCopy;
@@ -1058,7 +1103,7 @@ function ReportDialog({
       >
         <div className="flex flex-col gap-2">
           <h2 id="report-title" className="font-display text-[22px] leading-[1.25]">
-            {t.reportTitle}
+            {isRoot ? t.reportCommentTitle : t.reportTitle}
           </h2>
           <p className="truncate text-[15px] leading-[1.5] text-white/60">“{reply.text.replace(/\n/g, " ")}”</p>
         </div>
@@ -1078,7 +1123,7 @@ function ReportDialog({
         </label>
         <p className="flex items-start gap-2 text-[14px] leading-[1.5] text-white/70">
           <Icon name="info" size={18} className="mt-0.5 shrink-0" />
-          {t.reportNote}
+          {isRoot ? t.reportCommentNote : t.reportNote}
         </p>
         <div className="flex gap-1">
           <PillButton tone="soft" onClick={onCancel}>
