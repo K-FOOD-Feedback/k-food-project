@@ -875,6 +875,7 @@ const POST_ORIGINAL_LANG: CommentsLang = "en";
 // 상세 제목: 최대 줄 수, 줄이다가 멈추는 가장 작은 글자 크기
 const TITLE_MAX_LINES = 3;
 const TITLE_MIN_PX = 18;
+const TITLE_MIN_PX_CJK = 14;
 const BACK_CARD_MS = 320;
 // 사진 자동 넘김 간격 (가만히 있은 지 이만큼 지나면 다음 사진)
 const AUTOPLAY_MS = 3500;
@@ -962,7 +963,9 @@ function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: HomePost
         const cs = getComputedStyle(el);
         return Math.round((el.scrollHeight - parseFloat(cs.paddingBottom)) / parseFloat(cs.lineHeight));
       };
-      while (lines() > TITLE_MAX_LINES && size > TITLE_MIN_PX) {
+      // 중·일은 단어 사이에서만 줄을 바꿔서(긴 가타카나 말덩이) 더 작아져야 3줄에 들어갈 때가 있음
+      const min = contentLang === "zh" || contentLang === "ja" ? TITLE_MIN_PX_CJK : TITLE_MIN_PX;
+      while (lines() > TITLE_MAX_LINES && size > min) {
         size -= 1;
         el.style.fontSize = `${size}px`;
       }
@@ -976,7 +979,7 @@ function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: HomePost
       document.fonts?.removeEventListener("loadingdone", fit);
       window.removeEventListener("resize", fit);
     };
-  }, [titleText]);
+  }, [titleText, contentLang]);
   return (
     <>
       {/* 글쓴이: 하얀 원(24px) 안 국기 + 닉네임 (메인 카드와 같은 디자인, 한마디는 익명) */}
