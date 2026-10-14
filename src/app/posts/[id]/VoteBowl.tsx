@@ -318,7 +318,21 @@ export function VoteBowl({
       <div className="flex min-h-16 items-center justify-center">
         {viewOnly ? (
           <div className="flex flex-col items-center gap-1 text-center">
-            <p className="text-[15px] leading-[1.4] font-semibold text-neutral-400">{T.resultsTotal(total)}</p>
+            {/* 투표한 한국인 수만 흰색으로 강조, 투표 영역이 보이면 0부터 세어 올라감 (한국인 요약 문구와 같은 방식) */}
+            <p className="text-[18px] leading-[1.35] font-bold tracking-[-0.36px] text-balance text-neutral-400">
+              {(() => {
+                const [a, b, c] = T.resultsTotal(total);
+                return (
+                  <>
+                    {a}
+                    <span className="text-on-dark tabular-nums">
+                      <CountUp text={b} value={total} run={inView} />
+                    </span>
+                    {c}
+                  </>
+                );
+              })()}
+            </p>
             <p className="text-[12px] leading-[1.4] font-medium text-neutral-400/70">{T.resultsNote}</p>
           </div>
         ) : myVote !== null ? (
