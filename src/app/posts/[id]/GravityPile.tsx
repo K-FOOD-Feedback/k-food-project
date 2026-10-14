@@ -736,8 +736,9 @@ function RepliesIcon() {
 }
 
 // 대략적인 글자 폭: 한글·한자·이모지는 영문의 약 2배
+// (일본어 가나·한중일 문장부호·전각 글자도 한글만큼 넓음 — 빠지면 일본어가 한 줄로 길게 늘어짐)
 const charWidth = (ch: string) =>
-  /[\u1100-\u11ff\u3130-\u318f\uac00-\ud7af\u4e00-\u9fff]|\p{Extended_Pictographic}/u.test(ch) ? 1 : 0.55;
+  /[\u1100-\u11ff\u3000-\u30ff\u3130-\u318f\uac00-\ud7af\u4e00-\u9fff\uff00-\uffef]|\p{Extended_Pictographic}/u.test(ch) ? 1 : 0.55;
 const widthOf = (text: string) => Array.from(text).reduce((sum, ch) => sum + charWidth(ch), 0);
 // 한 줄에 한글 약 10자까지. 넘으면 두 줄로 나눕니다.
 const ONE_LINE_MAX = 10;
@@ -753,8 +754,8 @@ export function splitLines(text: string): string[] {
   chars.forEach((ch, i) => {
     acc += charWidth(ch);
     if (i === 0 || i === chars.length - 1) return;
-    // 띄어쓰기에서 나누는 걸 우선하되, 가운데에서 너무 멀면 아무 글자에서나
-    const score = Math.abs(acc - half) + (ch === " " ? 0 : 3);
+    // 띄어쓰기(또는 띄어 쓰지 않는 일본어·중국어의 쉼표 뒤)에서 나누는 걸 우선하되, 가운데에서 너무 멀면 아무 글자에서나
+    const score = Math.abs(acc - half) + (ch === " " || /[、，,]/.test(ch) ? 0 : 3);
     if (score < bestScore) {
       bestScore = score;
       best = i;
