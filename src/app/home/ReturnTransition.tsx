@@ -3,7 +3,8 @@
 import { useLayoutEffect, useRef } from "react";
 import { CARD_PHOTO_IN_MASK, cardMaskBox, cardPhotoOf } from "./CardStack";
 import type { CardShape } from "./cardShapes";
-import type { HomePost } from "./mockPosts";
+import { DETAIL_COPY } from "../posts/[id]/copy";
+import { participantsOf, type HomePost } from "./mockPosts";
 import {
   clearReturnTransition,
   measureCard,
@@ -318,7 +319,7 @@ export function ReturnGhosts({
       const stickerEl = front.querySelector("[data-card-sticker]");
       if (stickerEl && chipFrom.current && chipTo.current) {
         const copy = stickerEl.cloneNode(true) as HTMLElement;
-        chipFrom.current.textContent = `${copy.firstElementChild?.textContent ?? ""}명 참여 중!`;
+        chipFrom.current.textContent = DETAIL_COPY[detailLang].participants(participantsOf(post));
         chipTo.current.replaceChildren(...copy.childNodes);
         animations.push(
           ...fade(chipFrom.current, [

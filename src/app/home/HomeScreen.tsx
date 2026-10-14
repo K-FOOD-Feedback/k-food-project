@@ -23,7 +23,7 @@ import { MainHeader } from "./MainHeader";
 import { ReturnGhosts } from "./ReturnTransition";
 import { HOME_POSTS, type HomePost } from "./mockPosts";
 import { useVotedIds } from "./votes";
-import { useKoreanLang, useViewerLang } from "../posts/[id]/viewerLang";
+import { useKoreanUiLang, useViewerUiLang } from "../posts/[id]/viewerLang";
 import { useAutoTranslate } from "@/components/LanguagePicker";
 
 /** 메인 상단 두 줄 — 참여를 부르는 한마디. [버전][화면 언어]
@@ -32,16 +32,22 @@ const HEADLINE = {
   ko: {
     ko: ["외국인 친구가 만든 한식,", "참견할 준비 됐나요? 👀"],
     en: ["K-food by friends abroad,", "Ready to weigh in? 👀"],
+    zh: ["外国朋友做的韩食，", "准备好来点评了吗？👀"],
+    ja: ["海外の友だちが作った韓国料理、", "ひとこと言う準備はいい？👀"],
   },
   en: {
     en: ["Cooked some K-food?", "Let Koreans judge it 👀"],
     ko: ["한식 만들어 봤나요?", "한국인에게 평가받아 봐요 👀"],
+    zh: ["做了韩食吗？", "让韩国人来评价吧 👀"],
+    ja: ["韓国料理、作ってみた？", "韓国人に判定してもらおう 👀"],
   },
 } as const;
 /** 외국인 버전 하단 버튼 문구 (화면 언어) */
 const SHARE_LABEL = {
   en: "Share your K-food",
   ko: "내 한식 공유하기",
+  zh: "分享你的韩食",
+  ja: "あなたの韓国料理をシェア",
 } as const;
 
 /** 제목 아래끝 ~ 맨 앞 카드 위끝 간격 */
@@ -64,7 +70,7 @@ function decodePhoto(src: string) {
   img.decode().catch(() => decoded.delete(src));
 }
 
-export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
+export function HomeScreen({ lang = "ko" }: { lang?: "ko" | "en" }) {
   const router = useRouter();
   const posts = HOME_POSTS;
   const [index, setIndex] = useState(() =>
@@ -82,13 +88,14 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
   // lang = 버전(한국인 /home · 외국인 /home?lang=en, 로그인 정보로 정해짐 — 지구본으로 바뀌지 않음)
   // ui = 화면 언어 (지구본으로 고름, 상세·한마디와 같은 기억: 외국인 기본 영어 · 한국인 기본 한국어)
   // content = 글(제목) 언어 — 자동 번역이 켜져 있으면 화면 언어, 꺼져 있으면 원문(글쓴이 언어 = 영어). 상세와 같은 규칙
-  const viewerLang = useViewerLang();
-  const koreanLang = useKoreanLang();
+  const viewerLang = useViewerUiLang();
+  const koreanLang = useKoreanUiLang();
   const ui: Lang = lang === "en" ? viewerLang : koreanLang;
   const autoTranslate = useAutoTranslate();
   const content: Lang = autoTranslate ? ui : "en";
   // 상세에서 돌아오는 전환의 상세 글 언어 = 상세가 보여 주던 글 언어
-  const detailLang = content;
+  // (상세는 아직 중국어·일본어 문구가 없어 영어로 보여 줌)
+  const detailLang = content === "ko" ? "ko" : "en";
   const current = posts[index];
 
   // 제목 + (40px) + 카드를 한 덩어리로 가운데에.
@@ -217,7 +224,9 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
             className={`shrink-0 px-6 text-center text-[24px] tracking-[-0.48px] text-white break-keep ${
               ui === "en"
                 ? "font-title-en leading-[1.15]"
-                : "font-(family-name:--font-paperlogy) leading-[1.3]"
+                : ui === "ko"
+                  ? "font-(family-name:--font-paperlogy) leading-[1.3]"
+                  : "font-sans font-extrabold leading-[1.3]"
             }`}
           >
             {HEADLINE[lang][ui].map((line) => (

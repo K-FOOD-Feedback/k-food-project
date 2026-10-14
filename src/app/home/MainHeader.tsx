@@ -45,7 +45,8 @@ export function MainHeader({
           <LanguageButton
             lang={lang}
             from="feed"
-            onChange={en ? saveViewerLang : saveKoreanLang}
+            // onPick: 중국어·일본어도 "곧 지원" 없이 바로 그 언어로 (버전은 그대로, 화면 언어만)
+            onPick={en ? saveViewerLang : saveKoreanLang}
           />
           <TrackedLink
             href={en ? "/my/en" : "/my"}

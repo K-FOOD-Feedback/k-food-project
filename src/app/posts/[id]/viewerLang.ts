@@ -3,6 +3,15 @@
 import { useSyncExternalStore } from "react";
 import type { Lang } from "./copy";
 
+/**
+  지구본으로 고를 수 있는 화면 언어 전체 (중국어·일본어 포함).
+  중국어·일본어 문구가 아직 없는 화면(상세·한마디)은 useViewerLang()/useKoreanLang()으로 읽어 영어로 보여 주고,
+  있는 화면(메인)은 useViewerUiLang()/useKoreanUiLang()으로 읽어 그 언어로 보여 줍니다.
+*/
+export type UiLang = Lang | "zh" | "ja";
+const UI_LANGS: UiLang[] = ["ko", "en", "zh", "ja"];
+const asUi = (v: string | null): UiLang | null => (UI_LANGS.includes(v as UiLang) ? (v as UiLang) : null);
+
 /*
   외국인이 상세·한마디 화면에서 고른 언어 (이 브라우저에 저장)
   상세 화면에서 지구본으로 바꾸면 한마디 전체 화면·말풍선 모달도 같은 언어로 열리고, 그 반대도 같습니다.
@@ -28,7 +37,7 @@ function subscribe(onChange: () => void) {
   };
 }
 
-export function saveViewerLang(lang: Lang) {
+export function saveViewerLang(lang: UiLang) {
   try {
     localStorage.setItem(KEY, lang);
   } catch {
@@ -37,9 +46,22 @@ export function saveViewerLang(lang: Lang) {
   window.dispatchEvent(new Event(EVENT));
 }
 
-/** 외국인 화면 언어 — 고른 적 없으면 영어 */
+/** 외국인 화면 언어 — 고른 적 없으면 영어 (중국어·일본어를 골랐으면 영어로) */
 export function useViewerLang() {
   return useSyncExternalStore(subscribe, read, () => "en" as Lang);
+}
+
+function readUi(): UiLang {
+  try {
+    return asUi(localStorage.getItem(KEY)) ?? "en";
+  } catch {
+    return "en";
+  }
+}
+
+/** 외국인 화면 언어 — 중국어·일본어까지 그대로 */
+export function useViewerUiLang() {
+  return useSyncExternalStore(subscribe, readUi, () => "en" as UiLang);
 }
 
 /*
@@ -49,13 +71,23 @@ export function useViewerLang() {
 const KO_KEY = "kfood:korean-lang";
 const readKo = (): Lang => {
   try {
-    return localStorage.getItem(KO_KEY) === "en" ? "en" : "ko";
+    // 한국어(또는 고른 적 없음)면 한국어, 그 밖(영어·중국어·일본어)은 영어로
+    const v = localStorage.getItem(KO_KEY);
+    return !v || v === "ko" ? "ko" : "en";
   } catch {
     return "ko";
   }
 };
 
-export function saveKoreanLang(lang: Lang) {
+const readKoUi = (): UiLang => {
+  try {
+    return asUi(localStorage.getItem(KO_KEY)) ?? "ko";
+  } catch {
+    return "ko";
+  }
+};
+
+export function saveKoreanLang(lang: UiLang) {
   try {
     localStorage.setItem(KO_KEY, lang);
   } catch {
@@ -66,4 +98,9 @@ export function saveKoreanLang(lang: Lang) {
 
 export function useKoreanLang() {
   return useSyncExternalStore(subscribe, readKo, () => "ko" as Lang);
+}
+
+/** 한국인 화면 언어 — 중국어·일본어까지 그대로 */
+export function useKoreanUiLang() {
+  return useSyncExternalStore(subscribe, readKoUi, () => "ko" as UiLang);
 }

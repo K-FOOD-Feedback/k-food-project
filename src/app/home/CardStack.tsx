@@ -10,11 +10,21 @@ import {
 } from "react";
 import { track } from "@/lib/analytics";
 import { compactCount } from "@/lib/format";
+import type { UiLang } from "../posts/[id]/viewerLang";
+import { titleIn } from "./titles";
 import { cardShapeAt, type CardShape } from "./cardShapes";
 import { participantsOf, type HomePost as Post } from "./mockPosts";
 
 /** 화면·글 언어 (버전과 별개 — 버전은 한국인 /home · 외국인 /home?lang=en 로 정해지고, 언어는 지구본으로 바꿈) */
-export type Lang = "ko" | "en";
+export type Lang = UiLang;
+
+/** 카드 위 짧은 문구 (화면 언어) */
+const CARD_TEXT: Record<Lang, { joined: string; voted: string; comments: string; region: string }> = {
+  ko: { joined: "명 참여", voted: "투표 완료", comments: "한마디", region: "K-food 콘텐츠" },
+  en: { joined: "joined", voted: "Voted", comments: "Comments", region: "K-food posts" },
+  zh: { joined: "人参与", voted: "已投票", comments: "评论", region: "K-food 内容" },
+  ja: { joined: "人参加", voted: "投票済み", comments: "コメント", region: "K-food コンテンツ" },
+};
 
 // 카드 크기·위치는 Figma(node 259:7795) 기준이고 가로 가운데 정렬입니다.
 // 뒤에 깔린 카드들은 앞 카드를 회전·축소한 것이라, 모든 자리를 앞 카드의 transform으로 표현합니다.
@@ -330,7 +340,7 @@ export function CardStack({
       onKeyDown={onKeyDown}
       role="region"
       aria-roledescription="carousel"
-      aria-label={lang === "en" ? "K-food posts" : "K-food 콘텐츠"}
+      aria-label={CARD_TEXT[lang].region}
     >
       {posts.map((post, i) => {
         const rel = relOf(i);
@@ -355,7 +365,7 @@ export function CardStack({
             tabIndex={isFront ? 0 : -1}
             aria-hidden={!isFront}
             data-front-card={isFront || undefined}
-            aria-label={`${contentLang === "en" ? post.en.title : post.title} (${i + 1}/${n})`}
+            aria-label={`${titleIn(post, contentLang)} (${i + 1}/${n})`}
             onClick={(e) => {
               if (isFront && !moved.current) onOpen(post, e.currentTarget);
             }}
@@ -392,8 +402,7 @@ function CardContent({
   voted: boolean;
   shape: CardShape;
 }) {
-  const en = lang === "en";
-  const enTitle = contentLang === "en";
+  const t = CARD_TEXT[lang];
   const photo = cardPhotoOf(post);
   const { mask, scale: k } = shape;
   const m = cardMaskBox(k);
@@ -433,10 +442,10 @@ function CardContent({
         className="absolute top-[14px] right-[14px] flex size-[68px] rotate-12 flex-col items-center justify-center gap-0.5 rounded-full bg-background text-white shadow-[0_4px_12px_rgba(0,0,0,0.18)]"
       >
         <span className="text-[20px] leading-none font-extrabold tracking-[-0.4px]">
-          {compactCount(participantsOf(post), lang)}
+          {compactCount(participantsOf(post), lang === "ko" ? "ko" : "en")}
         </span>
         <span className="text-[11px] leading-none font-semibold">
-          {en ? "joined" : "명 참여"}
+          {t.joined}
         </span>
       </span>
 
@@ -460,7 +469,7 @@ function CardContent({
           >
             <path d="M20 6 9 17l-5-5" />
           </svg>
-          {en ? "Voted" : "투표 완료"}
+          {t.voted}
         </span>
       )}
 
@@ -469,13 +478,16 @@ function CardContent({
             한국어는 상세 제목과 같은 Paperlogy, 영어는 Gilroy를 한글 크기에 맞춘 font-title-en (행간 0.15 좁게) */}
         <span
           // 띄어쓰기 없는 긴 단어도 칸 안에서 줄을 바꾸고, 3줄을 넘으면 … (제목 글자 수 한도 TITLE_MAX가 3줄에 맞춰져 있음 — …는 번역이 길어질 때의 안전장치, 점검 화면 /dev/edge-cases)
+          // 글꼴: 한국어 Paperlogy · 영어 Gilroy(font-title-en) · 중국어·일본어는 기본 글꼴(기기의 중·일 글꼴)
           className={`w-full pb-2 text-[23px] font-extrabold tracking-[-0.69px] break-keep text-balance [overflow-wrap:anywhere] ${
-            enTitle
+            contentLang === "en"
               ? "line-clamp-3 font-title-en leading-[1.03]"
-              : "line-clamp-3 font-(family-name:--font-paperlogy) leading-[1.18]"
+              : contentLang === "ko"
+                ? "line-clamp-3 font-(family-name:--font-paperlogy) leading-[1.18]"
+                : "line-clamp-3 font-sans leading-[1.18]"
           }`}
         >
-          {enTitle ? post.en.title : post.title}
+          {titleIn(post, contentLang)}
         </span>
         {/* 닉네임이 길면 … (한마디 수와 겹치지 않게 사이 12px) */}
         <span className="flex w-full items-center justify-between gap-3 text-[13px] font-semibold text-black/60">
@@ -501,8 +513,8 @@ function CardContent({
             >
               <path d="M12 2C6.48 2 2 6.03 2 11c0 2.38 1.03 4.55 2.72 6.17L4 21.5a.5.5 0 0 0 .7.55l4.34-1.93c.94.25 1.93.38 2.96.38 5.52 0 10-4.03 10-9S17.52 2 12 2Z" />
             </svg>
-            <span className="sr-only">{en ? "Comments" : "한마디"}</span>
-            {compactCount(post.commentCount, lang)}
+            <span className="sr-only">{t.comments}</span>
+            {compactCount(post.commentCount, lang === "ko" ? "ko" : "en")}
           </span>
         </span>
       </span>

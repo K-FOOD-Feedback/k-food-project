@@ -127,7 +127,7 @@ export type CommentsCopy = (typeof COMMENTS_COPY)[Lang];
 export const DETAIL_COPY = {
   ko: {
     back: "뒤로 가기",
-    participants: (n: number) => `${n}명 참여 중!`,
+    participants: (n: number) => `${n}명 참여 중`,
     next: "다음 훈수 거리",
     openComments: "한마디 전체 보기",
     vote: "투표",
@@ -157,7 +157,7 @@ export const DETAIL_COPY = {
   },
   en: {
     back: "Back",
-    participants: (n: number) => `${n} joined!`,
+    participants: (n: number) => `${n} joined`,
     next: "Next one to judge",
     openComments: "See all comments",
     vote: "Vote",
