@@ -623,7 +623,7 @@ export function CommentModal({
                         {/* 가운데 답글을 누르면 오른쪽에 펼쳐지는 버튼 (펼치는 동안 말풍선이 왼쪽으로 비켜남) */}
                         <div
                           className={`flex gap-1 overflow-hidden transition-[width,opacity,padding] duration-250 ease-out ${
-                            active ? `pl-5 opacity-100 ${r.mine ? "w-[120px]" : "w-[68px]"}` : "w-0 pl-0 opacity-0"
+                            active ? `pl-2.5 opacity-100 ${r.mine ? "w-[110px]" : "w-[58px]"}` : "w-0 pl-0 opacity-0"
                           }`}
                           onClick={(e) => e.stopPropagation()}
                           aria-hidden={!active}
