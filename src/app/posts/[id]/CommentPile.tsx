@@ -305,10 +305,10 @@ export function CommentPile({
           </h2>
           {postTitle && (
             // 한국어는 Paperlogy, 영어는 Gilroy(font-title-en, 한글과 크기 보정) — 메인 카드 제목과 같은 규칙
-            // 중국어·일본어 글자는 두 글꼴에 없어서 기기 기본 글꼴 굵게 (메인과 같은 규칙)
+            // 중국어·일본어는 Noto Sans SC·JP 800 (titleFont, 메인과 같은 규칙)
             // 영어 행간은 한국어보다 0.15 좁게 (상세 제목과 같은 규칙)
             <p
-              className={`${lang === "zh" || lang === "ja" ? "font-sans font-extrabold" : titleFont(lang)} text-[24px] ${
+              className={`${titleFont(lang)} text-[24px] ${
                 lang === "en" ? "leading-[1.25]" : "leading-[1.4]"
               } tracking-[-0.48px] break-keep text-neutral-400`}
             >
