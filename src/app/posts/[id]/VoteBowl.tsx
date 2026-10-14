@@ -79,7 +79,11 @@ export function VoteBowl({
   // 선택지는 잘리지 않고 전부 보임 (글자 수는 입력할 때 OPTION_MAX로 제한). 4칸이면 칸이 좁아서 글자·%를 조금 작게
   const narrow = options.length >= 4;
   const optionText = narrow ? "pl-3 text-[14px] tracking-[-0.28px]" : "pl-4 text-[16px] tracking-[-0.32px]";
-  const pctText = narrow ? `${font} left-3 text-[19px] leading-none tracking-[-0.57px]` : `${title} left-4`;
+  // % 숫자는 언어와 상관없이 Paperlogy (한국인·외국인 버전 같은 모양)
+  const pctFont = titleFont("ko");
+  const pctText = narrow
+    ? `${pctFont} left-3 text-[19px] leading-none tracking-[-0.57px]`
+    : `${pctFont} ${titleSize} leading-[1.3] left-4`;
   const columns = useRef<(HTMLButtonElement | null)[]>([]);
   const token = useRef<HTMLDivElement>(null);
   // 내 칸에 들어가 앉은 토큰 (칸 이름과 % 사이, 차오른 색 바로 위)
@@ -319,10 +323,11 @@ export function VoteBowl({
           </div>
         ) : myVote !== null ? (
           <div className="flex flex-col items-center gap-1 text-center">
-            <p className="text-[15px] leading-[1.4] font-semibold text-neutral-400">
+            {/* 투표 완료(24px)보다 작게, 같은 생각인 사람 수(나 포함)만 흰색으로 강조 */}
+            <p className="text-[18px] leading-[1.35] font-bold tracking-[-0.36px] text-neutral-400">
               {(() => {
-                const [a, b, c] = T.sameThink(total, pcts[myVote]);
-                // 한국어: "N명 중 [X%]가 …" / 영어: "[X%] of N people …" — 숫자 부분만 흰색
+                const [a, b, c] = T.sameThink(total, votes[myVote]);
+                // 한국어: "N명 중 [M명]이 …" / 영어: "[M] of N people …" — 숫자 부분만 흰색
                 return lang === "en" ? (
                   <>
                     <span className="text-on-dark">{a}</span>
