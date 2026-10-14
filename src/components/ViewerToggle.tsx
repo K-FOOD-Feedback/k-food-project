@@ -10,6 +10,7 @@ import { rememberRole } from "@/lib/role";
   - 외국인만 쓰는 화면(글쓰기·수정)에서 한국인을 누르면 한국인 메인으로
   - 보이는 때: 지금은 배포 주소에서도 기본으로 보임 (지현 요청 — 폰에서 확인하려고). 아무 주소 뒤에 ?dev=0 을 붙여 한 번 열면
     이 브라우저에서 꺼지고, ?dev=1 이면 다시 켜짐
+  - 맨 오른쪽 "어드민": 의견 보기(/admin/feedback)로 바로 감. 어드민에서 한국인·외국인을 누르면 그쪽 메인으로
     → 작업용이라 출시 전에 지울 것
 */
 type Viewer = "ko" | "en";
@@ -30,7 +31,7 @@ function viewerOf(path: string, q: URLSearchParams): Viewer {
 function hrefFor(target: Viewer, path: string, query: URLSearchParams): string {
   const q = new URLSearchParams(query);
   const en = target === "en";
-  if (path === "/") return en ? "/home?lang=en" : "/home";
+  if (path === "/" || path.startsWith("/admin")) return en ? "/home?lang=en" : "/home";
   if (path === "/home") {
     if (en) q.set("lang", "en");
     else q.delete("lang");
@@ -84,7 +85,8 @@ export function ViewerToggle() {
   const enabled = useSyncExternalStore(subscribe, readEnabled, () => false);
   if (!enabled) return null;
 
-  const current = viewerOf(path, query);
+  const admin = path.startsWith("/admin");
+  const current = admin ? null : viewerOf(path, query);
   const go = (target: Viewer) => {
     if (target === current) return;
     rememberRole(target);
@@ -109,6 +111,15 @@ export function ViewerToggle() {
           {v === "ko" ? "🇰🇷 한국인" : "🌍 외국인"}
         </button>
       ))}
+      <button
+        type="button"
+        role="radio"
+        aria-checked={admin}
+        onClick={() => !admin && router.push("/admin/feedback")}
+        className={`rounded-full px-2.5 py-1.5 transition ${admin ? "bg-white text-black" : "text-white/70"}`}
+      >
+        🛠 어드민
+      </button>
     </div>
   );
 }

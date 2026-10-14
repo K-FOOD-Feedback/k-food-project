@@ -47,3 +47,14 @@ export async function listFeedback(): Promise<FeedbackRow[]> {
   if (!res.ok) throw new Error(`feedback list ${res.status}: ${await res.text()}`);
   return res.json();
 }
+
+/**
+  DB 깨우기 — Supabase 무료 플랜은 7일 동안 DB를 안 쓰면 프로젝트를 멈춤. 하루 한 번 아주 작은 조회를 보내 멈추지 않게 함
+  (Vercel Cron → /api/keepalive, vercel.json). 공개 키로는 의견을 못 읽어서 빈 목록이 오지만, DB에는 실제로 조회가 들어감
+*/
+export async function pingDb() {
+  const e = env();
+  if (!e) return false;
+  const res = await fetch(`${e.url}/rest/v1/feedback?select=id&limit=1`, { headers: headers(e.key), cache: "no-store" });
+  return res.ok;
+}
