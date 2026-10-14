@@ -916,8 +916,7 @@ function ShareVoteCard({
             {foreigner ? T.shareSubForeign : T.shareSub}
           </span>
         </span>
-        {/* 공유 원이 둥실둥실 떠서 눈길을 끔 */}
-        <span className="flex size-16 shrink-0 animate-float items-center justify-center rounded-full bg-background text-on-dark">
+        <span className="flex size-16 shrink-0 items-center justify-center rounded-full bg-background text-on-dark">
           <Icon name="share" />
         </span>
       </button>
