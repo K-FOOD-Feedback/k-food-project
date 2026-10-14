@@ -14,7 +14,6 @@ import { LanguageButton, useAutoTranslate } from "@/components/LanguagePicker";
 import { HEADER_BUTTON, PageHeader } from "@/components/PageHeader";
 import { useMyVote } from "@/app/home/votes";
 import { PostMenu } from "@/components/PostMenu";
-import { TrackedLink } from "@/components/Track";
 import { MY_POST_ID } from "@/lib/write-data";
 import { track } from "@/lib/analytics";
 import { useCommentLogin } from "./CommentLogin";
@@ -643,10 +642,19 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
         {(voted || foreigner) && <ShareVoteCard post={post} lang={lang} contentLang={contentLang} foreigner={foreigner} />}
 
         <div
-          className="relative"
+          className={`relative ${open ? "[&>div>div>section]:cursor-pointer" : ""}`}
           ref={(el) => {
             fadeIns.current[1] = el;
             commentRef.current = el;
+          }}
+          // 투표 후: 한마디 칸을 "탭"하면 한마디 전체 화면으로 (칸 안은 스크롤할 수 있어서 덮개 링크 대신 클릭으로 받음.
+          // 스크롤·끌기는 클릭이 생기지 않고, ↗ 같은 링크·버튼은 각자 동작)
+          onClick={(e) => {
+            const target = e.target as Element;
+            if (!open || !target.closest("section") || target.closest("a, button, input, textarea")) return;
+            track("comments_opened", { post_id: post.id, comment_count: post.commentCount, from: "detail", viewer: foreigner ? "foreigner" : "korean" });
+            commentsTrip = { postId: post.id, scrollY: window.scrollY, at: Date.now() };
+            router.push(commentsHref);
           }}
         >
           {/*
@@ -678,16 +686,6 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
             />
           </div>
           {!foreigner && <CommentLock locked={!voted} onVote={goToVote} lines={T.lock} button={T.voteNow} color={post.color} />}
-          {/* 투표 후: 한마디 칸 어디를 눌러도 한마디 전체 화면으로 (상세에서는 말풍선 호버·모달 없이 칸 전체가 하나의 링크) */}
-          {open && (
-            <TrackedLink
-              href={commentsHref}
-              event="comments_opened"
-              props={{ post_id: post.id, comment_count: post.commentCount, from: "detail", viewer: foreigner ? "foreigner" : "korean" }}
-              aria-label={T.openComments}
-              className="absolute inset-x-0 top-0 z-10 h-[362px] rounded-[32px]"
-            />
-          )}
         </div>
 
         {/* 화면 맨 아래 "다음 훈수 거리" (Figma 332:3426 Question CTA) — 떠 있지 않고 내용 끝에 놓임 */}
