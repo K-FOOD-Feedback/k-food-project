@@ -469,10 +469,10 @@ export function CommentPile({
           )}
         </div>
         {/* 칸 위·아래 그라데이션 — 스크롤로 가려졌을 때만 (전체 화면과 같은 규칙, 색은 칸 바탕색).
-            data-fade: 상세 화면이 잠금 상태에서 칸 내용을 흐릴 때 이 그라데이션은 흐리지 않도록 (흐리면 끝이 비쳐 보임).
-            위 그라데이션은 제목 줄 아래(칸 시작 72px)부터 */}
+            data-fade(아래만): 상세 화면이 잠금 상태에서 칸 내용을 흐릴 때 아래 그라데이션은 흐리지 않도록 (흐리면 칸 끝이 비쳐 보임).
+            위 그라데이션은 일부러 data-fade를 안 붙여 같이 흐립니다 — 안 흐리면 흐린 제목 줄 번짐이 그라데이션 윗변에서
+            일자로 잘려 줄처럼 보였습니다. 위 그라데이션은 제목 줄 아래(칸 시작 72px)부터 */}
         <div
-          data-fade
           className={`pointer-events-none absolute inset-x-0 top-[72px] h-[80px] transition-opacity ${entering ? "opacity-100 duration-0" : fades.top ? "opacity-100 duration-300" : "opacity-0 duration-300"}`}
           style={{ background: scrim("to bottom", CARD_BG) }}
         />
