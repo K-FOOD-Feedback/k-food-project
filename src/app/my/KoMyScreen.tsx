@@ -15,7 +15,7 @@ import { useFlow } from "@/lib/write-store";
 import { CommentCard, Empty, LogoutSheet, MyTabs, PhotoTile, timeAgo } from "./parts";
 import { forgetRole } from "@/lib/role";
 import { FEEDBACK_BAR_SPACE, FeedbackButton } from "./FeedbackSheet";
-import { AccountFooter, AccountMenu, ProfileHeader, ProfileSheet, useNickname } from "./profile";
+import { AccountFooter, GOOGLE_ACCOUNT, AccountMenu, ProfileHeader, ProfileSheet, useNickname } from "./profile";
 
 /*
   7. 마이 · 한국인 /my (담당 송희)
@@ -40,7 +40,6 @@ import { AccountFooter, AccountMenu, ProfileHeader, ProfileSheet, useNickname } 
   - 글이 지워졌으면: "삭제된 글", 누를 수 없음
   - 시간: 방금 · 5분 전 · 3시간 전 · 어제 · 3일 전 · 9월 3일 · 2025년 9월 8일
 */
-const PROFILE = { email: "minjun.kim@gmail.com" };
 
 /* 화면 언어 = 지구본에서 고른 언어(한국인 기억 kfood:korean-lang), 글 제목 = 자동 번역이면 화면 언어 · 아니면 원문(영어) — 메인·상세와 같은 규칙 */
 const COPY: Record<
@@ -248,7 +247,7 @@ export function KoMyScreen() {
 
       {/* 문의·의견 + 계정 줄 — 화면 아래 고정 */}
       <FeedbackButton ui={ui} viewer="korean">
-        <AccountFooter lang="ko" ui={ui} email={PROFILE.email} className="mt-4" />
+        <AccountFooter lang="ko" ui={ui} email={GOOGLE_ACCOUNT.ko.email} className="mt-4" />
       </FeedbackButton>
 
       <ProfileSheet

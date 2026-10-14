@@ -15,7 +15,7 @@ import { coverOf, useFlow } from "@/lib/write-store";
 import { CommentCard, Empty, LogoutSheet, MyTabs, PhotoTile, TIME, timeAgo } from "./parts";
 import { forgetRole } from "@/lib/role";
 import { FEEDBACK_BAR_SPACE, FeedbackButton } from "./FeedbackSheet";
-import { AccountFooter, AccountMenu, countryFlag, countryName, ProfileHeader, ProfileSheet, useCountry, useNickname } from "./profile";
+import { AccountFooter, GOOGLE_ACCOUNT, AccountMenu, countryFlag, countryName, ProfileHeader, ProfileSheet, useCountry, useNickname } from "./profile";
 
 /*
   7. 마이 · 외국인 /my/en (담당 송희)
@@ -46,7 +46,6 @@ import { AccountFooter, AccountMenu, countryFlag, countryName, ProfileHeader, Pr
       · 7일 안 "3d" · 올해 "Oct 10" · 작년 이전 "Oct 10, 2025"
 */
 
-const PROFILE = { email: "sam.taylor@gmail.com" };
 
 /**
  * 내가 쓴 한마디 — 목업 (외국인 화면에서 한마디 쓰기가 붙으면 실제 기록으로). 위 경우들이 다 보이게 구성
@@ -316,7 +315,7 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
 
       {/* 문의·의견 + 계정 줄 — 화면 아래 고정 */}
       <FeedbackButton ui={ui} viewer="foreigner">
-        <AccountFooter lang="en" ui={ui} email={PROFILE.email} className="mt-4" />
+        <AccountFooter lang="en" ui={ui} email={GOOGLE_ACCOUNT.en.email} className="mt-4" />
       </FeedbackButton>
 
       <ProfileSheet

@@ -8,6 +8,7 @@ import { PillButton } from "@/components/Buttons";
 import { BottomSheet } from "@/components/Layout";
 import { track } from "@/lib/analytics";
 import type { UiLang } from "@/app/posts/[id]/viewerLang";
+import { GOOGLE_ACCOUNT, useCountry, useNickname } from "./profile";
 
 /*
   마이 맨 아래 "전하고 싶은 의견이 있나요?" — 문의·의견 (한국인 /my · 외국인 /my/en 같이 씀)
@@ -82,6 +83,10 @@ export function FeedbackButton({
   children?: ReactNode;
 }) {
   const t = COPY[ui];
+  // 보낸 사람 — 로그인 정보(Google 이름) + 서비스 닉네임 + 나라 (한국인은 KR, 외국인은 가입 때 고른 나라, 없으면 목업 캐나다)
+  const version = viewer === "korean" ? "ko" : "en";
+  const nickname = useNickname(version);
+  const country = useCountry();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [state, setState] = useState<State>("idle");
@@ -100,7 +105,14 @@ export function FeedbackButton({
       const res = await fetch("/api/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, viewer, lang: ui }),
+        body: JSON.stringify({
+          text,
+          viewer,
+          lang: ui,
+          name: GOOGLE_ACCOUNT[version].name,
+          nickname,
+          country: viewer === "korean" ? "KR" : country || "CA",
+        }),
       });
       if (!res.ok) throw new Error(String(res.status));
       setOpen(false);

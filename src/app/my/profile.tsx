@@ -112,6 +112,15 @@ export function countryName(code: string, lang: UiLang = "en") {
     return code;
   }
 }
+/**
+ * 로그인한 Google 계정 — 목업 (실제 로그인이 붙으면 Google 프로필의 이름·이메일로)
+ * 마이 맨 아래 계정 줄, 의견 보내기(보낸 사람 이름)에서 씀
+ */
+export const GOOGLE_ACCOUNT: Record<MyLang, { name: string; email: string }> = {
+  ko: { name: "김민준", email: "minjun.kim@gmail.com" },
+  en: { name: "Sam Taylor", email: "sam.taylor@gmail.com" },
+};
+
 export function countryFlag(code: string) {
   return code.length === 2 ? String.fromCodePoint(...[...code.toUpperCase()].map((c) => 0x1f1a5 + c.charCodeAt(0))) : "🌍";
 }

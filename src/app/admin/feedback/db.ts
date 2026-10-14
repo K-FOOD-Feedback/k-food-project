@@ -7,7 +7,17 @@
 */
 export type FeedbackViewer = "korean" | "foreigner";
 export type FeedbackLang = "ko" | "en" | "zh" | "ja";
-export type FeedbackRow = { id: number; created_at: string; text: string; viewer: FeedbackViewer; lang: FeedbackLang };
+/** 보낸 사람 (로그인 정보) — author_name: Google 실제 이름 · nickname: 서비스 닉네임 · country: 나라 ISO 코드(한국인 KR) */
+export type FeedbackAuthor = { author_name: string | null; nickname: string | null; country: string | null };
+export type FeedbackRow = FeedbackAuthor & {
+  id: number;
+  created_at: string;
+  text: string;
+  viewer: FeedbackViewer;
+  lang: FeedbackLang;
+  /** 한국어 번역 (외국인 의견 — 번역 API가 붙기 전엔 비어 있을 수 있음) */
+  text_ko: string | null;
+};
 
 export const FEEDBACK_MAX = 1000;
 
@@ -20,7 +30,7 @@ function env() {
 const headers = (key: string) => ({ apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" });
 
 /** 의견 한 줄 추가 — DB 설정이 없으면 false */
-export async function saveFeedback(row: { text: string; viewer: FeedbackViewer; lang: FeedbackLang }) {
+export async function saveFeedback(row: FeedbackAuthor & { text: string; viewer: FeedbackViewer; lang: FeedbackLang }) {
   const e = env();
   if (!e) return false;
   const res = await fetch(`${e.url}/rest/v1/feedback`, {
