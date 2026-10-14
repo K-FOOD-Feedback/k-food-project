@@ -109,6 +109,9 @@ const ASIDE = "translate(-250px, 28px) rotate(-14deg) scale(0.96)";
 
 // 이만큼 끌거나, 짧아도 빠르게 튕기면(FLICK) 넘어갑니다.
 const SWIPE_THRESHOLD = 36;
+/** 트랙패드 두 손가락 가로 쓸기: 이만큼(px) 밀면 넘어감 — 넘어간 뒤에는 관성 스크롤이 멈출 때까지(WHEEL_IDLE_MS 동안 조용) 한 장만 */
+const WHEEL_THRESHOLD = 60;
+const WHEEL_IDLE_MS = 160;
 const FLICK_MIN = 14;
 const FLICK_VELOCITY = 0.35; // px/ms
 const TAP_TOLERANCE = 6;
@@ -277,6 +280,47 @@ export function CardStack({
     else if (dx >= SWIPE_THRESHOLD || (flick && dx > 0)) goPrev();
   };
 
+  // 트랙패드 두 손가락 가로 쓸기 — 누르고 끌지 않아도 손가락을 따라 카드가 움직이다가 WHEEL_THRESHOLD를 넘으면 넘어감
+  // (방향은 끌기와 같음: 손가락을 왼쪽으로 = 다음 카드). 세로 쓸기는 건드리지 않음.
+  // 가로일 때는 preventDefault — 브라우저의 "뒤로 가기" 쓸기 제스처가 같이 일어나지 않게
+  const deck = useRef<HTMLDivElement>(null);
+  const nav = useRef({ goNext, goPrev });
+  useEffect(() => {
+    nav.current = { goNext, goPrev };
+  });
+  useEffect(() => {
+    const el = deck.current;
+    if (!el) return;
+    let acc = 0;
+    let locked = false;
+    let idle = 0;
+    const onWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+      e.preventDefault();
+      window.clearTimeout(idle);
+      idle = window.setTimeout(() => {
+        acc = 0;
+        locked = false;
+        setDragX(null);
+      }, WHEEL_IDLE_MS);
+      if (locked) return;
+      acc -= e.deltaX * (e.deltaMode === 1 ? 16 : 1);
+      if (Math.abs(acc) < WHEEL_THRESHOLD) {
+        setDragX(acc);
+        return;
+      }
+      locked = true;
+      setDragX(null);
+      if (acc < 0) nav.current.goNext();
+      else nav.current.goPrev();
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => {
+      el.removeEventListener("wheel", onWheel);
+      window.clearTimeout(idle);
+    };
+  }, []);
+
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "ArrowRight") goNext();
     if (e.key === "ArrowLeft") goPrev();
@@ -334,6 +378,7 @@ export function CardStack({
 
   return (
     <div
+      ref={deck}
       className="relative mx-auto h-[480px] w-[375px] touch-pan-y select-none"
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}

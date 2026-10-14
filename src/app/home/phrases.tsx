@@ -7,7 +7,8 @@ import { Fragment } from "react";
   - 문장부호(、？，)는 앞말에 붙임 → 줄 맨 앞에 문장부호가 오지 않음
   - 한 글자 조각은 앞말에 붙임 (火鸡|面 → 火鸡面, 芝|士 → 芝士) — 맨 앞이거나 문장부호 바로 뒤면 뒷말에 붙임
   - 일본어 히라가나 조각(조사·어미: が, の, たい)은 앞말에 붙임 → "私が", "作った"
-  - 가타카나 조각이 이어지면 하나로 (ブル|ダ|ッ|ク → ブルダック)
+  - 가타카나 조각이 이어지면 하나로 (ブル|ダ|ッ|ク → ブルダック) — 단 앞 조각이 3글자 이상(사전에 있는 단어: ソーセージ, カルボ)이면
+    거기서는 나눌 수 있게 둠 → "ソーセージ|ブルダック" (긴 가타카나 덩이가 칸을 넘어 글자 중간에서 끊기지 않게)
   말덩이 하나가 칸보다 길면 그때는 쓰는 쪽의 overflow-wrap:anywhere 로 글자 사이에서 끊김
 */
 const HIRAGANA = /^[\p{Script=Hiragana}ー]+$/u;
@@ -19,6 +20,7 @@ export function cjkPhrases(text: string, lang: "zh" | "ja"): string[] {
   const out: string[] = [];
   let forward = false; // 바로 앞 조각이 뒷말에 붙어야 함
   let prevPunct = false;
+  let prevLen = 0; // 바로 앞 조각(묶기 전)의 글자 수
   for (const { segment, isWordLike } of new Intl.Segmenter(lang, { granularity: "word" }).segment(text)) {
     const single = [...segment].length === 1;
     const last = out[out.length - 1];
@@ -29,11 +31,12 @@ export function cjkPhrases(text: string, lang: "zh" | "ja"): string[] {
         (!prevPunct &&
           (single ||
             (lang === "ja" && HIRAGANA.test(segment)) ||
-            (KATAKANA.test(segment) && ENDS_KATAKANA.test(last)))));
+            (KATAKANA.test(segment) && ENDS_KATAKANA.test(last) && prevLen < 3))));
     if (glue) out[out.length - 1] = last + segment;
     else out.push(segment);
     forward = !!isWordLike && single && (out.length === 1 || prevPunct) && !glue;
     prevPunct = !isWordLike;
+    prevLen = [...segment].length;
   }
   return out;
 }
