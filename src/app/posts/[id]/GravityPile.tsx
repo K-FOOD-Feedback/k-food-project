@@ -109,6 +109,9 @@ class PileWorld {
   /** 더미가 채움 한도를 넘어 아래쪽이 묻혔는지 (바뀔 때만 알림) */
   private overflowing = false;
   onOverflowChange: ((overflowing: boolean) => void) | null = null;
+  /** 말풍선이 칸 위쪽 끝을 지나 들어오는 중인지 (쏟아지기·새 한마디) — 위 그라데이션을 잠깐 켜려고 */
+  private entering = false;
+  onEnteringChange: ((entering: boolean) => void) | null = null;
 
   constructor(
     width: number,
@@ -439,6 +442,22 @@ class PileWorld {
       this.overflowing = overflowing;
       this.onOverflowChange?.(overflowing);
     }
+    // 칸 위쪽 끝(지금 보이는 맨 위)에 걸친 채 움직이는 말풍선이 있거나, 쏟아질 차례를 기다리는 말풍선이 있으면 "들어오는 중"
+    // (landed는 벽에만 닿아도 켜져서, 실제로 움직이는지로 봅니다. 가만히 쌓여 있는 말풍선은 해당 없음)
+    const visibleTop = this.viewTop + (this.scroller?.box.scrollTop ?? 0);
+    let entering = this.pendingRain.size > 0;
+    if (!entering) {
+      for (const { body } of this.tracked.values()) {
+        if (!body.isStatic && body.speed > 0.3 && body.bounds.min.y < visibleTop + 24) {
+          entering = true;
+          break;
+        }
+      }
+    }
+    if (entering !== this.entering) {
+      this.entering = entering;
+      this.onEnteringChange?.(entering);
+    }
     if (this.scroller) {
       const below = -this.viewTop - this.height;
       const height = below < 1 ? this.height : this.height + Math.ceil(below / 40) * 40;
@@ -473,6 +492,7 @@ export function GravityPile({
   rainOnOpen = 0,
   ready = true,
   onOverflowChange,
+  onEnteringChange,
   onSelect,
   lang = "ko",
   hover = true,
@@ -490,6 +510,8 @@ export function GravityPile({
   ready?: boolean;
   /** 더미가 칸의 채움 한도를 넘어 아래쪽이 그라데이션 아래로 묻히기 시작했는지 / 다시 다 보이는지 */
   onOverflowChange?: (overflowing: boolean) => void;
+  /** 말풍선이 칸 위쪽 끝으로 들어오는 중인지 (위 그라데이션을 그동안 켜 둘 때) */
+  onEnteringChange?: (entering: boolean) => void;
   /** 말풍선을 누르면 (없으면 누를 수 없는 그냥 말풍선). el: 누른 말풍선 요소 (이모지가 떠오를 자리) */
   onSelect?: (comment: Comment, el: HTMLElement) => void;
   /** 태그(나·글쓴이)와 읽어 주기 문구의 언어 */
@@ -507,8 +529,10 @@ export function GravityPile({
   /** 다시 쏟아지기를 기다리는 중인 관찰자 (칸이 보이면 시작) */
   const replayWatch = useRef<IntersectionObserver | null>(null);
   const overflowCallback = useRef(onOverflowChange);
+  const enteringCallback = useRef(onEnteringChange);
   useLayoutEffect(() => {
     overflowCallback.current = onOverflowChange;
+    enteringCallback.current = onEnteringChange;
   });
 
   useImperativeHandle(
@@ -548,6 +572,7 @@ export function GravityPile({
     );
     world.current = pile;
     pile.onOverflowChange = (v) => overflowCallback.current?.(v);
+    pile.onEnteringChange = (v) => enteringCallback.current?.(v);
     pile.start();
     const observer = new ResizeObserver(() => pile.resize(box.clientWidth, box.clientHeight));
     observer.observe(box);

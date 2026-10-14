@@ -113,6 +113,15 @@ export function CommentPile({
   // 전체 화면: 칸 위·아래가 스크롤로 가려졌을 때만 그쪽에 그라데이션을 보여 줍니다.
   // 위: 아래로 스크롤해서 위쪽 한마디가 가려졌을 때 / 아래: 묻힌 한마디가 남아 있을 때 (맨 아래면 없음)
   const [fades, setFades] = useState({ top: false, bottom: false });
+  // 말풍선이 칸 위쪽 끝으로 들어오는 동안(쏟아지기·새 한마디)도 위 그라데이션을 켜서 툭 잘려 보이지 않게
+  const [entering, setEntering] = useState(false);
+  // 한 개만 떨어질 때는 금방 지나가서, 다 지나간 뒤에도 0.5초 더 켜 둬야 그라데이션이 깜빡이지 않고 보임
+  const enteringOff = useRef<number | undefined>(undefined);
+  const onEntering = (now: boolean) => {
+    window.clearTimeout(enteringOff.current);
+    if (now) setEntering(true);
+    else enteringOff.current = window.setTimeout(() => setEntering(false), 500);
+  };
   const measureFades = () => {
     const box = zone.current?.firstElementChild;
     if (!box) return;
@@ -325,12 +334,13 @@ export function CommentPile({
               rainOnOpen={14}
               lang={lang}
               onOverflowChange={measureFades}
+              onEnteringChange={onEntering}
               onSelect={select}
             />
           </div>
           <div
             className={`pointer-events-none absolute inset-x-0 top-0 h-[120px] transition-opacity duration-300 ${
-              fades.top ? "opacity-100" : "opacity-0"
+              fades.top || entering ? "opacity-100" : "opacity-0"
             }`}
             style={{ background: scrim("to bottom") }}
           />
@@ -448,6 +458,7 @@ export function CommentPile({
             scrollable
             hover={false}
             onOverflowChange={measureFades}
+              onEnteringChange={onEntering}
             className={ready && comments.length === 0 ? "h-[132px]" : "h-[286px]"}
           />
           {ready && comments.length === 0 && (
@@ -461,7 +472,7 @@ export function CommentPile({
             위 그라데이션은 제목 줄 아래(칸 시작 72px)부터 */}
         <div
           data-fade
-          className={`pointer-events-none absolute inset-x-0 top-[72px] h-[80px] transition-opacity duration-300 ${fades.top ? "opacity-100" : "opacity-0"}`}
+          className={`pointer-events-none absolute inset-x-0 top-[72px] h-[80px] transition-opacity duration-300 ${fades.top || entering ? "opacity-100" : "opacity-0"}`}
           style={{ background: scrim("to bottom", CARD_BG) }}
         />
         <div
