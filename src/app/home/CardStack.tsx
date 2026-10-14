@@ -113,8 +113,8 @@ const SWIPE_THRESHOLD = 36;
 const WHEEL_THRESHOLD = 45;
 /** 이만큼(ms) 조용하면 한 번의 쓸기가 끝난 것으로 봄 */
 const WHEEL_IDLE_MS = 140;
-/** 넘긴 직후 이 시간(ms) 동안은 관성으로 보고 무시 — 그 뒤 움직임이 다시 세지면 새 쓸기 */
-const WHEEL_REARM_MS = 180;
+/** 넘긴 직후 이 시간(ms) 동안은 무조건 관성으로 보고 무시 */
+const WHEEL_REARM_MS = 120;
 const FLICK_MIN = 14;
 const FLICK_VELOCITY = 0.35; // px/ms
 const TAP_TOLERANCE = 6;
@@ -286,8 +286,9 @@ export function CardStack({
   // 트랙패드 두 손가락 가로 쓸기 — 누르고 끌지 않아도 손가락을 따라 카드가 움직이다가 WHEEL_THRESHOLD를 넘으면 넘어감
   // (방향은 끌기와 같음: 손가락을 왼쪽으로 = 다음 카드). 세로 쓸기·핀치 확대는 건드리지 않음.
   // - 카드 더미 위가 아니어도 메인 화면 어디서든 (창 전체에서 받음, 열린 시트·모달 안은 제외)
-  // - 한 장 넘긴 뒤 이어지는 관성 스크롤(점점 약해짐)은 무시하고, 움직임이 다시 세지면(새로 쓸기 시작) 바로 다음 장
-  //   → 예전엔 관성이 다 멈출 때까지(1초 넘게) 잠겨 있어서 연달아 쓸면 안 넘어갔음
+  // - 한 장 넘긴 뒤 이어지는 관성 스크롤은 무시하고, 새로 쓸기 시작하면 바로 다음 장
+  //   관성은 절대 다시 세지지 않음(점점 약해지기만 함) → 움직임이 두 번 연달아 커지거나 방향이 바뀌면 새 쓸기로 봄
+  //   (맥은 커서를 움직이면 관성이 끊기지만, 커서가 그대로면 관성이 1초 넘게 이어져서 — 그 사이 살살 다시 쓸어도 넘어가야 함)
   // - 가로일 때는 preventDefault — 브라우저의 "뒤로 가기" 쓸기 제스처가 같이 일어나지 않게
   const deck = useRef<HTMLDivElement>(null);
   const nav = useRef({ goNext, goPrev });
@@ -299,6 +300,8 @@ export function CardStack({
     let locked = false;
     let lockedAt = 0;
     let lastMag = 0;
+    let lastSign = 0;
+    let rising = 0; // 움직임이 연달아 커진 횟수
     let idle = 0;
     const onWheel = (e: WheelEvent) => {
       if (e.ctrlKey) return; // 핀치 확대
@@ -312,18 +315,21 @@ export function CardStack({
         acc = 0;
         locked = false;
         lastMag = 0;
+        rising = 0;
         setDragX(null);
       }, WHEEL_IDLE_MS);
       const mag = Math.abs(dx);
+      const sign = Math.sign(dx);
+      rising = mag > lastMag + 0.5 ? rising + 1 : 0;
+      const flipped = lastSign !== 0 && sign !== lastSign;
+      lastMag = mag;
+      lastSign = sign;
       if (locked) {
-        // 관성 꼬리는 점점 약해짐 — 일정 시간 뒤 움직임이 확 세지면 새로 쓸기 시작으로 보고 잠금 풀기
-        const rearm = e.timeStamp - lockedAt > WHEEL_REARM_MS && mag > 4 && mag > lastMag * 1.5;
-        lastMag = mag;
+        const rearm = e.timeStamp - lockedAt > WHEEL_REARM_MS && (rising >= 2 || flipped);
         if (!rearm) return;
         locked = false;
         acc = 0;
       }
-      lastMag = mag;
       acc -= dx;
       if (Math.abs(acc) < WHEEL_THRESHOLD) {
         setDragX(acc);
