@@ -85,7 +85,6 @@ export function HomeScreen({ lang = "ko" }: { lang?: "ko" | "en" }) {
       : null;
   });
   const votedIds = useVotedIds();
-  // 상세에서 돌아오는 전환의 상세 글 언어: 한국인 메인이면 늘 한국어, 외국인 메인이면 상세에서 고른 언어(기본 영어)
   // lang = 버전(한국인 /home · 외국인 /home?lang=en, 로그인 정보로 정해짐 — 지구본으로 바뀌지 않음)
   // ui = 화면 언어 (지구본으로 고름, 상세·한마디와 같은 기억: 외국인 기본 영어 · 한국인 기본 한국어)
   // content = 글(제목) 언어 — 자동 번역이 켜져 있으면 화면 언어, 꺼져 있으면 원문(글쓴이 언어 = 영어). 상세와 같은 규칙
@@ -94,9 +93,6 @@ export function HomeScreen({ lang = "ko" }: { lang?: "ko" | "en" }) {
   const ui: Lang = lang === "en" ? viewerLang : koreanLang;
   const autoTranslate = useAutoTranslate();
   const content: Lang = autoTranslate ? ui : "en";
-  // 상세에서 돌아오는 전환의 상세 글 언어 = 상세가 보여 주던 글 언어
-  // (상세는 아직 중국어·일본어 문구가 없어 영어로 보여 줌)
-  const detailLang = content === "ko" ? "ko" : "en";
   const current = posts[index];
 
   // 제목 + (40px) + 카드를 한 덩어리로 가운데에.
@@ -266,7 +262,8 @@ export function HomeScreen({ lang = "ko" }: { lang?: "ko" | "en" }) {
           post={current}
           shape={cardShapeAt(index)}
           fit={scale}
-          detailLang={detailLang}
+          uiLang={ui}
+          contentLang={content}
           onDone={() => setReturning(null)}
         />
       )}
