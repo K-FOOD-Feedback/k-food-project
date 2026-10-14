@@ -12,7 +12,7 @@ import { track } from "@/lib/analytics";
 import { compactCount } from "@/lib/format";
 import type { UiLang } from "../posts/[id]/viewerLang";
 import { titleFont } from "../posts/[id]/font";
-import { titleIn } from "./titles";
+import { nameIn, titleIn } from "./titles";
 import { cardShapeAt, type CardShape } from "./cardShapes";
 import { participantsOf, type HomePost as Post } from "./mockPosts";
 
@@ -516,7 +516,7 @@ function CardContent({
               {post.author.flag}
             </span>
             {/* 높이를 줄(국기 원 24px)에 꽉 채워 y·g 같은 글자 아래가 잘리지 않게 */}
-            <span className="truncate leading-6">{post.author.name}</span>
+            <span className="truncate leading-6">{nameIn(post, contentLang)}</span>
           </span>
           {/* 한마디 수 — 채워진 말풍선 아이콘 */}
           <span className="flex shrink-0 items-center gap-1">
