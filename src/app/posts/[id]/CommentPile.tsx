@@ -473,7 +473,8 @@ export function CommentPile({
             위 그라데이션은 일부러 data-fade를 안 붙여 같이 흐립니다 — 안 흐리면 흐린 제목 줄 번짐이 그라데이션 윗변에서
             일자로 잘려 줄처럼 보였습니다. 위 그라데이션은 제목 줄 아래(칸 시작 72px)부터 */}
         <div
-          className={`pointer-events-none absolute inset-x-0 top-[72px] h-[80px] transition-opacity ${entering ? "opacity-100 duration-0" : fades.top ? "opacity-100 duration-300" : "opacity-0 duration-300"}`}
+          // in-[[inert]]:hidden — 투표 전 잠금(어둡게 흐린) 상태에서는 위 그라데이션을 아예 끔 (흐린 칸 위에서 줄처럼 보여서, 지현 요청)
+          className={`pointer-events-none absolute inset-x-0 top-[72px] h-[80px] transition-opacity in-[[inert]]:hidden ${entering ? "opacity-100 duration-0" : fades.top ? "opacity-100 duration-300" : "opacity-0 duration-300"}`}
           style={{ background: scrim("to bottom", CARD_BG) }}
         />
         <div
