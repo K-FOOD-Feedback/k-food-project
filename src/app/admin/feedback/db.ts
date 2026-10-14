@@ -30,7 +30,9 @@ function env() {
 const headers = (key: string) => ({ apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" });
 
 /** 의견 한 줄 추가 — DB 설정이 없으면 false */
-export async function saveFeedback(row: FeedbackAuthor & { text: string; viewer: FeedbackViewer; lang: FeedbackLang }) {
+export async function saveFeedback(
+  row: FeedbackAuthor & { text: string; viewer: FeedbackViewer; lang: FeedbackLang; text_ko: string | null },
+) {
   const e = env();
   if (!e) return false;
   const res = await fetch(`${e.url}/rest/v1/feedback`, {
