@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { PillButton } from "@/components/Buttons";
 import { Icon, type IconName } from "@/components/Icon";
 import { BottomSheet } from "@/components/Layout";
+import type { UiLang } from "@/app/posts/[id]/viewerLang";
 
 /*
   마이 화면 공통 부품 (외국인 /my/en · 한국인 /my, 담당 송희)
@@ -19,24 +20,30 @@ const DAY = 24 * HOUR;
 export const TIME = { MIN, HOUR, DAY };
 
 /**
- * 한마디 시간
- *   1분 안 Just now/방금 · 1시간 안 5m/5분 전 · 오늘 3h/3시간 전 · 어제 Yesterday/어제
- *   · 7일 안 3d/3일 전 · 올해 Sep 3/9월 3일 · 작년 이전 Sep 8, 2025/2025년 9월 8일
+ * 한마디 시간 (화면 언어)
+ *   1분 안 Just now/방금/刚刚/たった今 · 1시간 안 5m/5분 전/5分钟前/5分前 · 오늘 3h/3시간 전/3小时前/3時間前
+ *   · 어제 Yesterday/어제/昨天/昨日 · 7일 안 3d/3일 전/3天前/3日前 · 올해 Sep 3/9월 3일/9月3日 · 작년 이전 연도까지
  */
-export function timeAgo(at: number, now: number, lang: MyLang) {
-  const ko = lang === "ko";
+const AGO: Record<UiLang, { now: string; min: (n: number) => string; hour: (n: number) => string; yesterday: string; day: (n: number) => string; locale: string }> = {
+  en: { now: "Just now", min: (n) => `${n}m`, hour: (n) => `${n}h`, yesterday: "Yesterday", day: (n) => `${n}d`, locale: "en-US" },
+  ko: { now: "방금", min: (n) => `${n}분 전`, hour: (n) => `${n}시간 전`, yesterday: "어제", day: (n) => `${n}일 전`, locale: "ko-KR" },
+  zh: { now: "刚刚", min: (n) => `${n}分钟前`, hour: (n) => `${n}小时前`, yesterday: "昨天", day: (n) => `${n}天前`, locale: "zh-CN" },
+  ja: { now: "たった今", min: (n) => `${n}分前`, hour: (n) => `${n}時間前`, yesterday: "昨日", day: (n) => `${n}日前`, locale: "ja-JP" },
+};
+export function timeAgo(at: number, now: number, lang: UiLang) {
+  const t = AGO[lang];
   const d = now - at;
-  if (d < MIN) return ko ? "방금" : "Just now";
-  if (d < HOUR) return ko ? `${Math.floor(d / MIN)}분 전` : `${Math.floor(d / MIN)}m`;
+  if (d < MIN) return t.now;
+  if (d < HOUR) return t.min(Math.floor(d / MIN));
   const today = new Date(now);
   today.setHours(0, 0, 0, 0);
-  if (at >= today.getTime()) return ko ? `${Math.floor(d / HOUR)}시간 전` : `${Math.floor(d / HOUR)}h`;
-  if (at >= today.getTime() - DAY) return ko ? "어제" : "Yesterday";
-  if (d < 7 * DAY) return ko ? `${Math.floor(d / DAY)}일 전` : `${Math.floor(d / DAY)}d`;
+  if (at >= today.getTime()) return t.hour(Math.floor(d / HOUR));
+  if (at >= today.getTime() - DAY) return t.yesterday;
+  if (d < 7 * DAY) return t.day(Math.floor(d / DAY));
   const date = new Date(at);
   const sameYear = date.getFullYear() === today.getFullYear();
-  return date.toLocaleDateString(ko ? "ko-KR" : "en-US", {
-    month: ko ? "long" : "short",
+  return date.toLocaleDateString(t.locale, {
+    month: lang === "en" ? "short" : "long",
     day: "numeric",
     ...(sameYear ? {} : { year: "numeric" }),
   });
@@ -205,7 +212,21 @@ const LOGOUT = {
     cancel: "취소",
     ok: "로그아웃",
   },
-};
+  zh: {
+    label: "退出登录",
+    title: "要退出登录吗？",
+    body: "你的记录都会保留。随时可以用 Google 重新登录。",
+    cancel: "取消",
+    ok: "退出登录",
+  },
+  ja: {
+    label: "ログアウト",
+    title: "ログアウトしますか？",
+    body: "これまでの記録はそのまま残ります。いつでも Google で再ログインできます。",
+    cancel: "キャンセル",
+    ok: "ログアウト",
+  },
+} satisfies Record<UiLang, Record<string, string>>;
 
 /** 로그아웃 확인 시트 */
 export function LogoutSheet({
@@ -217,7 +238,8 @@ export function LogoutSheet({
   open: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  lang: MyLang;
+  /** 화면 언어 */
+  lang: UiLang;
 }) {
   const t = LOGOUT[lang];
   return (

@@ -6,6 +6,7 @@ import { IconButton, PillButton } from "@/components/Buttons";
 import { Icon } from "@/components/Icon";
 import { BottomSheet } from "@/components/Layout";
 import { track } from "@/lib/analytics";
+import type { UiLang } from "@/app/posts/[id]/viewerLang";
 import type { MyLang } from "./parts";
 
 /*
@@ -104,7 +105,7 @@ export const isOnboarded = (lang: MyLang) => readRaw(onboardedKey(lang)) === "1"
 export const markOnboarded = (lang: MyLang, done: boolean) => saveRaw(onboardedKey(lang), done ? "1" : null);
 
 /** 나라 이름 (영어) · 국기 이모지 */
-export function countryName(code: string, lang: MyLang = "en") {
+export function countryName(code: string, lang: UiLang = "en") {
   try {
     return new Intl.DisplayNames([lang], { type: "region" }).of(code) ?? code;
   } catch {
@@ -169,16 +170,55 @@ const COPY = {
     cancel: "취소",
     delOk: "삭제하기",
   },
-};
+  zh: {
+    edit: "编辑资料",
+    sheet: "个人资料",
+    title: "我的昵称",
+    reroll: "换个昵称",
+    apply: "就用这个昵称",
+    same: "这是你现在的昵称",
+    account: "Google 账号",
+    more: "更多",
+    closeMenu: "关闭菜单",
+    logout: "退出登录",
+    delete: "删除账号",
+    delTitle: "要删除账号吗？",
+    delBody: "你的所有记录都会被删除，且无法恢复。",
+    cancel: "取消",
+    delOk: "删除",
+  },
+  ja: {
+    edit: "プロフィール編集",
+    sheet: "プロフィール",
+    title: "ニックネーム",
+    reroll: "新しいニックネーム",
+    apply: "このニックネームにする",
+    same: "今のニックネームです",
+    account: "Google アカウント",
+    more: "その他",
+    closeMenu: "メニューを閉じる",
+    logout: "ログアウト",
+    delete: "アカウント削除",
+    delTitle: "アカウントを削除しますか？",
+    delBody: "これまでの記録がすべて削除され、元に戻せません。",
+    cancel: "キャンセル",
+    delOk: "削除する",
+  },
+} satisfies Record<UiLang, Record<string, string>>;
+/*
+  lang = 버전(한국인 ko · 외국인 en — 닉네임 저장·재료·분석에 씀), ui = 화면 언어(지구본에서 고른 언어, 문구에만 씀, 없으면 lang)
+*/
 
 /** 마이 맨 위 — 닉네임 › (누르면 프로필 시트) + 나라 */
 export function ProfileHeader({
   lang,
+  ui = lang,
   nickname,
   line,
   onOpen,
 }: {
   lang: MyLang;
+  ui?: UiLang;
   nickname: string;
   line?: string;
   onOpen: () => void;
@@ -188,7 +228,7 @@ export function ProfileHeader({
       <button
         type="button"
         onClick={onOpen}
-        aria-label={`${COPY[lang].edit}: ${nickname}`}
+        aria-label={`${COPY[ui].edit}: ${nickname}`}
         className="flex min-h-[35px] items-center gap-1 self-start text-left transition active:scale-[0.98]"
       >
         <span className="font-display text-[32px] leading-[1.1] break-keep">{nickname}</span>
@@ -208,19 +248,21 @@ const REEL_SPINS = 12; // 멈추기 전에 지나가는 닉네임 수
  */
 export function NicknameSlot({
   lang,
+  ui = lang,
   value,
   onChange,
   onSpinningChange,
   from,
 }: {
   lang: MyLang;
+  ui?: UiLang;
   value: string;
   onChange: (name: string) => void;
   onSpinningChange?: (spinning: boolean) => void;
   /** 분석용: 어디서 돌렸는지 */
   from: "profile" | "signup";
 }) {
-  const t = COPY[lang];
+  const t = COPY[ui];
   const [reel, setReel] = useState<string[]>([value]);
   const [spins, setSpins] = useState(0);
   const [spinning, setSpinning] = useState(false);
@@ -306,14 +348,16 @@ export function ProfileSheet({
   open,
   onClose,
   lang,
+  ui = lang,
   nickname,
 }: {
   open: boolean;
   onClose: () => void;
   lang: MyLang;
+  ui?: UiLang;
   nickname: string;
 }) {
-  const t = COPY[lang];
+  const t = COPY[ui];
   const [candidate, setCandidate] = useState(nickname);
   const [spinning, setSpinning] = useState(false);
 
@@ -330,7 +374,7 @@ export function ProfileSheet({
     <BottomSheet open={open} onClose={onClose} label={t.sheet}>
       <div className="flex w-full flex-col gap-3 px-4 pt-2">
         <h2 className="px-2 font-display text-[22px] leading-[1.25]">{t.title}</h2>
-        <NicknameSlot lang={lang} value={candidate} onChange={setCandidate} onSpinningChange={setSpinning} from="profile" />
+        <NicknameSlot lang={lang} ui={ui} value={candidate} onChange={setCandidate} onSpinningChange={setSpinning} from="profile" />
       </div>
 
       <div className="flex w-full">
@@ -352,8 +396,8 @@ export function ProfileSheet({
 
 /** 마이 맨 아래 — Google 계정 · 계정 삭제 (회색 작은 글씨, 잘 안 보이게) */
 /** 마이 맨 아래 회색 작은 글씨 — 로그인한 Google 계정 (계정 삭제는 오른쪽 위 ⋯ 메뉴로) */
-export function AccountFooter({ lang, email }: { lang: MyLang; email: string }) {
-  const t = COPY[lang];
+export function AccountFooter({ lang, ui = lang, email }: { lang: MyLang; ui?: UiLang; email: string }) {
+  const t = COPY[ui];
   return (
     <p className="mt-16 px-6 text-center text-[12px] text-neutral-400">
       {t.account} · {email}
@@ -365,8 +409,18 @@ export function AccountFooter({ lang, email }: { lang: MyLang; email: string }) 
  * 마이 오른쪽 위 ⋯ — 로그아웃 · 계정 삭제
  * 로그아웃은 쓰는 화면의 확인 시트(onLogout), 계정 삭제는 여기서 한 번 더 묻고 onDelete
  */
-export function AccountMenu({ lang, onLogout, onDelete }: { lang: MyLang; onLogout: () => void; onDelete: () => void }) {
-  const t = COPY[lang];
+export function AccountMenu({
+  lang,
+  ui = lang,
+  onLogout,
+  onDelete,
+}: {
+  lang: MyLang;
+  ui?: UiLang;
+  onLogout: () => void;
+  onDelete: () => void;
+}) {
+  const t = COPY[ui];
   const viewer = lang === "en" ? "foreigner" : "korean";
   const [open, setOpen] = useState(false);
   const [confirm, setConfirm] = useState(false);
