@@ -11,6 +11,7 @@ import {
 import { track } from "@/lib/analytics";
 import { compactCount } from "@/lib/format";
 import type { UiLang } from "../posts/[id]/viewerLang";
+import { titleFont } from "../posts/[id]/font";
 import { titleIn } from "./titles";
 import { cardShapeAt, type CardShape } from "./cardShapes";
 import { participantsOf, type HomePost as Post } from "./mockPosts";
@@ -478,13 +479,13 @@ function CardContent({
             한국어는 상세 제목과 같은 Paperlogy, 영어는 Gilroy를 한글 크기에 맞춘 font-title-en (행간 0.15 좁게) */}
         <span
           // 띄어쓰기 없는 긴 단어도 칸 안에서 줄을 바꾸고, 3줄을 넘으면 … (제목 글자 수 한도 TITLE_MAX가 3줄에 맞춰져 있음 — …는 번역이 길어질 때의 안전장치, 점검 화면 /dev/edge-cases)
-          // 글꼴: 한국어 Paperlogy · 영어 Gilroy(font-title-en) · 중국어·일본어는 기본 글꼴(기기의 중·일 글꼴)
+          // 글꼴: 한국어 Paperlogy · 영어 Gilroy(font-title-en) · 중국어 Noto Sans SC · 일본어 Noto Sans JP (titleFont)
           className={`w-full pb-2 text-[23px] font-extrabold tracking-[-0.69px] break-keep text-balance [overflow-wrap:anywhere] ${
             contentLang === "en"
               ? "line-clamp-3 font-title-en leading-[1.03]"
               : contentLang === "ko"
                 ? "line-clamp-3 font-(family-name:--font-paperlogy) leading-[1.18]"
-                : "line-clamp-3 font-sans leading-[1.18]"
+                : `line-clamp-3 leading-[1.18] ${titleFont(contentLang)}`
           }`}
         >
           {titleIn(post, contentLang)}

@@ -23,6 +23,7 @@ import { MainHeader } from "./MainHeader";
 import { ReturnGhosts } from "./ReturnTransition";
 import { HOME_POSTS, type HomePost } from "./mockPosts";
 import { useVotedIds } from "./votes";
+import { titleFont } from "../posts/[id]/font";
 import { useKoreanUiLang, useViewerUiLang } from "../posts/[id]/viewerLang";
 import { useAutoTranslate } from "@/components/LanguagePicker";
 
@@ -226,7 +227,7 @@ export function HomeScreen({ lang = "ko" }: { lang?: "ko" | "en" }) {
                 ? "font-title-en leading-[1.15]"
                 : ui === "ko"
                   ? "font-(family-name:--font-paperlogy) leading-[1.3]"
-                  : "font-sans font-extrabold leading-[1.3]"
+                  : `leading-[1.3] ${titleFont(ui)}`
             }`}
           >
             {HEADLINE[lang][ui].map((line) => (
@@ -272,10 +273,10 @@ export function HomeScreen({ lang = "ko" }: { lang?: "ko" | "en" }) {
 
       {lang === "en" && (
         // 외국인 메인 하단 CTA (Figma 259:7823): 로그인 시트 → 사진 선택 → /write (동작은 송희 담당 ShareKfoodButton)
-        // 영어 문구는 Gilroy(font-display), 한국어는 기본 글꼴
+        // 영어 문구는 Gilroy(font-display), 중국어·일본어는 Noto Sans SC/JP, 한국어는 기본 글꼴
         <ShareKfoodButton
           className={`fixed bottom-[calc(40px+env(safe-area-inset-bottom))] left-1/2 z-10 -translate-x-1/2 rounded-full bg-primary px-8 py-6 text-[20px] leading-none font-extrabold tracking-[-0.4px] whitespace-nowrap text-white shadow-[0_18px_48px_4px_rgba(0,0,0,0.55),0_10px_24px_-6px_rgba(255,135,196,0.55)] transition-transform active:scale-95 ${
-            ui === "en" ? "font-display" : ""
+            ui === "en" ? "font-display" : ui === "ko" ? "" : titleFont(ui)
           }`}
         >
           {SHARE_LABEL[ui]}
