@@ -475,6 +475,7 @@ export function GravityPile({
   onOverflowChange,
   onSelect,
   lang = "ko",
+  hover = true,
 }: {
   comments: Comment[];
   ref?: Ref<PileHandle>;
@@ -493,6 +494,8 @@ export function GravityPile({
   onSelect?: (comment: Comment, el: HTMLElement) => void;
   /** 태그(나·글쓴이)와 읽어 주기 문구의 언어 */
   lang?: Lang;
+  /** PC에서 말풍선에 마우스를 올리면 흰 테두리 (상세 화면 칸은 끔 — 칸 전체가 하나의 버튼) */
+  hover?: boolean;
 }) {
   const t = COMMENTS_COPY[lang];
   const zone = useRef<HTMLDivElement>(null);
@@ -607,7 +610,7 @@ export function GravityPile({
               },
             })}
           >
-            <Bubble comment={c} tags={tagsOf(c, replyCounts, t)} replyLabel={t.replyCount} />
+            <Bubble comment={c} tags={tagsOf(c, replyCounts, t)} replyLabel={t.replyCount} hover={hover} />
           </div>
         ))}
       </div>
@@ -642,13 +645,24 @@ const HOVER =
   - 태그가 있으면 말풍선 위로 튀어나온 만큼 위쪽 여백을 둡니다.
     물리 몸체는 말풍선 + 태그 줄 두 조각이라, 태그 자리만 막히고 나머지 윗부분은 다른 댓글과 같은 간격입니다.
 */
-function Bubble({ comment, tags, replyLabel }: { comment: Comment; tags: Tags; replyLabel: (n: number) => string }) {
+function Bubble({
+  comment,
+  tags,
+  replyLabel,
+  hover,
+}: {
+  comment: Comment;
+  tags: Tags;
+  replyLabel: (n: number) => string;
+  hover: boolean;
+}) {
+  const hoverClass = hover ? HOVER : "";
   const { author } = comment;
   const emoji = comment.kind === "emoji";
   const bubble = emoji ? (
     <span
       data-part="bubble"
-      className={`flex size-[54px] items-center justify-center rounded-full text-[16px] ${HOVER}`}
+      className={`flex size-[54px] items-center justify-center rounded-full text-[16px] ${hoverClass}`}
       style={{ background: comment.color }}
     >
       {comment.text}
@@ -658,7 +672,7 @@ function Bubble({ comment, tags, replyLabel }: { comment: Comment; tags: Tags; r
       data-part="bubble"
       className={`flex items-center justify-center gap-2 rounded-[32px] py-4 text-center text-[16px] leading-[1.4] font-bold tracking-[-0.32px] whitespace-pre text-black ${
         author.kind === "korean" ? "px-5" : "pr-5 pl-2.5"
-      } ${HOVER}`}
+      } ${hoverClass}`}
       style={{ background: comment.color }}
     >
       {author.kind !== "korean" && (
