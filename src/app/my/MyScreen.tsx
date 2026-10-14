@@ -3,6 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { getHomePost } from "@/app/home/mockPosts";
+import { titleIn } from "@/app/home/titles";
+import { useViewerUiLang, type UiLang } from "@/app/posts/[id]/viewerLang";
+import { useAutoTranslate } from "@/components/LanguagePicker";
 import { IconButton, PillButton } from "@/components/Buttons";
 import { Screen, TopBar } from "@/components/Layout";
 import { ShareKfoodButton } from "@/components/ShareKfoodButton";
@@ -63,11 +66,109 @@ const MY_COMMENTS: { id: string; postId: string; text: string; reply: boolean; a
   { id: "c5", postId: "deleted", text: "Too much gochujang 🌶️", reply: false, ago: 400 * TIME.DAY },
 ];
 
-/** 받은 투표 — 위 "받은 투표" 규칙 */
-function votesLabel(n: number) {
-  if (n === 0) return "No votes yet";
-  if (n === 1) return "1 vote";
-  return `${n < 1000 ? n : new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(n)} votes`;
+/* 화면 언어 = 지구본에서 고른 언어(외국인 기억 kfood:viewer-lang), 남의 글 제목 = 자동 번역이면 화면 언어 · 아니면 원문(영어) — 메인·상세와 같은 규칙 */
+const COPY: Record<
+  UiLang,
+  {
+    back: string;
+    activity: string;
+    posts: string;
+    comments: string;
+    untitled: string;
+    noPosts: string;
+    noPostsBody: string;
+    share: string;
+    noComments: string;
+    noCommentsBody: string;
+    browse: string;
+    on: (title: string) => string;
+    replyOn: (title: string) => string;
+    deleted: string;
+    noVotes: string;
+    votes: (n: number, compact: string) => string;
+  }
+> = {
+  en: {
+    back: "Back",
+    activity: "My activity",
+    posts: "Posts",
+    comments: "Comments",
+    untitled: "Untitled post",
+    noPosts: "No posts yet",
+    noPostsBody: "Share your K-food and Koreans will vote on it.",
+    share: "Share your K-food",
+    noComments: "No comments yet",
+    noCommentsBody: "Comments you leave on posts will show up here.",
+    browse: "Browse posts",
+    on: (t) => `On ${t}`,
+    replyOn: (t) => `Reply on ${t}`,
+    deleted: "On a deleted post",
+    noVotes: "No votes yet",
+    votes: (n, c) => (n === 1 ? "1 vote" : `${c} votes`),
+  },
+  ko: {
+    back: "뒤로",
+    activity: "내 활동",
+    posts: "내 글",
+    comments: "한마디",
+    untitled: "제목 없는 글",
+    noPosts: "아직 쓴 글이 없어요",
+    noPostsBody: "내 한식을 공유하면 한국인들이 투표해 줘요.",
+    share: "내 한식 공유하기",
+    noComments: "아직 남긴 한마디가 없어요",
+    noCommentsBody: "글에 남긴 한마디가 여기 모여요.",
+    browse: "둘러보기",
+    on: (t) => t,
+    replyOn: (t) => `답글 · ${t}`,
+    deleted: "삭제된 글",
+    noVotes: "아직 투표 없음",
+    votes: (_, c) => `${c}표`,
+  },
+  zh: {
+    back: "返回",
+    activity: "我的动态",
+    posts: "我的帖子",
+    comments: "评论",
+    untitled: "无标题帖子",
+    noPosts: "还没有发过帖子",
+    noPostsBody: "分享你的韩食，让韩国人来投票吧。",
+    share: "分享你的韩食",
+    noComments: "还没有留下评论",
+    noCommentsBody: "你在帖子下留的评论会出现在这里。",
+    browse: "随便看看",
+    on: (t) => t,
+    replyOn: (t) => `回复 · ${t}`,
+    deleted: "已删除的帖子",
+    noVotes: "还没有投票",
+    votes: (_, c) => `${c}票`,
+  },
+  ja: {
+    back: "戻る",
+    activity: "マイアクティビティ",
+    posts: "投稿",
+    comments: "コメント",
+    untitled: "タイトルなし",
+    noPosts: "まだ投稿がありません",
+    noPostsBody: "あなたの韓国料理をシェアすると、韓国人が投票してくれます。",
+    share: "あなたの韓国料理をシェア",
+    noComments: "まだコメントがありません",
+    noCommentsBody: "投稿に残したコメントがここに集まります。",
+    browse: "見てみる",
+    on: (t) => t,
+    replyOn: (t) => `返信 · ${t}`,
+    deleted: "削除された投稿",
+    noVotes: "まだ投票なし",
+    votes: (_, c) => `${c}票`,
+  },
+};
+
+/** 받은 투표 — 위 "받은 투표" 규칙 (1,000부터 줄여서: 1.2K · 1.2천 · 1200 → 1.2千) */
+function votesLabel(n: number, lang: UiLang) {
+  const T = COPY[lang];
+  if (n === 0) return T.noVotes;
+  const locale = { en: "en", ko: "ko", zh: "zh-CN", ja: "ja" }[lang];
+  const compact = n < 1000 ? n.toLocaleString(locale) : new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(n);
+  return T.votes(n, compact);
 }
 
 type Tab = "posts" | "comments";
@@ -76,13 +177,16 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
   const router = useRouter();
   const { myPost, logOut, deleteMyPost, discardDraft } = useFlow();
   const nickname = useNickname("en");
+  const ui = useViewerUiLang();
+  const content: UiLang = useAutoTranslate() ? ui : "en";
+  const T = COPY[ui];
   const country = useCountry() || "CA"; // 가입 때 고른 나라 (없으면 목업 캐나다)
   const [profileOpen, setProfileOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("posts");
   const [logoutOpen, setLogoutOpen] = useState(false);
 
   const posts = myPost
-    ? [{ id: MY_POST_ID, title: myPost.title.trim() || "Untitled post", photo: coverOf(myPost)?.src, votes: myPost.votes }]
+    ? [{ id: MY_POST_ID, title: myPost.title.trim() || T.untitled, photo: coverOf(myPost)?.src, votes: myPost.votes }]
     : [];
 
   // 한마디가 달린 글 — 내 글은 이 브라우저의 글, 남의 글은 목업 목록. 못 찾으면 지워진 글
@@ -92,9 +196,9 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
     ? []
     : MY_COMMENTS.map((c) => {
         const home = getHomePost(c.postId);
-        const title = c.postId === MY_POST_ID ? myPost?.title : home?.en.title;
+        const title = c.postId === MY_POST_ID ? myPost?.title : home && titleIn(home, content);
         const photo = c.postId === MY_POST_ID ? (myPost ? coverOf(myPost)?.src : undefined) : home?.cardPhoto;
-        return { ...c, postTitle: title ?? null, photo, time: timeAgo(now - c.ago, now, "en") };
+        return { ...c, postTitle: title ?? null, photo, time: timeAgo(now - c.ago, now, ui) };
       });
 
   useTrackOnce("my_page_viewed", { viewer: "foreigner", posts: posts.length, comments: comments.length });
@@ -111,15 +215,16 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
   return (
     <Screen className="pb-16">
       <TopBar
-        left={<IconButton icon="chevron-left" label="Back" href="/home?lang=en" />}
+        left={<IconButton icon="chevron-left" label={T.back} href="/home?lang=en" />}
         // ⋯ — 로그아웃 · 계정 삭제
-        right={<AccountMenu lang="en" onLogout={() => setLogoutOpen(true)} onDelete={deleteAccount} />}
+        right={<AccountMenu lang="en" ui={ui} onLogout={() => setLogoutOpen(true)} onDelete={deleteAccount} />}
       />
 
       <ProfileHeader
         lang="en"
+        ui={ui}
         nickname={nickname}
-        line={`${countryFlag(country)} ${countryName(country)}`}
+        line={`${countryFlag(country)} ${countryName(country, ui)}`}
         onOpen={() => {
           track("my_item_clicked", { item: "profile", viewer: "foreigner" });
           setProfileOpen(true);
@@ -127,10 +232,10 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
       />
 
       <MyTabs
-        label="My activity"
+        label={T.activity}
         tabs={[
-          ["posts", "Posts", posts.length],
-          ["comments", "Comments", comments.length],
+          ["posts", T.posts, posts.length],
+          ["comments", T.comments, comments.length],
         ]}
         value={tab}
         onChange={(id) => {
@@ -143,15 +248,15 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
         {tab === "posts" &&
           (posts.length === 0 ? (
             <Empty
-              title="No posts yet"
-              body="Share your K-food and Koreans will vote on it."
+              title={T.noPosts}
+              body={T.noPostsBody}
               cta={
                 // 메인의 Share 버튼과 같은 흐름 (로그인 → 가입 → 이어 쓰기 → 사진 고르기). 모양은 PillButton md primary와 같게
                 <ShareKfoodButton
                   from="my-en"
                   className="flex h-12 flex-none items-center justify-center rounded-full bg-primary px-6 text-[15px] font-semibold leading-[1.5] text-on-light transition active:scale-[0.99]"
                 >
-                  Share your K-food
+                  {T.share}
                 </ShareKfoodButton>
               }
             />
@@ -163,7 +268,7 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
                   href={`/posts/${p.id}?from=my-en`}
                   onClick={() => track("my_item_clicked", { item: "post", viewer: "foreigner" })}
                   photo={p.photo}
-                  chip={votesLabel(p.votes)}
+                  chip={votesLabel(p.votes, ui)}
                   chipStrong={p.votes > 0}
                   title={p.title}
                 />
@@ -174,8 +279,8 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
         {tab === "comments" &&
           (comments.length === 0 ? (
             <Empty
-              title="No comments yet"
-              body="Comments you leave on posts will show up here."
+              title={T.noComments}
+              body={T.noCommentsBody}
               cta={
                 <PillButton
                   tone="soft"
@@ -183,7 +288,7 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
                   href="/home?lang=en"
                   onClick={() => track("my_item_clicked", { item: "browse", viewer: "foreigner" })}
                 >
-                  Browse posts
+                  {T.browse}
                 </PillButton>
               }
             />
@@ -201,24 +306,25 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
                   photo={c.photo}
                   text={c.text}
                   time={c.time}
-                  where={c.postTitle === null ? "On a deleted post" : `${c.reply ? "Reply on" : "On"} ${c.postTitle}`}
+                  where={c.postTitle === null ? T.deleted : (c.reply ? T.replyOn : T.on)(c.postTitle)}
                 />
               ))}
             </div>
           ))}
       </div>
 
-      <AccountFooter lang="en" email={PROFILE.email} />
+      <AccountFooter lang="en" ui={ui} email={PROFILE.email} />
 
       <ProfileSheet
         lang="en"
+        ui={ui}
         open={profileOpen}
         onClose={() => setProfileOpen(false)}
         nickname={nickname}
       />
 
       <LogoutSheet
-        lang="en"
+        lang={ui}
         open={logoutOpen}
         onClose={() => setLogoutOpen(false)}
         onConfirm={() => {

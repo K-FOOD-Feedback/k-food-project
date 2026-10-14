@@ -5,6 +5,9 @@ import { useState } from "react";
 import { getHomePost, HOME_POSTS, type HomePost } from "@/app/home/mockPosts";
 import { useMyVote, useVotedIds } from "@/app/home/votes";
 import { useMyComments } from "@/app/posts/[id]/comments";
+import { titleIn } from "@/app/home/titles";
+import { useKoreanUiLang, type UiLang } from "@/app/posts/[id]/viewerLang";
+import { useAutoTranslate } from "@/components/LanguagePicker";
 import { IconButton, PillButton } from "@/components/Buttons";
 import { Screen, TopBar } from "@/components/Layout";
 import { track, useTrackOnce } from "@/lib/analytics";
@@ -38,12 +41,96 @@ import { AccountFooter, AccountMenu, ProfileHeader, ProfileSheet, useNickname } 
 */
 const PROFILE = { email: "minjun.kim@gmail.com" };
 
+/* 화면 언어 = 지구본에서 고른 언어(한국인 기억 kfood:korean-lang), 글 제목 = 자동 번역이면 화면 언어 · 아니면 원문(영어) — 메인·상세와 같은 규칙 */
+const COPY: Record<
+  UiLang,
+  {
+    back: string;
+    activity: string;
+    votes: string;
+    comments: string;
+    noVotes: string;
+    noVotesBody: string;
+    goVote: string;
+    noComments: string;
+    noCommentsBody: string;
+    browse: string;
+    reply: string;
+    deleted: string;
+    voted: string;
+  }
+> = {
+  ko: {
+    back: "뒤로",
+    activity: "내 활동",
+    votes: "투표",
+    comments: "한마디",
+    noVotes: "아직 투표한 글이 없어요",
+    noVotesBody: "외국인이 만든 한식에 한 표 던져 보세요.",
+    goVote: "투표하러 가기",
+    noComments: "아직 남긴 한마디가 없어요",
+    noCommentsBody: "투표한 글에 한마디를 남기면 여기 모여요.",
+    browse: "둘러보기",
+    reply: "답글 · ",
+    deleted: "삭제된 글",
+    voted: "투표함",
+  },
+  en: {
+    back: "Back",
+    activity: "My activity",
+    votes: "Votes",
+    comments: "Comments",
+    noVotes: "No votes yet",
+    noVotesBody: "Cast your vote on K-food made by foreigners.",
+    goVote: "Go vote",
+    noComments: "No comments yet",
+    noCommentsBody: "Comments you leave on posts you voted on will show up here.",
+    browse: "Browse posts",
+    reply: "Reply · ",
+    deleted: "Deleted post",
+    voted: "Voted",
+  },
+  zh: {
+    back: "返回",
+    activity: "我的动态",
+    votes: "投票",
+    comments: "评论",
+    noVotes: "还没有投过票",
+    noVotesBody: "给外国朋友做的韩食投上一票吧。",
+    goVote: "去投票",
+    noComments: "还没有留下评论",
+    noCommentsBody: "在投过票的帖子下留言，就会出现在这里。",
+    browse: "随便看看",
+    reply: "回复 · ",
+    deleted: "已删除的帖子",
+    voted: "已投票",
+  },
+  ja: {
+    back: "戻る",
+    activity: "マイアクティビティ",
+    votes: "投票",
+    comments: "コメント",
+    noVotes: "まだ投票した投稿がありません",
+    noVotesBody: "海外の友だちが作った韓国料理に一票入れてみよう。",
+    goVote: "投票しに行く",
+    noComments: "まだコメントがありません",
+    noCommentsBody: "投票した投稿にコメントを残すと、ここに集まります。",
+    browse: "見てみる",
+    reply: "返信 · ",
+    deleted: "削除された投稿",
+    voted: "投票済み",
+  },
+};
+
 type Tab = "votes" | "comments";
 
 export function KoMyScreen() {
   const router = useRouter();
   const { logOut } = useFlow();
   const nickname = useNickname("ko");
+  const ui = useKoreanUiLang();
+  const content: UiLang = useAutoTranslate() ? ui : "en";
+  const T = COPY[ui];
   const [profileOpen, setProfileOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("votes");
   const [logoutOpen, setLogoutOpen] = useState(false);
@@ -69,13 +156,14 @@ export function KoMyScreen() {
   return (
     <Screen className="pb-16">
       <TopBar
-        left={<IconButton icon="chevron-left" label="뒤로" href="/home" />}
+        left={<IconButton icon="chevron-left" label={T.back} href="/home" />}
         // ⋯ — 로그아웃 · 계정 삭제
-        right={<AccountMenu lang="ko" onLogout={() => setLogoutOpen(true)} onDelete={deleteAccount} />}
+        right={<AccountMenu lang="ko" ui={ui} onLogout={() => setLogoutOpen(true)} onDelete={deleteAccount} />}
       />
 
       <ProfileHeader
         lang="ko"
+        ui={ui}
         nickname={nickname}
         onOpen={() => {
           track("my_item_clicked", { item: "profile", viewer: "korean" });
@@ -84,10 +172,10 @@ export function KoMyScreen() {
       />
 
       <MyTabs
-        label="내 활동"
+        label={T.activity}
         tabs={[
-          ["votes", "투표", votedPosts.length],
-          ["comments", "한마디", mine.length],
+          ["votes", T.votes, votedPosts.length],
+          ["comments", T.comments, mine.length],
         ]}
         value={tab}
         onChange={(id) => {
@@ -100,8 +188,8 @@ export function KoMyScreen() {
         {tab === "votes" &&
           (votedPosts.length === 0 ? (
             <Empty
-              title="아직 투표한 글이 없어요"
-              body="외국인이 만든 한식에 한 표 던져 보세요."
+              title={T.noVotes}
+              body={T.noVotesBody}
               cta={
                 <PillButton
                   tone="primary"
@@ -109,14 +197,14 @@ export function KoMyScreen() {
                   href="/home"
                   onClick={() => track("my_item_clicked", { item: "browse", viewer: "korean" })}
                 >
-                  투표하러 가기
+                  {T.goVote}
                 </PillButton>
               }
             />
           ) : (
             <div className="grid grid-cols-2 gap-x-3 gap-y-6 px-1">
               {votedPosts.map((p) => (
-                <VotedTile key={p.id} post={p} />
+                <VotedTile key={p.id} post={p} ui={ui} content={content} />
               ))}
             </div>
           ))}
@@ -124,8 +212,8 @@ export function KoMyScreen() {
         {tab === "comments" &&
           (mine.length === 0 ? (
             <Empty
-              title="아직 남긴 한마디가 없어요"
-              body="투표한 글에 한마디를 남기면 여기 모여요."
+              title={T.noComments}
+              body={T.noCommentsBody}
               cta={
                 <PillButton
                   tone="soft"
@@ -133,7 +221,7 @@ export function KoMyScreen() {
                   href="/home"
                   onClick={() => track("my_item_clicked", { item: "browse", viewer: "korean" })}
                 >
-                  둘러보기
+                  {T.browse}
                 </PillButton>
               }
             />
@@ -148,8 +236,8 @@ export function KoMyScreen() {
                     onClick={() => track("my_item_clicked", { item: "comment", reply: !!c.replyTo, viewer: "korean" })}
                     photo={post?.cardPhoto}
                     text={c.text}
-                    time={at ? timeAgo(at, now, "ko") : ""}
-                    where={post ? `${c.replyTo ? "답글 · " : ""}${post.title}` : "삭제된 글"}
+                    time={at ? timeAgo(at, now, ui) : ""}
+                    where={post ? `${c.replyTo ? T.reply : ""}${titleIn(post, content)}` : T.deleted}
                   />
                 );
               })}
@@ -157,17 +245,18 @@ export function KoMyScreen() {
           ))}
       </div>
 
-      <AccountFooter lang="ko" email={PROFILE.email} />
+      <AccountFooter lang="ko" ui={ui} email={PROFILE.email} />
 
       <ProfileSheet
         lang="ko"
+        ui={ui}
         open={profileOpen}
         onClose={() => setProfileOpen(false)}
         nickname={nickname}
       />
 
       <LogoutSheet
-        lang="ko"
+        lang={ui}
         open={logoutOpen}
         onClose={() => setLogoutOpen(false)}
         onConfirm={() => {
@@ -181,19 +270,21 @@ export function KoMyScreen() {
 }
 
 /** 내가 투표한 글 — 칩은 내가 고른 선택지 */
-function VotedTile({ post }: { post: HomePost }) {
+function VotedTile({ post, ui, content }: { post: HomePost; ui: UiLang; content: UiLang }) {
   const choice = useMyVote(post.id);
-  const picked = choice === null ? null : post.question.options[choice]?.replace(/\n/g, " ");
+  // 선택지는 상세 투표 칸과 같게: 한국어 글 언어면 한국어, 아니면 영어 (중·일 선택지 데이터는 아직 없음)
+  const options = (content !== "ko" && post.en.options) || post.question.options;
+  const picked = choice === null ? null : options[choice]?.replace(/\n/g, " ");
   return (
     <PhotoTile
       href={`/posts/${post.id}?from=my`}
       onClick={() => track("my_item_clicked", { item: "voted_post", viewer: "korean" })}
       photo={post.cardPhoto}
       // 내가 고른 선택지 — "내 선택" 글자 대신 ✓ (선택지가 길면 …)
-      chip={picked ?? "투표함"}
+      chip={picked ?? COPY[ui].voted}
       chipIcon="check"
       chipStrong
-      title={post.title}
+      title={titleIn(post, content)}
     />
   );
 }
