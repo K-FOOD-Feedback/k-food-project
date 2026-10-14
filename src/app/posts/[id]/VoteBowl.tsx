@@ -9,6 +9,7 @@ import { openWelcome, WelcomePopup } from "@/app/my/WelcomePopup";
 import { track } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
 import { burstConfetti } from "./confetti";
+import { optionsIn } from "./postText";
 import { CARD_SHAPES } from "@/app/home/cardShapes";
 import { DETAIL_COPY, type CommentsLang } from "./copy";
 import { titleFont } from "./font";
@@ -64,9 +65,9 @@ export function VoteBowl({
 }) {
   const storedVote = useMyVote(post.id);
   const myVote = viewOnly ? null : storedVote;
-  // 투표 칸은 한·영 데이터만 있어서 한국어가 아니면 영어
-  const optionLang = contentLang === "ko" ? "ko" : "en";
-  const options = (optionLang === "en" && post.en.options) || post.question.options;
+  // 투표 칸 이름도 글 언어로 (중·일 번역 — postText.ts)
+  const optionLang = contentLang;
+  const options = optionsIn(post, contentLang);
   const T = DETAIL_COPY[lang];
   // 제목·칸 이름·% 글꼴 (영어면 Gilroy)
   const font = titleFont(lang);

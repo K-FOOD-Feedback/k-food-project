@@ -5,6 +5,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { getHomePost } from "@/app/home/mockPosts";
 import { nameIn, titleIn } from "@/app/home/titles";
+import { optionsIn } from "@/app/posts/[id]/postText";
 import { ShareSheet } from "@/app/write/done/ShareSheet";
 import type { ShareCardPost } from "@/app/write/done/ShareCard";
 import { track } from "@/lib/analytics";
@@ -177,14 +178,13 @@ export function PostMenu({
     }
     const p = getHomePost(postId);
     if (!p) return null;
-    // 제목·닉네임은 중·일 번역까지(메인과 같은 titleIn·nameIn), 투표 칸은 한국어가 아니면 영어
-    const en = lang !== "ko";
+    // 제목·닉네임·투표 칸 모두 중·일 번역까지 (titleIn·nameIn·optionsIn)
     return {
       title: titleIn(p, lang),
       dish: titleIn(p, lang),
       photo: p.cardPhoto,
       voteQuestion: p.question.text,
-      options: ((en && p.en.options) || p.question.options).map((o) => o.replace(/\n/g, " ")),
+      options: optionsIn(p, lang).map((o) => o.replace(/\n/g, " ")),
       author: `${p.author.flag} ${nameIn(p, lang)}`,
     };
   };

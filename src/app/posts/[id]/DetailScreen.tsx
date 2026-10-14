@@ -21,6 +21,7 @@ import { backHrefFrom, withFrom, type BackFrom } from "@/lib/back";
 import { CommentPile } from "./CommentPile";
 import { DETAIL_COPY, type CommentsLang } from "./copy";
 import { nameIn, titleIn } from "@/app/home/titles";
+import { bodyIn, optionsIn } from "./postText";
 import { notoSansJP, notoSansSC, paperlogy, titleFont } from "./font";
 import { isForeignFrom, withViewer } from "./viewer";
 import { saveKoreanLang, saveViewerLang, useKoreanUiLang, useViewerUiLang } from "./viewerLang";
@@ -902,13 +903,12 @@ function ShareVoteCard({
   const T = DETAIL_COPY[lang];
   // 누르면 송희 공유 바텀시트(카드 디자인 고르기 + 저장·스토리·링크 복사·메시지…)를 띄움 — ⋯ 메뉴 "공유하기"와 같은 시트
   const [open, setOpen] = useState(false);
-  const en = contentLang !== "ko";
   const card: ShareCardPost = {
     title: titleIn(post, contentLang),
     dish: titleIn(post, contentLang),
     photo: post.cardPhoto,
     voteQuestion: post.question.text,
-    options: ((en && post.en.options) || post.question.options).map((o) => o.replace(/\n/g, " ")),
+    options: optionsIn(post, contentLang).map((o) => o.replace(/\n/g, " ")),
     author: `${post.author.flag} ${nameIn(post, contentLang)}`,
   };
 
@@ -996,7 +996,7 @@ function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: HomePost
         {titleText}
       </h1>
       <p className="text-[16px] leading-[1.55] font-medium tracking-[-0.32px] whitespace-pre-line text-[#444]">
-        {(contentLang !== "ko" && post.en.body) || post.body}
+        {bodyIn(post, contentLang)}
       </p>
     </>
   );
