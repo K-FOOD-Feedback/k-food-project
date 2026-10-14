@@ -21,6 +21,7 @@ import { backHrefFrom, withFrom, type BackFrom } from "@/lib/back";
 import { CommentPile } from "./CommentPile";
 import { DETAIL_COPY, type CommentsLang } from "./copy";
 import { nameIn, titleIn } from "@/app/home/titles";
+import { cjkPhrases, PhraseText } from "@/app/home/phrases";
 import { bodyIn, optionsIn } from "./postText";
 import { notoSansJP, notoSansSC, paperlogy, titleFont } from "./font";
 import { isForeignFrom, withViewer } from "./viewer";
@@ -991,9 +992,11 @@ function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: HomePost
           줄 길이는 고르게(text-balance) */}
       <h1
         ref={titleRef}
-        className={`line-clamp-3 w-3/5 pb-[0.15em] ${titleFont(contentLang)} text-[31px] ${enText ? "leading-[1.05]" : "leading-[1.2]"} tracking-[-0.62px] ${contentLang === "zh" || contentLang === "ja" ? "" : "break-keep"} text-balance`}
+        className={`line-clamp-3 w-3/5 pb-[0.15em] ${titleFont(contentLang)} text-[31px] ${enText ? "leading-[1.05]" : "leading-[1.2]"} tracking-[-0.62px] break-keep ${contentLang === "zh" || contentLang === "ja" ? "[overflow-wrap:anywhere]" : ""} text-balance`}
       >
-        {titleText}
+        {/* 중·일은 단어(말덩이) 사이에서만 줄바꿈 — "食谱"가 갈라지지 않게 (메인과 같은 cjkPhrases·PhraseText).
+            말덩이 하나가 칸보다 길면 overflow-wrap:anywhere로 그 안에서 끊음 */}
+        {contentLang === "zh" || contentLang === "ja" ? <PhraseText phrases={cjkPhrases(titleText, contentLang)} /> : titleText}
       </h1>
       <p className="text-[16px] leading-[1.55] font-medium tracking-[-0.32px] whitespace-pre-line text-[#444]">
         {bodyIn(post, contentLang)}
