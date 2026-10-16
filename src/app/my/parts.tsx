@@ -76,7 +76,8 @@ export function MyTabs<T extends string>({
             }`}
           >
             {text}
-            <span className={`tabular-nums ${value === id ? "opacity-50" : ""}`}>{n}</span>
+            {/* 숫자는 쉼표 넣어서 (1,234,567) */}
+            <span className={`tabular-nums ${value === id ? "opacity-50" : ""}`}>{n.toLocaleString("en-US")}</span>
           </button>
         ))}
       </div>
@@ -202,11 +203,12 @@ export function CommentCard({
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="flex items-start gap-2">
-          <span className="line-clamp-2 min-w-0 flex-1 break-keep text-[15px] font-semibold leading-[1.4]">{text}</span>
+          {/* 2줄까지 …, 띄어쓰기 없는 긴 단어도 칸 안에서 줄바꿈 (시간 아래로 파고들지 않게) */}
+          <span className="line-clamp-2 min-w-0 flex-1 break-keep text-[15px] font-semibold leading-[1.4] [overflow-wrap:anywhere]">{text}</span>
           <span className="shrink-0 pt-0.5 text-[12px] font-medium tabular-nums text-muted">{time}</span>
         </span>
         <span className="flex items-center gap-2">
-          <span className="line-clamp-1 min-w-0 flex-1 text-[13px] leading-[1.45] text-muted">{where}</span>
+          <span className="line-clamp-1 min-w-0 flex-1 text-[13px] leading-[1.45] text-muted [overflow-wrap:anywhere]">{where}</span>
           {href && <Icon name="chevron-right" size={16} className="shrink-0 text-muted" />}
         </span>
       </span>

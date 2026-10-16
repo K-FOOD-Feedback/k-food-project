@@ -2,7 +2,7 @@ import type { HomePost } from "@/app/home/mockPosts";
 import type { Notif } from "@/app/notifications/data";
 import type { Comment } from "@/app/posts/[id]/comments";
 import { COMMENT_MAX } from "@/app/posts/[id]/comments";
-import { OPTION_MAX, OPTIONS_MAX, STORY_MAX, TITLE_MAX, VOTE_TITLE_MAX } from "@/lib/write-data";
+import { OPTION_MAX, OPTIONS_MAX, STORY_MAX, TITLE_MAX, VOTE_TITLE_MAX, type Photo } from "@/lib/write-data";
 import { wideCharsFor } from "@/lib/text-length";
 import { DISH_MAX } from "@/app/write/DishCard";
 
@@ -295,3 +295,34 @@ export const TRANSLATION_CASES: { label: string; lang: "ko" | "en" | "zh" | "ja"
   { label: "영어 원문 50칸 → 일본어 번역", lang: "ja", post: FROM_EN },
   { label: "영어 원문 50칸 → 중국어 번역", lang: "zh", post: FROM_EN },
 ];
+
+/* ───────── 중간: 숫자 · 마이 · 시간 · 사진 검사 ───────── */
+
+/** 투표 수가 아주 많은 글 (결과 문장의 사람 수) */
+export const BIG_VOTES_POST = post("n1", { votes: [800000, 300000, 134567], commentCount: 12345 });
+
+/** 마이 프로필 머리 — 긴 닉네임·나라 */
+export const PROFILE_CASES = [
+  { label: "외국인 · 긴 닉네임 · 긴 나라", lang: "en" as const, nickname: "Extremely Saucy Cheesy Taster", line: "🇧🇦 Bosnia and Herzegovina" },
+  { label: "한국인 · 긴 닉네임", lang: "ko" as const, nickname: "새벽의 아주아주 매운 떡볶이 장인" },
+];
+
+/** 마이 한마디 카드 */
+export const MY_COMMENT_CASES = [
+  { label: `한마디 최대 (${COMMENT_MAX}칸)`, text: TEXTS.koMax(COMMENT_MAX), where: TEXTS.koMax(TITLE_MAX), href: "#" },
+  { label: "긴 영어 단어", text: TEXTS.enWord(COMMENT_MAX), where: `Reply · ${TEXTS.enWord(TITLE_MAX)}`, href: "#" },
+  { label: "지워진 글 (누를 수 없음)", text: "저도 그렇게 먹어요", where: "삭제된 글", href: undefined },
+];
+
+/** 시간 표시 — 지금부터 이만큼 전 */
+const S = 1000, M = 60 * S, H = 60 * M, D = 24 * H;
+export const AGO_CASES = [10 * S, 59 * M, 23 * H, 6 * D, 40 * D, 400 * D];
+
+/** 사진 검사 — 검사 중 · 음식 아님 · 부적절 · 애매 · 통과 */
+export const CHECK_PHOTOS: Photo[] = (["checking", "not_food", "unsafe", "unsure", "ok"] as const).map((check, i) => ({
+  id: `edge-photo-${i}`,
+  src: PHOTO,
+  check,
+}));
+/** 사진 10장 (최대) */
+export const MAX_PHOTOS_SET: Photo[] = Array.from({ length: 10 }, (_, i) => ({ id: `edge-photo-max-${i}`, src: PHOTO, check: "ok" }));

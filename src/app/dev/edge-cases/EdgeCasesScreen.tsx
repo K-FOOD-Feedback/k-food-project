@@ -2,7 +2,11 @@
 
 import { useState, type ReactNode } from "react";
 import { CardStack } from "@/app/home/CardStack";
-import { PhotoTile } from "@/app/my/parts";
+import { CommentCard, MyTabs, PhotoTile, timeAgo } from "@/app/my/parts";
+import { ProfileHeader } from "@/app/my/profile";
+import { openWelcome, WelcomePopup } from "@/app/my/WelcomePopup";
+import { DETAIL_COPY } from "@/app/posts/[id]/copy";
+import { PhotoGrid } from "@/components/PhotoGrid";
 import { NotificationCard } from "@/app/notifications/NotificationsScreen";
 import { CommentPile } from "@/app/posts/[id]/CommentPile";
 import { CommentModal } from "@/app/posts/[id]/CommentModal";
@@ -30,6 +34,12 @@ import {
   SHARE_CASES,
   TILE_CASES,
   TRANSLATION_CASES,
+  AGO_CASES,
+  BIG_VOTES_POST,
+  CHECK_PHOTOS,
+  MAX_PHOTOS_SET,
+  MY_COMMENT_CASES,
+  PROFILE_CASES,
   VOTE_CASES,
 } from "./fixtures";
 
@@ -188,6 +198,79 @@ export function EdgeCasesScreen() {
         ))}
       </Group>
 
+      <Group title="숫자 표시" owner="공통">
+        <p className="px-2 text-[13px] text-muted break-keep">0 · 1 · 999 · 9,999 · 12,345 · 1,234,567 — 칸 밖으로 나가거나 겹치면 깨진 것</p>
+        <Case label="상세 참여 인원 칩 (한·영·중·일, 1,234,567명)">
+          <div className="flex flex-col gap-2">
+            {LANGS.map((l) => (
+              <div key={l} className="relative h-[90px] overflow-hidden rounded-[32px]">
+                <DetailPhotoTile postId={`edge-chip-${l}`} photos={[BIG_VOTES_POST.cardPhoto]} chip={DETAIL_COPY[l].participants(1234567)} title="" />
+              </div>
+            ))}
+          </div>
+        </Case>
+        <Case label="투표 결과 문장 (1,234,567명 · 한·영·중·일)">
+          <div className="flex flex-col gap-2">
+            {LANGS.map((l) => (
+              <VoteBowl key={l} post={BIG_VOTES_POST} viewOnly lang={l} />
+            ))}
+          </div>
+        </Case>
+        <Case label="한마디 칸 머리 숫자 (12,345)">
+          <CommentPile postId="edge-pile-count" commentCount={12345} authorFlag="🇨🇦" fixture={COMMENT_CASES[1].comments} />
+        </Case>
+        <Case label="마이 탭 숫자">
+          <TabsCase />
+        </Case>
+      </Group>
+
+      <Group title="마이 프로필 머리" owner="송희">
+        {PROFILE_CASES.map((c) => (
+          <Case key={c.label} label={c.label}>
+            <ProfileHeader lang={c.lang} nickname={c.nickname} line={c.line} onOpen={noop} />
+          </Case>
+        ))}
+      </Group>
+
+      <Group title="마이 한마디 카드" owner="송희">
+        <div className="flex flex-col gap-3">
+          {MY_COMMENT_CASES.map((c) => (
+            <CommentCard key={c.label} href={c.href} photo="/images/card-buldak.png" text={c.text} time="방금" where={c.where} />
+          ))}
+        </div>
+      </Group>
+
+      <Group title="시간 표시" owner="송희">
+        <AgoCase />
+      </Group>
+
+      <Group title="가입 화면 (나라 고르기 · 닉네임)" owner="송희">
+        <p className="px-2 text-[13px] text-muted break-keep">열어서 나라 목록에서 가장 긴 이름(Bosnia and Herzegovina 등)을 골라 봐요.</p>
+        <div className="flex">
+          <PillButton tone="soft" size="md" onClick={openWelcome}>
+            열어 보기
+          </PillButton>
+        </div>
+        <WelcomePopup lang="en" onDone={noop} />
+      </Group>
+
+      <Group title="사진 검사 · 사진 10장" owner="송희">
+        <Case label="검사 중 · 음식 아님 · 부적절 · 애매 · 통과">
+          <PhotoGrid photos={CHECK_PHOTOS} onRemove={noop} onMove={noop} onAdd={noop} />
+        </Case>
+        <Case label="사진 10장 (최대 — Add 잠김)">
+          <PhotoGrid photos={MAX_PHOTOS_SET} onRemove={noop} onMove={noop} onAdd={noop} addLocked />
+        </Case>
+      </Group>
+
+      <Group title="중국어·일본어 한마디 칸" owner="지현">
+        {(["zh", "ja"] as const).map((l) => (
+          <Case key={l} label={l === "zh" ? "중국어 화면" : "일본어 화면"}>
+            <CommentPile postId={`edge-pile-${l}`} commentCount={5} authorFlag="🇨🇦" lang={l} fixture={COMMENT_CASES[1].comments} />
+          </Case>
+        ))}
+      </Group>
+
       <Group title="로그인 시트 제목" owner="송희">
         {LOGIN_CASES.map((c) => (
           <LoginCase key={c.label} c={c} />
@@ -293,5 +376,37 @@ function OptionsCase({ c }: { c: (typeof OPTIONS_CASES)[number] }) {
         <OptionsEditor source="write" options={options} onChange={setOptions} />
       </div>
     </Case>
+  );
+}
+
+const LANGS = ["ko", "en", "zh", "ja"] as const;
+
+/** 마이 탭 — 큰 숫자 */
+function TabsCase() {
+  const [tab, setTab] = useState<"a" | "b">("a");
+  return (
+    <div className="flex flex-col gap-2">
+      <MyTabs label="ko" value={tab} onChange={setTab} tabs={[["a", "투표", 12345], ["b", "한마디", 1234567]]} />
+      <MyTabs label="en" value={tab} onChange={setTab} tabs={[["a", "Posts", 9999], ["b", "Comments", 1234567]]} />
+    </div>
+  );
+}
+
+/** 시간 표시 — 네 언어 */
+function AgoCase() {
+  // 화면을 그릴 때 한 번만 지금 시각을 잡음 (그릴 때마다 바뀌지 않게)
+  const [now] = useState(() => Date.now());
+  return (
+    <div className="flex flex-col gap-1 rounded-[24px] bg-surface p-4 text-[13px]">
+      {AGO_CASES.map((ms) => (
+        <p key={ms} className="flex gap-3 tabular-nums">
+          {LANGS.map((l) => (
+            <span key={l} className="min-w-0 flex-1 truncate">
+              {timeAgo(now - ms, now, l)}
+            </span>
+          ))}
+        </p>
+      ))}
+    </div>
   );
 }
