@@ -252,3 +252,42 @@ export const OPTIONS_CASES = [
   { label: "띄어쓰기 없는 긴 영어", options: opts(() => TEXTS.enWord(OPTION_MAX)) },
   { label: "같은 글자 선택지", options: ["Same", "Same", "Different"] },
 ];
+
+/* ───────── 번역 (원문 50자 → 다른 언어로 보일 때) ─────────
+   제목 한도는 모든 언어 50자 (TITLE_MAX). 일·중·한 50자는 영어로 옮기면 2~3배 길어져서 가장 위험
+   번역문은 길이 확인용 (서버가 붙으면 DeepL 결과로 바꿔 넣기) */
+const JA_50 = fill("初めて作ったチーズたっぷりブルダックカルボナーラ、韓国の人から見て本場の味に近いですか？", TITLE_MAX);
+const ZH_50 = fill("第一次做的芝士火鸡面奶油意面，在韩国人看来味道接近正宗的吗？请告诉我你们的真实想法吧谢谢", TITLE_MAX);
+const EN_50 = fill("My first cheesy Buldak Carbonara, is it close to real ", TITLE_MAX).trimEnd();
+/** 한 글을 네 언어로 — 화면 언어(lang)에 따라 그 언어 제목이 보임 */
+const translated = (id: string, t: { ko: string; en: string; zh: string; ja: string }) =>
+  post(id, { title: t.ko, en: { title: t.en, country: "Japan" }, titles: { zh: t.zh, ja: t.ja } });
+const FROM_JA = translated("t1", {
+  ja: JA_50,
+  en: "My first homemade Buldak Carbonara loaded with cheese. To Koreans, does it taste close to the real thing?",
+  ko: "처음 만든 치즈 듬뿍 불닭 카르보나라, 한국 사람이 보기에 본고장 맛에 가까운가요?",
+  zh: "第一次做的满满芝士火鸡面奶油意面，在韩国人看来接近正宗的味道吗？",
+});
+const FROM_ZH = translated("t2", {
+  zh: ZH_50,
+  en: "My first try at cheesy Buldak cream pasta. Do Koreans think it tastes close to the authentic one? Please tell me what you honestly think, thanks",
+  ko: "처음 만든 치즈 불닭 크림 파스타, 한국 사람이 보기엔 정통 맛에 가까운가요? 솔직한 생각을 알려 주세요, 고마워요",
+  ja: "初めて作ったチーズブルダッククリームパスタ、韓国の人から見て本場の味に近いですか？正直な感想を教えてください、ありがとう",
+});
+const FROM_EN = translated("t3", {
+  en: EN_50,
+  ko: "처음 만든 치즈 불닭 카르보나라, 진짜에 가까운가요",
+  zh: "我第一次做的芝士火鸡面奶油意面，接近正宗吗",
+  ja: "初めて作ったチーズブルダックカルボナーラ、本物に近い？",
+});
+export const TRANSLATION_CASES: { label: string; lang: "ko" | "en" | "zh" | "ja"; post: HomePost }[] = [
+  { label: "일본어 원문 50자 → 일본어 화면", lang: "ja", post: FROM_JA },
+  { label: "일본어 원문 50자 → 영어 번역 (가장 위험)", lang: "en", post: FROM_JA },
+  { label: "일본어 원문 50자 → 한국어 번역", lang: "ko", post: FROM_JA },
+  { label: "중국어 원문 50자 → 중국어 화면", lang: "zh", post: FROM_ZH },
+  { label: "중국어 원문 50자 → 영어 번역 (가장 위험)", lang: "en", post: FROM_ZH },
+  { label: "중국어 원문 50자 → 한국어 번역", lang: "ko", post: FROM_ZH },
+  { label: "중국어 원문 50자 → 일본어 번역", lang: "ja", post: FROM_ZH },
+  { label: "영어 원문 50자 → 일본어 번역", lang: "ja", post: FROM_EN },
+  { label: "영어 원문 50자 → 중국어 번역", lang: "zh", post: FROM_EN },
+];

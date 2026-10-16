@@ -17,7 +17,7 @@ const TITLES: Record<string, { zh: string; ja: string }> = {
 export function titleIn(post: HomePost, lang: UiLang): string {
   if (lang === "ko") return post.title;
   if (lang === "en") return post.en.title;
-  return TITLES[post.id]?.[lang] ?? post.en.title;
+  return post.titles?.[lang] ?? TITLES[post.id]?.[lang] ?? post.en.title;
 }
 
 /*

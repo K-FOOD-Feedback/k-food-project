@@ -29,6 +29,7 @@ import {
   PHOTO_CASES,
   SHARE_CASES,
   TILE_CASES,
+  TRANSLATION_CASES,
   VOTE_CASES,
 } from "./fixtures";
 
@@ -58,6 +59,28 @@ export function EdgeCasesScreen() {
             <div className="-mx-2 overflow-hidden">
               <CardStack lang={c.lang} posts={[c.post]} index={0} votedIds={new Set()} onIndexChange={noop} onOpen={noop} />
             </div>
+          </Case>
+        ))}
+      </Group>
+
+      <Group title="번역 — 메인 카드 제목 (원문 50자 → 다른 언어)" owner="지현">
+        <p className="px-2 text-[13px] text-muted break-keep">기준: 메인 카드는 3줄까지, 넘치면 … (글자 크기는 그대로)</p>
+        {TRANSLATION_CASES.map((c) => (
+          <Case key={c.label} label={c.label}>
+            <div className="-mx-2 overflow-hidden">
+              <CardStack lang={c.lang} contentLang={c.lang} posts={[c.post]} index={0} votedIds={new Set()} onIndexChange={noop} onOpen={noop} />
+            </div>
+          </Case>
+        ))}
+      </Group>
+
+      <Group title="번역 — 상세 제목 (원문 50자 → 다른 언어)" owner="지현">
+        <p className="px-2 text-[13px] text-muted break-keep">기준: 상세는 제목을 잘리지 않게 전부</p>
+        {TRANSLATION_CASES.map((c) => (
+          <Case key={c.label} label={c.label}>
+            <article className="flex flex-col gap-5 rounded-[32px] px-7 py-[30px] text-on-light" style={{ background: c.post.color }}>
+              <ArticleBody post={c.post} lang={c.lang} contentLang={c.lang} />
+            </article>
           </Case>
         ))}
       </Group>

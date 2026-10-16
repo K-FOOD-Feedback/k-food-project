@@ -34,6 +34,8 @@ export type HomePost = Omit<Post, "author" | "question"> & {
   color: string; // 메인 카드 배경색
   // 외국인 화면에 보이는 영어 문구 (본문·투표 칸은 외국인 상세 화면용 — 없으면 한국어 그대로)
   en: { title: string; country: string; body?: string; options?: string[] };
+  /** 제목의 중국어·일본어 번역 (서버가 붙으면 번역 결과, 지금은 점검 화면 등에서만 씀 — 없으면 titles.ts 목업) */
+  titles?: { zh?: string; ja?: string };
   cardPhoto: string; // 메인 카드에 쓰는 사진 (상세는 photos 전체)
   question: Post["question"] & { id: QuestionId };
   author: Post["author"] & { flag: string };
