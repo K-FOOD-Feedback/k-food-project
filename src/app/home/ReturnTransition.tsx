@@ -3,7 +3,12 @@
 import { useLayoutEffect, useRef } from "react";
 import { CARD_PHOTO_IN_MASK, cardMaskBox, cardPhotoOf } from "./CardStack";
 import type { CardShape } from "./cardShapes";
-import type { HomePost } from "./mockPosts";
+import { DETAIL_COPY } from "../posts/[id]/copy";
+import { titleFont } from "../posts/[id]/font";
+import type { UiLang } from "../posts/[id]/viewerLang";
+import { nameIn, titleIn } from "./titles";
+import { PhraseText, cjkPhrases } from "./phrases";
+import { participantsOf, type HomePost } from "./mockPosts";
 import {
   clearReturnTransition,
   measureCard,
@@ -70,7 +75,8 @@ export function ReturnGhosts({
   post,
   shape,
   fit,
-  detailLang,
+  uiLang,
+  contentLang,
   onDone,
 }: {
   transition: ReturnTransition;
@@ -80,8 +86,9 @@ export function ReturnGhosts({
   shape: CardShape;
   /** 화면이 낮아 카드 더미를 줄인 비율 (1 = 원래 크기) */
   fit: number;
-  /** 떠나기 직전 상세 화면의 글 언어 (외국인이 상세에서 한국어를 골랐을 수도 있음) */
-  detailLang: "ko" | "en";
+  /** 떠나기 직전 상세 화면의 화면 언어(칩 문구)와 글 언어(제목·닉네임·본문) — 상세와 같은 규칙 */
+  uiLang: UiLang;
+  contentLang: UiLang;
   onDone: () => void;
 }) {
   const cardGhost = useRef<HTMLDivElement>(null);
@@ -318,7 +325,7 @@ export function ReturnGhosts({
       const stickerEl = front.querySelector("[data-card-sticker]");
       if (stickerEl && chipFrom.current && chipTo.current) {
         const copy = stickerEl.cloneNode(true) as HTMLElement;
-        chipFrom.current.textContent = `${copy.firstElementChild?.textContent ?? ""}명 참여 중!`;
+        chipFrom.current.textContent = DETAIL_COPY[uiLang].participants(participantsOf(post));
         chipTo.current.replaceChildren(...copy.childNodes);
         animations.push(
           ...fade(chipFrom.current, [
@@ -450,7 +457,7 @@ export function ReturnGhosts({
               className="absolute bottom-0 left-0 flex flex-col gap-5 px-7 py-[30px] text-on-light"
               style={{ width: t.card.width, height: t.card.height }}
             >
-              <DetailArticleBody post={post} lang={detailLang} />
+              <DetailArticleBody post={post} lang={contentLang} />
             </div>
             {/* 메인 카드 글 (맨 앞 카드를 복사해 넣음) */}
             <div ref={cardText} className="absolute inset-0 opacity-0" />
@@ -539,15 +546,16 @@ export function ReturnGhosts({
 }
 
 /** 상세 본문 카드 안 글 — 상세 화면(src/app/posts/[id]/DetailScreen.tsx의 ArticleBody)과 같은 모양
-    영어면 영어 글 + 제목 Gilroy, 한국어면 한국어 글 + 제목 Paperlogy */
+    lang = 글 언어: 제목·닉네임은 중·일 번역까지, 본문은 한국어가 아니면 영어 */
 function DetailArticleBody({
   post,
   lang,
 }: {
   post: HomePost;
-  lang: "ko" | "en";
+  lang: UiLang;
 }) {
-  const en = lang === "en";
+  const title = titleIn(post, lang);
+  const phrases = lang === "zh" || lang === "ja" ? cjkPhrases(title, lang) : null;
   return (
     <>
       <p className="flex items-center gap-1.5 font-sans text-[14px] leading-none font-semibold tracking-[-0.28px] text-[#242424]">
@@ -557,20 +565,18 @@ function DetailArticleBody({
         >
           {post.author.flag}
         </span>
-        {post.author.name}
+        {nameIn(post, lang)}
       </p>
       <h1
-        // 상세 제목과 같게 (폭은 본문과 같은 글 영역 전체)
-        className={`text-[31px] tracking-[-0.62px] break-keep text-balance ${
-          en
-            ? "font-title-en leading-[1.05]"
-            : "font-(family-name:--font-paperlogy) leading-[1.2]"
-        }`}
+        // 상세 제목과 같게 (글 영역 폭의 3/5, 최대 3줄, 중·일은 말덩이 사이에서만 줄바꿈 — phrases.tsx)
+        className={`line-clamp-3 w-3/5 pb-[0.15em] ${titleFont(lang)} text-[31px] ${
+          lang === "en" ? "leading-[1.05]" : "leading-[1.2]"
+        } tracking-[-0.62px] break-keep text-balance [overflow-wrap:anywhere]`}
       >
-        {en ? post.en.title : post.title}
+        {phrases ? <PhraseText phrases={phrases} /> : title}
       </h1>
       <p className="text-[16px] leading-[1.55] font-medium tracking-[-0.32px] whitespace-pre-line text-[#444]">
-        {en ? (post.en.body ?? post.body) : post.body}
+        {(lang !== "ko" && post.en.body) || post.body}
       </p>
     </>
   );

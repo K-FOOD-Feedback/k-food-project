@@ -6,8 +6,8 @@ import { LanguageButton } from "@/components/LanguagePicker";
 import { HEADER_BUTTON, PageHeader } from "@/components/PageHeader";
 import { CommentPile } from "../CommentPile";
 import { useCommentLogin } from "../CommentLogin";
-import { COMMENTS_COPY, type Lang } from "../copy";
-import { saveKoreanLang, saveViewerLang, useKoreanLang, useViewerLang } from "../viewerLang";
+import { COMMENTS_COPY, type CommentsLang, type Lang } from "../copy";
+import { saveKoreanLang, saveViewerLang, useKoreanUiLang, useViewerUiLang } from "../viewerLang";
 
 /**
   한마디 전체 화면의 상단 바 + 한마디 칸.
@@ -24,10 +24,11 @@ export function CommentsScreen({
   postId,
   commentCount,
   authorFlag,
+  authorColor,
   title,
 }: {
   /** 주소 ?lang= 으로 정해진 언어 (없으면 null → 저장된 언어) */
-  initialLang: Lang | null;
+  initialLang: CommentsLang | null;
   /** 외국인 화면 (?viewer=en) */
   foreigner?: boolean;
   backHref: string;
@@ -36,20 +37,24 @@ export function CommentsScreen({
   postId: string;
   commentCount: number;
   authorFlag: string;
+  /** 글쓴이 한마디 말풍선 색 (그 글의 카드 색) */
+  authorColor?: string;
   /** 안 씀 — 한마디에는 닉네임을 보여 주지 않음 (내 글 화면 MyPostDetail이 아직 넘겨서 받아만 둠) */
   authorName?: string;
-  title: Record<Lang, string>;
+  /** 글 제목 — 중국어·일본어가 없으면 영어로 */
+  title: Record<Lang, string> & Partial<Record<"zh" | "ja", string>>;
 }) {
   // 한국인도 상세 화면과 같은 언어 설정(koreanLang, 기본 한국어)을 함께 씁니다 — 상세에서 고른 언어가 여기서도 이어짐.
   // 주소에 ?lang= 이 있으면(공유 링크 등) 이번 화면에서는 그 언어로 시작합니다.
-  const [urlLang, setUrlLang] = useState<Lang | null>(initialLang);
-  const koreanLang = useKoreanLang();
-  const viewerLang = useViewerLang();
+  // 중국어·일본어도 그 언어 그대로 (한마디 문구가 네 언어 모두 있음)
+  const [urlLang, setUrlLang] = useState<CommentsLang | null>(initialLang);
+  const koreanLang = useKoreanUiLang();
+  const viewerLang = useViewerUiLang();
   const lang = foreigner ? viewerLang : (urlLang ?? koreanLang);
   const t = COMMENTS_COPY[lang];
   const login = useCommentLogin({ enabled: foreigner, lang, postId, screen: "comments" });
 
-  const changeLang = (next: Lang) => {
+  const changeLang = (next: CommentsLang) => {
     if (foreigner) saveViewerLang(next);
     else {
       saveKoreanLang(next);
@@ -69,7 +74,7 @@ export function CommentsScreen({
             <ChevronLeftIcon />
           </Link>
         }
-        right={<LanguageButton lang={lang} from="comments" onChange={changeLang} />}
+        right={<LanguageButton lang={lang} from="comments" onPick={changeLang} />}
       />
 
       <div className="flex min-h-0 flex-1 flex-col pb-[calc(24px+env(safe-area-inset-bottom))]">
@@ -77,7 +82,8 @@ export function CommentsScreen({
           postId={postId}
           commentCount={commentCount}
           authorFlag={authorFlag}
-          postTitle={title[lang]}
+          authorColor={authorColor}
+          postTitle={(lang === "zh" || lang === "ja" ? title[lang] : undefined) ?? title[lang === "ko" ? "ko" : "en"]}
           variant="full"
           lang={lang}
           writeLocked={login.locked}

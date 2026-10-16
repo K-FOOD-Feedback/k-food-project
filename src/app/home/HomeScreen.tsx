@@ -23,7 +23,8 @@ import { MainHeader } from "./MainHeader";
 import { ReturnGhosts } from "./ReturnTransition";
 import { HOME_POSTS, type HomePost } from "./mockPosts";
 import { useVotedIds } from "./votes";
-import { useKoreanLang, useViewerLang } from "../posts/[id]/viewerLang";
+import { titleFont } from "../posts/[id]/font";
+import { useKoreanUiLang, useViewerUiLang } from "../posts/[id]/viewerLang";
 import { useAutoTranslate } from "@/components/LanguagePicker";
 
 /** 메인 상단 두 줄 — 참여를 부르는 한마디. [버전][화면 언어]
@@ -32,16 +33,22 @@ const HEADLINE = {
   ko: {
     ko: ["외국인 친구가 만든 한식,", "참견할 준비 됐나요? 👀"],
     en: ["K-food by friends abroad,", "Ready to weigh in? 👀"],
+    zh: ["外国朋友做的韩食，", "准备好来点评了吗？👀"],
+    ja: ["海外の友だちが作った韓国料理、", "ひとこと言う準備はいい？👀"],
   },
   en: {
     en: ["Cooked some K-food?", "Let Koreans judge it 👀"],
     ko: ["한식 만들어 봤나요?", "한국인에게 평가받아 봐요 👀"],
+    zh: ["做了韩食吗？", "让韩国人来评价吧 👀"],
+    ja: ["韓国料理、作ってみた？", "韓国人に判定してもらおう 👀"],
   },
 } as const;
 /** 외국인 버전 하단 버튼 문구 (화면 언어) */
 const SHARE_LABEL = {
   en: "Share your K-food",
   ko: "내 한식 공유하기",
+  zh: "分享你的韩食",
+  ja: "あなたの韓国料理をシェア",
 } as const;
 
 /** 제목 아래끝 ~ 맨 앞 카드 위끝 간격 */
@@ -64,7 +71,7 @@ function decodePhoto(src: string) {
   img.decode().catch(() => decoded.delete(src));
 }
 
-export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
+export function HomeScreen({ lang = "ko" }: { lang?: "ko" | "en" }) {
   const router = useRouter();
   const posts = HOME_POSTS;
   const [index, setIndex] = useState(() =>
@@ -78,17 +85,14 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
       : null;
   });
   const votedIds = useVotedIds();
-  // 상세에서 돌아오는 전환의 상세 글 언어: 한국인 메인이면 늘 한국어, 외국인 메인이면 상세에서 고른 언어(기본 영어)
   // lang = 버전(한국인 /home · 외국인 /home?lang=en, 로그인 정보로 정해짐 — 지구본으로 바뀌지 않음)
   // ui = 화면 언어 (지구본으로 고름, 상세·한마디와 같은 기억: 외국인 기본 영어 · 한국인 기본 한국어)
   // content = 글(제목) 언어 — 자동 번역이 켜져 있으면 화면 언어, 꺼져 있으면 원문(글쓴이 언어 = 영어). 상세와 같은 규칙
-  const viewerLang = useViewerLang();
-  const koreanLang = useKoreanLang();
+  const viewerLang = useViewerUiLang();
+  const koreanLang = useKoreanUiLang();
   const ui: Lang = lang === "en" ? viewerLang : koreanLang;
   const autoTranslate = useAutoTranslate();
   const content: Lang = autoTranslate ? ui : "en";
-  // 상세에서 돌아오는 전환의 상세 글 언어 = 상세가 보여 주던 글 언어
-  const detailLang = content;
   const current = posts[index];
 
   // 제목 + (40px) + 카드를 한 덩어리로 가운데에.
@@ -217,7 +221,9 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
             className={`shrink-0 px-6 text-center text-[24px] tracking-[-0.48px] text-white break-keep ${
               ui === "en"
                 ? "font-title-en leading-[1.15]"
-                : "font-(family-name:--font-paperlogy) leading-[1.3]"
+                : ui === "ko"
+                  ? "font-(family-name:--font-paperlogy) leading-[1.3]"
+                  : `leading-[1.3] ${titleFont(ui)}`
             }`}
           >
             {HEADLINE[lang][ui].map((line) => (
@@ -256,14 +262,20 @@ export function HomeScreen({ lang = "ko" }: { lang?: Lang }) {
           post={current}
           shape={cardShapeAt(index)}
           fit={scale}
-          detailLang={detailLang}
+          uiLang={ui}
+          contentLang={content}
           onDone={() => setReturning(null)}
         />
       )}
 
       {lang === "en" && (
         // 외국인 메인 하단 CTA (Figma 259:7823): 로그인 시트 → 사진 선택 → /write (동작은 송희 담당 ShareKfoodButton)
-        <ShareKfoodButton className="fixed bottom-[calc(40px+env(safe-area-inset-bottom))] left-1/2 z-10 -translate-x-1/2 rounded-full bg-primary px-8 py-6 text-[20px] leading-none font-extrabold tracking-[-0.4px] whitespace-nowrap text-white shadow-[0_18px_48px_4px_rgba(0,0,0,0.55),0_10px_24px_-6px_rgba(255,135,196,0.55)] transition-transform active:scale-95">
+        // 영어 문구는 Gilroy(font-display), 중국어·일본어는 Noto Sans SC/JP, 한국어는 기본 글꼴
+        <ShareKfoodButton
+          className={`fixed bottom-[calc(40px+env(safe-area-inset-bottom))] left-1/2 z-10 -translate-x-1/2 rounded-full bg-primary px-8 py-6 text-[20px] leading-none font-extrabold tracking-[-0.4px] whitespace-nowrap text-white shadow-[0_18px_48px_4px_rgba(0,0,0,0.55),0_10px_24px_-6px_rgba(255,135,196,0.55)] transition-transform active:scale-95 ${
+            ui === "en" ? "font-display" : ui === "ko" ? "" : titleFont(ui)
+          }`}
+        >
           {SHARE_LABEL[ui]}
         </ShareKfoodButton>
       )}

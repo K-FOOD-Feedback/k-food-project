@@ -5,16 +5,27 @@ import {
   useRef,
   useState,
   type CSSProperties,
-  type KeyboardEvent,
   type PointerEvent,
 } from "react";
 import { track } from "@/lib/analytics";
 import { compactCount } from "@/lib/format";
+import type { UiLang } from "../posts/[id]/viewerLang";
+import { titleFont } from "../posts/[id]/font";
+import { nameIn, titleIn } from "./titles";
+import { PhraseText, cjkPhrases, twoLineWidth } from "./phrases";
 import { cardShapeAt, type CardShape } from "./cardShapes";
 import { participantsOf, type HomePost as Post } from "./mockPosts";
 
 /** 화면·글 언어 (버전과 별개 — 버전은 한국인 /home · 외국인 /home?lang=en 로 정해지고, 언어는 지구본으로 바꿈) */
-export type Lang = "ko" | "en";
+export type Lang = UiLang;
+
+/** 카드 위 짧은 문구 (화면 언어) */
+const CARD_TEXT: Record<Lang, { joined: string; voted: string; comments: string; region: string }> = {
+  ko: { joined: "명 참여", voted: "투표 완료", comments: "한마디", region: "K-food 콘텐츠" },
+  en: { joined: "joined", voted: "Voted", comments: "Comments", region: "K-food posts" },
+  zh: { joined: "人参与", voted: "已投票", comments: "评论", region: "K-food 内容" },
+  ja: { joined: "人参加", voted: "投票済み", comments: "コメント", region: "K-food コンテンツ" },
+};
 
 // 카드 크기·위치는 Figma(node 259:7795) 기준이고 가로 가운데 정렬입니다.
 // 뒤에 깔린 카드들은 앞 카드를 회전·축소한 것이라, 모든 자리를 앞 카드의 transform으로 표현합니다.
@@ -97,6 +108,12 @@ const ASIDE = "translate(-250px, 28px) rotate(-14deg) scale(0.96)";
 
 // 이만큼 끌거나, 짧아도 빠르게 튕기면(FLICK) 넘어갑니다.
 const SWIPE_THRESHOLD = 36;
+/** 트랙패드 두 손가락 가로 쓸기: 이만큼(px) 밀면 넘어감 (실제 기록: 관성 끝자락 잡음은 13 이하, 살살 쓴 쓸기는 30~40) */
+const WHEEL_THRESHOLD = 30;
+/** 이만큼(ms) 조용하면 한 번의 쓸기가 끝난 것으로 봄 */
+const WHEEL_IDLE_MS = 140;
+/** 이벤트가 이만큼(ms) 끊겼다가 작게 다시 시작하면 새 쓸기 (실제 맥 트랙패드 기록: 새 쓸기는 30~60ms 끊긴 뒤 1~6으로 시작) */
+const WHEEL_GAP_MS = 28;
 const FLICK_MIN = 14;
 const FLICK_VELOCITY = 0.35; // px/ms
 const TAP_TOLERANCE = 6;
@@ -265,10 +282,80 @@ export function CardStack({
     else if (dx >= SWIPE_THRESHOLD || (flick && dx > 0)) goPrev();
   };
 
-  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === "ArrowRight") goNext();
-    if (e.key === "ArrowLeft") goPrev();
-  };
+  // 트랙패드 두 손가락 가로 쓸기 — 누르고 끌지 않아도 손가락을 따라 카드가 움직이다가 WHEEL_THRESHOLD를 넘으면 넘어감
+  // (방향은 끌기와 같음: 손가락을 왼쪽으로 = 다음 카드). 세로 쓸기·핀치 확대는 건드리지 않음.
+  // - 카드 더미 위가 아니어도 메인 화면 어디서든 (창 전체에서 받음, 열린 시트·모달 안은 제외)
+  // - 한 번 쓸면 딱 한 장: 넘긴 뒤에는 잠그고, "새 쓸기"가 시작될 때만 풂
+  //   실제 맥 트랙패드 기록으로 정한 구분법 —
+  //   · 손가락 쓸기 중에도 움직임이 오르내리고, 손을 떼면 관성이 "잠깐 끊겼다가 크게 튀며"(15→42) 시작해 점점 약해짐
+  //   · 새 쓸기는 손가락을 대는 순간 관성이 멈추고 "잠깐(30~60ms) 끊겼다가 작게"(1~6) 시작함
+  //   → 끊긴 뒤 첫 움직임이 작으면(바로 앞보다 크지 않고 8 이하) 새 쓸기. 커서를 그대로 둬도 동작
+  // - 가로일 때는 preventDefault — 브라우저의 "뒤로 가기" 쓸기 제스처가 같이 일어나지 않게
+  const deck = useRef<HTMLDivElement>(null);
+  const nav = useRef({ goNext, goPrev });
+  useEffect(() => {
+    nav.current = { goNext, goPrev };
+  });
+  useEffect(() => {
+    let acc = 0;
+    let locked = false;
+    let lastMag = 0;
+    let lastAt = -Infinity;
+    let idle = 0;
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey) return; // 핀치 확대
+      const unit = e.deltaMode === 1 ? 16 : 1;
+      const dx = e.deltaX * unit;
+      if (Math.abs(dx) <= Math.abs(e.deltaY * unit)) return;
+      if (e.target instanceof Element && e.target.closest('[role="dialog"]')) return;
+      e.preventDefault();
+      window.clearTimeout(idle);
+      idle = window.setTimeout(() => {
+        acc = 0;
+        locked = false;
+        setDragX(null);
+      }, WHEEL_IDLE_MS);
+      const mag = Math.abs(dx);
+      const newSwipe = e.timeStamp - lastAt >= WHEEL_GAP_MS && mag <= Math.max(lastMag, 8);
+      lastMag = mag;
+      lastAt = e.timeStamp;
+      if (locked) {
+        if (!newSwipe) return;
+        locked = false;
+        acc = 0;
+      }
+      acc -= dx;
+      if (Math.abs(acc) < WHEEL_THRESHOLD) {
+        setDragX(acc);
+        return;
+      }
+      locked = true;
+      setDragX(null);
+      if (acc < 0) nav.current.goNext();
+      else nav.current.goPrev();
+    };
+    window.addEventListener("wheel", onWheel, { passive: false });
+    return () => {
+      window.removeEventListener("wheel", onWheel);
+      window.clearTimeout(idle);
+    };
+  }, []);
+
+  // 키보드 ← → 로도 넘기기 — 화면 어디서든 (글 쓰는 칸·열린 시트·모달에서는 그대로 둠)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      const el = e.target instanceof Element ? e.target : null;
+      if (el?.closest('input, textarea, select, [contenteditable="true"], [role="dialog"]')) return;
+      e.preventDefault();
+      if (e.key === "ArrowRight") nav.current.goNext();
+      else nav.current.goPrev();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
 
   const styleFor = (rel: number, phase: Phase | undefined): CSSProperties => {
     const place = placeOf(rel, n);
@@ -322,15 +409,15 @@ export function CardStack({
 
   return (
     <div
+      ref={deck}
       className="relative mx-auto h-[480px] w-[375px] touch-pan-y select-none"
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerEnd}
       onPointerCancel={onPointerEnd}
-      onKeyDown={onKeyDown}
       role="region"
       aria-roledescription="carousel"
-      aria-label={lang === "en" ? "K-food posts" : "K-food 콘텐츠"}
+      aria-label={CARD_TEXT[lang].region}
     >
       {posts.map((post, i) => {
         const rel = relOf(i);
@@ -355,7 +442,7 @@ export function CardStack({
             tabIndex={isFront ? 0 : -1}
             aria-hidden={!isFront}
             data-front-card={isFront || undefined}
-            aria-label={`${contentLang === "en" ? post.en.title : post.title} (${i + 1}/${n})`}
+            aria-label={`${titleIn(post, contentLang)} (${i + 1}/${n})`}
             onClick={(e) => {
               if (isFront && !moved.current) onOpen(post, e.currentTarget);
             }}
@@ -410,8 +497,9 @@ function CardContent({
   voted: boolean;
   shape: CardShape;
 }) {
-  const en = lang === "en";
-  const enTitle = contentLang === "en";
+  const t = CARD_TEXT[lang];
+  const title = titleIn(post, contentLang);
+  const phrases = contentLang === "zh" || contentLang === "ja" ? cjkPhrases(title, contentLang) : null;
   const photo = cardPhotoOf(post);
   const { mask, scale: k } = shape;
   const m = cardMaskBox(k);
@@ -451,10 +539,10 @@ function CardContent({
         className="absolute top-[14px] right-[14px] flex size-[68px] rotate-12 flex-col items-center justify-center gap-0.5 rounded-full bg-background text-white shadow-[0_4px_12px_rgba(0,0,0,0.18)]"
       >
         <span className="text-[20px] leading-none font-extrabold tracking-[-0.4px]">
-          {compactCount(participantsOf(post), lang)}
+          {compactCount(participantsOf(post), lang === "ko" ? "ko" : "en")}
         </span>
         <span className="text-[11px] leading-none font-semibold">
-          {en ? "joined" : "명 참여"}
+          {t.joined}
         </span>
       </span>
 
@@ -478,7 +566,7 @@ function CardContent({
           >
             <path d="M20 6 9 17l-5-5" />
           </svg>
-          {en ? "Voted" : "투표 완료"}
+          {t.voted}
         </span>
       )}
 
@@ -487,13 +575,18 @@ function CardContent({
             한국어는 상세 제목과 같은 Paperlogy, 영어는 Gilroy를 한글 크기에 맞춘 font-title-en (행간 0.15 좁게) */}
         <span
           // 띄어쓰기 없는 긴 단어도 칸 안에서 줄을 바꾸고, 3줄을 넘으면 … (제목 글자 수 한도 TITLE_MAX가 3줄에 맞춰져 있음 — …는 번역이 길어질 때의 안전장치, 점검 화면 /dev/edge-cases)
-          className={`w-full pb-2 text-[23px] font-extrabold tracking-[-0.69px] break-keep text-balance [overflow-wrap:anywhere] ${
-            enTitle
-              ? "line-clamp-3 font-title-en leading-[1.03]"
-              : "line-clamp-3 font-(family-name:--font-paperlogy) leading-[1.18]"
+          // 글꼴: 한국어 Paperlogy · 영어 Gilroy(font-title-en) · 중국어 Noto Sans SC · 일본어 Noto Sans JP (titleFont)
+          className={`w-full pb-2 text-[23px] font-extrabold tracking-[-0.69px] text-balance [overflow-wrap:anywhere] ${
+            contentLang === "en"
+              ? "line-clamp-3 break-keep font-title-en leading-[1.03]"
+              : contentLang === "ko"
+                ? "line-clamp-3 break-keep font-(family-name:--font-paperlogy) leading-[1.18]"
+                : // 중국어·일본어: 말덩이 사이에서만 줄을 바꾸고(phrases.tsx), 짧아도 두 줄로 고르게 나눔
+                  `line-clamp-3 break-keep leading-[1.18] ${titleFont(contentLang)}`
           }`}
+          style={phrases ? { maxWidth: twoLineWidth(phrases) } : undefined}
         >
-          {enTitle ? post.en.title : post.title}
+          {phrases ? <PhraseText phrases={phrases} /> : title}
         </span>
         {/* 닉네임이 길면 … (한마디 수와 겹치지 않게 사이 12px) */}
         <span className="flex w-full items-center justify-between gap-3 text-[13px] font-semibold text-black/60">
@@ -506,7 +599,7 @@ function CardContent({
               {post.author.flag}
             </span>
             {/* 높이를 줄(국기 원 24px)에 꽉 채워 y·g 같은 글자 아래가 잘리지 않게 */}
-            <span className="truncate leading-6">{post.author.name}</span>
+            <span className="truncate leading-6">{nameIn(post, contentLang)}</span>
           </span>
           {/* 한마디 수 — 채워진 말풍선 아이콘 */}
           <span className="flex shrink-0 items-center gap-1">
@@ -519,8 +612,8 @@ function CardContent({
             >
               <path d="M12 2C6.48 2 2 6.03 2 11c0 2.38 1.03 4.55 2.72 6.17L4 21.5a.5.5 0 0 0 .7.55l4.34-1.93c.94.25 1.93.38 2.96.38 5.52 0 10-4.03 10-9S17.52 2 12 2Z" />
             </svg>
-            <span className="sr-only">{en ? "Comments" : "한마디"}</span>
-            {compactCount(post.commentCount, lang)}
+            <span className="sr-only">{t.comments}</span>
+            {compactCount(post.commentCount, lang === "ko" ? "ko" : "en")}
           </span>
         </span>
       </span>

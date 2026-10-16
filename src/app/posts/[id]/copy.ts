@@ -1,10 +1,14 @@
 /*
-  한마디 화면 문구 (한국어·영어)
+  한마디 화면 문구 (한국어·영어·중국어·일본어)
   한마디 전체 화면에서 지구본 → 언어를 고르면 메인으로 가지 않고, 이 문구들이 그 자리에서 바뀝니다.
   영어 용어는 다른 영어 화면(마이·알림)과 맞춥니다: 한마디 = Comments, 답글 = reply.
 */
 
 export type Lang = "ko" | "en";
+/** 투표 후 내 편: top 가장 많은 칸(동점 포함) · few 20% 미만 소수 · alone 나 혼자 · mid 그 사이 */
+export type SameSide = "top" | "mid" | "few" | "alone";
+/** 한마디 화면은 중국어·일본어 문구까지 있음 (상세 화면 DETAIL_COPY는 아직 한국어·영어만) */
+export type CommentsLang = Lang | "zh" | "ja";
 
 export const COMMENTS_COPY = {
   ko: {
@@ -49,7 +53,15 @@ export const COMMENTS_COPY = {
     reportNote: "신고하면 이 답글은 내 화면에서 가려져요. 확인한 뒤 조치할게요.",
     cancel: "취소",
     report: "신고하기",
+    // 내 한마디·답글 삭제 확인
+    deleteAsk: "삭제하시겠습니까?",
+    no: "아니오",
+    yes: "네",
     reported: "신고가 접수됐어요",
+    // 답글 레이어 오른쪽 위 ⋯ (남의 원글 한마디)
+    more: "더보기",
+    reportCommentTitle: "이 한마디를 신고할까요?",
+    reportCommentNote: "신고하면 이 한마디는 내 화면에서 가려져요. 확인한 뒤 조치할게요.",
     // 상세 화면 한마디 칸 (기울어진 카드)
     leaveCard: "한마디를\n남겨보세요",
     // 외국인: 로그인 안 하고 한마디·답글을 쓰려 할 때 (LoginSheet)
@@ -97,14 +109,124 @@ export const COMMENTS_COPY = {
     reportNote: "Once reported, this reply is hidden on your screen. We'll review it and take action.",
     cancel: "Cancel",
     report: "Report",
+    deleteAsk: "Delete this?",
+    no: "No",
+    yes: "Yes",
     reported: "Report received",
+    more: "More",
+    reportCommentTitle: "Report this comment?",
+    reportCommentNote: "Once reported, this comment is hidden on your screen. We'll review it and take action.",
     leaveCard: "Leave a\ncomment",
     loginTitle: "Log in to leave a comment",
     loginBody: "Chat with Koreans about this dish. It only takes a few seconds with Google.",
   },
-} satisfies Record<Lang, Record<string, unknown>>;
+  zh: {
+    title: "评论",
+    section: "评论",
+    openAll: "查看全部评论",
+    emptyPile: "还没有评论\n来写第一条吧",
+    recent: "最新评论",
+    leave: "说点什么吧",
+    leaveLabel: "发表评论",
+    send: "发送",
+    leaveEmoji: (emoji: string) => `发送 ${emoji}`,
+    floatEmoji: (emoji: string) => `飘出 ${emoji}`,
+    openComment: (text: string) => `查看评论：${text}`,
+    me: "我",
+    author: "作者",
+    replyCount: (n: number) => `${n} 条回复`,
+    hidden: "已隐藏的评论",
+    backToDetail: "返回帖子",
+    backToNotifications: "返回通知",
+    back: "返回",
+    layer: (text: string) => `评论：${text}`,
+    close: "关闭",
+    cancelEdit: "取消编辑",
+    doneEdit: "完成",
+    editComment: "编辑评论",
+    deleteComment: "删除评论",
+    editLabel: "编辑你的评论",
+    edited: "已编辑",
+    emptyReplies: "你怎么看\n这条评论？",
+    editReply: "编辑回复",
+    deleteReply: "删除回复",
+    reportReply: "举报回复",
+    cancelReplyTo: "取消回复",
+    leaveReply: "写下你的回复",
+    leaveReplyLabel: "发表回复",
+    sendReply: "发送回复",
+    reportTitle: "要举报这条回复吗？",
+    reportAsk: "为什么要举报？",
+    reportPlaceholder: "请写下举报理由",
+    reportNote: "举报后，这条回复会在你的画面中隐藏。我们会核实后处理。",
+    cancel: "取消",
+    report: "举报",
+    deleteAsk: "确定要删除吗？",
+    no: "否",
+    yes: "是",
+    reported: "已收到举报",
+    more: "更多",
+    reportCommentTitle: "要举报这条评论吗？",
+    reportCommentNote: "举报后，这条评论会在你的画面中隐藏。我们会核实后处理。",
+    leaveCard: "说点\n什么吧",
+    loginTitle: "登录后发表评论",
+    loginBody: "用 Google 几秒就能登录。和韩国人聊聊这道菜吧。",
+  },
+  ja: {
+    title: "ひとこと",
+    section: "コメント",
+    openAll: "コメントをすべて見る",
+    emptyPile: "まだひとことがありません\n最初のひとことを残してみて",
+    recent: "最近のコメント",
+    leave: "ひとこと残してみて",
+    leaveLabel: "ひとことを残す",
+    send: "送信",
+    leaveEmoji: (emoji: string) => `${emoji} を送る`,
+    floatEmoji: (emoji: string) => `${emoji} を飛ばす`,
+    openComment: (text: string) => `ひとことを見る：${text}`,
+    me: "自分",
+    author: "投稿者",
+    replyCount: (n: number) => `返信 ${n}件`,
+    hidden: "非表示のひとこと",
+    backToDetail: "投稿に戻る",
+    backToNotifications: "通知に戻る",
+    back: "戻る",
+    layer: (text: string) => `ひとこと：${text}`,
+    close: "閉じる",
+    cancelEdit: "編集をやめる",
+    doneEdit: "完了",
+    editComment: "ひとことを編集",
+    deleteComment: "ひとことを削除",
+    editLabel: "ひとことを直す",
+    edited: "編集済み",
+    emptyReplies: "このひとこと、\nどう思う？",
+    editReply: "返信を編集",
+    deleteReply: "返信を削除",
+    reportReply: "返信を通報",
+    cancelReplyTo: "返信をやめる",
+    leaveReply: "返信を残してみて",
+    leaveReplyLabel: "返信を残す",
+    sendReply: "返信を送る",
+    reportTitle: "この返信を通報しますか？",
+    reportAsk: "通報する理由は？",
+    reportPlaceholder: "理由を書いてください",
+    reportNote: "通報すると、この返信はあなたの画面で非表示になります。確認したうえで対応します。",
+    cancel: "キャンセル",
+    report: "通報する",
+    deleteAsk: "削除しますか？",
+    no: "いいえ",
+    yes: "はい",
+    reported: "通報を受け付けました",
+    more: "その他",
+    reportCommentTitle: "このひとことを通報しますか？",
+    reportCommentNote: "通報すると、このひとことはあなたの画面で非表示になります。確認したうえで対応します。",
+    leaveCard: "ひとこと\n残してみて",
+    loginTitle: "ログインしてひとことを残す",
+    loginBody: "Google なら数秒で完了。韓国の人とこの料理について話してみて。",
+  },
+} satisfies Record<CommentsLang, Record<string, unknown>>;
 
-export type CommentsCopy = (typeof COMMENTS_COPY)[Lang];
+export type CommentsCopy = (typeof COMMENTS_COPY)[CommentsLang];
 
 /*
   상세 화면 문구 — 외국인 상세 화면은 지구본으로 고른 언어(viewerLang)로 보여 줍니다.
@@ -113,18 +235,27 @@ export type CommentsCopy = (typeof COMMENTS_COPY)[Lang];
 export const DETAIL_COPY = {
   ko: {
     back: "뒤로 가기",
-    participants: (n: number) => `${n}명 참여 중!`,
+    participants: (n: number) => `${n}명 참여 중`,
     next: "다음 훈수 거리",
     openComments: "한마디 전체 보기",
     vote: "투표",
     resultsTitle: "한국인들의 생각",
-    resultsTotal: (n: number) => `${n.toLocaleString("ko-KR")}명의 한국인이 투표했어요`,
+    // [앞, 숫자, 뒤] — 숫자만 흰색으로 강조하고 0부터 세어 올림 (외국인 상세 결과 카드)
+    resultsTotal: (n: number) => ["", `${n}`, "명의 한국인이 투표했어요"],
     resultsNote: "투표는 한국인만 할 수 있어요",
     resultLabel: (label: string, pct: number, top: boolean) => `${label} ${pct}%${top ? " (가장 많음)" : ""}`,
     // 한국인 상세 (지구본으로 영어를 고르면 영어로)
     voteAsk: ["나의 생각을", "투표해주세요!"],
     voted: "투표 완료!",
-    sameThink: (total: number, pct: number) => [`${total}명 중 `, `${pct}%`, "가 같은 생각이에요"],
+    // 편 가르기: [앞, 강조(사람 수 — 0부터 세어 올라감), 뒤] — 투표 후 요약 (VoteBowl SameThink)
+    sameThink: (total: number, same: number, side: SameSide) =>
+      side === "alone"
+        ? [`${total}명 중 `, "나만", " 이 생각이에요 😎"]
+        : side === "top"
+          ? [`${total}명 중 `, `${same}명`, "이 내 편이에요 🤝"]
+          : side === "few"
+            ? [`${total}명 중 `, `${same}명`, "만 나와 같아요… 소수 의견 😎"]
+            : [`${total}명 중 `, `${same}명`, "이 나와 같은 생각이에요"],
     changeHint: "다른 칸을 누르면 선택을 바꿀 수 있어요",
     tokenLabel: "투표 토큰 — 원하는 칸으로 끌어다 놓거나 칸을 눌러 투표하세요",
     optionVote: (label: string) => `${label}에 투표`,
@@ -143,17 +274,24 @@ export const DETAIL_COPY = {
   },
   en: {
     back: "Back",
-    participants: (n: number) => `${n} joined!`,
+    participants: (n: number) => `${n} joined`,
     next: "Next one to judge",
     openComments: "See all comments",
     vote: "Vote",
     resultsTitle: "What Koreans think",
-    resultsTotal: (n: number) => `${n.toLocaleString("en-US")} ${n === 1 ? "Korean" : "Koreans"} voted`,
+    resultsTotal: (n: number) => ["", `${n}`, ` ${n === 1 ? "Korean" : "Koreans"} voted`],
     resultsNote: "Only Koreans can vote",
     resultLabel: (label: string, pct: number, top: boolean) => `${label} ${pct}%${top ? " (top pick)" : ""}`,
     voteAsk: ["What do you think?", "Cast your vote!"],
     voted: "Voted!",
-    sameThink: (total: number, pct: number) => [`${pct}%`, ` of ${total} people agree with you`, ""],
+    sameThink: (total: number, same: number, side: SameSide) =>
+      side === "alone"
+        ? ["", "Only you", ` out of ${total} think so 😎`]
+        : side === "top"
+          ? ["", `${same}`, ` of ${total} are on your side 🤝`]
+          : side === "few"
+            ? ["Only ", `${same}`, ` of ${total} agree… a rare take 😎`]
+            : ["", `${same}`, ` of ${total} people agree with you`],
     changeHint: "Tap another option to change your vote",
     tokenLabel: "Vote token — drag it into an option or tap an option to vote",
     optionVote: (label: string) => `Vote for ${label}`,
@@ -169,6 +307,77 @@ export const DETAIL_COPY = {
     copied: "Link copied",
     copyFail: "Couldn't copy the link",
   },
-} satisfies Record<Lang, Record<string, unknown>>;
+  // 중국어·일본어 (지구본으로 고르면 그 자리에서 — 글 본문·투표 칸은 번역 데이터가 없어 영어 원문)
+  zh: {
+    back: "返回",
+    participants: (n: number) => `${n}人参与`,
+    next: "下一个来评评",
+    openComments: "查看全部评论",
+    vote: "投票",
+    resultsTitle: "韩国人怎么看",
+    resultsTotal: (n: number) => ["", `${n}`, "位韩国人投了票"],
+    resultsNote: "只有韩国人可以投票",
+    resultLabel: (label: string, pct: number, top: boolean) => `${label} ${pct}%${top ? "（最多）" : ""}`,
+    voteAsk: ["你怎么看？", "来投一票吧！"],
+    voted: "投票完成！",
+    sameThink: (total: number, same: number, side: SameSide) =>
+      side === "alone"
+        ? [`${total}人中 `, "只有你", " 这么想 😎"]
+        : side === "top"
+          ? [`${total}人中有 `, `${same}人`, " 站在你这边 🤝"]
+          : side === "few"
+            ? [`${total}人中只有 `, `${same}人`, " 和你一样…少数派 😎"]
+            : [`${total}人中有 `, `${same}人`, " 和你想法一样"],
+    changeHint: "点其他选项可以改投",
+    tokenLabel: "投票令牌 — 拖到选项里，或直接点选项投票",
+    optionVote: (label: string) => `投给 ${label}`,
+    optionMine: "（我的选择）",
+    optionChange: " — 点击改投",
+    voteConfirm: (label: string) => `要投给「${label}」吗？`,
+    voteNow: "投票",
+    lock: ["投票后就能", "和大家聊聊了！"],
+    shareTitle: "看看我的口味正不正常",
+    shareSub: "分享出去，听听大家怎么说！",
+    shareTitleForeign: "看看韩国人的真实想法",
+    shareSubForeign: "分享给朋友，一起来讨论吧！",
+    copied: "已复制链接",
+    copyFail: "无法复制链接",
+  },
+  ja: {
+    back: "戻る",
+    participants: (n: number) => `${n}人参加中`,
+    next: "次のお題へ",
+    openComments: "コメントをすべて見る",
+    vote: "投票",
+    resultsTitle: "韓国人の考え",
+    resultsTotal: (n: number) => ["", `${n}`, "人の韓国人が投票しました"],
+    resultsNote: "投票できるのは韓国人だけです",
+    resultLabel: (label: string, pct: number, top: boolean) => `${label} ${pct}%${top ? "（いちばん多い）" : ""}`,
+    voteAsk: ["あなたはどう思う？", "投票してね！"],
+    voted: "投票完了！",
+    sameThink: (total: number, same: number, side: SameSide) =>
+      side === "alone"
+        ? [`${total}人中 `, "あなただけ", " がこの考え 😎"]
+        : side === "top"
+          ? [`${total}人中 `, `${same}人`, " があなたの味方 🤝"]
+          : side === "few"
+            ? [`${total}人中たった `, `${same}人`, " …少数派 😎"]
+            : [`${total}人中 `, `${same}人`, " があなたと同じ考え"],
+    changeHint: "ほかの選択肢を押すと選び直せます",
+    tokenLabel: "投票トークン — 選択肢までドラッグするか、選択肢を押して投票",
+    optionVote: (label: string) => `${label}に投票`,
+    optionMine: "（自分の選択）",
+    optionChange: " — 押して選び直す",
+    voteConfirm: (label: string) => `「${label}」に投票しますか？`,
+    voteNow: "投票する",
+    lock: ["投票すると、みんなと", "ひとことを交わせます！"],
+    shareTitle: "自分の味覚が普通か確かめる",
+    shareSub: "シェアしてみんなの意見を聞いてみよう！",
+    shareTitleForeign: "韓国人の本音を見てみよう",
+    shareSubForeign: "友だちにシェアして一緒に語ろう！",
+    copied: "リンクをコピーしました",
+    copyFail: "リンクをコピーできませんでした",
+  },
+} satisfies Record<CommentsLang, Record<string, unknown>>;
 
-export type DetailCopy = (typeof DETAIL_COPY)[Lang];
+export type DetailCopy = (typeof DETAIL_COPY)[CommentsLang];

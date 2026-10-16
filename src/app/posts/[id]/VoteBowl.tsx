@@ -9,7 +9,9 @@ import { openWelcome, WelcomePopup } from "@/app/my/WelcomePopup";
 import { track } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
 import { burstConfetti } from "./confetti";
-import { DETAIL_COPY, type Lang } from "./copy";
+import { optionsIn } from "./postText";
+import { CARD_SHAPES } from "@/app/home/cardShapes";
+import { DETAIL_COPY, type CommentsLang, type SameSide } from "./copy";
 import { titleFont } from "./font";
 
 const titleSize = "text-[24px] tracking-[-0.72px]";
@@ -57,25 +59,31 @@ export function VoteBowl({
   post: HomePost;
   viewOnly?: boolean;
   /** 화면 문구 언어 */
-  lang?: Lang;
+  lang?: CommentsLang;
   /** 투표 칸 이름(글쓴이가 쓴 글) 언어 — 원어 또는 자동 번역 */
-  contentLang?: Lang;
+  contentLang?: CommentsLang;
 }) {
   const storedVote = useMyVote(post.id);
   const myVote = viewOnly ? null : storedVote;
-  const options = (contentLang === "en" && post.en.options) || post.question.options;
+  // 투표 칸 이름도 글 언어로 (중·일 번역 — postText.ts)
+  const optionLang = contentLang;
+  const options = optionsIn(post, contentLang);
   const T = DETAIL_COPY[lang];
   // 제목·칸 이름·% 글꼴 (영어면 Gilroy)
   const font = titleFont(lang);
   // 칸 이름은 글쓴이가 쓴 글이라 글 언어 글꼴 (한국어 Paperlogy · 영어 Gilroy)
-  const optionFont = titleFont(contentLang);
+  const optionFont = titleFont(optionLang);
   // 영어 행간은 한국어보다 0.15 좁게 (소문자가 낮아 같은 행간이면 줄 사이가 비어 보임 — 상세 제목과 같은 규칙)
   const title = `${font} ${titleSize} ${lang === "en" ? "leading-[1.15]" : "leading-[1.3]"}`;
-  const optionLeading = contentLang === "en" ? "leading-[1.15]" : "leading-[1.3]";
+  const optionLeading = optionLang === "en" ? "leading-[1.15]" : "leading-[1.3]";
   // 선택지는 잘리지 않고 전부 보임 (글자 수는 입력할 때 OPTION_MAX로 제한). 4칸이면 칸이 좁아서 글자·%를 조금 작게
   const narrow = options.length >= 4;
   const optionText = narrow ? "pl-3 text-[14px] tracking-[-0.28px]" : "pl-4 text-[16px] tracking-[-0.32px]";
-  const pctText = narrow ? `${font} left-3 text-[19px] leading-none tracking-[-0.57px]` : `${title} left-4`;
+  // % 숫자는 언어와 상관없이 Paperlogy (한국인·외국인 버전 같은 모양)
+  const pctFont = titleFont("ko");
+  const pctText = narrow
+    ? `${pctFont} left-3 text-[19px] leading-none tracking-[-0.57px]`
+    : `${pctFont} ${titleSize} leading-[1.3] left-4`;
   const columns = useRef<(HTMLButtonElement | null)[]>([]);
   const token = useRef<HTMLDivElement>(null);
   // 내 칸에 들어가 앉은 토큰 (칸 이름과 % 사이, 차오른 색 바로 위)
@@ -171,7 +179,8 @@ export function VoteBowl({
     if (col) {
       window.setTimeout(() => {
         const r = col.getBoundingClientRect();
-        burstConfetti(r.left + r.width / 2, r.top + r.height * 0.45);
+        // 조각 모양 = 메인 카드 사진 모양 전부(물결·클로버·꽃·겹친 알약·동그라미)를 섞어서
+        burstConfetti(r.left + r.width / 2, r.top + r.height * 0.45, CARD_SHAPES.map((s) => s.mask));
       }, TOKEN_MS * 0.5);
     }
   };
@@ -306,27 +315,41 @@ export function VoteBowl({
       </h2>
 
       {/* 토큰 자리: 투표 전엔 토큰, 투표 후엔 결과 요약 */}
-      <div className="flex h-16 items-center justify-center">
+      <div className="flex min-h-16 items-center justify-center">
         {viewOnly ? (
           <div className="flex flex-col items-center gap-1 text-center">
-            <p className="text-[15px] leading-[1.4] font-semibold text-neutral-400">{T.resultsTotal(total)}</p>
+            {/* 투표한 한국인 수만 흰색으로 강조, 투표 영역이 보이면 0부터 세어 올라감 (한국인 요약 문구와 같은 방식) */}
+            <p className="text-[18px] leading-[1.35] font-bold tracking-[-0.36px] text-balance text-neutral-400">
+              {(() => {
+                const [a, b, c] = T.resultsTotal(total);
+                return (
+                  <>
+                    {a}
+                    <span className="text-on-dark tabular-nums">
+                      <CountUp text={b} value={total} run={inView} />
+                    </span>
+                    {c}
+                  </>
+                );
+              })()}
+            </p>
             <p className="text-[12px] leading-[1.4] font-medium text-neutral-400/70">{T.resultsNote}</p>
           </div>
         ) : myVote !== null ? (
           <div className="flex flex-col items-center gap-1 text-center">
-            <p className="text-[15px] leading-[1.4] font-semibold text-neutral-400">
+            {/* 투표 완료(24px)보다 작게, 편 가르기 문구 — 같은 생각인 사람 수(나 포함)만 흰색, 0부터 세어 올라감 */}
+            <p className="text-[18px] leading-[1.35] font-bold tracking-[-0.36px] text-balance text-neutral-400">
               {(() => {
-                const [a, b, c] = T.sameThink(total, pcts[myVote]);
-                // 한국어: "N명 중 [X%]가 …" / 영어: "[X%] of N people …" — 숫자 부분만 흰색
-                return lang === "en" ? (
-                  <>
-                    <span className="text-on-dark">{a}</span>
-                    {b}
-                  </>
-                ) : (
+                const same = votes[myVote];
+                const side: SameSide =
+                  same <= 1 ? "alone" : same >= Math.max(...votes) ? "top" : same / total < 0.2 ? "few" : "mid";
+                const [a, b, c] = T.sameThink(total, same, side);
+                return (
                   <>
                     {a}
-                    <span className="text-on-dark">{b}</span>
+                    <span className="text-on-dark tabular-nums">
+                      <CountUp text={b} value={same} run={inView} />
+                    </span>
                     {c}
                   </>
                 );
@@ -389,8 +412,8 @@ export function VoteBowl({
                     ref={(el) => {
                       peeks.current[i] = el;
                     }}
-                    className="wave-fill absolute inset-x-0 bottom-0 bg-primary transition-[height] duration-700 ease-[cubic-bezier(0.3,1.15,0.5,1)]"
-                    style={{ height: hover === i ? "38%" : "0%" }}
+                    className="wave-fill absolute inset-x-0 bottom-0 transition-[height] duration-700 ease-[cubic-bezier(0.3,1.15,0.5,1)]"
+                    style={{ height: hover === i ? "38%" : "0%", backgroundColor: post.color }}
                   />
                 </span>
               )}
@@ -405,12 +428,14 @@ export function VoteBowl({
                     key={mine ? "mine" : "other"}
                     className={`absolute inset-x-0 bottom-0 h-(--fill) transition-[height] duration-700 starting:h-0 ${
                       mine
-                        ? "wave-fill bg-primary ease-[cubic-bezier(0.3,1.15,0.5,1)]"
+                        ? "wave-fill ease-[cubic-bezier(0.3,1.15,0.5,1)]"
                         : "bg-white/10 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
                     }`}
                     style={
                       {
                         "--fill": `${pcts[i]}%`,
+                        // 물결 색 = 이 글의 카드 색 (화면 색을 카드 색 하나로 맞춤)
+                        ...(mine && { backgroundColor: post.color }),
                         transitionDelay: `${FILL_DELAY_MS + i * FILL_STAGGER_MS}ms`,
                       } as CSSProperties
                     }
@@ -491,4 +516,34 @@ export function VoteBowl({
       />}
     </section>
   );
+}
+
+/*
+  숫자 카운트업 — text 안의 숫자(value)를 0부터 value까지 빠르게 세어 올림 (끝으로 갈수록 느려짐, 0.9초)
+  run이 켜질 때(투표 영역이 보일 때) 시작. 표를 바꿔 value가 바뀌면 지금 숫자에서 새 숫자로 이어서 셈.
+  숫자가 없는 글("나만")은 그대로. 움직임 줄이기 설정이면 바로 최종 숫자
+*/
+const COUNT_MS = 900;
+function CountUp({ text, value, run }: { text: string; value: number; run: boolean }) {
+  const [shown, setShown] = useState(0);
+  const from = useRef(0);
+  useEffect(() => {
+    if (!run) return;
+    const start = from.current;
+    if (start === value) return;
+    const ms = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : COUNT_MS;
+    const t0 = performance.now();
+    let raf = 0;
+    const tick = (now: number) => {
+      const p = ms ? Math.min((now - t0) / ms, 1) : 1;
+      const eased = 1 - Math.pow(1 - p, 3);
+      const n = Math.round(start + (value - start) * eased);
+      from.current = n;
+      setShown(n);
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [run, value]);
+  return text.replace(String(value), String(shown));
 }

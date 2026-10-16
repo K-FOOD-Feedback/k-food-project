@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { getHomePost } from "@/app/home/mockPosts";
+import { nameIn, titleIn } from "@/app/home/titles";
+import { optionsIn } from "@/app/posts/[id]/postText";
 import { ShareSheet } from "@/app/write/done/ShareSheet";
 import type { ShareCardPost } from "@/app/write/done/ShareCard";
 import { track } from "@/lib/analytics";
@@ -63,6 +65,47 @@ const COPY = {
     reported: "Thanks, we got your report",
     reasons: ["Spam or ads", "Hate or abusive language", "Not a food photo", "Something else"],
   },
+  // 중국어·일본어 (지구본으로 고르면 — 송희 확인)
+  zh: {
+    more: "更多",
+    closeMenu: "关闭菜单",
+    share: "分享",
+    edit: "编辑",
+    delete: "删除",
+    copyLink: "复制链接",
+    report: "举报",
+    copied: "已复制链接",
+    copyFailed: "无法复制链接",
+    deleteLabel: "删除帖子",
+    deleteTitle: "要删除这篇帖子吗？",
+    deleteBody: "收到的投票和评论也会一起删除，且无法恢复。",
+    cancel: "取消",
+    reportTitle: "要举报这篇帖子吗？",
+    reportBody: "请选择原因，我们会核实后处理。",
+    reportReason: "举报原因",
+    reported: "已收到你的举报",
+    reasons: ["垃圾信息或广告", "含有辱骂或仇恨言论", "与食物无关的照片", "其他"],
+  },
+  ja: {
+    more: "その他",
+    closeMenu: "メニューを閉じる",
+    share: "シェア",
+    edit: "編集",
+    delete: "削除",
+    copyLink: "リンクをコピー",
+    report: "通報",
+    copied: "リンクをコピーしました",
+    copyFailed: "リンクをコピーできませんでした",
+    deleteLabel: "投稿を削除",
+    deleteTitle: "この投稿を削除しますか？",
+    deleteBody: "もらった投票やひとことも一緒に消え、元に戻せません。",
+    cancel: "キャンセル",
+    reportTitle: "この投稿を通報しますか？",
+    reportBody: "理由を選んでください。確認のうえ対応します。",
+    reportReason: "通報の理由",
+    reported: "通報を受け付けました",
+    reasons: ["スパム・広告", "暴言やヘイト表現がある", "食べ物と関係ない写真", "その他"],
+  },
 };
 
 export function PostMenu({
@@ -78,7 +121,7 @@ export function PostMenu({
   onOpen?: () => void;
   isMine?: boolean;
   /** 보는 사람 화면의 언어 */
-  lang?: "ko" | "en";
+  lang?: "ko" | "en" | "zh" | "ja";
   /** ⋯ 버튼 모양 (쓰는 화면의 버튼 스타일 그대로) */
   className?: string;
   children: ReactNode;
@@ -135,14 +178,14 @@ export function PostMenu({
     }
     const p = getHomePost(postId);
     if (!p) return null;
-    const en = lang === "en";
+    // 제목·닉네임·투표 칸 모두 중·일 번역까지 (titleIn·nameIn·optionsIn)
     return {
-      title: en ? p.en.title : p.title,
-      dish: en ? p.en.title : p.title,
+      title: titleIn(p, lang),
+      dish: titleIn(p, lang),
       photo: p.cardPhoto,
       voteQuestion: p.question.text,
-      options: ((en && p.en.options) || p.question.options).map((o) => o.replace(/\n/g, " ")),
-      author: `${p.author.flag} ${p.author.name}`,
+      options: optionsIn(p, lang).map((o) => o.replace(/\n/g, " ")),
+      author: `${p.author.flag} ${nameIn(p, lang)}`,
     };
   };
   const card = sharePost();

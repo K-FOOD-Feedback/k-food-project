@@ -7,8 +7,8 @@ import { TrackedLink } from "@/components/Track";
 import { track } from "@/lib/analytics";
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { CommentModal } from "./CommentModal";
-import { COMMENT_MAX, QUICK_EMOJIS, translateToEnglish, useComments, type Comment } from "./comments";
-import { COMMENTS_COPY, type Lang } from "./copy";
+import { avoidColor, COMMENT_MAX, QUICK_EMOJIS, translateTo, useComments, type Comment } from "./comments";
+import { COMMENTS_COPY, type CommentsLang } from "./copy";
 import { titleFont } from "./font";
 import { HIDDEN_COLOR, useHiddenComments } from "./hidden";
 import { estimateWidth, GravityPile, type PileHandle } from "./GravityPile";
@@ -47,6 +47,7 @@ export function CommentPile({
   commentCount,
   authorFlag,
   authorName,
+  authorColor,
   postTitle,
   variant = "preview",
   lang = "ko",
@@ -60,13 +61,15 @@ export function CommentPile({
   authorFlag: string;
   /** 글쓴이 닉네임 — 글쓴이 한마디 뱃지에 (한마디는 익명, 이름은 글쓴이만) */
   authorName?: string;
+  /** 글쓴이 한마디·답글 말풍선 색 — 그 글의 카드 색(post.color)으로 맞춤. 없으면 저장된 색 그대로 */
+  authorColor?: string;
   /** ↗(한마디 전체 보기) 주소 — 상세가 들어온 곳(?from=)을 이어 붙일 때 (없으면 기본 주소) */
   fullHref?: string;
   /** 전체 화면 제목 아래에 보이는 게시글 제목 */
   postTitle?: string;
   variant?: "preview" | "full";
   /** 화면 문구 언어 — 한마디 전체 화면에서 지구본으로 바꿀 수 있음 */
-  lang?: Lang;
+  lang?: CommentsLang;
   /** 로그인 전 외국인: 입력칸·이모지·답글 칸을 누르면 쓰는 대신 onLockedWrite (로그인 시트) */
   writeLocked?: boolean;
   onLockedWrite?: () => void;
@@ -79,19 +82,26 @@ export function CommentPile({
   const { addedCount, add, edit, remove, nextColor, ready } = stored;
   const all = fixture ?? stored.comments;
   const t = COMMENTS_COPY[lang];
-  // 영어 화면에서 자동 번역이 켜져 있으면 한마디도 영어로 보여 줍니다 (언어 창 아래 켬/끔).
+  // 영어·중국어·일본어 화면에서 자동 번역이 켜져 있으면 한마디도 그 언어로 보여 줍니다 (언어 창 아래 켬/끔).
   const autoTranslate = useAutoTranslate();
-  const translate = lang === "en" && autoTranslate;
+  const translateLang = autoTranslate && lang !== "ko" ? lang : null;
+  const translate = translateLang !== null;
   // 내가 신고해서 가린 한마디는 빼지 않고 회색 "가려진 한마디예요"로 보여 줍니다 (숫자도 그대로).
   const { hidden, hide } = useHiddenComments(postId);
+  // 글쓴이가 남긴 한마디(글·이모지)는 그 글의 카드 색으로 (색이 너무 많지 않게 — 지현 요청)
+  // 글쓴이가 아닌 한마디는 카드 색과 비슷하면 다른 색으로 (글쓴이 말풍선만 카드 색으로 눈에 띄게)
+  const recolor = (c: Comment, index: number) =>
+    !authorColor
+      ? c
+      : c.author.kind === "author"
+        ? { ...c, color: authorColor }
+        : { ...c, color: avoidColor(c.color, authorColor, index) };
   const comments =
-    hidden.size || translate
-      ? all.map((c) =>
+    hidden.size || translate || authorColor
+      ? all.map((c, i) =>
           hidden.has(c.id)
             ? { ...c, kind: "text" as const, text: t.hidden, color: HIDDEN_COLOR }
-            : translate
-              ? translateToEnglish(c)
-              : c,
+            : recolor(translateLang ? translateTo(c, translateLang) : c, i),
         )
       : all;
   const [draft, setDraft] = useState("");
@@ -104,6 +114,16 @@ export function CommentPile({
   // 전체 화면: 칸 위·아래가 스크롤로 가려졌을 때만 그쪽에 그라데이션을 보여 줍니다.
   // 위: 아래로 스크롤해서 위쪽 한마디가 가려졌을 때 / 아래: 묻힌 한마디가 남아 있을 때 (맨 아래면 없음)
   const [fades, setFades] = useState({ top: false, bottom: false });
+  // 말풍선이 칸 위쪽 끝으로 들어오는 동안(쏟아지기·새 한마디)도 위 그라데이션을 켜서 툭 잘려 보이지 않게
+  // (들어올 때는 첫 말풍선부터 가리도록 바로 켜고, 끌 때만 서서히)
+  const [entering, setEntering] = useState(false);
+  // 한 개만 떨어질 때는 금방 지나가서, 다 지나간 뒤에도 0.5초 더 켜 둬야 그라데이션이 깜빡이지 않고 보임
+  const enteringOff = useRef<number | undefined>(undefined);
+  const onEntering = (now: boolean) => {
+    window.clearTimeout(enteringOff.current);
+    if (now) setEntering(true);
+    else enteringOff.current = window.setTimeout(() => setEntering(false), 500);
+  };
   const measureFades = () => {
     const box = zone.current?.firstElementChild;
     if (!box) return;
@@ -119,7 +139,7 @@ export function CommentPile({
   useEffect(() => {
     const box = zone.current?.firstElementChild;
     const content = box?.firstElementChild;
-    if (!full || !box || !content) return;
+    if (!box || !content) return;
     const observer = new ResizeObserver(() => measureRef.current());
     observer.observe(box);
     observer.observe(content);
@@ -210,7 +230,7 @@ export function CommentPile({
     // 댓글창 윗부분이 화면 밖이면 먼저 보이게 올려 줍니다 (떨어지는 모습이 보이도록).
     // 전체 화면: 댓글 칸을 아래로 스크롤해 둔 상태면 맨 위로 올려서 떨어지는 모습이 보이게
     const scrollBox = zoneEl.firstElementChild;
-    if (full && scrollBox && scrollBox.scrollTop > 0) {
+    if (scrollBox && scrollBox.scrollTop > 0) {
       pile.current.scrollToTop();
       await new Promise((r) => setTimeout(r, 300));
     }
@@ -228,7 +248,8 @@ export function CommentPile({
       id: nextId.current++,
       kind,
       text,
-      color: nextColor(flights.length),
+      // 새로 쓰는 한마디도 같은 규칙 (날아가는 원과 떨어진 말풍선 색이 같게)
+      color: avoidColor(nextColor(flights.length), authorColor, all.length + flights.length),
       from: fromEl.getBoundingClientRect(),
       fromField: full,
       to: { x: z.left + dropX, y: arriveY },
@@ -285,9 +306,12 @@ export function CommentPile({
           </h2>
           {postTitle && (
             // 한국어는 Paperlogy, 영어는 Gilroy(font-title-en, 한글과 크기 보정) — 메인 카드 제목과 같은 규칙
+            // 중국어·일본어는 Noto Sans SC·JP 800 (titleFont, 메인과 같은 규칙)
             // 영어 행간은 한국어보다 0.15 좁게 (상세 제목과 같은 규칙)
             <p
-              className={`${titleFont(lang)} text-[24px] ${lang === "en" ? "leading-[1.25]" : "leading-[1.4]"} tracking-[-0.48px] break-keep text-neutral-400`}
+              className={`${titleFont(lang)} text-[24px] ${
+                lang === "en" ? "leading-[1.25]" : "leading-[1.4]"
+              } tracking-[-0.48px] break-keep text-neutral-400`}
             >
               {postTitle}
             </p>
@@ -315,12 +339,13 @@ export function CommentPile({
               rainOnOpen={14}
               lang={lang}
               onOverflowChange={measureFades}
+              onEnteringChange={onEntering}
               onSelect={select}
             />
           </div>
           <div
-            className={`pointer-events-none absolute inset-x-0 top-0 h-[120px] transition-opacity duration-300 ${
-              fades.top ? "opacity-100" : "opacity-0"
+            className={`pointer-events-none absolute inset-x-0 top-0 h-[120px] transition-opacity ${
+              entering ? "opacity-100 duration-0" : fades.top ? "opacity-100 duration-300" : "opacity-0 duration-300"
             }`}
             style={{ background: scrim("to bottom") }}
           />
@@ -424,16 +449,22 @@ export function CommentPile({
             </TrackedLink>
         </div>
 
-        <div ref={zone} className="relative">
+        <div ref={zone} className="relative" onScrollCapture={measureFades}>
           {/* 칸이 작아서 맨 위에 쌓일 최신 6개만 쏟아집니다 (많아도 금방 끝나게) */}
           {/* 한마디가 하나도 없으면 칸을 낮추고 안내만 (첫 한마디가 날아와 앉을 자리는 남겨 둠) */}
+          {/* 한마디 전체 화면처럼 칸을 스크롤해 묻힌 한마디까지 볼 수 있음. 상세에서는 말풍선 호버·클릭 없음
+              (칸을 탭하면 전체 화면으로 — DetailScreen) */}
           <GravityPile
             ref={pile}
             comments={comments}
             ready={ready}
             rainOnOpen={6}
             lang={lang}
-            className={ready && comments.length === 0 ? "h-[132px]" : undefined}
+            scrollable
+            hover={false}
+            onOverflowChange={measureFades}
+              onEnteringChange={onEntering}
+            className={ready && comments.length === 0 ? "h-[132px]" : "h-[286px]"}
           />
           {ready && comments.length === 0 && (
             <p className="pointer-events-none absolute inset-0 flex items-center justify-center pb-6 text-center text-[15px] leading-[1.45] font-semibold whitespace-pre-line text-white/50">
@@ -441,8 +472,20 @@ export function CommentPile({
             </p>
           )}
         </div>
-        {/* data-fade: 상세 화면이 잠금 상태에서 칸 내용을 흐릴 때 이 그라데이션은 흐리지 않도록 (흐리면 아래 끝이 비쳐 보임) */}
-        <div data-fade className="pointer-events-none absolute inset-x-0 bottom-0 h-[92px] bg-linear-to-b from-[#292929]/0 to-[#292929]" />
+        {/* 칸 위·아래 그라데이션 — 스크롤로 가려졌을 때만 (전체 화면과 같은 규칙, 색은 칸 바탕색).
+            data-fade(아래만): 상세 화면이 잠금 상태에서 칸 내용을 흐릴 때 아래 그라데이션은 흐리지 않도록 (흐리면 칸 끝이 비쳐 보임).
+            위 그라데이션은 일부러 data-fade를 안 붙여 같이 흐립니다 — 안 흐리면 흐린 제목 줄 번짐이 그라데이션 윗변에서
+            일자로 잘려 줄처럼 보였습니다. 위 그라데이션은 제목 줄 아래(칸 시작 72px)부터 */}
+        <div
+          // in-[[inert]]:hidden — 투표 전 잠금(어둡게 흐린) 상태에서는 위 그라데이션을 아예 끔 (흐린 칸 위에서 줄처럼 보여서, 지현 요청)
+          className={`pointer-events-none absolute inset-x-0 top-[72px] h-[80px] transition-opacity in-[[inert]]:hidden ${entering ? "opacity-100 duration-0" : fades.top ? "opacity-100 duration-300" : "opacity-0 duration-300"}`}
+          style={{ background: scrim("to bottom", CARD_BG) }}
+        />
+        <div
+          data-fade
+          className={`pointer-events-none absolute inset-x-0 bottom-0 h-[100px] transition-opacity duration-300 ${fades.bottom ? "opacity-100" : "opacity-0"}`}
+          style={{ background: scrim("to top", CARD_BG) }}
+        />
       </section>
 
       {/* 이모지 키 → 한마디 입력 카드 순서 (Figma 332:3426) */}
@@ -587,10 +630,12 @@ const SCRIM_STOPS: [number, number][] = [
   [0.92, 0.05],
   [1, 0],
 ];
-const scrim = (direction: "to top" | "to bottom") =>
+const scrim = (direction: "to top" | "to bottom", color = "var(--color-background)") =>
   `linear-gradient(${direction}, ${SCRIM_STOPS.map(
-    ([at, alpha]) => `color-mix(in srgb, var(--color-background) ${Math.round(alpha * 100)}%, transparent) ${at * 100}%`,
+    ([at, alpha]) => `color-mix(in srgb, ${color} ${Math.round(alpha * 100)}%, transparent) ${at * 100}%`,
   ).join(", ")})`;
+/** 상세 화면 한마디 칸 바탕색 (화면 바탕 위 bg-white/10 → 보이는 색) */
+const CARD_BG = "#292929";
 
 type Burst = { id: number; emoji: string; x: number; y: number };
 

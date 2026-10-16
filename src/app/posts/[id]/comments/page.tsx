@@ -5,6 +5,7 @@ import { MY_POST_ID } from "@/lib/write-data";
 import { backHrefFrom, fromKey, withFrom } from "@/lib/back";
 import { isForeignFrom, withViewer } from "../viewer";
 import { paperlogy } from "../font";
+import { titleIn } from "@/app/home/titles";
 import { CommentsScreen } from "./CommentsScreen";
 import { VoteGate } from "./VoteGate";
 
@@ -34,7 +35,7 @@ export default async function Page(props: PageProps<"/posts/[id]/comments">) {
   if (!post) notFound();
   // 화면 언어: 지구본으로 고른 언어(?lang=). 외국인은 상세에서 고른 언어를 따름 (CommentsScreen)
   // 주소에 ?lang= 이 있을 때만 그 언어로 시작 (없으면 상세 화면에서 고른 언어 그대로 — CommentsScreen)
-  const lang = sp.lang === "en" || sp.lang === "ko" ? sp.lang : null;
+  const lang = sp.lang === "en" || sp.lang === "ko" || sp.lang === "zh" || sp.lang === "ja" ? sp.lang : null;
 
   return (
     // 답글 알림에서 왔으면 이미 한마디를 남긴(= 투표한) 사람이라 바로 보여 줌 — 서버 전엔 이 브라우저에 투표 기록이 없을 수 있어서
@@ -50,7 +51,8 @@ export default async function Page(props: PageProps<"/posts/[id]/comments">) {
           postId={post.id}
           commentCount={post.commentCount}
           authorFlag={post.author.flag}
-          title={{ ko: post.title, en: post.en.title }}
+          authorColor={post.color}
+          title={{ ko: post.title, en: post.en.title, zh: titleIn(post, "zh"), ja: titleIn(post, "ja") }}
         />
       </main>
     </VoteGate>

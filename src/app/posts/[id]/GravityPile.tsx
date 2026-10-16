@@ -3,7 +3,7 @@
 import Matter from "matter-js";
 import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type Ref } from "react";
 import { whoOf, type Comment } from "./comments";
-import { COMMENTS_COPY, type CommentsCopy, type Lang } from "./copy";
+import { COMMENTS_COPY, type CommentsCopy, type CommentsLang } from "./copy";
 
 const { Engine, Bodies, Body, Composite, Events, Sleeping } = Matter;
 
@@ -109,6 +109,9 @@ class PileWorld {
   /** 더미가 채움 한도를 넘어 아래쪽이 묻혔는지 (바뀔 때만 알림) */
   private overflowing = false;
   onOverflowChange: ((overflowing: boolean) => void) | null = null;
+  /** 말풍선이 칸 위쪽 끝을 지나 들어오는 중인지 (쏟아지기·새 한마디) — 위 그라데이션을 잠깐 켜려고 */
+  private entering = false;
+  onEnteringChange: ((entering: boolean) => void) | null = null;
 
   constructor(
     width: number,
@@ -439,6 +442,22 @@ class PileWorld {
       this.overflowing = overflowing;
       this.onOverflowChange?.(overflowing);
     }
+    // 칸 위쪽 끝(지금 보이는 맨 위)에 걸친 채 움직이는 말풍선이 있거나, 쏟아질 차례를 기다리는 말풍선이 있으면 "들어오는 중"
+    // (landed는 벽에만 닿아도 켜져서, 실제로 움직이는지로 봅니다. 가만히 쌓여 있는 말풍선은 해당 없음)
+    const visibleTop = this.viewTop + (this.scroller?.box.scrollTop ?? 0);
+    let entering = this.pendingRain.size > 0;
+    if (!entering) {
+      for (const { body } of this.tracked.values()) {
+        if (!body.isStatic && body.speed > 0.3 && body.bounds.min.y < visibleTop + 24) {
+          entering = true;
+          break;
+        }
+      }
+    }
+    if (entering !== this.entering) {
+      this.entering = entering;
+      this.onEnteringChange?.(entering);
+    }
     if (this.scroller) {
       const below = -this.viewTop - this.height;
       const height = below < 1 ? this.height : this.height + Math.ceil(below / 40) * 40;
@@ -473,8 +492,10 @@ export function GravityPile({
   rainOnOpen = 0,
   ready = true,
   onOverflowChange,
+  onEnteringChange,
   onSelect,
   lang = "ko",
+  hover = true,
 }: {
   comments: Comment[];
   ref?: Ref<PileHandle>;
@@ -489,10 +510,14 @@ export function GravityPile({
   ready?: boolean;
   /** 더미가 칸의 채움 한도를 넘어 아래쪽이 그라데이션 아래로 묻히기 시작했는지 / 다시 다 보이는지 */
   onOverflowChange?: (overflowing: boolean) => void;
+  /** 말풍선이 칸 위쪽 끝으로 들어오는 중인지 (위 그라데이션을 그동안 켜 둘 때) */
+  onEnteringChange?: (entering: boolean) => void;
   /** 말풍선을 누르면 (없으면 누를 수 없는 그냥 말풍선). el: 누른 말풍선 요소 (이모지가 떠오를 자리) */
   onSelect?: (comment: Comment, el: HTMLElement) => void;
   /** 태그(나·글쓴이)와 읽어 주기 문구의 언어 */
-  lang?: Lang;
+  lang?: CommentsLang;
+  /** PC에서 말풍선에 마우스를 올리면 흰 테두리 (상세 화면 칸은 끔 — 칸 전체가 하나의 버튼) */
+  hover?: boolean;
 }) {
   const t = COMMENTS_COPY[lang];
   const zone = useRef<HTMLDivElement>(null);
@@ -504,8 +529,10 @@ export function GravityPile({
   /** 다시 쏟아지기를 기다리는 중인 관찰자 (칸이 보이면 시작) */
   const replayWatch = useRef<IntersectionObserver | null>(null);
   const overflowCallback = useRef(onOverflowChange);
+  const enteringCallback = useRef(onEnteringChange);
   useLayoutEffect(() => {
     overflowCallback.current = onOverflowChange;
+    enteringCallback.current = onEnteringChange;
   });
 
   useImperativeHandle(
@@ -545,6 +572,7 @@ export function GravityPile({
     );
     world.current = pile;
     pile.onOverflowChange = (v) => overflowCallback.current?.(v);
+    pile.onEnteringChange = (v) => enteringCallback.current?.(v);
     pile.start();
     const observer = new ResizeObserver(() => pile.resize(box.clientWidth, box.clientHeight));
     observer.observe(box);
@@ -607,7 +635,7 @@ export function GravityPile({
               },
             })}
           >
-            <Bubble comment={c} tags={tagsOf(c, replyCounts, t)} replyLabel={t.replyCount} />
+            <Bubble comment={c} tags={tagsOf(c, replyCounts, t)} replyLabel={t.replyCount} hover={hover} />
           </div>
         ))}
       </div>
@@ -642,13 +670,24 @@ const HOVER =
   - 태그가 있으면 말풍선 위로 튀어나온 만큼 위쪽 여백을 둡니다.
     물리 몸체는 말풍선 + 태그 줄 두 조각이라, 태그 자리만 막히고 나머지 윗부분은 다른 댓글과 같은 간격입니다.
 */
-function Bubble({ comment, tags, replyLabel }: { comment: Comment; tags: Tags; replyLabel: (n: number) => string }) {
+function Bubble({
+  comment,
+  tags,
+  replyLabel,
+  hover,
+}: {
+  comment: Comment;
+  tags: Tags;
+  replyLabel: (n: number) => string;
+  hover: boolean;
+}) {
+  const hoverClass = hover ? HOVER : "";
   const { author } = comment;
   const emoji = comment.kind === "emoji";
   const bubble = emoji ? (
     <span
       data-part="bubble"
-      className={`flex size-[54px] items-center justify-center rounded-full text-[16px] ${HOVER}`}
+      className={`flex size-[54px] items-center justify-center rounded-full text-[16px] ${hoverClass}`}
       style={{ background: comment.color }}
     >
       {comment.text}
@@ -658,7 +697,7 @@ function Bubble({ comment, tags, replyLabel }: { comment: Comment; tags: Tags; r
       data-part="bubble"
       className={`flex items-center justify-center gap-2 rounded-[32px] py-4 text-center text-[16px] leading-[1.4] font-bold tracking-[-0.32px] whitespace-pre text-black ${
         author.kind === "korean" ? "px-5" : "pr-5 pl-2.5"
-      } ${HOVER}`}
+      } ${hoverClass}`}
       style={{ background: comment.color }}
     >
       {author.kind !== "korean" && (
@@ -697,8 +736,9 @@ function RepliesIcon() {
 }
 
 // 대략적인 글자 폭: 한글·한자·이모지는 영문의 약 2배
+// (일본어 가나·한중일 문장부호·전각 글자도 한글만큼 넓음 — 빠지면 일본어가 한 줄로 길게 늘어짐)
 const charWidth = (ch: string) =>
-  /[\u1100-\u11ff\u3130-\u318f\uac00-\ud7af\u4e00-\u9fff]|\p{Extended_Pictographic}/u.test(ch) ? 1 : 0.55;
+  /[\u1100-\u11ff\u3000-\u30ff\u3130-\u318f\uac00-\ud7af\u4e00-\u9fff\uff00-\uffef]|\p{Extended_Pictographic}/u.test(ch) ? 1 : 0.55;
 const widthOf = (text: string) => Array.from(text).reduce((sum, ch) => sum + charWidth(ch), 0);
 // 한 줄에 한글 약 10자까지. 넘으면 두 줄로 나눕니다.
 const ONE_LINE_MAX = 10;
@@ -714,8 +754,8 @@ export function splitLines(text: string): string[] {
   chars.forEach((ch, i) => {
     acc += charWidth(ch);
     if (i === 0 || i === chars.length - 1) return;
-    // 띄어쓰기에서 나누는 걸 우선하되, 가운데에서 너무 멀면 아무 글자에서나
-    const score = Math.abs(acc - half) + (ch === " " ? 0 : 3);
+    // 띄어쓰기(또는 띄어 쓰지 않는 일본어·중국어의 쉼표 뒤)에서 나누는 걸 우선하되, 가운데에서 너무 멀면 아무 글자에서나
+    const score = Math.abs(acc - half) + (ch === " " || /[、，,]/.test(ch) ? 0 : 3);
     if (score < bestScore) {
       bestScore = score;
       best = i;
