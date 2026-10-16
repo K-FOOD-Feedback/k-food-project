@@ -78,7 +78,7 @@ export function DishCard({
             <input
               autoFocus
               value={input}
-              // 40칸까지 (한·중·일 글자 1.5칸, src/lib/text-length.ts) — 한글 조합 중엔 자르지 않음
+              // 40칸까지 (한·중·일 글자 2칸, src/lib/text-length.ts) — 한글 조합 중엔 자르지 않음
               onChange={(e) =>
                 setInput((e.nativeEvent as InputEvent).isComposing ? e.target.value : clampText(e.target.value, DISH_MAX))
               }

@@ -57,7 +57,7 @@ export function TextField({
               textLength(value) >= maxLength * 0.9 ? "" : "opacity-0 group-focus-within:opacity-100"
             }`}
           >
-            {/* 한도는 칸 수 — 한·중·일 글자는 1.5칸 (src/lib/text-length.ts) */}
+            {/* 한도는 칸 수 — 한·중·일 글자는 2칸 (src/lib/text-length.ts) */}
             {textLength(value)}/{maxLength}
           </span>
         )}

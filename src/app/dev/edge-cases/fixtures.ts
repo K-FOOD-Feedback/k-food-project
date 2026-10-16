@@ -18,7 +18,7 @@ export const fill = (base: string, n: number) => base.repeat(Math.ceil(n / base.
 /** 자주 깨지는 글자 모양 — 화면마다 이걸 다 넣어 봄 */
 export const TEXTS = {
   one: "맛",
-  /** 한·중·일 글자는 1.5칸이라 한도 n칸에 들어가는 만큼만 (src/lib/text-length.ts) — 한마디는 칸 계산을 안 써서 그대로 n자 */
+  /** 한·중·일 글자는 2칸이라 한도 n칸에 들어가는 만큼만 (src/lib/text-length.ts) — 한마디는 칸 계산을 안 써서 그대로 n자 */
   koMax: (n: number) => fill("매우매우비슷해요 ", wideCharsFor(n)).trimEnd(),
   koChars: (n: number) => fill("매우매우비슷해요 ", n).trimEnd(),
   /** 띄어쓰기 없는 긴 영어 — 줄바꿈이 안 돼서 가장 잘 깨짐 */

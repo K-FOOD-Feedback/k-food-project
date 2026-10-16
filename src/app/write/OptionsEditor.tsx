@@ -50,7 +50,7 @@ export function OptionsEditor({
               readOnly={locked}
               placeholder="Write a choice"
               aria-label={`Choice ${i + 1}`}
-              // 한도는 칸 수 (한·중·일 글자 1.5칸) — 한글 조합 중엔 자르지 않고 조합이 끝나면 자름
+              // 한도는 칸 수 (한·중·일 글자 2칸) — 한글 조합 중엔 자르지 않고 조합이 끝나면 자름
               onChange={(e) =>
                 set(i, (e.nativeEvent as InputEvent).isComposing ? e.target.value : clampText(e.target.value, OPTION_MAX))
               }
