@@ -1017,7 +1017,8 @@ function ShareVoteCard({
 }
 
 /** 본문 카드 안 글 (진짜 카드와 전환용 카드가 같은 모양을 쓰도록) */
-function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: HomePost; lang?: CommentsLang; contentLang?: CommentsLang }) {
+/** 상세 본문 카드 안 글 (점검 화면 /dev/edge-cases 에서도 씀) */
+export function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: HomePost; lang?: CommentsLang; contentLang?: CommentsLang }) {
   // contentLang: 글쓴이가 쓴 제목·본문 (원어 또는 자동 번역) — 제목은 중·일까지, 본문은 한국어가 아니면 영어
   const enText = contentLang === "en";
   const titleRef = useRef<HTMLHeadingElement>(null);
@@ -1080,7 +1081,8 @@ function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: HomePost
 const boxStyle = (b: Box) => ({ left: b.left, top: b.top, width: b.width, height: b.height });
 
 /** 사진 넘겨 보기 + 참여 인원 칩 (Figma: Tile/Photo) */
-function PhotoTile({
+/** 상세 사진 칸 + 참여 인원 칩 (점검 화면 /dev/edge-cases 에서도 씀) */
+export function PhotoTile({
   postId,
   photos,
   chip,

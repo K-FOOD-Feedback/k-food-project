@@ -165,3 +165,90 @@ export const FIELD_CASES = [
   { label: "Title (긴 영어)", value: TEXTS.enWord(TITLE_MAX), max: TITLE_MAX, rows: 1 },
   { label: "Story", value: TEXTS.koMax(STORY_MAX), max: STORY_MAX, rows: 4 },
 ];
+
+/* ───────── 상세 화면 · 작성 화면 (높음) ───────── */
+
+/** 상세 글 카드 (제목·본문·글쓴이) — 글쓴이는 외국인이라 영어 원문(en)도 같이 */
+export const DETAIL_CASES: { label: string; post: HomePost; lang: "ko" | "en" }[] = [
+  {
+    label: `제목 ${TITLE_MAX}자 · 본문 ${STORY_MAX}자 (한국어)`,
+    lang: "ko",
+    post: post("d1", { title: TEXTS.koMax(TITLE_MAX), body: fill("불닭을 처음 만들어 봤어요. 치즈를 두 배로 넣었는데 괜찮을까요? ", STORY_MAX).trimEnd() }),
+  },
+  {
+    label: `영어 대문자 제목 ${TITLE_MAX}자 · 긴 단어 본문`,
+    lang: "en",
+    post: post("d2", {
+      en: {
+        title: fill("WOW MMM WHAT DO KOREANS THINK OF MY HOMEMADE BULDAK ", TITLE_MAX).trimEnd(),
+        country: "Canada",
+        body: fill("Supercalifragilisticexpialidocious ", 200).trimEnd(),
+      },
+    }),
+  },
+  {
+    label: "긴 닉네임 · 긴 나라 이름",
+    lang: "en",
+    post: post("d3", { author: { name: "Extremely Saucy Cheesy Taster", country: "보스니아 헤르체고비나", flag: "🇧🇦" }, en: { title: "Short title", country: "Bosnia and Herzegovina" } }),
+  },
+];
+
+/** 상세 사진 칸 + 참여 인원 칩 */
+export const PHOTO_CASES: { label: string; post: HomePost; chip: string }[] = [
+  { label: "사진 1장 · 0명", post: post("p1", { photos: [PHOTO] }), chip: "0명 참여 중" },
+  { label: "사진 10장 · 9,999명", post: post("p2", { photos: Array.from({ length: 10 }, () => PHOTO) }), chip: "9,999명 참여 중" },
+  { label: "영어 · 9,999 joined", post: post("p3"), chip: "9,999 joined" },
+];
+
+/** 다음 훈수 거리 버튼 — 넘어갈 글 제목 */
+export const NEXT_CASES = [
+  { label: "짧은 제목", title: TEXTS.one },
+  { label: `한국어 ${TITLE_MAX}자`, title: TEXTS.koMax(TITLE_MAX) },
+  { label: "띄어쓰기 없는 긴 영어", title: TEXTS.enWord(TITLE_MAX) },
+];
+
+/** 답글 레이어 — 원 한마디 + 답글들 */
+const reply = (i: number, text: string, replyTo: string, patch: Partial<Comment> = {}): Comment => ({ ...comment(i, text), replyTo, ...patch });
+const ROOT = comment(100, TEXTS.koMax(COMMENT_MAX));
+export const MODAL_CASES: { label: string; comment: Comment; replies: Comment[]; hidden?: string[] }[] = [
+  { label: `원 한마디 ${COMMENT_MAX}자 · 답글 0개`, comment: ROOT, replies: [] },
+  {
+    label: "답글 30개 (긴 글·영어·이모지 섞어서)",
+    comment: ROOT,
+    replies: Array.from({ length: 30 }, (_, i) =>
+      reply(200 + i, i % 3 === 0 ? TEXTS.enWord(COMMENT_MAX) : i % 3 === 1 ? TEXTS.koMax(COMMENT_MAX) : "🔥", ROOT.id),
+    ),
+  },
+  {
+    label: "답글에 단 답글 · 글쓴이 · 내 답글 · 가려진 답글",
+    comment: ROOT,
+    replies: [
+      reply(300, "저도 그렇게 생각해요", ROOT.id, { author: KOREAN }),
+      reply(301, TEXTS.koMax(COMMENT_MAX), "edge-comment-300", { author: { kind: "author", flag: "🇨🇦" } }),
+      reply(302, "내가 쓴 답글", "edge-comment-301", { mine: true, edited: true }),
+      reply(303, "신고해서 가린 답글", ROOT.id),
+    ],
+    hidden: ["edge-comment-303"],
+  },
+];
+
+/** 로그인 시트 제목 — "'(선택지)'에 투표할까요?" */
+export const LOGIN_CASES = [
+  { label: `선택지 ${OPTION_MAX}자 (한국어 번역)`, title: `‘${TEXTS.koMax(OPTION_MAX)}’에 투표할까요?` },
+  { label: "띄어쓰기 없는 긴 영어", title: `‘${TEXTS.enWord(OPTION_MAX)}’에 투표할까요?` },
+];
+
+/** 음식 이름 카드 (작성 ①) — 직접 고칠 때 최대 40자 (DishCard) */
+const DISH_MAX = 40;
+export const DISH_CASES = [
+  { label: "짧은 이름", dish: "Ramyeon" },
+  { label: `영어 ${DISH_MAX}자`, dish: fill("Cheesy Buldak Carbonara with Sausage ", DISH_MAX).trimEnd() },
+  { label: "띄어쓰기 없는 긴 영어", dish: TEXTS.enWord(DISH_MAX) },
+];
+
+/** 선택지 편집 (작성 ③ · 수정) */
+export const OPTIONS_CASES = [
+  { label: `${OPTIONS_MAX}개 · 최대 ${OPTION_MAX}자 (영어)`, options: opts(() => TEXTS.enMax(OPTION_MAX)) },
+  { label: "띄어쓰기 없는 긴 영어", options: opts(() => TEXTS.enWord(OPTION_MAX)) },
+  { label: "같은 글자 선택지", options: ["Same", "Same", "Different"] },
+];

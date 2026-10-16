@@ -26,11 +26,19 @@ export function useDishFlow() {
   };
 }
 
-export function DishCard({ onEditingChange }: { onEditingChange?: (editing: boolean) => void }) {
-  const { draft, ai, writeStory } = useFlow();
+export function DishCard({
+  onEditingChange,
+  preview,
+}: {
+  onEditingChange?: (editing: boolean) => void;
+  /** 점검 화면(/dev/edge-cases) 전용: 작성 중인 글 대신 이 음식 이름을 보여 줌 */
+  preview?: string;
+}) {
+  const { draft: stored, ai, writeStory } = useFlow();
+  const draft = preview === undefined ? stored : { ...stored, dish: preview, ai: { ...stored.ai, dish: preview } };
   const [editing, setEditing] = useState(false);
   const [input, setInput] = useState("");
-  const working = ai.dish === "working";
+  const working = preview === undefined && ai.dish === "working";
 
   useEffect(() => onEditingChange?.(editing), [editing, onEditingChange]);
 
@@ -38,7 +46,7 @@ export function DishCard({ onEditingChange }: { onEditingChange?: (editing: bool
 
   const save = () => {
     const dish = input.trim();
-    if (dish && dish !== draft.dish) {
+    if (preview === undefined && dish && dish !== draft.dish) {
       track("dish_corrected", { ai_dish: draft.ai.dish || draft.dish, user_dish: dish });
       writeStory(dish); // 미리 쓰던 글은 버리고 고친 이름으로 다시
     }
@@ -83,7 +91,8 @@ export function DishCard({ onEditingChange }: { onEditingChange?: (editing: bool
           <>
             {/* 음식 이름 옆 ✎ — 눌러서 고치기 */}
             <p key={draft.dish} className="flex animate-fade-in items-center gap-2">
-              <span className="font-display text-[26px] leading-[1.15] break-keep">{draft.dish}</span>
+              {/* 띄어쓰기 없는 긴 이름도 칸 안에서 줄바꿈 (✎가 밀려나지 않게) */}
+              <span className="min-w-0 font-display text-[26px] leading-[1.15] break-keep [overflow-wrap:anywhere]">{draft.dish}</span>
               <button
                 type="button"
                 aria-label="Edit dish name"
