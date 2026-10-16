@@ -6,6 +6,10 @@ import { Tile } from "@/components/Layout";
 import { track } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
 import { usePhotoCheck } from "./PhotoCheckNotice";
+import { clampText } from "@/lib/text-length";
+
+/** 음식 이름 직접 고칠 때 한도 (칸 수) */
+export const DISH_MAX = 40;
 
 /**
  * ① 사진 화면 맨 위 — AI가 알아본 음식 + 이름 옆 ✎로 고치기 (담당 송희)
@@ -74,8 +78,11 @@ export function DishCard({
             <input
               autoFocus
               value={input}
-              onChange={(e) => setInput(e.target.value)}
-              maxLength={40}
+              // 40칸까지 (한·중·일 글자 1.5칸, src/lib/text-length.ts) — 한글 조합 중엔 자르지 않음
+              onChange={(e) =>
+                setInput((e.nativeEvent as InputEvent).isComposing ? e.target.value : clampText(e.target.value, DISH_MAX))
+              }
+              onCompositionEnd={(e) => setInput(clampText(e.currentTarget.value, DISH_MAX))}
               aria-label="What did you make?"
               placeholder="What did you make?"
               className="h-12 min-w-0 flex-1 rounded-full bg-surface-2 px-4 text-[16px] outline-none ring-on-dark focus:ring-2"

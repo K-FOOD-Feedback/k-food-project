@@ -1,10 +1,12 @@
 // 6. 콘텐츠 작성 · 5. 수정 화면에서 쓰는 질문 목록과 AI 초안 목업입니다. (담당 송희)
 import type { IconName } from "@/components/Icon";
+import { clampText, textLength } from "./text-length";
 export const MAX_PHOTOS = 10;
 /** 서버 전까지 내 글은 하나만 다루며 이 id를 씁니다. (서버 컴포넌트에서도 읽도록 여기에 둠) */
 export const MY_POST_ID = "mine";
 /**
- * 제목 글자 수 — 모든 언어 50자 (송희)
+ * 제목 글자 수 — 50칸 (송희). 한도는 모두 "칸" 단위: 영어 1칸, 한·중·일 글자 1.5칸 (src/lib/text-length.ts)
+ *   → 영어 50자, 한·중·일 33자 정도
  * 메인 카드는 2줄까지 보이고 넘치면 …, 상세는 제목 전부 (번역돼서 길어져도 상세에서 다 보임)
  */
 export const TITLE_MAX = 50;
@@ -182,7 +184,9 @@ export function aiVoteFor(
   // 직접 쓰기면 질문은 비워 두고 사용자가 씀
   const voteQuestion = questionId === "custom" ? "" : getQuestion(questionId).label;
   // 선택지는 글자 수 한도 안으로 (재료 이름이 길면 넘칠 수 있어서)
-  const options = set.options[variant % set.options.length].map((o) => (o.length > OPTION_MAX ? `${o.slice(0, OPTION_MAX - 1).trimEnd()}…` : o));
+  const options = set.options[variant % set.options.length].map((o) =>
+    textLength(o) > OPTION_MAX ? `${clampText(o, OPTION_MAX - 1).trimEnd()}…` : o,
+  );
   return { voteQuestion, options };
 }
 

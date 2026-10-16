@@ -3,6 +3,8 @@ import type { Notif } from "@/app/notifications/data";
 import type { Comment } from "@/app/posts/[id]/comments";
 import { COMMENT_MAX } from "@/app/posts/[id]/comments";
 import { OPTION_MAX, OPTIONS_MAX, STORY_MAX, TITLE_MAX, VOTE_TITLE_MAX } from "@/lib/write-data";
+import { wideCharsFor } from "@/lib/text-length";
+import { DISH_MAX } from "@/app/write/DishCard";
 
 /*
   점검 화면(/dev/edge-cases)에 넣는 극단 데이터 (송희)
@@ -16,12 +18,14 @@ export const fill = (base: string, n: number) => base.repeat(Math.ceil(n / base.
 /** 자주 깨지는 글자 모양 — 화면마다 이걸 다 넣어 봄 */
 export const TEXTS = {
   one: "맛",
-  koMax: (n: number) => fill("매우매우비슷해요 ", n).trimEnd(),
+  /** 한·중·일 글자는 1.5칸이라 한도 n칸에 들어가는 만큼만 (src/lib/text-length.ts) — 한마디는 칸 계산을 안 써서 그대로 n자 */
+  koMax: (n: number) => fill("매우매우비슷해요 ", wideCharsFor(n)).trimEnd(),
+  koChars: (n: number) => fill("매우매우비슷해요 ", n).trimEnd(),
   /** 띄어쓰기 없는 긴 영어 — 줄바꿈이 안 돼서 가장 잘 깨짐 */
   enWord: (n: number) => fill("Supercalifragilisticexpialidocious", n),
   enMax: (n: number) => fill("Very very similar ", n).trimEnd(),
   emoji: (n: number) => fill("🔥🧀🌶️", n),
-  ja: (n: number) => fill("チーズがブルダックを食べてる", n),
+  ja: (n: number) => fill("チーズがブルダックを食べてる", wideCharsFor(n)),
 };
 
 const PHOTO = "/images/card-buldak.png";
@@ -51,7 +55,7 @@ const opts = (text: (i: number) => string, count = OPTIONS_MAX) => Array.from({ 
 /** 메인 카드 */
 export const CARD_CASES: { label: string; post: HomePost; lang?: "ko" | "en" }[] = [
   { label: "제목 1자 · 투표 0명 · 한마디 0", post: post("c1", { title: TEXTS.one, votes: [0, 0, 0], commentCount: 0 }) },
-  { label: `제목 최대 ${TITLE_MAX}자 (한국어)`, post: post("c2", { title: TEXTS.koMax(TITLE_MAX) }) },
+  { label: `제목 최대 ${TITLE_MAX}칸 (한국어 ${wideCharsFor(TITLE_MAX)}자)`, post: post("c2", { title: TEXTS.koMax(TITLE_MAX) }) },
   { label: "한국어 번역 40자 (2줄 넘음 → …)", post: post("c5", { title: fill("한국 사람들은 이 불닭 까르보나라를 어떻게 생각할까요 정말 궁금해요 ", 40).trimEnd() }) },
   {
     label: `영어 대문자 ${TITLE_MAX}자 (외국인 메인)`,
@@ -94,13 +98,13 @@ export const COMMENT_CASES: { label: string; comments: Comment[] }[] = [
     label: `1자 · 최대 ${COMMENT_MAX}자 · 긴 영어 · 이모지`,
     comments: [
       comment(1, TEXTS.one),
-      comment(2, TEXTS.koMax(COMMENT_MAX)),
+      comment(2, TEXTS.koChars(COMMENT_MAX)),
       comment(3, TEXTS.enWord(COMMENT_MAX)),
       comment(4, "🔥", "emoji"),
-      comment(5, TEXTS.ja(COMMENT_MAX)),
+      comment(5, fill("チーズがブルダックを食べてる", COMMENT_MAX)),
     ],
   },
-  { label: "한마디 40개 (넘침)", comments: Array.from({ length: 40 }, (_, i) => comment(i, i % 3 ? TEXTS.koMax(8 + (i % 12)) : "🤤", i % 3 ? "text" : "emoji")) },
+  { label: "한마디 40개 (넘침)", comments: Array.from({ length: 40 }, (_, i) => comment(i, i % 3 ? TEXTS.koChars(8 + (i % 12)) : "🤤", i % 3 ? "text" : "emoji")) },
 ];
 
 /** 마이 사진 타일 (사진 없는 글은 없음 — 글은 사진 1장 이상이어야 올라감) */
@@ -124,11 +128,11 @@ const notif = (id: string, patch: Partial<Notif>): Notif => ({
 });
 export const NOTIF_CASES = {
   ko: [
-    notif("n1", { detail: TEXTS.koMax(COMMENT_MAX) }),
+    notif("n1", { detail: TEXTS.koChars(COMMENT_MAX) }),
     notif("n2", { byAuthor: true, actor: "Extremely Saucy Cheesy Taster", detail: TEXTS.enWord(COMMENT_MAX) }),
   ],
   en: [
-    notif("n3", { type: "comment", postId: "mine", detail: TEXTS.koMax(COMMENT_MAX), translated: TEXTS.enMax(60) }),
+    notif("n3", { type: "comment", postId: "mine", detail: TEXTS.koChars(COMMENT_MAX), translated: TEXTS.enMax(60) }),
     notif("n4", { type: "milestone", postId: "mine", postTitle: TEXTS.enWord(TITLE_MAX), detail: "9990" }),
   ],
 };
@@ -203,20 +207,20 @@ export const PHOTO_CASES: { label: string; post: HomePost; chip: string }[] = [
 /** 다음 훈수 거리 버튼 — 넘어갈 글 제목 */
 export const NEXT_CASES = [
   { label: "짧은 제목", title: TEXTS.one },
-  { label: `한국어 ${TITLE_MAX}자`, title: TEXTS.koMax(TITLE_MAX) },
+  { label: `한국어 ${wideCharsFor(TITLE_MAX)}자 (${TITLE_MAX}칸)`, title: TEXTS.koMax(TITLE_MAX) },
   { label: "띄어쓰기 없는 긴 영어", title: TEXTS.enWord(TITLE_MAX) },
 ];
 
 /** 답글 레이어 — 원 한마디 + 답글들 */
 const reply = (i: number, text: string, replyTo: string, patch: Partial<Comment> = {}): Comment => ({ ...comment(i, text), replyTo, ...patch });
-const ROOT = comment(100, TEXTS.koMax(COMMENT_MAX));
+const ROOT = comment(100, TEXTS.koChars(COMMENT_MAX));
 export const MODAL_CASES: { label: string; comment: Comment; replies: Comment[]; hidden?: string[] }[] = [
   { label: `원 한마디 ${COMMENT_MAX}자 · 답글 0개`, comment: ROOT, replies: [] },
   {
     label: "답글 30개 (긴 글·영어·이모지 섞어서)",
     comment: ROOT,
     replies: Array.from({ length: 30 }, (_, i) =>
-      reply(200 + i, i % 3 === 0 ? TEXTS.enWord(COMMENT_MAX) : i % 3 === 1 ? TEXTS.koMax(COMMENT_MAX) : "🔥", ROOT.id),
+      reply(200 + i, i % 3 === 0 ? TEXTS.enWord(COMMENT_MAX) : i % 3 === 1 ? TEXTS.koChars(COMMENT_MAX) : "🔥", ROOT.id),
     ),
   },
   {
@@ -224,7 +228,7 @@ export const MODAL_CASES: { label: string; comment: Comment; replies: Comment[];
     comment: ROOT,
     replies: [
       reply(300, "저도 그렇게 생각해요", ROOT.id, { author: KOREAN }),
-      reply(301, TEXTS.koMax(COMMENT_MAX), "edge-comment-300", { author: { kind: "author", flag: "🇨🇦" } }),
+      reply(301, TEXTS.koChars(COMMENT_MAX), "edge-comment-300", { author: { kind: "author", flag: "🇨🇦" } }),
       reply(302, "내가 쓴 답글", "edge-comment-301", { mine: true, edited: true }),
       reply(303, "신고해서 가린 답글", ROOT.id),
     ],
@@ -239,7 +243,6 @@ export const LOGIN_CASES = [
 ];
 
 /** 음식 이름 카드 (작성 ①) — 직접 고칠 때 최대 40자 (DishCard) */
-const DISH_MAX = 40;
 export const DISH_CASES = [
   { label: "짧은 이름", dish: "Ramyeon" },
   { label: `영어 ${DISH_MAX}자`, dish: fill("Cheesy Buldak Carbonara with Sausage ", DISH_MAX).trimEnd() },
@@ -253,11 +256,11 @@ export const OPTIONS_CASES = [
   { label: "같은 글자 선택지", options: ["Same", "Same", "Different"] },
 ];
 
-/* ───────── 번역 (원문 50자 → 다른 언어로 보일 때) ─────────
+/* ───────── 번역 (원문 최대 → 다른 언어로 보일 때) ─────────
    제목 한도는 모든 언어 50자 (TITLE_MAX). 일·중·한 50자는 영어로 옮기면 2~3배 길어져서 가장 위험
    번역문은 길이 확인용 (서버가 붙으면 DeepL 결과로 바꿔 넣기) */
-const JA_50 = fill("初めて作ったチーズたっぷりブルダックカルボナーラ、韓国の人から見て本場の味に近いですか？", TITLE_MAX);
-const ZH_50 = fill("第一次做的芝士火鸡面奶油意面，在韩国人看来味道接近正宗的吗？请告诉我你们的真实想法吧谢谢", TITLE_MAX);
+const JA_50 = fill("初めて作ったチーズたっぷりブルダックカルボナーラ、韓国の人から見て本場の味に近いですか？", wideCharsFor(TITLE_MAX));
+const ZH_50 = fill("第一次做的芝士火鸡面奶油意面，在韩国人看来味道接近正宗的吗？请告诉我你们的真实想法吧谢谢", wideCharsFor(TITLE_MAX));
 const EN_50 = fill("My first cheesy Buldak Carbonara, is it close to real ", TITLE_MAX).trimEnd();
 /** 한 글을 네 언어로 — 화면 언어(lang)에 따라 그 언어 제목이 보임 */
 const translated = (id: string, t: { ko: string; en: string; zh: string; ja: string }) =>
@@ -281,13 +284,13 @@ const FROM_EN = translated("t3", {
   ja: "初めて作ったチーズブルダックカルボナーラ、本物に近い？",
 });
 export const TRANSLATION_CASES: { label: string; lang: "ko" | "en" | "zh" | "ja"; post: HomePost }[] = [
-  { label: "일본어 원문 50자 → 일본어 화면", lang: "ja", post: FROM_JA },
-  { label: "일본어 원문 50자 → 영어 번역 (가장 위험)", lang: "en", post: FROM_JA },
-  { label: "일본어 원문 50자 → 한국어 번역", lang: "ko", post: FROM_JA },
-  { label: "중국어 원문 50자 → 중국어 화면", lang: "zh", post: FROM_ZH },
-  { label: "중국어 원문 50자 → 영어 번역 (가장 위험)", lang: "en", post: FROM_ZH },
-  { label: "중국어 원문 50자 → 한국어 번역", lang: "ko", post: FROM_ZH },
-  { label: "중국어 원문 50자 → 일본어 번역", lang: "ja", post: FROM_ZH },
-  { label: "영어 원문 50자 → 일본어 번역", lang: "ja", post: FROM_EN },
-  { label: "영어 원문 50자 → 중국어 번역", lang: "zh", post: FROM_EN },
+  { label: "일본어 원문 최대 → 일본어 화면", lang: "ja", post: FROM_JA },
+  { label: "일본어 원문 최대 → 영어 번역 (가장 위험)", lang: "en", post: FROM_JA },
+  { label: "일본어 원문 최대 → 한국어 번역", lang: "ko", post: FROM_JA },
+  { label: "중국어 원문 최대 → 중국어 화면", lang: "zh", post: FROM_ZH },
+  { label: "중국어 원문 최대 → 영어 번역 (가장 위험)", lang: "en", post: FROM_ZH },
+  { label: "중국어 원문 최대 → 한국어 번역", lang: "ko", post: FROM_ZH },
+  { label: "중국어 원문 최대 → 일본어 번역", lang: "ja", post: FROM_ZH },
+  { label: "영어 원문 최대 → 일본어 번역", lang: "ja", post: FROM_EN },
+  { label: "영어 원문 최대 → 중국어 번역", lang: "zh", post: FROM_EN },
 ];

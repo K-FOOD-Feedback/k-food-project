@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { Icon } from "@/components/Icon";
 import { track } from "@/lib/analytics";
 import { OPTION_MAX, OPTIONS_MAX, OPTIONS_MIN } from "@/lib/write-data";
+import { clampText, textLength } from "@/lib/text-length";
 
 /**
  * 투표 선택지 편집 (④ Your vote · 수정 화면 공용, 담당 송희)
@@ -46,11 +47,14 @@ export function OptionsEditor({
             </span>
             <input
               value={opt}
-              maxLength={OPTION_MAX}
               readOnly={locked}
               placeholder="Write a choice"
               aria-label={`Choice ${i + 1}`}
-              onChange={(e) => set(i, e.target.value)}
+              // 한도는 칸 수 (한·중·일 글자 1.5칸) — 한글 조합 중엔 자르지 않고 조합이 끝나면 자름
+              onChange={(e) =>
+                set(i, (e.nativeEvent as InputEvent).isComposing ? e.target.value : clampText(e.target.value, OPTION_MAX))
+              }
+              onCompositionEnd={(e) => set(i, clampText(e.currentTarget.value, OPTION_MAX))}
               onFocus={(e) => (focusedValue.current = e.target.value)}
               onBlur={(e) => {
                 if (e.target.value !== focusedValue.current)
@@ -66,7 +70,7 @@ export function OptionsEditor({
               <>
                 {/* 글자 수는 고치는 중에만 */}
                 <span className="hidden shrink-0 text-[12px] font-medium tabular-nums text-neutral-400 group-focus-within:inline">
-                  {opt.length}/{OPTION_MAX}
+                  {textLength(opt)}/{OPTION_MAX}
                 </span>
                 <button
                   type="button"
