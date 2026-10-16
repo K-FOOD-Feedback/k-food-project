@@ -64,7 +64,7 @@ export function EdgeCasesScreen() {
       </Group>
 
       <Group title="번역 — 메인 카드 제목 (원문 50자 → 다른 언어)" owner="지현">
-        <p className="px-2 text-[13px] text-muted break-keep">기준: 메인 카드는 3줄까지, 넘치면 … (글자 크기는 그대로)</p>
+        <p className="px-2 text-[13px] text-muted break-keep">기준: 메인 카드는 2줄까지, 넘치면 … (글자 크기는 그대로)</p>
         {TRANSLATION_CASES.map((c) => (
           <Case key={c.label} label={c.label}>
             <div className="-mx-2 overflow-hidden">

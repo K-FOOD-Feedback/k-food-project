@@ -52,7 +52,7 @@ const opts = (text: (i: number) => string, count = OPTIONS_MAX) => Array.from({ 
 export const CARD_CASES: { label: string; post: HomePost; lang?: "ko" | "en" }[] = [
   { label: "제목 1자 · 투표 0명 · 한마디 0", post: post("c1", { title: TEXTS.one, votes: [0, 0, 0], commentCount: 0 }) },
   { label: `제목 최대 ${TITLE_MAX}자 (한국어)`, post: post("c2", { title: TEXTS.koMax(TITLE_MAX) }) },
-  { label: "한국어 번역 40자 (3줄 꽉)", post: post("c5", { title: fill("한국 사람들은 이 불닭 까르보나라를 어떻게 생각할까요 정말 궁금해요 ", 40).trimEnd() }) },
+  { label: "한국어 번역 40자 (2줄 넘음 → …)", post: post("c5", { title: fill("한국 사람들은 이 불닭 까르보나라를 어떻게 생각할까요 정말 궁금해요 ", 40).trimEnd() }) },
   {
     label: `영어 대문자 ${TITLE_MAX}자 (외국인 메인)`,
     lang: "en",

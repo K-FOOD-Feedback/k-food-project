@@ -571,18 +571,21 @@ function CardContent({
       )}
 
       <span className="absolute right-5 bottom-5 left-5 flex flex-col items-start gap-2 text-black">
-        {/* 제목 — 줄 수 제한(line-clamp)에 g·p 같은 글자 아래가 잘리지 않게 아래 8px 여유(pb-2) — 이 8px이 제목~닉네임 간격에 더해짐
+        {/* 제목 — 2줄까지, 넘치면 … (송희: 글자 크기는 그대로, 전체 제목은 상세에서)
+            아래 8px은 제목 칸 바깥 여백(mb-2)으로 둬서 제목~닉네임 간격에 더해짐
+            (칸 안 여백으로 두면 … 로 자를 때 다음 줄 윗부분이 그 여백에 비쳐 보임)
+            영어만 g·p 같은 글자 꼬리가 잘리지 않게 칸 안에 꼬리 자리(0.14em)를 남기고 그만큼 바깥 여백을 줄임
             한국어는 상세 제목과 같은 Paperlogy, 영어는 Gilroy를 한글 크기에 맞춘 font-title-en (행간 0.15 좁게) */}
         <span
-          // 띄어쓰기 없는 긴 단어도 칸 안에서 줄을 바꾸고, 3줄을 넘으면 … (제목 글자 수 한도 TITLE_MAX가 3줄에 맞춰져 있음 — …는 번역이 길어질 때의 안전장치, 점검 화면 /dev/edge-cases)
+          // 띄어쓰기 없는 긴 단어도 칸 안에서 줄을 바꾸고, 2줄을 넘으면 … (점검 화면 /dev/edge-cases)
           // 글꼴: 한국어 Paperlogy · 영어 Gilroy(font-title-en) · 중국어 Noto Sans SC · 일본어 Noto Sans JP (titleFont)
-          className={`w-full pb-2 text-[23px] font-extrabold tracking-[-0.69px] text-balance [overflow-wrap:anywhere] ${
+          className={`w-full ${contentLang === "en" ? "mb-[calc(8px-0.14em)] pb-[0.14em]" : "mb-2"} text-[23px] font-extrabold tracking-[-0.69px] text-balance [overflow-wrap:anywhere] ${
             contentLang === "en"
-              ? "line-clamp-3 break-keep font-title-en leading-[1.03]"
+              ? "line-clamp-2 break-keep font-title-en leading-[1.03]"
               : contentLang === "ko"
-                ? "line-clamp-3 break-keep font-(family-name:--font-paperlogy) leading-[1.18]"
+                ? "line-clamp-2 break-keep font-(family-name:--font-paperlogy) leading-[1.18]"
                 : // 중국어·일본어: 말덩이 사이에서만 줄을 바꾸고(phrases.tsx), 짧아도 두 줄로 고르게 나눔
-                  `line-clamp-3 break-keep leading-[1.18] ${titleFont(contentLang)}`
+                  `line-clamp-2 break-keep leading-[1.18] ${titleFont(contentLang)}`
           }`}
           style={phrases ? { maxWidth: twoLineWidth(phrases) } : undefined}
         >
