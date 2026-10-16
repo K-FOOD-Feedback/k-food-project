@@ -7,7 +7,8 @@ import { useMemo, useSyncExternalStore } from "react";
   상세 화면의 댓글 더미와 댓글 전체 화면이 같은 목록을 씁니다.
 */
 
-export const COMMENT_MAX = 20;
+/** 한마디·답글 글자 수 — 칸 단위 (영어 1칸, 한·중·일 2칸, src/lib/text-length.ts): 한국어 20자 · 영어 40자. 화면에서도 2줄까지 */
+export const COMMENT_MAX = 40;
 export const QUICK_EMOJIS = ["🔥", "👍", "❤️", "🤤", "🥵", "😱"];
 const BUBBLE_COLORS = ["#ffe056", "#ffc6ff", "#c8b5ff", "#ccf54b", "#9fe7ff", "#ffae8f", "#7144ff", "#4ae9ff"];
 

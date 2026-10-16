@@ -18,7 +18,7 @@ export const fill = (base: string, n: number) => base.repeat(Math.ceil(n / base.
 /** 자주 깨지는 글자 모양 — 화면마다 이걸 다 넣어 봄 */
 export const TEXTS = {
   one: "맛",
-  /** 한·중·일 글자는 2칸이라 한도 n칸에 들어가는 만큼만 (src/lib/text-length.ts) — 한마디는 칸 계산을 안 써서 그대로 n자 */
+  /** 한·중·일 글자는 2칸이라 한도 n칸에 들어가는 만큼만 (src/lib/text-length.ts) — 모든 입력칸이 칸 계산 */
   koMax: (n: number) => fill("매우매우비슷해요 ", wideCharsFor(n)).trimEnd(),
   koChars: (n: number) => fill("매우매우비슷해요 ", n).trimEnd(),
   /** 띄어쓰기 없는 긴 영어 — 줄바꿈이 안 돼서 가장 잘 깨짐 */
@@ -98,10 +98,10 @@ export const COMMENT_CASES: { label: string; comments: Comment[] }[] = [
     label: `1자 · 최대 ${COMMENT_MAX}자 · 긴 영어 · 이모지`,
     comments: [
       comment(1, TEXTS.one),
-      comment(2, TEXTS.koChars(COMMENT_MAX)),
+      comment(2, TEXTS.koMax(COMMENT_MAX)),
       comment(3, TEXTS.enWord(COMMENT_MAX)),
       comment(4, "🔥", "emoji"),
-      comment(5, fill("チーズがブルダックを食べてる", COMMENT_MAX)),
+      comment(5, TEXTS.ja(COMMENT_MAX)),
     ],
   },
   { label: "한마디 40개 (넘침)", comments: Array.from({ length: 40 }, (_, i) => comment(i, i % 3 ? TEXTS.koChars(8 + (i % 12)) : "🤤", i % 3 ? "text" : "emoji")) },
@@ -128,11 +128,11 @@ const notif = (id: string, patch: Partial<Notif>): Notif => ({
 });
 export const NOTIF_CASES = {
   ko: [
-    notif("n1", { detail: TEXTS.koChars(COMMENT_MAX) }),
+    notif("n1", { detail: TEXTS.koMax(COMMENT_MAX) }),
     notif("n2", { byAuthor: true, actor: "Extremely Saucy Cheesy Taster", detail: TEXTS.enWord(COMMENT_MAX) }),
   ],
   en: [
-    notif("n3", { type: "comment", postId: "mine", detail: TEXTS.koChars(COMMENT_MAX), translated: TEXTS.enMax(60) }),
+    notif("n3", { type: "comment", postId: "mine", detail: TEXTS.koMax(COMMENT_MAX), translated: TEXTS.enMax(60) }),
     notif("n4", { type: "milestone", postId: "mine", postTitle: TEXTS.enWord(TITLE_MAX), detail: "9990" }),
   ],
 };
@@ -213,14 +213,14 @@ export const NEXT_CASES = [
 
 /** 답글 레이어 — 원 한마디 + 답글들 */
 const reply = (i: number, text: string, replyTo: string, patch: Partial<Comment> = {}): Comment => ({ ...comment(i, text), replyTo, ...patch });
-const ROOT = comment(100, TEXTS.koChars(COMMENT_MAX));
+const ROOT = comment(100, TEXTS.koMax(COMMENT_MAX));
 export const MODAL_CASES: { label: string; comment: Comment; replies: Comment[]; hidden?: string[] }[] = [
   { label: `원 한마디 ${COMMENT_MAX}자 · 답글 0개`, comment: ROOT, replies: [] },
   {
     label: "답글 30개 (긴 글·영어·이모지 섞어서)",
     comment: ROOT,
     replies: Array.from({ length: 30 }, (_, i) =>
-      reply(200 + i, i % 3 === 0 ? TEXTS.enWord(COMMENT_MAX) : i % 3 === 1 ? TEXTS.koChars(COMMENT_MAX) : "🔥", ROOT.id),
+      reply(200 + i, i % 3 === 0 ? TEXTS.enWord(COMMENT_MAX) : i % 3 === 1 ? TEXTS.koMax(COMMENT_MAX) : "🔥", ROOT.id),
     ),
   },
   {
@@ -228,7 +228,7 @@ export const MODAL_CASES: { label: string; comment: Comment; replies: Comment[];
     comment: ROOT,
     replies: [
       reply(300, "저도 그렇게 생각해요", ROOT.id, { author: KOREAN }),
-      reply(301, TEXTS.koChars(COMMENT_MAX), "edge-comment-300", { author: { kind: "author", flag: "🇨🇦" } }),
+      reply(301, TEXTS.koMax(COMMENT_MAX), "edge-comment-300", { author: { kind: "author", flag: "🇨🇦" } }),
       reply(302, "내가 쓴 답글", "edge-comment-301", { mine: true, edited: true }),
       reply(303, "신고해서 가린 답글", ROOT.id),
     ],

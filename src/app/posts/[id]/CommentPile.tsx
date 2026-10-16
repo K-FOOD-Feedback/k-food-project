@@ -12,6 +12,7 @@ import { COMMENTS_COPY, type CommentsLang } from "./copy";
 import { titleFont } from "./font";
 import { HIDDEN_COLOR, useHiddenComments } from "./hidden";
 import { estimateWidth, GravityPile, type PileHandle } from "./GravityPile";
+import { clampText, textLength } from "@/lib/text-length";
 
 /** 날아가는 원의 지름. 실제 말풍선보다 작게 날아가서, 떨어질 때 본래 크기로 커집니다. */
 const CIRCLE = 20;
@@ -372,7 +373,12 @@ export function CommentPile({
               value={draft}
               readOnly={writeLocked}
               onClick={writeLocked ? onLockedWrite : undefined}
-              onChange={(e) => setDraft(limitDraft(e.target.value.replace(/\n/g, "")))}
+              onChange={(e) => {
+                const v = e.target.value.replace(/\n/g, "");
+                // 한글 조합 중엔 자르지 않음 (조합이 끝나면 자름)
+                setDraft((e.nativeEvent as InputEvent).isComposing ? v : limitDraft(v));
+              }}
+              onCompositionEnd={(e) => setDraft(limitDraft(e.currentTarget.value.replace(/\n/g, "")))}
               placeholder={t.leave}
               enterKeyHint="send"
               className="min-w-0 flex-1 bg-transparent text-[16px] text-on-dark outline-none placeholder:text-white/40"
@@ -500,7 +506,10 @@ export function CommentPile({
               value={draft}
               readOnly={writeLocked}
               onClick={writeLocked ? onLockedWrite : undefined}
-              onChange={(e) => setDraft(fitTwoLines(e.target, limitDraft(e.target.value)))}
+              onChange={(e) =>
+                setDraft((e.nativeEvent as InputEvent).isComposing ? e.target.value : fitTwoLines(e.target, limitDraft(e.target.value)))
+              }
+              onCompositionEnd={(e) => setDraft(fitTwoLines(e.currentTarget, limitDraft(e.currentTarget.value)))}
               onKeyDown={(e) => {
                 // Enter는 줄바꿈만 합니다 (최대 2줄). 보내기는 버튼으로만.
                 if (e.key === "Enter" && draft.includes("\n")) e.preventDefault();
@@ -694,7 +703,7 @@ function EmojiBurst({ burst, onDone }: { burst: Burst; onDone: () => void }) {
 const MAX_LINES = 2;
 
 /** 줄바꿈은 글자 수에 세지 않습니다. */
-const charCount = (text: string) => text.replace(/\n/g, "").length;
+const charCount = (text: string) => textLength(text.replace(/\n/g, ""));
 
 /**
   화면에 보이는 줄도 2줄까지만: 한 줄이 카드 폭을 넘어 저절로 줄바꿈되면 3줄이 될 수 있어서,
@@ -712,15 +721,15 @@ function fitTwoLines(el: HTMLTextAreaElement, value: string) {
   return text;
 }
 
-/** 입력값을 최대 2줄, 20자로 자릅니다 (붙여넣기 포함). */
+/** 입력값을 최대 2줄, COMMENT_MAX칸으로 자릅니다 (붙여넣기 포함, 한·중·일 글자 2칸 — src/lib/text-length.ts). */
 function limitDraft(value: string) {
   let left = COMMENT_MAX;
   return value
     .split("\n")
     .slice(0, MAX_LINES)
     .map((line) => {
-      const kept = line.slice(0, Math.max(left, 0));
-      left -= kept.length;
+      const kept = clampText(line, Math.max(left, 0));
+      left -= textLength(kept);
       return kept;
     })
     .join("\n");

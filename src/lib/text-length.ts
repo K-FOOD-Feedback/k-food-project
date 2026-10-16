@@ -31,5 +31,13 @@ export function clampText(text: string, max: number) {
   return out;
 }
 
+/**
+ * 입력칸 onChange용 — 한글 등을 조합하는 중엔 자르지 않고(글자가 깨짐) 그대로, 아니면 한도로 자름
+ * 조합이 끝날 때도 자르도록 입력칸에 onCompositionEnd 로 clampText 를 같이 걸어 주세요
+ */
+export function limitTyped(e: { target: { value: string }; nativeEvent: Event }, max: number, value = e.target.value) {
+  return (e.nativeEvent as InputEvent).isComposing ? value : clampText(value, max);
+}
+
 /** 이 한도에 한·중·일 글자만 쓰면 몇 자까지 들어가는지 (점검 화면 등) */
 export const wideCharsFor = (max: number) => Math.floor(max / WIDE_WEIGHT);

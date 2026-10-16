@@ -9,16 +9,18 @@ import { BottomSheet } from "@/components/Layout";
 import { track } from "@/lib/analytics";
 import type { UiLang } from "@/app/posts/[id]/viewerLang";
 import { GOOGLE_ACCOUNT, useCountry, useNickname } from "./profile";
+import { clampText, limitTyped, textLength } from "@/lib/text-length";
 
 /*
   마이 맨 아래 "전하고 싶은 의견이 있나요?" — 문의·의견 (한국인 /my · 외국인 /my/en 같이 씀)
   화면 아래에 고정 (children = 그 밑 계정 줄도 같이). 목록이 길면 아래로 갈수록 배경색으로 흐려지는 띠 위에 떠 있고,
   쓰는 화면은 아래 여백을 FEEDBACK_BAR_SPACE 만큼 둬서 마지막 항목이 가려지지 않게 함
-  누르면 시트: 의견 쓰기(최대 FEEDBACK_MAX자, 넘치면 더 안 써짐) → 보내기 → /api/feedback 이 DB(Supabase)에 쌓음 → /admin/feedback 에서 봄
+  누르면 시트: 의견 쓰기(최대 FEEDBACK_MAX칸 — 한·중·일 글자 2칸, 넘치면 더 안 써짐) → 보내기 → /api/feedback 이 DB(Supabase)에 쌓음 → /admin/feedback 에서 봄
   보내면 시트가 바로 닫히고, 화면 가운데에 "고마워요! 잘 받았어요" + 웃는 얼굴(직접 그린 2D 아이콘 SmileFace)을 크게 띄우며 폭죽 (투표 완료와 같은 폭죽 — 카드 사진 모양 조각)
   → THANKS_MS 뒤 사라짐. 실패하면 시트는 그대로, 글도 그대로 두고 안내
   분석: 연 것만 (my_item_clicked item=feedback) — 글 내용은 보내지 않음
 */
+/** 의견 글자 수 — 칸 단위 (영어 1000자 · 한·중·일 500자). 서버 저장 한도(db.ts FEEDBACK_MAX, 글자 수)를 넘지 않게 같은 숫자 */
 const FEEDBACK_MAX = 1000;
 const THANKS_MS = 670;
 /** 고정 띠 높이만큼 쓰는 화면 아래 여백 (Screen className) */
@@ -157,9 +159,10 @@ export function FeedbackButton({
             <textarea
               value={text}
               onChange={(e) => {
-                setText(e.target.value.slice(0, FEEDBACK_MAX));
+                setText(limitTyped(e, FEEDBACK_MAX));
                 if (state === "error") setState("idle");
               }}
+              onCompositionEnd={(e) => setText(clampText(e.currentTarget.value, FEEDBACK_MAX))}
               rows={4}
               placeholder={t.placeholder}
               disabled={state === "sending"}
@@ -168,7 +171,7 @@ export function FeedbackButton({
             <span className="flex justify-between gap-3 px-1 text-[12px]">
               <span className="text-error">{state === "error" ? t.error : ""}</span>
               <span className="shrink-0 text-white/40">
-                {text.length}/{FEEDBACK_MAX}
+                {textLength(text)}/{FEEDBACK_MAX}
               </span>
             </span>
           </label>
