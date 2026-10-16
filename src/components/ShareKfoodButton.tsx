@@ -12,6 +12,7 @@ import { BottomSheet } from "./Layout";
 import { LoginSheet } from "./LoginSheet";
 import { PhotoImage } from "./PhotoGrid";
 import { usePhotoPicker } from "./PhotoPicker";
+import { useWriteCopy } from "@/app/write/copy";
 
 /**
  * 외국인 메인의 "Share your K-food" 버튼 (6. 콘텐츠 작성의 시작점, 담당 송희)
@@ -20,7 +21,6 @@ import { usePhotoPicker } from "./PhotoPicker";
  * - 사진 고르기는 버튼 누르는 동작 안에서 열어야 브라우저가 막지 않아서, 각 단계의 버튼에서 바로 엶
  * 모양은 className으로 메인 화면에서 정합니다.
  */
-const STEP_LABEL: Record<DraftStep, string> = { photos: "Photos", post: "Your post", vote: "Ask Koreans" };
 
 export function ShareKfoodButton({
   className,
@@ -34,6 +34,8 @@ export function ShareKfoodButton({
 }) {
   const router = useRouter();
   const { loggedIn, logIn, addPhotos, draft, discardDraft } = useFlow();
+  const w = useWriteCopy();
+  const STEP_LABEL: Record<DraftStep, string> = { photos: w.stepPhotos, post: w.postTitle, vote: w.voteTitle };
   const [sheet, setSheet] = useState<"login" | "resume" | null>(null);
   const hasDraft = draft.savedStep !== null && draft.photos.length > 0;
 
@@ -97,10 +99,10 @@ export function ShareKfoodButton({
       <WelcomePopup lang="en" onDone={start} />
 
       {/* 쓰다 만 글이 있으면 이어 쓸지 */}
-      <BottomSheet open={sheet === "resume"} onClose={() => setSheet(null)} label="Continue your post">
+      <BottomSheet open={sheet === "resume"} onClose={() => setSheet(null)} label={w.resumeLabel}>
         <div className="flex w-full flex-col gap-2 px-6 pt-2">
-          <h2 className="font-display text-[22px] leading-[1.25]">Continue your post?</h2>
-          <p className="text-[15px] leading-[1.5] text-muted">You have a post you didn&apos;t finish.</p>
+          <h2 className="font-display text-[22px] leading-[1.25]">{w.resumeTitle}</h2>
+          <p className="text-[15px] leading-[1.5] text-muted">{w.resumeBody}</p>
         </div>
         {hasDraft && draft.savedStep && (
           <div className="flex w-full items-center gap-3.5 rounded-[24px] bg-surface-2 p-3">
@@ -108,9 +110,9 @@ export function ShareKfoodButton({
               {coverOf(draft) && <PhotoImage src={coverOf(draft).src} sizes="56px" className="object-cover" />}
             </span>
             <span className="flex min-w-0 flex-col gap-0.5">
-              <span className="truncate text-[15px] font-semibold">{draft.title || draft.dish || "Untitled post"}</span>
+              <span className="truncate text-[15px] font-semibold">{draft.title || draft.dish || w.untitled}</span>
               <span className="text-[13px] text-muted">
-                Saved at {STEP_LABEL[draft.savedStep]} · {draft.photos.length} {draft.photos.length === 1 ? "photo" : "photos"}
+                {w.savedAt(STEP_LABEL[draft.savedStep], draft.photos.length)}
               </span>
             </span>
           </div>
@@ -125,7 +127,7 @@ export function ShareKfoodButton({
               if (draft.savedStep) router.push(STEP_HREF[draft.savedStep]);
             }}
           >
-            Continue writing
+            {w.continueWriting}
           </PillButton>
           <PillButton
             tone="soft"
@@ -137,7 +139,7 @@ export function ShareKfoodButton({
               picker.open(); // 새로 시작 — 바로 사진 고르기
             }}
           >
-            Start a new post
+            {w.startNew}
           </PillButton>
         </div>
       </BottomSheet>

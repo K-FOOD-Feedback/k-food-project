@@ -7,6 +7,7 @@ import { track } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
 import { usePhotoCheck } from "./PhotoCheckNotice";
 import { clampText } from "@/lib/text-length";
+import { useWriteCopy } from "@/app/write/copy";
 
 /** 음식 이름 직접 고칠 때 한도 (칸 수) */
 export const DISH_MAX = 40;
@@ -39,6 +40,7 @@ export function DishCard({
   preview?: string;
 }) {
   const { draft: stored, ai, writeStory } = useFlow();
+  const w = useWriteCopy();
   const draft = preview === undefined ? stored : { ...stored, dish: preview, ai: { ...stored.ai, dish: preview } };
   const [editing, setEditing] = useState(false);
   const [input, setInput] = useState("");
@@ -62,7 +64,7 @@ export function DishCard({
       <div className="flex flex-col gap-2 px-5 py-5" aria-live="polite">
         <p className="flex items-center gap-1.5 text-[13px] font-semibold leading-[1.3] text-muted">
           <Icon name="sparkle" size={14} className={`text-content ${working ? "animate-spin [animation-duration:1.4s]" : ""}`} />
-          {working ? "Looking at your photos…" : "AI thinks this is"}
+          {working ? w.dishLooking : w.dishThinks}
         </p>
 
         {working ? (
@@ -83,15 +85,15 @@ export function DishCard({
                 setInput((e.nativeEvent as InputEvent).isComposing ? e.target.value : clampText(e.target.value, DISH_MAX))
               }
               onCompositionEnd={(e) => setInput(clampText(e.currentTarget.value, DISH_MAX))}
-              aria-label="What did you make?"
-              placeholder="What did you make?"
+              aria-label={w.dishAsk}
+              placeholder={w.dishAsk}
               className="h-12 min-w-0 flex-1 rounded-full bg-surface-2 px-4 text-[16px] outline-none ring-on-dark focus:ring-2"
             />
             <button
               type="submit"
               className="h-12 shrink-0 rounded-full bg-on-dark px-5 text-[15px] font-bold text-on-light transition active:scale-95"
             >
-              Save
+              {w.dishSave}
             </button>
           </form>
         ) : (
@@ -102,7 +104,7 @@ export function DishCard({
               <span className="min-w-0 font-display text-[26px] leading-[1.15] break-keep [overflow-wrap:anywhere]">{draft.dish}</span>
               <button
                 type="button"
-                aria-label="Edit dish name"
+                aria-label={w.dishEdit}
                 onClick={() => {
                   track("dish_correction_opened", { ai_dish: draft.dish });
                   setInput(draft.dish);

@@ -8,10 +8,11 @@ import { Icon } from "@/components/Icon";
 import { BottomSheet, Screen, StickyBottom, Tile, Toast, TopBar } from "@/components/Layout";
 import { PhotoGrid } from "@/components/PhotoGrid";
 import { usePhotoPicker } from "@/components/PhotoPicker";
-import { getQuestion, MAX_PHOTOS, STORY_MAX, TITLE_MAX, type Photo } from "@/lib/write-data";
+import { MAX_PHOTOS, questionLabel, STORY_MAX, TITLE_MAX, type Photo } from "@/lib/write-data";
 import { SAMPLE_MY_POST, useFlow, type MyPost, MY_POST_ID } from "@/lib/write-store";
 import { OptionsEditor } from "@/app/write/OptionsEditor";
 import { track } from "@/lib/analytics";
+import { useWriteCopy } from "@/app/write/copy";
 
 let editSeq = 0;
 
@@ -25,6 +26,7 @@ let editSeq = 0;
 export function EditScreen({ detailHref = `/posts/${MY_POST_ID}` }: { detailHref?: string }) {
   const router = useRouter();
   const { myPost, updateMyPost } = useFlow();
+  const w = useWriteCopy();
   const initial = myPost ?? SAMPLE_MY_POST;
   const locked = initial.votes > 0; // 분석용: 이미 투표가 들어온 글인지
   const [form, setForm] = useState<MyPost>(initial);
@@ -37,7 +39,6 @@ export function EditScreen({ detailHref = `/posts/${MY_POST_ID}` }: { detailHref
   const closeLockToast = useCallback(() => setLockToast(false), []);
   const canSave = form.title.trim().length > 0 && form.story.trim().length > 0;
   const set = (patch: Partial<MyPost>) => setForm((f) => ({ ...f, ...patch }));
-  const question = getQuestion(form.questionId);
 
   const picker = usePhotoPicker((files) => {
     const room = MAX_PHOTOS - form.photos.length;
@@ -74,7 +75,7 @@ export function EditScreen({ detailHref = `/posts/${MY_POST_ID}` }: { detailHref
         left={
           <IconButton
             icon="x"
-            label="Close"
+            label={w.close}
             onClick={() => {
               // 고친 게 있으면 버릴지 먼저 물어봄
               if (Object.values(changedFields()).some(Boolean)) return setConfirmLeave(true);
@@ -83,15 +84,15 @@ export function EditScreen({ detailHref = `/posts/${MY_POST_ID}` }: { detailHref
             }}
           />
         }
-        title="Edit post"
+        title={w.editTitle}
       />
 
       <div className="stagger flex flex-col gap-1 px-2">
         <Tile>
-          <h2 className="px-5 pt-5 pb-2 font-display text-[20px] leading-[1.2]">Your post</h2>
-          <TextField label="Title" value={form.title} maxLength={TITLE_MAX} onChange={(title) => set({ title })} />
+          <h2 className="px-5 pt-5 pb-2 font-display text-[20px] leading-[1.2]">{w.postTitle}</h2>
+          <TextField label={w.titleLabel} value={form.title} maxLength={TITLE_MAX} onChange={(title) => set({ title })} />
           <TextField
-            label="Story"
+            label={w.storyLabel}
             value={form.story}
             maxLength={STORY_MAX}
             rows={3}
@@ -102,7 +103,7 @@ export function EditScreen({ detailHref = `/posts/${MY_POST_ID}` }: { detailHref
 
         <Tile>
           <div className="flex items-center px-5 pt-5 pb-2">
-            <h2 className="flex-1 font-display text-[20px] leading-[1.2]">Photos</h2>
+            <h2 className="flex-1 font-display text-[20px] leading-[1.2]">{w.photosLabel}</h2>
             <span className="text-[15px] font-bold leading-[1.3] text-neutral-400 tabular-nums">
               {form.photos.length}/{MAX_PHOTOS}
             </span>
@@ -114,16 +115,17 @@ export function EditScreen({ detailHref = `/posts/${MY_POST_ID}` }: { detailHref
               onMove={movePhoto}
               onAdd={form.photos.length < MAX_PHOTOS ? picker.open : undefined}
               canRemove={form.photos.length > 1}
+              labels={w.grid}
             />
           </div>
           <p className="px-5 pt-1 pb-5 text-[13px] leading-[1.4] text-muted">
-            Drag to reorder · The first photo is the cover
+            {w.photosHint(form.photos.length, MAX_PHOTOS).split(" · ").slice(0, 2).join(" · ")}
           </p>
         </Tile>
 
         {/* 투표 — 읽기 전용 (작성 ③과 같은 순서: 주제 → 투표 제목 → 선택지) */}
         <Tile>
-          <h2 className="px-5 pt-5 pb-2 font-display text-[20px] leading-[1.2]">Ask Koreans</h2>
+          <h2 className="px-5 pt-5 pb-2 font-display text-[20px] leading-[1.2]">{w.voteTitle}</h2>
           <div className="px-5 pt-1 pb-1">
             <button
               key={lockShake}
@@ -137,18 +139,18 @@ export function EditScreen({ detailHref = `/posts/${MY_POST_ID}` }: { detailHref
                 lockShake ? "animate-shake" : ""
               }`}
             >
-              <Icon name={question.icon} size={18} />
-              <span className="text-[17px] font-bold">{form.questionId === "custom" ? form.voteQuestion : question.label}</span>
+              {/* 투표 질문은 글을 쓸 때 쓴 언어 그대로 저장돼 있음 (주제 문구 또는 직접 쓴 질문) */}
+              <span className="text-[17px] font-bold">{form.voteQuestion || questionLabel(form.questionId, form.lang)}</span>
               <Icon name="lock" size={16} className="text-neutral-400" />
             </button>
           </div>
           <div className="flex flex-col gap-2 px-5 pt-3 pb-4">
-            <p className="text-[13px] font-semibold leading-[1.3]">Choices Koreans can pick</p>
+            <p className="text-[13px] font-semibold leading-[1.3]">{w.choices}</p>
             <OptionsEditor source="edit" options={form.options} locked onChange={() => {}} />
           </div>
           <p className="flex items-center gap-1.5 px-5 pb-5 text-[13px] font-medium leading-[1.3] text-muted">
             <Icon name="info" size={14} />
-            Votes can&apos;t be changed after posting.
+            {w.votesLocked}
           </p>
         </Tile>
       </div>
@@ -164,7 +166,7 @@ export function EditScreen({ detailHref = `/posts/${MY_POST_ID}` }: { detailHref
               router.push(detailHref);
             }}
           >
-            Save changes
+            {w.saveChanges}
           </PillButton>
         </div>
       </StickyBottom>
@@ -172,26 +174,26 @@ export function EditScreen({ detailHref = `/posts/${MY_POST_ID}` }: { detailHref
       <Toast
         open={limitToast}
         onClose={closeToast}
-        title={`You can add up to ${MAX_PHOTOS} photos`}
-        body="Remove a photo first, then add a new one."
+        title={w.limitTitle(MAX_PHOTOS)}
+        body={w.limitBody}
       />
       <Toast
         open={lockToast}
         onClose={closeLockToast}
-        title="Votes can't be changed"
-        body="To keep votes fair, the question and choices stay as posted."
+        title={w.votesLockedTitle}
+        body={w.votesLockedBody}
       />
       {picker.input}
 
       {/* 고친 내용이 있는데 × — 버릴지 확인 */}
-      <BottomSheet open={confirmLeave} onClose={() => setConfirmLeave(false)} label="Discard changes">
+      <BottomSheet open={confirmLeave} onClose={() => setConfirmLeave(false)} label={w.discardLabel}>
         <div className="flex w-full flex-col gap-2 px-6 pt-2 break-keep">
-          <h2 className="font-display text-[22px] leading-[1.25]">Discard your changes?</h2>
-          <p className="text-[15px] leading-[1.5] text-muted">What you changed here won&apos;t be saved.</p>
+          <h2 className="font-display text-[22px] leading-[1.25]">{w.discardTitle}</h2>
+          <p className="text-[15px] leading-[1.5] text-muted">{w.discardBody}</p>
         </div>
         <div className="flex w-full gap-1">
           <PillButton tone="soft" onClick={() => setConfirmLeave(false)}>
-            Keep editing
+            {w.keepEditing}
           </PillButton>
           <PillButton
             tone="error"
@@ -201,7 +203,7 @@ export function EditScreen({ detailHref = `/posts/${MY_POST_ID}` }: { detailHref
               router.push(detailHref);
             }}
           >
-            Discard
+            {w.discard}
           </PillButton>
         </div>
       </BottomSheet>

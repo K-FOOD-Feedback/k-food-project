@@ -10,6 +10,7 @@ import { track } from "@/lib/analytics";
 import { coverOf, SAMPLE_MY_POST, useFlow, MY_POST_ID } from "@/lib/write-store";
 import { useMyAuthor } from "@/app/my/profile";
 import { ShareSheet } from "./ShareSheet";
+import { useWriteCopy, useWriteLang } from "@/app/write/copy";
 
 /*
   08 Posted 연출 (ms)
@@ -31,6 +32,8 @@ export function DoneScreen() {
   const post = myPost ?? SAMPLE_MY_POST;
   // 글쓴이 = 나 (가입 때 정한 닉네임 · 나라)
   const me = useMyAuthor();
+  const w = useWriteCopy();
+  const lang = useWriteLang();
   const homePost = useMyPostAsHome();
   // 작성자 표시는 국기 + 닉네임만 (메인·상세와 같은 규칙)
   const byline = `${me.flag} ${me.name}`;
@@ -69,7 +72,7 @@ export function DoneScreen() {
     <Screen className="h-dvh overflow-hidden pb-[140px]">
       <TopBar right={<IconButton
             icon="x"
-            label="Close"
+            label={w.close}
             href="/home?lang=en"
             onClick={() => track("posted_next_action", { action: "close", taps: burst, tilted: tilted.current })}
           />} />
@@ -108,7 +111,7 @@ export function DoneScreen() {
                 <div key={`squash-${burst}`} className="relative animate-squash" style={{ animationDelay: `${stampDelay + 40}ms` }}>
                   {/* 메인 카드와 똑같은 카드 (메인에 올라간 모습 그대로), 이 자리 폭에 맞게 줄임 */}
                   <div style={{ zoom: CARD_SLOT / HOME_CARD_WIDTH }}>
-                    <HomeCard post={homePost} />
+                    <HomeCard lang={lang} post={homePost} />
                   </div>
                 </div>
                 <span
@@ -116,7 +119,7 @@ export function DoneScreen() {
                   className="absolute -right-10 top-1 -rotate-[10deg] animate-stamp rounded-full bg-primary px-7 py-4 font-display text-[30px] leading-[1.1] text-on-light shadow-[0_10px_28px_rgba(0,0,0,0.45)]"
                   style={{ animationDelay: `${stampDelay}ms`, transform: "translateZ(40px)" }}
                 >
-                  Posted!
+                  {w.posted}
                 </span>
               </div>
             </div>
@@ -140,9 +143,9 @@ export function DoneScreen() {
         className="mx-8 mt-2 flex animate-rise flex-col items-center gap-2 text-center"
         style={{ animationDelay: `${T.text}ms` }}
       >
-        <h1 className="font-display text-[28px] leading-[1.1]">You&apos;re live!</h1>
+        <h1 className="font-display text-[28px] leading-[1.1]">{w.live}</h1>
         <p className="text-[15px] leading-[1.5] text-muted">
-          Koreans are on their way. We&apos;ll let you know when the first votes come in.
+          {w.liveBody}
         </p>
       </div>
 
@@ -159,14 +162,14 @@ export function DoneScreen() {
             }}
           >
             <Icon name="share" size={20} />
-            Share
+            {w.share}
           </PillButton>
           <PillButton
             tone="primary"
             href={`/posts/${MY_POST_ID}?from=posted`}
             onClick={() => track("posted_next_action", { action: "my_post", taps: burst, tilted: tilted.current })}
           >
-            See my post
+            {w.seeMyPost}
           </PillButton>
         </div>
       </StickyBottom>
@@ -185,6 +188,7 @@ export function DoneScreen() {
           author: byline,
         }}
         from="posted"
+        lang={lang}
       />
     </Screen>
   );

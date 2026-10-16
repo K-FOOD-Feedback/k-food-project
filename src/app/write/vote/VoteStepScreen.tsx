@@ -13,6 +13,7 @@ import { useFlow } from "@/lib/write-store";
 import { OptionsEditor } from "../OptionsEditor";
 import { WriteExit } from "../WriteExit";
 import { QuestionWheel } from "./QuestionWheel";
+import { useWriteCopy } from "@/app/write/copy";
 
 const MAKING_MS = 1400;
 
@@ -29,6 +30,7 @@ const MAKING_MS = 1400;
 export function VoteStepScreen() {
   const router = useRouter();
   const { draft, updateDraft, makeVote, saveDraftForLater, publish } = useFlow();
+  const w = useWriteCopy();
   // 처음 들어오면(아직 투표 없음) AI 추천 1순위 질문을 골라 둠
   const ranked = useMemo(() => rankQuestions(draft), [draft]);
   const [making, setMaking] = useState(draft.options.length === 0);
@@ -87,7 +89,7 @@ export function VoteStepScreen() {
         left={
           <IconButton
             icon="chevron-left"
-            label="Back"
+            label={w.back}
             onClick={() => {
               saveDraftForLater("vote");
               track("draft_saved", { step: "vote" });
@@ -95,7 +97,7 @@ export function VoteStepScreen() {
             }}
           />
         }
-        title="Ask Koreans"
+        title={w.voteTitle}
         right={<WriteExit step="vote" />}
       />
       <StepProgress step={3} />
@@ -108,7 +110,7 @@ export function VoteStepScreen() {
                 <Icon name="refresh" size={18} />
               </span>
               <p className="flex-1 text-[14px] font-semibold leading-[1.4]">
-                Your post changed. Update the vote to match?
+                {w.postChanged}
               </p>
               <button
                 type="button"
@@ -118,7 +120,7 @@ export function VoteStepScreen() {
                 }}
                 className="h-9 shrink-0 rounded-full bg-on-dark px-4 text-[13px] font-bold text-on-light transition active:scale-95"
               >
-                Update
+                {w.update}
               </button>
             </div>
           </Tile>
@@ -128,7 +130,7 @@ export function VoteStepScreen() {
         <div className="flex flex-col">
           {/* 한국인에게 물어볼 질문 — 투표 주제 — iOS 알람처럼 위아래로 굴려서 고르기. 가운데 띠가 선택, 처음엔 AI 추천 1순위 */}
           <div className="flex flex-col gap-3 pt-3 pb-1">
-            <h2 className="px-5 font-display text-[20px] leading-[1.2]">What do you want to ask?</h2>
+            <h2 className="px-5 font-display text-[20px] leading-[1.2]">{w.whatToAsk}</h2>
             <div className="rounded-[32px] bg-surface px-3 py-2">
               <QuestionWheel
                 items={ranked}
@@ -141,8 +143,8 @@ export function VoteStepScreen() {
             {draft.questionId === "custom" && (
               <div className="animate-fade-in">
                 <TextField
-                  label="Your question"
-                  placeholder="e.g. Is cheese allowed on tteokbokki?"
+                  label={w.yourQuestion}
+                  placeholder={w.questionPlaceholder}
                   value={draft.voteQuestion}
                   maxLength={VOTE_TITLE_MAX}
                   onChange={(voteQuestion) => updateDraft({ voteQuestion })}
@@ -158,7 +160,7 @@ export function VoteStepScreen() {
             <div key={`vote-${variant}-${draft.voteBasis}`} className="animate-fade-in">
               <div className="flex flex-col gap-2 px-5 pt-3 pb-5">
                 <div className="flex items-center">
-                  <p className="flex-1 text-[13px] font-semibold leading-[1.3]">Choices Koreans can pick</p>
+                  <p className="flex-1 text-[13px] font-semibold leading-[1.3]">{w.choices}</p>
                   <button
                     type="button"
                     onClick={() => {
@@ -168,7 +170,7 @@ export function VoteStepScreen() {
                     className="flex items-center gap-1 text-[13px] font-semibold leading-[1.3] transition active:scale-95"
                   >
                     <Icon name="refresh" size={14} />
-                    Remake
+                    {w.remake}
                   </button>
                 </div>
                 <OptionsEditor source="write" options={draft.options} onChange={(options) => updateDraft({ options })} />
@@ -179,14 +181,14 @@ export function VoteStepScreen() {
 
         <p className="flex items-center gap-1.5 px-6 pt-3 text-[13px] font-medium leading-[1.3] text-muted">
           <Icon name="info" size={14} />
-          You can&apos;t change the vote after posting.
+          {w.voteLocked}
         </p>
       </div>
 
       <StickyBottom>
         <ArrowCta
           // 작성 세 단계 모두 같은 버튼 (위 작은 글 없이, compact) — 올리는 중엔 "Posting…"
-          title={posting ? "Posting…" : "Post"}
+          title={posting ? w.posting : w.post}
           compact
           disabled={!canPost || posting}
           className={posting ? "animate-pulse" : ""}
@@ -216,11 +218,12 @@ export function VoteStepScreen() {
 
 /** AI가 투표를 만드는 중 — 선택지 자리가 반짝이며 채워짐 */
 function MakingVote() {
+  const w = useWriteCopy();
   return (
     <div className="flex flex-col gap-3 px-5 pt-4 pb-5" aria-live="polite">
       <p className="flex items-center gap-2 text-[14px] font-semibold">
         <Icon name="sparkle" size={16} className="animate-spin [animation-duration:2s]" />
-        Making your vote from your post…
+        {w.makingVote}
       </p>
       <div className="h-[78px] animate-pulse rounded-[20px] bg-surface-2" />
       {[0, 1, 2].map((i) => (

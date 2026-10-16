@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { Icon } from "@/components/Icon";
-import { getQuestion, type QuestionId } from "@/lib/write-data";
+import { questionLabel, type QuestionId } from "@/lib/write-data";
+import { useWriteCopy, useWriteLang } from "../copy";
 
 /*
   질문 고르기 휠 (iOS 알람 시간 고르기처럼 위아래로 굴림) — 담당 송희
@@ -27,6 +28,8 @@ export function QuestionWheel({
   onChange: (id: QuestionId, method: Method) => void;
   disabled?: boolean;
 }) {
+  const w = useWriteCopy();
+  const lang = useWriteLang();
   const n = items.length;
   // 끝없이 도는 휠 (iOS 알람 분처럼) — 칸 번호는 n으로 나눈 나머지
   const mod = (v: number) => ((Math.round(v) % n) + n) % n;
@@ -148,7 +151,7 @@ export function QuestionWheel({
     <div
       ref={box}
       role="listbox"
-      aria-label="Question"
+      aria-label={w.question}
       aria-activedescendant={`qw-${items[selected]}`}
       tabIndex={0}
       onKeyDown={onKeyDown}
@@ -170,7 +173,6 @@ export function QuestionWheel({
       {items.map((id, i) => {
         const off = offsetOf(i, pos);
         if (Math.abs(off) > VISIBLE / 2 + 1) return null;
-        const q = getQuestion(id);
         const on = i === selected;
         return (
           <div
@@ -191,7 +193,7 @@ export function QuestionWheel({
             <span
               className={`truncate ${on ? "text-[17px] font-bold text-on-dark" : "text-[15px] font-medium text-neutral-400"}`}
             >
-              {q.label}
+              {questionLabel(id, lang)}
             </span>
             {i === 0 && (
               <span className="flex shrink-0 items-center gap-0.5 rounded-full bg-content px-1.5 py-0.5 text-[10px] font-bold text-on-light">

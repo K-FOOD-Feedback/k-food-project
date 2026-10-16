@@ -32,10 +32,14 @@ function asHomePost(p: MyPost, author: Author, sample: boolean): HomePost {
     color: "#fae276", // 메인 카드 노랑 (지현 목업과 같은 값)
     // 글쓴이 = 나 (가입 때 정한 닉네임 · 나라)
     en: { title: p.title, country: author.country.en, body: p.story, options: p.options },
+    // 중국어·일본어로 쓴 글은 그 언어 화면에서 원문 그대로 (번역은 서버가 붙으면 — en.title도 지금은 원문)
+    titles: p.lang === "en" ? undefined : { [p.lang]: p.title },
     author: { name: author.name, country: author.country.ko, flag: author.flag },
     createdAt: "2026-10-09T00:00:00Z",
-    // 질문 종류 id는 지현 목업의 예전 5개 값이라 아직 맞지 않음 — 상세 화면은 이 값을 쓰지 않아서 자리만 채움
-    question: { id: "korean", text: p.voteQuestion, options: p.options },
+    // 질문 종류 id는 지현 목업의 예전 5개 값이라 아직 맞지 않음 — 자리만 채움
+    // 단, 상세는 중·일 화면에서 이 id로 목업 번역 선택지(postText.ts)를 찾음 → 목업 번역이 없는 "look"을 넣어
+    // 내가 쓴 선택지(en.options = 원문)가 그대로 보이게
+    question: { id: "look", text: p.voteQuestion, options: p.options },
     votes: p.options.map((_, i) => (sample ? (SAMPLE_VOTES[i] ?? 1) : 0)),
     commentCount: p.comments,
   };

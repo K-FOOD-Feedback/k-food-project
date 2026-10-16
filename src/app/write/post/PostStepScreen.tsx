@@ -11,6 +11,7 @@ import { currentFrom, withFrom } from "@/lib/back";
 import { coverOf, useFlow } from "@/lib/write-store";
 import { PhotoImage } from "@/components/PhotoGrid";
 import { WriteExit } from "../WriteExit";
+import { useWriteCopy } from "@/app/write/copy";
 
 /*
   ② Your post — 제목 · 본문 (담당 송희)
@@ -22,6 +23,7 @@ import { WriteExit } from "../WriteExit";
 export function PostStepScreen() {
   const router = useRouter();
   const { draft, ai, updateDraft, saveDraftForLater } = useFlow();
+  const w = useWriteCopy();
   const cover = draft.photos.length ? coverOf(draft) : null;
   const writing = ai.story === "working";
 
@@ -33,7 +35,7 @@ export function PostStepScreen() {
         left={
           <IconButton
             icon="chevron-left"
-            label="Back"
+            label={w.back}
             onClick={() => {
               saveDraftForLater("post");
               track("draft_saved", { step: "post" });
@@ -41,7 +43,7 @@ export function PostStepScreen() {
             }}
           />
         }
-        title="Your post"
+        title={w.postTitle}
         right={<WriteExit step="post" />}
       />
       <StepProgress step={2} />
@@ -55,9 +57,9 @@ export function PostStepScreen() {
             </span>
             <span className="flex min-w-0 flex-col gap-0.5">
               <span className="text-[13px] font-medium text-muted">
-                {draft.photos.length} {draft.photos.length === 1 ? "photo" : "photos"}
+                {w.photoCount(draft.photos.length)}
               </span>
-              <span className="truncate font-display text-[20px] leading-[1.2]">{draft.dish || "Your K-food"}</span>
+              <span className="truncate font-display text-[20px] leading-[1.2]">{draft.dish || w.yourKfood}</span>
             </span>
           </div>
         )}
@@ -68,9 +70,9 @@ export function PostStepScreen() {
             <WritingSkeleton dish={draft.dish} />
           ) : (
             <div className="animate-fade-in">
-              <TextField label="Title" value={draft.title} maxLength={TITLE_MAX} onChange={(title) => updateDraft({ title })} />
+              <TextField label={w.titleLabel} value={draft.title} maxLength={TITLE_MAX} onChange={(title) => updateDraft({ title })} />
               <TextField
-                label="Story"
+                label={w.storyLabel}
                 value={draft.story}
                 maxLength={STORY_MAX}
                 // 남는 공간을 채우게 길게 (9줄부터, 14줄까지 늘어나고 그 뒤로는 칸 안에서 스크롤)
@@ -85,14 +87,14 @@ export function PostStepScreen() {
 
         <p className="flex items-center gap-1.5 px-6 pt-3 text-[13px] font-medium leading-[1.3] text-muted">
           <Icon name="info" size={14} />
-          Written by AI. Please check it before moving on.
+          {w.writtenByAi}
         </p>
       </div>
 
       <StickyBottom>
         <ArrowCta
           // 작성 세 단계 모두 같은 버튼 (위 작은 글 없이, compact)
-          title="Next"
+          title={w.next}
           compact
           {...(canNext
             ? {
@@ -116,18 +118,19 @@ export function PostStepScreen() {
 
 /** 아직 쓰는 중 — 제목·본문 자리가 반짝이며 채워질 준비 */
 function WritingSkeleton({ dish }: { dish: string }) {
+  const w = useWriteCopy();
   return (
     <div className="flex flex-col gap-4 px-5 py-5" aria-live="polite">
       <p className="flex items-center gap-2 text-[14px] font-semibold">
         <Icon name="sparkle" size={16} className="animate-spin text-content [animation-duration:1.4s]" />
-        Writing about your {dish || "dish"}…
+        {w.writingAbout(dish)}
       </p>
       <div className="flex flex-col gap-2">
-        <span className="text-[13px] font-semibold text-muted">Title</span>
+        <span className="text-[13px] font-semibold text-muted">{w.titleLabel}</span>
         <span className="h-[52px] animate-pulse rounded-[20px] bg-surface-2" />
       </div>
       <div className="flex flex-col gap-2">
-        <span className="text-[13px] font-semibold text-muted">Story</span>
+        <span className="text-[13px] font-semibold text-muted">{w.storyLabel}</span>
         <span className="h-[230px] animate-pulse rounded-[20px] bg-surface-2 [animation-delay:150ms]" />
       </div>
     </div>

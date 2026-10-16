@@ -12,17 +12,20 @@ import {
 } from "react";
 import {
   AI_DISH,
+  aiDishFor,
   aiPostFor,
   aiVoteFor,
   MAX_PHOTOS,
   mockCheckPhoto,
   MY_POST_ID,
+  currentWriteLang,
   QUESTIONS,
   SAMPLE_PHOTOS,
   type Photo,
   type PhotoCheck,
   type QuestionId,
   voteBasisOf,
+  type WriteLang,
 } from "./write-data";
 import { track } from "./analytics";
 
@@ -45,6 +48,7 @@ export type PostContent = {
   voteQuestion: string; // 투표 제목 — 상세 화면 투표 카드 맨 위에 보임
   options: string[]; // 투표 선택지 2~4개 (AI가 만들고 사용자가 고침)
   voteBasis: string; // 투표를 만들 때 쓴 재료(주제·음식·제목·본문). 바뀌면 "다시 맞출까요?"
+  lang: WriteLang; // 원문 언어 — 글을 쓴 언어 (AI 초안을 만들 때 · 올릴 때 정함). 번역은 이 언어에서
 };
 
 export type Draft = PostContent & {
@@ -92,6 +96,7 @@ const emptyDraft = (): Draft => ({
   voteQuestion: "",
   options: [],
   voteBasis: "",
+  lang: "en",
   savedStep: null,
   savedAt: null,
   startedAt: null,
@@ -107,6 +112,7 @@ export const SAMPLE_MY_POST: MyPost = {
   ...aiPostFor(AI_DISH),
   ...aiVoteFor("line", AI_DISH, aiPostFor(AI_DISH)),
   voteBasis: "",
+  lang: "en",
   votes: 0,
   comments: 0,
   views: 12,
@@ -248,23 +254,25 @@ export function FlowProvider({ children }: { children: ReactNode }) {
 
   const applyAiDraft = useCallback((opts?: { variant?: number; dish?: string }) => {
     setState((s) => {
-      const dish = opts?.dish ?? (s.draft.dish || AI_DISH);
-      const post = aiPostFor(dish, opts?.variant ?? 0);
+      const lang = currentWriteLang();
+      const dish = opts?.dish ?? (s.draft.dish || aiDishFor(lang));
+      const post = aiPostFor(dish, opts?.variant ?? 0, lang);
       // ai.dish는 AI가 처음 알아본 이름 그대로 둠 (사용자가 고쳤는지 비교용)
-      const ai = { ...s.draft.ai, dish: s.draft.ai.dish || AI_DISH, ...post };
-      return { ...s, draft: { ...s.draft, dish, ...post, ai } };
+      const ai = { ...s.draft.ai, dish: s.draft.ai.dish || aiDishFor(lang), ...post };
+      return { ...s, draft: { ...s.draft, dish, ...post, ai, lang } };
     });
   }, []);
 
   const makeVote = useCallback((variant = 0) => {
     setState((s) => {
       const d = s.draft;
-      const dish = d.dish || AI_DISH;
-      const made = aiVoteFor(d.questionId, dish, d, variant);
+      const lang = currentWriteLang();
+      const dish = d.dish || aiDishFor(lang);
+      const made = aiVoteFor(d.questionId, dish, d, variant, lang);
       // 직접 쓰기는 사용자가 쓴 질문을 그대로 둠 (선택지만 새로)
       const vote = d.questionId === "custom" ? { ...made, voteQuestion: d.voteQuestion } : made;
       const ai = { ...d.ai, voteQuestion: vote.voteQuestion, options: vote.options };
-      return { ...s, draft: { ...d, ...vote, ai, voteBasis: voteBasisOf({ ...d, dish }) } };
+      return { ...s, draft: { ...d, ...vote, ai, lang, voteBasis: voteBasisOf({ ...d, dish }) } };
     });
   }, []);
 
@@ -291,10 +299,12 @@ export function FlowProvider({ children }: { children: ReactNode }) {
     window.setTimeout(() => {
       if (run !== dishRun.current) return;
       track("dish_recognized", { duration_ms: Math.round(performance.now() - started) });
+      const lang = currentWriteLang();
+      const dish = aiDishFor(lang);
       setState((s) => ({
         ...s,
         ai: { ...s.ai, dish: "ready" },
-        draft: { ...s.draft, dish: AI_DISH, ai: { ...s.draft.ai, dish: AI_DISH } },
+        draft: { ...s.draft, dish, lang, ai: { ...s.draft.ai, dish } },
       }));
     }, DISH_MS);
   }, []);
@@ -312,12 +322,13 @@ export function FlowProvider({ children }: { children: ReactNode }) {
       if (run !== storyRun.current) return; // 그사이 음식을 고쳤으면 버림
       track("ai_draft_completed", { duration_ms: Math.round(performance.now() - started), rewrite: !!dish });
       setState((s) => {
-        const name = dish ?? (s.draft.dish || AI_DISH);
-        const post = aiPostFor(name);
+        const lang = currentWriteLang();
+        const name = dish ?? (s.draft.dish || aiDishFor(lang));
+        const post = aiPostFor(name, 0, lang);
         return {
           ...s,
           ai: { ...s.ai, story: "ready" },
-          draft: { ...s.draft, dish: name, ...post, ai: { ...s.draft.ai, ...post } },
+          draft: { ...s.draft, dish: name, ...post, lang, ai: { ...s.draft.ai, ...post } },
         };
       });
     }, STORY_MS);
@@ -344,12 +355,13 @@ export function FlowProvider({ children }: { children: ReactNode }) {
           photos,
           coverId: d.coverId ?? photos[0].id,
           questionId: d.questionId,
-          dish: d.dish || AI_DISH,
+          dish: d.dish || aiDishFor(d.lang),
           title: d.title || SAMPLE_MY_POST.title,
           story: d.story || SAMPLE_MY_POST.story,
           voteQuestion: d.voteQuestion || SAMPLE_MY_POST.voteQuestion,
           options: d.options.filter((o) => o.trim()).length >= 2 ? d.options.filter((o) => o.trim()) : SAMPLE_MY_POST.options,
           voteBasis: d.voteBasis,
+          lang: d.title ? d.lang : SAMPLE_MY_POST.lang, // 예시 글로 채웠으면 예시 글 언어
           votes: 0,
           comments: 0,
           views: 0,

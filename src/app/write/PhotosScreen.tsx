@@ -16,11 +16,13 @@ import { DishCard, useDishFlow } from "./DishCard";
 import { PhotoCheckNotice } from "./PhotoCheckNotice";
 import { usePhotoActions } from "./usePhotoActions";
 import { WriteExit } from "./WriteExit";
+import { useWriteCopy } from "@/app/write/copy";
 
 export function PhotosScreen({ backHref = "/home?lang=en" }: { backHref?: string }) {
   const router = useRouter();
   // 로그인은 외국인 메인의 Share 버튼(ShareKfoodButton)에서 사진 선택 전에 끝냅니다.
   const { draft, saveDraftForLater } = useFlow();
+  const w = useWriteCopy();
   const photo = usePhotoActions("photos");
   const dishFlow = useDishFlow();
   const [editingDish, setEditingDish] = useState(false);
@@ -51,8 +53,8 @@ export function PhotosScreen({ backHref = "/home?lang=en" }: { backHref?: string
   return (
     <Screen className="pb-[140px]">
       <TopBar
-        left={<IconButton icon="chevron-left" label="Back" onClick={leave} />}
-        title="Your photos"
+        left={<IconButton icon="chevron-left" label={w.back} onClick={leave} />}
+        title={w.photosTitle}
         right={<WriteExit step="photos" exitHref={backHref} />}
       />
       {/* 진행 막대는 분석 화면에선 숨김 (분석이 끝나고 ① 화면이 보일 때부터) */}
@@ -75,12 +77,12 @@ export function PhotosScreen({ backHref = "/home?lang=en" }: { backHref?: string
               {cover.check === "not_food" && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70 text-white">
                   <Icon name="alert" size={32} />
-                  <span className="text-[15px] font-bold">This doesn&apos;t look like food</span>
+                  <span className="text-[15px] font-bold">{w.notFood}</span>
                 </div>
               )}
               <Chip className="absolute left-4 top-4">
                 <Icon name="check" size={14} strokeWidth={2.5} />
-                Cover
+                {w.cover}
               </Chip>
             </div>
           ) : (
@@ -92,8 +94,8 @@ export function PhotosScreen({ backHref = "/home?lang=en" }: { backHref?: string
               <span className="flex size-16 animate-float items-center justify-center rounded-full bg-primary text-on-light">
                 <Icon name="plus" size={28} />
               </span>
-              <span className="text-[15px] font-semibold">Add photos of your dish</span>
-              <span className="text-[13px]">Up to {MAX_PHOTOS} photos</span>
+              <span className="text-[15px] font-semibold">{w.addPhotos}</span>
+              <span className="text-[13px]">{w.upTo(MAX_PHOTOS)}</span>
             </button>
           )}
 
@@ -105,10 +107,11 @@ export function PhotosScreen({ backHref = "/home?lang=en" }: { backHref?: string
                   onRemove={photo.remove}
                   onMove={photo.move}
                   onAdd={onAdd}
+                  labels={w.grid}
                 />
               </div>
               <p className="px-5 pt-1 pb-5 text-[13px] leading-[1.4] text-muted">
-                Drag to reorder · The first photo is the cover · {draft.photos.length}/{MAX_PHOTOS}
+                {w.photosHint(draft.photos.length, MAX_PHOTOS)}
               </p>
             </Tile>
           )}
@@ -124,7 +127,7 @@ export function PhotosScreen({ backHref = "/home?lang=en" }: { backHref?: string
         <StickyBottom>
           <ArrowCta
             // 작성 세 단계 모두 같은 버튼 (위 작은 글 없이 Next/Post만, compact)
-            title="Next"
+            title={w.next}
             compact
             {...(dishFlow.canGo && !editingDish
               ? {
@@ -142,8 +145,8 @@ export function PhotosScreen({ backHref = "/home?lang=en" }: { backHref?: string
       <Toast
         open={limitToast}
         onClose={closeToast}
-        title={`You can add up to ${MAX_PHOTOS} photos`}
-        body="Remove a photo first, then add a new one."
+        title={w.limitTitle(MAX_PHOTOS)}
+        body={w.limitBody}
       />
       {picker.input}
     </Screen>
