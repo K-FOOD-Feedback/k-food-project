@@ -3,6 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useSyncExternalStore } from "react";
 import { rememberRole } from "@/lib/role";
+import { saveViewerLang, useViewerUiLang } from "@/app/posts/[id]/viewerLang";
 
 /*
   작업용: 한국인 ↔ 외국인 화면 바꾸기 토글 (송희) — 모든 화면 맨 위 가운데에 떠 있음
@@ -10,10 +11,19 @@ import { rememberRole } from "@/lib/role";
   - 외국인만 쓰는 화면(글쓰기·수정)에서 한국인을 누르면 한국인 메인으로
   - 보이는 때: 지금은 배포 주소에서도 기본으로 보임 (지현 요청 — 폰에서 확인하려고). 아무 주소 뒤에 ?dev=0 을 붙여 한 번 열면
     이 브라우저에서 꺼지고, ?dev=1 이면 다시 켜짐
+  - 외국인은 언어별로 영어 · 일본어 · 중국어 — 누르면 외국인 화면으로 가면서 🌐 언어도 그 언어로 (이미 외국인 화면이면 언어만)
   - 맨 오른쪽 "어드민": 의견 보기(/admin/feedback)로 바로 감. 어드민에서 한국인·외국인을 누르면 그쪽 메인으로
     → 작업용이라 출시 전에 지울 것
 */
 type Viewer = "ko" | "en";
+
+// 토글 칸 — 외국인은 언어별로
+const CHOICES = [
+  { id: "ko", label: "🇰🇷 한국인" },
+  { id: "en", label: "🇺🇸 영어" },
+  { id: "ja", label: "🇯🇵 일본어" },
+  { id: "zh", label: "🇨🇳 중국어" },
+] as const;
 
 const DEV_KEY = "kfood:dev-toggle";
 const FOREIGN_FROM: Record<string, string> = { "home-en": "", "my-en": "my", "notifications-en": "notifications", posted: "" };
@@ -83,6 +93,7 @@ export function ViewerToggle() {
   const path = usePathname();
   const query = useSearchParams();
   const enabled = useSyncExternalStore(subscribe, readEnabled, () => false);
+  const uiLang = useViewerUiLang();
   if (!enabled) return null;
 
   const admin = path.startsWith("/admin");
@@ -92,6 +103,14 @@ export function ViewerToggle() {
     rememberRole(target);
     router.push(hrefFor(target, path, new URLSearchParams(query.toString())));
   };
+  // 외국인 언어 칸: 언어를 바꾸고 (외국인 화면이 아니면) 외국인 화면으로
+  const pick = (id: (typeof CHOICES)[number]["id"]) => {
+    if (id === "ko") return go("ko");
+    saveViewerLang(id);
+    go("en");
+  };
+  const isOn = (id: (typeof CHOICES)[number]["id"]) =>
+    id === "ko" ? current === "ko" : current === "en" && (uiLang === id || (id === "en" && uiLang === "ko"));
 
   return (
     <div
@@ -99,16 +118,16 @@ export function ViewerToggle() {
       aria-label="화면 바꾸기 (작업용)"
       className="fixed top-[calc(env(safe-area-inset-top)+2px)] left-1/2 z-[60] flex -translate-x-1/2 gap-0.5 whitespace-nowrap rounded-full bg-black/70 p-0.5 text-[11px] leading-none font-bold text-white shadow-[0_4px_12px_rgba(0,0,0,0.4)] ring-1 ring-white/15 backdrop-blur-md"
     >
-      {(["ko", "en"] as const).map((v) => (
+      {CHOICES.map(({ id, label }) => (
         <button
-          key={v}
+          key={id}
           type="button"
           role="radio"
-          aria-checked={current === v}
-          onClick={() => go(v)}
-          className={`rounded-full px-2.5 py-1.5 transition ${current === v ? "bg-white text-black" : "text-white/70"}`}
+          aria-checked={isOn(id)}
+          onClick={() => pick(id)}
+          className={`rounded-full px-2 py-1.5 transition ${isOn(id) ? "bg-white text-black" : "text-white/70"}`}
         >
-          {v === "ko" ? "🇰🇷 한국인" : "🌍 외국인"}
+          {label}
         </button>
       ))}
       <button
@@ -116,7 +135,7 @@ export function ViewerToggle() {
         role="radio"
         aria-checked={admin}
         onClick={() => !admin && router.push("/admin/feedback")}
-        className={`rounded-full px-2.5 py-1.5 transition ${admin ? "bg-white text-black" : "text-white/70"}`}
+        className={`rounded-full px-2 py-1.5 transition ${admin ? "bg-white text-black" : "text-white/70"}`}
       >
         🛠 어드민
       </button>
