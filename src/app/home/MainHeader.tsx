@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { LanguageButton } from "@/components/LanguagePicker";
 import { HEADER_BUTTON, PageHeader } from "@/components/PageHeader";
 import { TrackedLink } from "@/components/Track";
@@ -21,6 +22,14 @@ export function MainHeader({
   const hasNew = useHasNewNotifications(en ? "en" : "ko");
   return (
     <PageHeader
+      // 어드민 (작업용, 송희·지현) — 지금은 바로 의견 관리로. 비밀번호 화면이 붙으면 거기를 거쳐 들어감
+      // 나중에 실제 Google 로그인이 붙으면 허용된 이메일로 로그인했을 때만 보이게 → 그 전엔 출시 전에 지울 것
+      left={
+        <Link href="/admin/feedback" className={HEADER_BUTTON} aria-label="어드민">
+          {/* eslint-disable-next-line @next/next/no-img-element -- 작은 SVG 아이콘 */}
+          <img src="/images/icon-admin.svg" width={24} height={24} alt="" />
+        </Link>
+      }
       right={
         <>
           {/* 알림함 (송희) — 외국인: 내 글 소식 · 한국인: 답글·투표 결과 */}
