@@ -21,7 +21,8 @@
 
 ## 2. 원칙
 
-1. **바로 이해되게** — 관용어·속어보다 그대로 읽히는 말. 재미는 스티커·말풍선 같은 연출에서, 버튼·안내는 담백하게.
+1. **재미있게, 하지만 바로 이해되게** — 서비스 콘셉트는 **"한식 법정"**: 한국인이 판결(judge · verdict)하고 외국인이 판결을 기다림. 이 말투와 가벼운 관용 표현(`Ready to weigh in?`, `You're live!`, `Nailed it`)은 살림.
+   단, 그 문장만 보고도 뜻이 통하는 쉬운 관용 표현만. 막을 때·실패할 때·지울 때 같은 안내는 장난 없이 담백하게.
 2. **같은 상황은 같은 문구로** — 화면마다 다르게 쓰지 않기. 아래 [5. 자주 쓰는 문구](#5-자주-쓰는-문구)에서 고름.
 3. **버튼은 동사로, 결과가 보이게** — `OK`·`Done` 대신 `Post`, `Save changes`, `Delete and leave`.
 4. **막을 때는 "왜 + 다음 행동"** — `To keep votes fair, the question and choices stay as posted.`
@@ -166,7 +167,15 @@
 
 ---
 
-## 아직 정할 것
+## 콘셉트 말 (한식 법정)
 
-- **`judge` · `verdict` 쓸지** — 예전 초안은 "심판이 아니라 의견"이라 빼자고 했지만, 지금 화면에 `Let Koreans judge it`, `Next one to judge`, 공유 카드 `VERDICT PENDING`이 있음. 서비스 콘셉트(참견·판결)로 살릴지, 버튼·안내에서만 뺄지.
-- **관용 표현** — `Ready to weigh in?`(한국인 메인 영어), `You're live!`(글 올린 뒤)는 자연스럽지만 영어가 모국어가 아닌 사람에게 덜 쉬움. 그대로 둘지.
+판결 말투는 재미 요소라 살립니다. 다만 상처 주는 말로 넘어가지 않게.
+
+| 자리 | 예 |
+|---|---|
+| 메인 머리말 · CTA | `Let Koreans judge it 👀` · `Next one to judge` |
+| 공유 카드 스티커 | `K-FOOD COURT` · `EXHIBIT A` · `VERDICT PENDING` · `VOTE NOW!` |
+| 투표 선택지 (crime 질문) | `Guilty 🚨` · `Suspicious 🤨` · `Innocent 😇` |
+
+- 판결은 **음식**에 대해서만 — 사람(글쓴이)을 판결하는 말 X (`You're guilty` X → `Guilty 🚨`는 음식에 대한 선택지라 O)
+- 칭찬형도 꼭 같이 (`Did I nail it?`, `Respect 👍`) — 놀림만 있는 서비스로 보이지 않게
