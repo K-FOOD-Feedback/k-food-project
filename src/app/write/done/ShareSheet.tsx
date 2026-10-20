@@ -310,13 +310,18 @@ export function ShareSheet({
       easing: "ease-out",
     });
     try {
+      // 카드 안 사진이 다 불러와진 뒤에 찍음
+      await Promise.all(Array.from(card.querySelectorAll("img"), (img) => img.decode().catch(() => {})));
       // 스토리는 화면을 꽉 채우므로 둥근 모서리 없이 찍음
-      const blob = await toBlob(card, {
+      const options = {
         pixelRatio: 1080 / CARD_W,
         cacheBust: true,
         style: { borderRadius: "0" },
         fontEmbedCSS: await ownFontCSS(),
-      });
+      };
+      // 아이폰 사파리는 첫 번째로 찍을 때 사진이 빈칸으로 나오는 문제(html-to-image 알려진 문제)가 있어서 한 번 찍고 버린 뒤 다시 찍음
+      if (/iP(hone|ad|od)|^((?!chrome|android|crios|fxios).)*safari/i.test(navigator.userAgent)) await toBlob(card, options);
+      const blob = await toBlob(card, options);
       return blob ? new File([blob], `k-food-${style}.png`, { type: "image/png" }) : null;
     } catch {
       return null;

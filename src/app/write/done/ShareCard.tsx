@@ -235,22 +235,24 @@ export const ShareCard = memo(function ShareCard({
 }) {
   const t = COPY[lang];
   return (
+    // 글꼴은 우리 사이트 글꼴(Gilroy·Figtree·Paperlogy)만 — 본문 글꼴 Pretendard는 외부(CDN)라 이미지 저장 때 빠지고
+    // 폰 기본 글꼴로 바뀌어 폭이 넓어짐 → 화면과 저장 이미지의 글자 폭이 달라 잘림
     <div
       className="relative overflow-hidden rounded-[22px] text-left break-keep"
-      style={{ width: CARD_W, height: CARD_H, background: theme.bg, color: theme.fg }}
+      style={{ width: CARD_W, height: CARD_H, background: theme.bg, color: theme.fg, fontFamily: "var(--font-gilroy)" }}
     >
       <Sparkles style={style} seed={seed} />
       {style === "photo" && <PhotoCard post={post} theme={theme} t={t} cjk={lang === "zh" || lang === "ja"} shape={shape} />}
       {style === "vote" && <VoteCard post={post} theme={theme} t={t} shape={shape} />}
       {style === "verdict" && <VerdictCard post={post} theme={theme} t={t} />}
 
-      {/* 스티커 — 오려 붙인 것처럼 흰 테두리 + 그림자
+      {/* 스티커 — 오려 붙인 것처럼 흰 테두리 (그림자는 아이폰 이미지 저장 때 옆에 회색 반원으로 따로 찍혀서 뺌)
           흰 테두리는 border로 (그림자 퍼짐으로 그리면 이미지 저장 때 기울어진 스티커 옆에 반원이 따로 찍힘)
           기울기도 rotate 속성 대신 transform으로 (저장 라이브러리가 그대로 옮기게) */}
       {stickersFor(style, seed, lang).map((s, i) => (
         <span
           key={`${seed}-${i}`}
-          className="absolute whitespace-nowrap rounded-full border-2 border-white px-2 py-1 font-display text-[11px] leading-none text-on-light shadow-[0_5px_12px_rgba(0,0,0,0.28)]"
+          className="absolute whitespace-nowrap rounded-full border-2 border-white px-2 py-1 font-display text-[11px] leading-none text-on-light"
           style={{ ...s.spot, background: s.color, transform: `rotate(${s.rotate}deg)` }}
         >
           {s.text}
@@ -271,9 +273,10 @@ type Copy = (typeof COPY)["en"];
 /** 카드 맨 아래 — 어디서 투표하는지 (세 카드 모두 같은 문구) */
 function Footer({ t }: { t: Copy }) {
   return (
-    <div className="mt-auto flex items-center justify-between border-t border-current/15 pt-2.5 text-[8px] font-bold leading-none">
-      <span className="font-display text-[10px]">오늘의 참견</span>
-      <span className="whitespace-nowrap opacity-70">{t.footer}</span>
+    <div className="mt-auto flex items-center justify-between gap-2 border-t border-current/15 pt-2.5 text-[8px] font-bold leading-none">
+      <span className="shrink-0 font-display text-[10px]">오늘의 참견</span>
+      {/* 넘치면 … (저장 이미지에서 글자 폭이 조금 달라져도 카드 밖으로 나가지 않게) */}
+      <span className="min-w-0 truncate opacity-70">{t.footer}</span>
     </div>
   );
 }
