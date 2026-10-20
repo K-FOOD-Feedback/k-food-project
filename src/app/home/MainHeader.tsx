@@ -7,6 +7,14 @@ import { useHasNewNotifications } from "@/lib/notifications-seen";
 import { saveKoreanLang, saveViewerLang } from "../posts/[id]/viewerLang";
 import type { Lang } from "./CardStack";
 
+// 버튼 이름 (화면 읽기용) — 화면 언어로
+const LABELS: Record<Lang, { notifications: string; my: string }> = {
+  ko: { notifications: "알림", my: "내 정보" },
+  en: { notifications: "Notifications", my: "My page" },
+  zh: { notifications: "通知", my: "我的" },
+  ja: { notifications: "通知", my: "マイページ" },
+};
+
 /** 메인 상단 버튼 — 모든 화면 공통 상단 바(PageHeader) 사용
     version: 한국인/외국인 버전 (알림·마이 주소, 분석) · lang: 지구본으로 고른 화면 언어 (버튼 이름) */
 export function MainHeader({
@@ -17,7 +25,7 @@ export function MainHeader({
   lang?: Lang;
 }) {
   const en = version === "en";
-  const enText = lang === "en";
+  const t = LABELS[lang];
   const hasNew = useHasNewNotifications(en ? "en" : "ko");
   return (
     <PageHeader
@@ -29,7 +37,7 @@ export function MainHeader({
             event="notifications_clicked"
             props={{ from: "feed", viewer: en ? "foreigner" : "korean" }}
             className={`${HEADER_BUTTON} relative`}
-            aria-label={enText ? "Notifications" : "알림"}
+            aria-label={t.notifications}
           >
             {/* eslint-disable-next-line @next/next/no-img-element -- 작은 SVG 아이콘 */}
             <img src="/images/icon-bell.svg" width={24} height={24} alt="" />
@@ -53,7 +61,7 @@ export function MainHeader({
             event="my_page_clicked"
             props={{ from: "feed", viewer: en ? "foreigner" : "korean" }}
             className={HEADER_BUTTON}
-            aria-label={enText ? "My page" : "내 정보"}
+            aria-label={t.my}
           >
             {/* eslint-disable-next-line @next/next/no-img-element -- 작은 SVG 아이콘 */}
             <img src="/images/icon-person.svg" width={24} height={24} alt="" />

@@ -119,10 +119,9 @@ const notif = (id: string, patch: Partial<Notif>): Notif => ({
   id: `edge-${id}`,
   type: "reply",
   postId: "1",
-  postTitle: "제가 만든 불닭 레시피 어떤가요?",
   detail: "삼김 조합 진짜 인정이요",
-  day: "오늘",
-  time: "21:50",
+  detailLang: "ko",
+  ago: 3 * 60 * 60_000,
   read: false,
   ...patch,
 });
@@ -132,7 +131,7 @@ export const NOTIF_CASES = {
     notif("n2", { byAuthor: true, actor: "Extremely Saucy Cheesy Taster", detail: TEXTS.enWord(COMMENT_MAX) }),
   ],
   en: [
-    notif("n3", { type: "comment", postId: "mine", detail: TEXTS.koMax(COMMENT_MAX), translated: TEXTS.enMax(60) }),
+    notif("n3", { type: "comment", postId: "mine", detail: TEXTS.koMax(COMMENT_MAX), translated: { en: TEXTS.enMax(60), ja: fill("チーズがブルダックを食べてる", 40), zh: fill("这芝士都快把火鸡面吃了", 40) } }),
     notif("n4", { type: "milestone", postId: "mine", postTitle: TEXTS.enWord(TITLE_MAX), detail: "9990" }),
   ],
 };

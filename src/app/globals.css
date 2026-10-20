@@ -500,3 +500,13 @@ body {
     pointer-events: none;
   }
 }
+
+/*
+  break-keep (한국어 낱말 단위 줄바꿈) + 넘칠 때는 줄바꿈 (송희)
+  중국어·일본어는 띄어쓰기가 없어서 keep-all만 걸면 문장 전체가 한 낱말로 취급돼 한 줄로 넘침 (、。에서만 줄바꿈)
+  → break-word를 같이 걸어 칸 끝에서 줄을 바꿈. 한국어는 그대로 낱말 단위
+*/
+@utility break-keep {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}

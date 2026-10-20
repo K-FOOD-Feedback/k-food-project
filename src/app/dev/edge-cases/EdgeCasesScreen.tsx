@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState, useSyncExternalStore, type ReactNode } from "react";
 import { CardStack } from "@/app/home/CardStack";
 import { CommentCard, MyTabs, PhotoTile, timeAgo } from "@/app/my/parts";
 import { ProfileHeader } from "@/app/my/profile";
@@ -174,14 +174,7 @@ export function EdgeCasesScreen() {
       </Group>
 
       <Group title="알림 카드" owner="송희">
-        <div className="flex flex-col gap-3">
-          {NOTIF_CASES.ko.map((n) => (
-            <NotificationCard key={n.id} lang="ko" n={n} translate={false} />
-          ))}
-          {NOTIF_CASES.en.map((n) => (
-            <NotificationCard key={n.id} lang="en" n={n} translate />
-          ))}
-        </div>
+        <NotifCases />
       </Group>
 
       <Group title="공유 카드" owner="송희">
@@ -391,6 +384,28 @@ function TabsCase() {
     </div>
   );
 }
+
+/** 알림 카드 — 시각 글자가 서버·브라우저 시간대로 어긋나지 않게 브라우저에서만 그림 */
+function NotifCases() {
+  const now = useSyncExternalStore(
+    () => () => {},
+    () => NOTIF_NOW,
+    () => 0,
+  );
+  if (!now) return null;
+  return (
+    <div className="flex flex-col gap-3">
+      {NOTIF_CASES.ko.map((n) => (
+        <NotificationCard key={n.id} lang="ko" now={now} n={n} translate={false} />
+      ))}
+      {/* 외국인 알림 — 영·일·중 화면 (일·중은 문장이 가장 김) */}
+      {(["en", "ja", "zh"] as const).map((ui) =>
+        NOTIF_CASES.en.map((n) => <NotificationCard key={`${ui}-${n.id}`} lang="en" ui={ui} now={now} n={n} translate />),
+      )}
+    </div>
+  );
+}
+const NOTIF_NOW = typeof window === "undefined" ? 0 : Date.now();
 
 /** 시간 표시 — 네 언어 */
 function AgoCase() {
