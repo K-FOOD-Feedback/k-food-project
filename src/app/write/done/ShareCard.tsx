@@ -264,7 +264,7 @@ export const ShareCard = memo(function ShareCard({
 
 /*
   카드 안 간격 (위계)
-  - 카드 바깥 여백 12 · 묶음 사이 12~16 · 묶음 안 2~4
+  - 카드 바깥 여백 좌우 14 (제목·사진·선택지·출처 줄 모두 같은 선) · 묶음 사이 12~16 · 묶음 안 2~4
   - 맨 아래 출처 줄은 얇은 선으로 떼어 냄
 */
 
@@ -340,11 +340,11 @@ function Headline({ t, theme, cjk }: { t: Copy; theme: CardTheme; cjk: boolean }
 
 function PhotoCard({ post, theme, t, cjk, shape }: { post: ShareCardPost; theme: CardTheme; t: Copy; cjk: boolean; shape: CardShape }) {
   return (
-    <div className="relative flex h-full flex-col p-3 pt-3.5">
+    <div className="relative flex h-full flex-col px-3.5 pt-3.5 pb-3">
       <Headline t={t} theme={theme} cjk={cjk} />
       <StickerPhoto src={post.photo} size={158} rotate={4} shape={shape} className="mx-auto mt-3" />
       {/* 제목 2줄·작성자 1줄까지, 넘치면 … (띄어쓰기 없는 긴 단어도 칸 안에서 줄바꿈) */}
-      <div className="flex flex-col gap-1 px-0.5 pt-3 pb-3">
+      <div className="flex flex-col gap-1 pt-3 pb-3">
         <p className="line-clamp-2 font-display text-[17px] leading-[1.1] [text-wrap:balance] [overflow-wrap:anywhere]">{post.title}</p>
         <p className="truncate text-[9px] font-semibold opacity-70">{post.author}</p>
       </div>
@@ -359,7 +359,7 @@ const OPTION_DOTS = ["var(--color-primary)", "var(--color-content)", "var(--colo
 function VoteCard({ post, theme, t, shape }: { post: ShareCardPost; theme: CardTheme; t: Copy; shape: CardShape }) {
   const many = post.options.length > 3;
   return (
-    <div className="relative flex h-full flex-col p-3 pt-3.5">
+    <div className="relative flex h-full flex-col px-3.5 pt-3.5 pb-3">
       {/* 머리: 투표 표시 띠 + 오른쪽 위에 사진 스티커 */}
       <span
         className="self-start -rotate-3 rounded-full px-2.5 py-1.5 font-display text-[10px] leading-none"
@@ -413,7 +413,7 @@ function Rule() {
 function VerdictCard({ post, theme, t }: { post: ShareCardPost; theme: CardTheme; t: Copy }) {
   const row = "flex justify-between gap-2";
   return (
-    <div className="flex h-full flex-col p-3 pt-4">
+    <div className="flex h-full flex-col px-3.5 pt-4 pb-3">
       {/* 영수증 — 아래 가장자리를 톱니 모양으로, 살짝 기울여 올려 둔 종이처럼 */}
       <div className="-rotate-[1.5deg] drop-shadow-[0_8px_14px_rgba(0,0,0,0.25)]">
         <div
