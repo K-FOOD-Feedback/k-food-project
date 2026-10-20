@@ -494,6 +494,13 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
       e.preventDefault();
       const now = performance.now();
       const mag = Math.abs(wx);
+      // 넘긴 직후(새 글을 그리는 동안)는 전부 무시 — 그리느라 화면이 잠깐 멈추면 관성 신호 사이에 틈이 생겨
+      // "새 쓸기"로 잘못 읽고 한 번 더 넘어가던 것 (한 번 쓸었는데 글이 두 개씩 넘어감)
+      if (now - wheelGate.leftAt < WHEEL_COOLDOWN_MS) {
+        wheelGate.lastAt = now;
+        wheelGate.lastMag = mag;
+        return;
+      }
       const gap = now - wheelGate.lastAt;
       const newSwipe = gap >= WHEEL_GAP_MS && mag <= Math.max(wheelGate.lastMag, 8);
       wheelGate.lastAt = now;
@@ -510,6 +517,7 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
         const dir = wheelX < 0 ? "next" : "prev";
         wheelX = 0;
         wheelGate.locked = true;
+        wheelGate.leftAt = now;
         leave(dir);
         return;
       }
@@ -527,6 +535,7 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
       if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
       if ((e.target as Element | null)?.closest?.('input, textarea, select, [contenteditable="true"], [role=dialog]')) return;
       e.preventDefault();
+      if (e.repeat) return; // 꾹 누르고 있으면 한 번만 (계속 넘어가지 않게)
       leave(e.key === "ArrowRight" ? "next" : "prev");
     };
     // 시스템이 터치를 가로채면(전화 등) 넘기지 않고 제자리로
@@ -932,7 +941,9 @@ const WHEEL_IDLE_MS = 140;
 /** 이벤트가 이만큼(ms) 끊겼다가 작게 다시 시작하면 새 쓸기 */
 const WHEEL_GAP_MS = 28;
 /** 트랙패드로 넘긴 뒤 잠금 — 새 글 화면으로 바뀌어도 관성이 이어지므로 컴포넌트 밖에 둠 */
-const wheelGate = { locked: false, lastAt: -Infinity, lastMag: 0 };
+const wheelGate = { locked: false, lastAt: -Infinity, lastMag: 0, leftAt: -Infinity };
+/** 트랙패드로 넘긴 뒤 이만큼(ms)은 가로 쓸기를 아예 받지 않음 (새 글을 그리는 동안 관성이 또 넘기지 않게) */
+const WHEEL_COOLDOWN_MS = 700;
 const SWIPE_IN_PX = 160;
 const SWIPE_IN_MS = 620;
 const SWIPE_IN_DELAY_MS = 100;
