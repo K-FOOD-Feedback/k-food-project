@@ -326,7 +326,7 @@ export function VoteBowl({
                   <>
                     {a}
                     <span className="text-on-dark tabular-nums">
-                      <CountUp text={b} value={total} run={inView} />
+                      <CountUp text={b} value={total} run={inView} format={T.count} />
                     </span>
                     {c}
                   </>
@@ -348,7 +348,7 @@ export function VoteBowl({
                   <>
                     {a}
                     <span className="text-on-dark tabular-nums">
-                      <CountUp text={b} value={same} run={inView} />
+                      <CountUp text={b} value={same} run={inView} format={T.count} />
                     </span>
                     {c}
                   </>
@@ -524,7 +524,7 @@ export function VoteBowl({
   숫자가 없는 글("나만")은 그대로. 움직임 줄이기 설정이면 바로 최종 숫자
 */
 const COUNT_MS = 900;
-function CountUp({ text, value, run }: { text: string; value: number; run: boolean }) {
+function CountUp({ text, value, run, format }: { text: string; value: number; run: boolean; format: (n: number) => string }) {
   const [shown, setShown] = useState(0);
   const from = useRef(0);
   useEffect(() => {
@@ -545,5 +545,6 @@ function CountUp({ text, value, run }: { text: string; value: number; run: boole
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [run, value]);
-  return text.replace(String(value), String(shown));
+  // 숫자 표시 규칙(9,999 · 1.2만)대로 세어 올라감
+  return text.replace(format(value), format(shown));
 }

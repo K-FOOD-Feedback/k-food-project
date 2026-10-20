@@ -38,7 +38,7 @@ import { AccountFooter, GOOGLE_ACCOUNT, AccountMenu, ProfileHeader, ProfileSheet
   - 한마디 2줄까지 · 이모지 한마디도 그대로
   - 어느 글: "글 제목" / 답글이면 "답글 · 글 제목", 1줄
   - 글이 지워졌으면: "삭제된 글", 누를 수 없음
-  - 시간: 방금 · 5분 전 · 3시간 전 · 어제 · 3일 전 · 9월 3일 · 2025년 9월 8일
+  - 시간: 방금 · 5분 전 · 3시간 전 · 어제(24~48시간) · 3일 전 · 9/3 · 2025/9/8
 */
 
 /* 화면 언어 = 지구본에서 고른 언어(한국인 기억 kfood:korean-lang), 글 제목 = 자동 번역이면 화면 언어 · 아니면 원문(영어) — 메인·상세와 같은 규칙 */
@@ -172,6 +172,7 @@ export function KoMyScreen() {
       />
 
       <MyTabs
+        lang={ui}
         label={T.activity}
         tabs={[
           ["votes", T.votes, votedPosts.length],

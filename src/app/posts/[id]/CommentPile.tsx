@@ -303,7 +303,7 @@ export function CommentPile({
       <div className="flex min-h-0 flex-1 flex-col gap-4">
         <div ref={titleRow} className="flex flex-col gap-3 px-5">
           <h2 className="flex items-center gap-1.5 text-[18px] leading-[1.3] font-bold tracking-[-0.54px]">
-            {t.title} <span className="text-neutral-400">{count}</span>
+            {t.title} <span className="text-neutral-400">{t.count(count)}</span>
           </h2>
           {postTitle && (
             // 한국어는 Paperlogy, 영어는 Gilroy(font-title-en, 한글과 크기 보정) — 메인 카드 제목과 같은 규칙
@@ -440,7 +440,7 @@ export function CommentPile({
       >
         <div ref={titleRow} className="flex h-16 items-center gap-10 pl-5">
           <h2 className="flex flex-1 items-center gap-1.5 text-[18px] leading-[1.3] font-bold tracking-[-0.54px]">
-            {t.title} <span className="text-neutral-400">{commentCount + addedCount}</span>
+            {t.title} <span className="text-neutral-400">{t.count(commentCount + addedCount)}</span>
           </h2>
           {/* 상세 화면(DetailScreen)이 이 주소로 가는 링크 클릭을 감지해 돌아올 때의 전환·스크롤 위치를 씁니다.
               href를 바꾸면 상세 화면 담당 세션에 알려 주세요. */}

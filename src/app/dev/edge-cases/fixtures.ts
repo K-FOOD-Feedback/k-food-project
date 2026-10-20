@@ -316,7 +316,7 @@ export const MY_COMMENT_CASES = [
 
 /** 시간 표시 — 지금부터 이만큼 전 */
 const S = 1000, M = 60 * S, H = 60 * M, D = 24 * H;
-export const AGO_CASES = [10 * S, 59 * M, 23 * H, 6 * D, 40 * D, 400 * D];
+export const AGO_CASES = [10 * S, 59 * M, 23 * H, 25 * H, 47 * H, 2 * D, 6 * D, 40 * D, 400 * D];
 
 /** 사진 검사 — 검사 중 · 음식 아님 · 부적절 · 애매 · 통과 */
 export const CHECK_PHOTOS: Photo[] = (["checking", "not_food", "unsafe", "unsure", "ok"] as const).map((check, i) => ({

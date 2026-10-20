@@ -386,7 +386,7 @@ function TabsCase() {
   const [tab, setTab] = useState<"a" | "b">("a");
   return (
     <div className="flex flex-col gap-2">
-      <MyTabs label="ko" value={tab} onChange={setTab} tabs={[["a", "투표", 12345], ["b", "한마디", 1234567]]} />
+      <MyTabs lang="ko" label="ko" value={tab} onChange={setTab} tabs={[["a", "투표", 12345], ["b", "한마디", 1234567]]} />
       <MyTabs label="en" value={tab} onChange={setTab} tabs={[["a", "Posts", 9999], ["b", "Comments", 1234567]]} />
     </div>
   );

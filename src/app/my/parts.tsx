@@ -1,5 +1,6 @@
 "use client";
 
+import { compactCount } from "@/lib/format";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -20,33 +21,36 @@ const DAY = 24 * HOUR;
 export const TIME = { MIN, HOUR, DAY };
 
 /**
- * 한마디 시간 (화면 언어)
- *   1분 안 Just now/방금/刚刚/たった今 · 1시간 안 5m/5분 전/5分钟前/5分前 · 오늘 3h/3시간 전/3小时前/3時間前
- *   · 어제 Yesterday/어제/昨天/昨日 · 7일 안 3d/3일 전/3天前/3日前 · 올해 Sep 3/9월 3일/9月3日 · 작년 이전 연도까지
+ * 한마디 시간 (화면 언어) — 지난 시간으로 셈 (달력 날짜 X)
+ *   1분 안 방금/Just now/刚刚/たった今 · 1시간 안 5분 전/5m/5分钟前/5分前 · 24시간 안 3시간 전/3h/3小时前/3時間前
+ *   · 48시간 안 어제/Yesterday/昨天/昨日 · 7일 안 3일 전/3d/3天前/3日前
+ *   · 올해 9/4 (한·중·일 월/일) · Sep 4 (영어) · 작년 이전 2025/9/4 · Sep 4, 2025
+ * 영어를 9/4/2025 처럼 숫자로만 쓰지 않는 이유: 미국은 월/일, 영국·호주 등은 일/월이라 9/4가 4월 9일로 읽힘
  */
-const AGO: Record<UiLang, { now: string; min: (n: number) => string; hour: (n: number) => string; yesterday: string; day: (n: number) => string; locale: string }> = {
-  en: { now: "Just now", min: (n) => `${n}m`, hour: (n) => `${n}h`, yesterday: "Yesterday", day: (n) => `${n}d`, locale: "en-US" },
-  ko: { now: "방금", min: (n) => `${n}분 전`, hour: (n) => `${n}시간 전`, yesterday: "어제", day: (n) => `${n}일 전`, locale: "ko-KR" },
-  zh: { now: "刚刚", min: (n) => `${n}分钟前`, hour: (n) => `${n}小时前`, yesterday: "昨天", day: (n) => `${n}天前`, locale: "zh-CN" },
-  ja: { now: "たった今", min: (n) => `${n}分前`, hour: (n) => `${n}時間前`, yesterday: "昨日", day: (n) => `${n}日前`, locale: "ja-JP" },
+const AGO: Record<UiLang, { now: string; min: (n: number) => string; hour: (n: number) => string; yesterday: string; day: (n: number) => string }> = {
+  en: { now: "Just now", min: (n) => `${n}m`, hour: (n) => `${n}h`, yesterday: "Yesterday", day: (n) => `${n}d` },
+  ko: { now: "방금", min: (n) => `${n}분 전`, hour: (n) => `${n}시간 전`, yesterday: "어제", day: (n) => `${n}일 전` },
+  zh: { now: "刚刚", min: (n) => `${n}分钟前`, hour: (n) => `${n}小时前`, yesterday: "昨天", day: (n) => `${n}天前` },
+  ja: { now: "たった今", min: (n) => `${n}分前`, hour: (n) => `${n}時間前`, yesterday: "昨日", day: (n) => `${n}日前` },
 };
 export function timeAgo(at: number, now: number, lang: UiLang) {
   const t = AGO[lang];
   const d = now - at;
   if (d < MIN) return t.now;
   if (d < HOUR) return t.min(Math.floor(d / MIN));
-  const today = new Date(now);
-  today.setHours(0, 0, 0, 0);
-  if (at >= today.getTime()) return t.hour(Math.floor(d / HOUR));
-  if (at >= today.getTime() - DAY) return t.yesterday;
+  if (d < DAY) return t.hour(Math.floor(d / HOUR));
+  if (d < 2 * DAY) return t.yesterday;
   if (d < 7 * DAY) return t.day(Math.floor(d / DAY));
   const date = new Date(at);
-  const sameYear = date.getFullYear() === today.getFullYear();
-  return date.toLocaleDateString(t.locale, {
-    month: lang === "en" ? "short" : "long",
-    day: "numeric",
-    ...(sameYear ? {} : { year: "numeric" }),
-  });
+  const y = date.getFullYear();
+  const m = date.getMonth() + 1;
+  const day = date.getDate();
+  const sameYear = y === new Date(now).getFullYear();
+  if (lang === "en") {
+    const mon = date.toLocaleDateString("en-US", { month: "short" });
+    return sameYear ? `${mon} ${day}` : `${mon} ${day}, ${y}`;
+  }
+  return sameYear ? `${m}/${day}` : `${y}/${m}/${day}`;
 }
 
 /** 탭 2개 (이름 + 개수) */
@@ -55,11 +59,14 @@ export function MyTabs<T extends string>({
   value,
   onChange,
   label,
+  lang = "en",
 }: {
   tabs: readonly (readonly [T, string, number])[];
   value: T;
   onChange: (id: T) => void;
   label: string;
+  /** 숫자 표시 언어 (1.2만 · 12K) */
+  lang?: UiLang;
 }) {
   return (
     <div className="px-2">
@@ -76,8 +83,8 @@ export function MyTabs<T extends string>({
             }`}
           >
             {text}
-            {/* 숫자는 쉼표 넣어서 (1,234,567) */}
-            <span className={`tabular-nums ${value === id ? "opacity-50" : ""}`}>{n.toLocaleString("en-US")}</span>
+            {/* 숫자는 앱 공통 규칙 (9,999 · 1.2만) */}
+            <span className={`tabular-nums ${value === id ? "opacity-50" : ""}`}>{compactCount(n, lang)}</span>
           </button>
         ))}
       </div>

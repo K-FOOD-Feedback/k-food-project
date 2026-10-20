@@ -539,7 +539,7 @@ function CardContent({
         className="absolute top-[14px] right-[14px] flex size-[68px] rotate-12 flex-col items-center justify-center gap-0.5 rounded-full bg-background text-white shadow-[0_4px_12px_rgba(0,0,0,0.18)]"
       >
         <span className="text-[20px] leading-none font-extrabold tracking-[-0.4px]">
-          {compactCount(participantsOf(post), lang === "ko" ? "ko" : "en")}
+          {compactCount(participantsOf(post), lang)}
         </span>
         <span className="text-[11px] leading-none font-semibold">
           {t.joined}
@@ -616,7 +616,7 @@ function CardContent({
               <path d="M12 2C6.48 2 2 6.03 2 11c0 2.38 1.03 4.55 2.72 6.17L4 21.5a.5.5 0 0 0 .7.55l4.34-1.93c.94.25 1.93.38 2.96.38 5.52 0 10-4.03 10-9S17.52 2 12 2Z" />
             </svg>
             <span className="sr-only">{t.comments}</span>
-            {compactCount(post.commentCount, lang === "ko" ? "ko" : "en")}
+            {compactCount(post.commentCount, lang)}
           </span>
         </span>
       </span>
