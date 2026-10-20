@@ -57,7 +57,7 @@ const COPY = {
     copyFailed: "Couldn't copy the link",
     deleteLabel: "Delete post",
     deleteTitle: "Delete this post?",
-    deleteBody: "Its votes and comments will be gone too. You can't undo this.",
+    deleteBody: "Its votes and comments will be gone too. This can't be undone.",
     cancel: "Cancel",
     reportTitle: "Report this post?",
     reportBody: "Tell us why. We'll review it and take action.",

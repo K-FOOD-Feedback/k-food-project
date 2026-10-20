@@ -47,7 +47,7 @@ const COPY = {
     saved: "Saved! 📸",
     savedStory: "Saved! Add it to your story 📸",
     imageFail: "Couldn't make the image",
-    copied: "Link copied!",
+    copied: "Link copied",
     copyFail: "Couldn't copy the link",
   },
   ko: {
@@ -86,7 +86,7 @@ const COPY = {
     saved: "已保存！📸",
     savedStory: "已保存！发到快拍吧 📸",
     imageFail: "无法生成图片",
-    copied: "已复制链接！",
+    copied: "已复制链接",
     copyFail: "无法复制链接",
   },
   ja: {
@@ -105,7 +105,7 @@ const COPY = {
     saved: "保存しました 📸",
     savedStory: "保存しました！ストーリーに載せてみましょう 📸",
     imageFail: "画像を作れませんでした",
-    copied: "リンクをコピーしました！",
+    copied: "リンクをコピーしました",
     copyFail: "リンクをコピーできませんでした",
   },
 };

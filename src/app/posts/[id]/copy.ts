@@ -116,7 +116,7 @@ export const COMMENTS_COPY = {
     deleteAsk: "Delete this?",
     no: "No",
     yes: "Yes",
-    reported: "Report received",
+    reported: "Thanks, we got your report",
     more: "More",
     reportCommentTitle: "Report this comment?",
     reportCommentNote: "Once reported, this comment is hidden on your screen. We'll review it and take action.",
@@ -169,7 +169,7 @@ export const COMMENTS_COPY = {
     deleteAsk: "确定要删除吗？",
     no: "否",
     yes: "是",
-    reported: "已收到举报",
+    reported: "已收到你的举报",
     more: "更多",
     reportCommentTitle: "要举报这条评论吗？",
     reportCommentNote: "举报后，这条评论会在你的画面中隐藏。我们会核实后处理。",
@@ -300,8 +300,8 @@ export const DETAIL_COPY = {
           : side === "few"
             ? ["Only ", `${compactCount(same, "en")}`, ` of ${compactCount(total, "en")} agree… a rare take 😎`]
             : ["", `${compactCount(same, "en")}`, ` of ${compactCount(total, "en")} people agree with you`],
-    changeHint: "Tap another option to change your vote",
-    tokenLabel: "Vote token — drag it into an option or tap an option to vote",
+    changeHint: "Tap another choice to change your vote",
+    tokenLabel: "Vote token — drag it into a choice or tap a choice to vote",
     optionVote: (label: string) => `Vote for ${label}`,
     optionMine: " (your pick)",
     optionChange: " — tap to change",
