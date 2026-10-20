@@ -26,6 +26,8 @@ const FILL_LIMIT = 3 / 4;
 // 스크롤 가능한 칸에서는 맨 아래까지 내려 봤을 때 다 보이도록 칸 아래 경계에 맞춥니다.
 const FLOOR_BELOW = 12;
 const STEP_MS = 1000 / 60;
+// 한 프레임에 따라잡는 물리 계산 횟수 상한 (탭을 오래 비웠다 돌아와도 한꺼번에 몰아서 계산하지 않도록)
+const MAX_STEPS_PER_FRAME = 8;
 // 글 댓글은 이 각도(약 30°)까지만 기울어집니다. 틈에 비스듬히 끼어 들어갈 만큼은 기울되, 눕지는 않게.
 // 이모지는 제한 없이 굴러갑니다.
 const MAX_TILT = 0.52;
@@ -146,8 +148,17 @@ class PileWorld {
   }
 
   start() {
-    const loop = () => {
-      this.step();
+    // 화면 그리는 횟수가 아니라 실제 흐른 시간만큼 물리를 진행합니다.
+    // (예전엔 프레임마다 1/60초씩만 진행해서, 초당 30번만 그리는 폰(저전력 모드 등)에선 절반 속도로 떨어졌음)
+    let last = performance.now();
+    let pending = 0;
+    const loop = (now: number) => {
+      pending = Math.min(pending + Math.max(now - last, 0), STEP_MS * MAX_STEPS_PER_FRAME);
+      last = now;
+      while (pending >= STEP_MS) {
+        this.step();
+        pending -= STEP_MS;
+      }
       this.render(true);
       this.frame = requestAnimationFrame(loop);
     };
