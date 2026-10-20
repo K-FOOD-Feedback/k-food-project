@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element -- 이미지로 저장할 카드라 next/image 대신 img (html-to-image가 그대로 그림) */
 import type { CSSProperties } from "react";
+import { CARD_SHAPES, type CardShape } from "@/app/home/cardShapes";
 
 /*
   공유용 세로 카드 (인스타 스토리 9:16) — 담당 송희
@@ -12,8 +13,8 @@ export const CARD_W = 200;
 export const CARD_H = 356;
 
 /*
-  우리 별(Star 6) 모양 — public/images/blob-mask.svg와 같은 모양
-  이미지로 저장할 때도 빠지지 않게 파일 주소 대신 글자로 넣어 둠 (data URL)
+  물결(Star 6) 모양 — 메인 카드 첫 모양(public/images/card-mask.svg)과 같은 모양
+  이미지로 저장할 때도 빠지지 않게 파일 주소 대신 글자로 넣어 둠 (data URL) — 다른 모양들은 원래 data URL
 */
 const STAR_PATH =
   "M65.8341 1.74475C70.026 -0.581582 75.1213 -0.581586 79.3132 1.74475L85.5397 5.20021C87.6976 6.3978 90.1357 6.99874 92.6031 6.94118L99.7222 6.77512C104.515 6.66332 109.027 9.03121 111.657 13.0391L115.565 18.9924C116.919 21.0557 118.799 22.7208 121.01 23.8165L127.391 26.9779C131.687 29.1062 134.581 33.2995 135.048 38.0709L135.741 45.1581C135.981 47.6144 136.872 49.9623 138.321 51.9602L142.502 57.7248C145.316 61.6057 145.93 66.6638 144.126 71.1055L141.447 77.7031C140.518 79.9897 140.215 82.4825 140.57 84.9249L141.593 91.9721C142.281 96.7165 140.474 101.481 136.813 104.575L131.374 109.172C129.489 110.765 128.063 112.831 127.241 115.159L124.872 121.874C123.277 126.395 119.463 129.774 114.783 130.812L107.831 132.355C105.422 132.889 103.198 134.056 101.39 135.736L96.1709 140.581C92.6576 143.843 87.7104 145.062 83.0835 143.807L76.211 141.942C73.8292 141.295 71.3181 141.295 68.9362 141.942L62.0637 143.807C57.4369 145.062 52.4897 143.843 48.9764 140.581L43.7578 135.736C41.9491 134.056 39.7256 132.889 37.3162 132.355L30.3643 130.812C25.6839 129.774 21.8701 126.395 20.275 121.874L17.9058 115.159C17.0847 112.831 15.6583 110.765 13.7733 109.172L8.33442 104.575C4.67279 101.481 2.86599 96.7165 3.55469 91.9721L4.57766 84.9249C4.9322 82.4825 4.62952 79.9897 3.70078 77.7031L1.02103 71.1055C-0.783067 66.6638 -0.168901 61.6057 2.64575 57.7248L6.82653 51.9602C8.27551 49.9623 9.16595 47.6144 9.40622 45.1581L10.0995 38.0709C10.5662 33.2995 13.4606 29.1062 17.7564 26.9779L24.1373 23.8165C26.3487 22.7208 28.2283 21.0557 29.5826 18.9924L33.49 13.0391C36.1206 9.03121 40.6323 6.66332 45.4251 6.77512L52.5442 6.94118C55.0116 6.99874 57.4497 6.3978 59.6076 5.20021L65.8341 1.74475Z";
@@ -21,13 +22,14 @@ const STAR_MASK = `url("data:image/svg+xml,${encodeURIComponent(
   `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 145.147 144.292' preserveAspectRatio='none'><path d='${STAR_PATH}' fill='black'/></svg>`,
 )}")`;
 
-/** 별 모양으로 잘린 사진 */
-function StarPhoto({ src, size, className = "", style }: { src: string; size: number; className?: string; style?: CSSProperties }) {
+/** 메인 카드 모양의 마스크 (파일 주소인 물결은 글자로 바꿔서) */
+const maskOf = (shape: CardShape) => (shape === CARD_SHAPES[0] ? STAR_MASK : shape.mask);
+const maskStyle = (mask: string): CSSProperties => ({ maskImage: mask, WebkitMaskImage: mask, maskSize: "100% 100%", WebkitMaskSize: "100% 100%" });
+
+/** 그 글의 메인 카드 모양으로 잘린 사진 */
+function ShapePhoto({ src, size, mask, className = "", style }: { src: string; size: number; mask: string; className?: string; style?: CSSProperties }) {
   return (
-    <div
-      className={`shrink-0 ${className}`}
-      style={{ ...style, width: size, height: size, maskImage: STAR_MASK, WebkitMaskImage: STAR_MASK, maskSize: "100% 100%", WebkitMaskSize: "100% 100%" }}
-    >
+    <div className={`shrink-0 ${className}`} style={{ ...style, width: size, height: size, ...maskStyle(mask) }}>
       <img src={src} alt="" className="size-full object-cover" draggable={false} />
     </div>
   );
@@ -221,12 +223,15 @@ export function ShareCard({
   theme,
   seed,
   lang = "en",
+  shape = CARD_SHAPES[0],
 }: {
   style: CardStyle;
   post: ShareCardPost;
   theme: CardTheme;
   seed: number;
   lang?: CardLang;
+  /** 사진 모양 — 그 글의 메인 카드 모양 (글마다 다름) */
+  shape?: CardShape;
 }) {
   const t = COPY[lang];
   return (
@@ -235,8 +240,8 @@ export function ShareCard({
       style={{ width: CARD_W, height: CARD_H, background: theme.bg, color: theme.fg }}
     >
       <Sparkles style={style} seed={seed} />
-      {style === "photo" && <PhotoCard post={post} theme={theme} t={t} cjk={lang === "zh" || lang === "ja"} />}
-      {style === "vote" && <VoteCard post={post} theme={theme} t={t} />}
+      {style === "photo" && <PhotoCard post={post} theme={theme} t={t} cjk={lang === "zh" || lang === "ja"} shape={shape} />}
+      {style === "vote" && <VoteCard post={post} theme={theme} t={t} shape={shape} />}
       {style === "verdict" && <VerdictCard post={post} theme={theme} t={t} />}
 
       {/* 스티커 — 오려 붙인 것처럼 흰 테두리 + 그림자. key가 바뀌면 톡 튀어나옴 */}
@@ -277,19 +282,20 @@ function Footer({ t }: { t: Copy }) {
   );
 }
 
-/** 별 모양 사진 + 흰 테두리 (스티커처럼 오려 붙인 느낌) */
-function StickerPhoto({ src, size, rotate, className = "" }: { src: string; size: number; rotate: number; className?: string }) {
-  const pad = Math.round(size * 0.045);
+/**
+ * 사진 스티커 — 그 글의 메인 카드 모양 + 흰 테두리 (오려 붙인 느낌)
+ * 모양마다 채우는 면적이 달라서(꽃 68% ~ 겹친 알약 94%) 메인 카드처럼 scale로 크기를 맞춤 (자리는 같은 크기로 둠)
+ */
+function StickerPhoto({ src, size, rotate, shape, className = "" }: { src: string; size: number; rotate: number; shape: CardShape; className?: string }) {
+  const mask = maskOf(shape);
+  const box = Math.round(size * shape.scale);
+  const pad = Math.round(box * 0.045);
   return (
-    <div
-      className={`relative shrink-0 drop-shadow-[0_8px_14px_rgba(0,0,0,0.3)] ${className}`}
-      style={{ width: size, height: size, rotate: `${rotate}deg` }}
-    >
-      <div
-        className="absolute inset-0 bg-white"
-        style={{ maskImage: STAR_MASK, WebkitMaskImage: STAR_MASK, maskSize: "100% 100%", WebkitMaskSize: "100% 100%" }}
-      />
-      <StarPhoto src={src} size={size - pad * 2} className="absolute" style={{ left: pad, top: pad }} />
+    <div className={`relative flex shrink-0 items-center justify-center ${className}`} style={{ width: size, height: size }}>
+      <div className="relative shrink-0 drop-shadow-[0_8px_14px_rgba(0,0,0,0.3)]" style={{ width: box, height: box, rotate: `${rotate}deg` }}>
+        <div className="absolute inset-0 bg-white" style={maskStyle(mask)} />
+        <ShapePhoto src={src} size={box - pad * 2} mask={mask} className="absolute" style={{ left: pad, top: pad }} />
+      </div>
     </div>
   );
 }
@@ -312,27 +318,27 @@ function Headline({ t, theme, cjk }: { t: Copy; theme: CardTheme; cjk: boolean }
   );
 }
 
-/** 손그림 화살표 (제목 → 사진) */
+/** 손그림 화살표 (제목 → 사진) — 고리 하나 돌고 아래로, 화살촉은 선 끝에 이어 붙임 */
 function Doodle({ color }: { color: string }) {
   return (
     <svg viewBox="0 0 44 40" className="pointer-events-none mt-1 shrink-0" style={{ width: 34, height: 30 }} aria-hidden>
       <path
-        d="M4 6c10-4 22-2 24 6 2 7-8 9-8 3 0-6 12-7 16 4 2 5 1 11-2 16"
+        d="M3 8C14 2 26 4 26 14C26 22 16 22 17 15C18 9 30 9 34 18C36 23 35 28 32 33"
         fill="none"
         stroke={color}
         strokeWidth="2.6"
         strokeLinecap="round"
       />
-      <path d="M27 30l7 6 4-9" fill="none" stroke={color} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M38.4 30.1L32 33L31.5 26" fill="none" stroke={color} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
 
-function PhotoCard({ post, theme, t, cjk }: { post: ShareCardPost; theme: CardTheme; t: Copy; cjk: boolean }) {
+function PhotoCard({ post, theme, t, cjk, shape }: { post: ShareCardPost; theme: CardTheme; t: Copy; cjk: boolean; shape: CardShape }) {
   return (
     <div className="relative flex h-full flex-col p-3 pt-3.5">
       <Headline t={t} theme={theme} cjk={cjk} />
-      <StickerPhoto src={post.photo} size={158} rotate={4} className="mx-auto mt-3" />
+      <StickerPhoto src={post.photo} size={158} rotate={4} shape={shape} className="mx-auto mt-3" />
       {/* 제목 2줄·작성자 1줄까지, 넘치면 … (띄어쓰기 없는 긴 단어도 칸 안에서 줄바꿈) */}
       <div className="flex flex-col gap-1 px-0.5 pt-3 pb-3">
         <p className="line-clamp-2 font-display text-[17px] leading-[1.1] [text-wrap:balance] [overflow-wrap:anywhere]">{post.title}</p>
@@ -346,7 +352,7 @@ function PhotoCard({ post, theme, t, cjk }: { post: ShareCardPost; theme: CardTh
 /** 선택지 번호 칩 색 — 브랜드 색을 돌아가며 */
 const OPTION_DOTS = ["var(--color-primary)", "var(--color-content)", "var(--color-secondary)", "var(--color-lilac)"];
 
-function VoteCard({ post, theme, t }: { post: ShareCardPost; theme: CardTheme; t: Copy }) {
+function VoteCard({ post, theme, t, shape }: { post: ShareCardPost; theme: CardTheme; t: Copy; shape: CardShape }) {
   const many = post.options.length > 3;
   return (
     <div className="relative flex h-full flex-col p-3 pt-3.5">
@@ -358,7 +364,7 @@ function VoteCard({ post, theme, t }: { post: ShareCardPost; theme: CardTheme; t
         {t.poll}
       </span>
       <div className="absolute top-2 right-2">
-        <StickerPhoto src={post.photo} size={96} rotate={9} />
+        <StickerPhoto src={post.photo} size={96} rotate={9} shape={shape} />
       </div>
       {/* 질문 — 크게. 선택지가 4개면 2줄, 아니면 3줄까지 (넘치면 …) */}
       {/* 질문 + 선택지 묶음은 사진 아래 남는 자리의 가운데에 */}

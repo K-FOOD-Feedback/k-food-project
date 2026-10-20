@@ -24,6 +24,12 @@
   --color-secondary: #8e9afe; /* action/secondary (페리윙클) */
   --color-content: #fae276; /* surface/content (노랑) */
   --color-lilac: #ffc6ff; /* Color/Brand/Lilac */
+  /* 메인 카드 · 한마디 말풍선에 쓰던 색 (공유 카드 그라데이션도 이걸로) */
+  --color-lime: #ccf54b;
+  --color-sky: #9fe7ff;
+  --color-lavender: #c8b5ff;
+  --color-peach: #ffae8f;
+  --color-violet: #7144ff;
   --color-error: #ff5b5b; /* feedback/error */
   --color-kakao: #fee500; /* 카카오 브랜드 가이드 색 (토큰 외) */
 

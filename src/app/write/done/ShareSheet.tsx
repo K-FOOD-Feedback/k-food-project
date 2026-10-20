@@ -5,6 +5,8 @@ import { useLayoutEffect, useRef, useState, type ReactNode, type RefObject } fro
 import { Icon, type IconName } from "@/components/Icon";
 import { BottomSheet } from "@/components/Layout";
 import { track } from "@/lib/analytics";
+import { cardShapeAt, type CardShape } from "@/app/home/cardShapes";
+import { HOME_POSTS } from "@/app/home/mockPosts";
 import { CARD_H, CARD_STYLES, CARD_W, ShareCard, type CardLang, type CardTheme, type ShareCardPost } from "./ShareCard";
 
 /**
@@ -12,29 +14,45 @@ import { CARD_H, CARD_STYLES, CARD_W, ShareCard, type CardLang, type CardTheme, 
  * 레퍼런스: Spotify 공유 카드 · Eimi 공유 카드
  * - 열릴 때: 완료 화면의 카드가 아래로 내려오며 작아져 시트 안 카드 자리로 들어감 (origin)
  * - 위: 인스타 스토리용 세로 카드. 옆으로 넘겨 디자인 고르기 (Photo · Vote · Verdict)
- *   카드를 탭하면 스티커가 다시 붙음 / 마우스로 문지르면 3D로 기울어짐
- * - 가운데: 디자인 탭 + 색 고르기 (브랜드 색 5) → 아래에서 차오르듯 바뀜
+ *   사진은 그 글의 메인 카드 모양 그대로 / 마우스로 문지르면 3D로 기울어짐
+ * - 가운데: 디자인 탭 + 색 고르기 (앱 색 그라데이션 5) → 아래에서 차오르듯 바뀜
  * - 아래: 이미지 저장 · 스토리 · 링크 복사 · 메시지 · WhatsApp · X · 더보기
  * TODO: 서버 연결 후 링크가 실제 글 주소로 열리게 / 카카오톡은 Kakao SDK 앱 키 받으면 추가
  */
 const GAP = 14; // 카드 사이 간격
 const STEP = CARD_W + GAP;
 
-// 카드 색 — 브랜드 색끼리 섞은 그라데이션 (레퍼런스: TYB 카드). 사진에서 뽑은 색은 칙칙해서 뺌
-// 마지막은 어두운 카드 — 모서리에 브랜드 색 빛
+// 카드 색 — 앱 화면에 쓰인 색(브랜드 색 · 메인 카드 색 · 한마디 말풍선 색)으로 서로 다른 느낌 5가지 (레퍼런스: TYB 카드)
+// 밝은 4개는 진한 띠(ink), 보라·어두운 카드는 노랑/라임 띠
 const INK_DARK = { ink: "var(--color-on-light)", inkText: "var(--color-on-dark)" };
 export const THEMES: CardTheme[] = [
-  { bg: "linear-gradient(in oklab 160deg, var(--color-content) 0%, var(--color-primary) 100%)", fg: "var(--color-on-light)", ...INK_DARK },
-  { bg: "linear-gradient(in oklab 160deg, var(--color-primary) 0%, var(--color-lilac) 55%, var(--color-secondary) 100%)", fg: "var(--color-on-light)", ...INK_DARK },
-  { bg: "linear-gradient(in oklab 160deg, var(--color-lilac) 0%, var(--color-content) 100%)", fg: "var(--color-on-light)", ...INK_DARK },
-  { bg: "linear-gradient(in oklab 160deg, var(--color-secondary) 0%, var(--color-lilac) 100%)", fg: "var(--color-on-light)", ...INK_DARK },
+  // 라임 → 노랑 (상큼)
+  { bg: "linear-gradient(in oklab 160deg, var(--color-lime) 0%, var(--color-content) 100%)", fg: "var(--color-on-light)", ...INK_DARK },
+  // 복숭아 → 핑크 (따뜻)
+  { bg: "linear-gradient(in oklab 160deg, var(--color-peach) 0%, var(--color-primary) 100%)", fg: "var(--color-on-light)", ...INK_DARK },
+  // 하늘 → 연보라 (시원)
+  { bg: "linear-gradient(in oklab 160deg, var(--color-sky) 0%, var(--color-lavender) 100%)", fg: "var(--color-on-light)", ...INK_DARK },
+  // 진보라 → 핑크 (진하고 볼드)
   {
-    bg: "radial-gradient(circle at 0% 0%, color-mix(in oklab, var(--color-primary) 55%, transparent), transparent 55%), radial-gradient(circle at 100% 100%, color-mix(in oklab, var(--color-secondary) 55%, transparent), transparent 60%), var(--color-surface)",
+    bg: "linear-gradient(in oklab 160deg, var(--color-violet) 0%, var(--color-primary) 100%)",
     fg: "var(--color-on-dark)",
     ink: "var(--color-content)",
     inkText: "var(--color-on-light)",
   },
+  // 어두운 카드 — 모서리에 라임·보라 빛
+  {
+    bg: "radial-gradient(circle at 0% 0%, color-mix(in oklab, var(--color-lime) 45%, transparent), transparent 55%), radial-gradient(circle at 100% 100%, color-mix(in oklab, var(--color-violet) 70%, transparent), transparent 60%), var(--color-surface)",
+    fg: "var(--color-on-dark)",
+    ink: "var(--color-lime)",
+    inkText: "var(--color-on-light)",
+  },
 ];
+
+/** 이 글의 사진 모양 — 메인 카드와 같게 (덱 순서대로 모양이 정해짐, 내 글은 맨 앞 카드 모양) */
+export function shapeOfPost(postId: string): CardShape {
+  const i = HOME_POSTS.findIndex((p) => p.id === postId);
+  return cardShapeAt(Math.max(0, i));
+}
 
 // 시트 글 — 한국인 화면(상세 ⋯)은 한국어, 외국인 화면(글 올린 뒤)은 영어
 const COPY = {
@@ -42,7 +60,6 @@ const COPY = {
     sheet: "Share with friends",
     text: (title: string) => `Is this real K-food? 🇰🇷 Koreans, judge my "${title}"`,
     card: (label: string) => `${label} card`,
-    shuffle: "tap to shuffle stickers",
     styles: "Card style",
     colors: "Card color",
     color: (n: number) => `Color ${n}`,
@@ -61,7 +78,6 @@ const COPY = {
     sheet: "친구에게 공유",
     text: (title: string) => `이거 찐 한식 맞아? 🇰🇷 "${title}" 같이 판결해 줘`,
     card: (label: string) => `${label} 카드`,
-    shuffle: "누르면 스티커가 바뀌어요",
     styles: "카드 모양",
     colors: "카드 색",
     color: (n: number) => `색 ${n}`,
@@ -81,7 +97,6 @@ const COPY = {
     sheet: "分享给朋友",
     text: (title: string) => `这是正宗韩餐吗？🇰🇷 韩国人来评评我的「${title}」`,
     card: (label: string) => `${label}卡片`,
-    shuffle: "点一下换贴纸",
     styles: "卡片样式",
     colors: "卡片颜色",
     color: (n: number) => `颜色 ${n}`,
@@ -100,7 +115,6 @@ const COPY = {
     sheet: "友だちにシェア",
     text: (title: string) => `これって本物の韓国料理？🇰🇷 韓国の人、私の「${title}」をジャッジして`,
     card: (label: string) => `${label}カード`,
-    shuffle: "タップするとステッカーが変わります",
     styles: "カードの形",
     colors: "カードの色",
     color: (n: number) => `色 ${n}`,
@@ -137,6 +151,7 @@ export function ShareSheet({
   lang?: CardLang;
 }) {
   const t = COPY[lang];
+  const shape = shapeOfPost(postId);
   // 시트는 버튼을 누른 뒤(브라우저에서만) 열리므로 여기서 주소를 읽어도 됩니다
   const url = open ? `${window.location.origin}/posts/${postId}` : "";
   const text = t.text(post.title);
@@ -147,7 +162,6 @@ export function ShareSheet({
 
   const [active, setActive] = useState(0); // 가운데 카드
   const [scroll, setScroll] = useState(0); // 넘기는 중 위치 (0 ~ 2, 소수)
-  const [seed, setSeed] = useState(0);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [toast, setToast] = useState("");
   const style = CARD_STYLES[active].id;
@@ -369,12 +383,9 @@ export function ShareSheet({
               <button
                 key={s.id}
                 type="button"
-                aria-label={isActive ? `${t.card(s.label[lang])} — ${t.shuffle}` : t.card(s.label[lang])}
-                onClick={() => {
-                  if (!isActive) return goTo(i);
-                  track("share_card_shuffled", { style: s.id, taps: seed + 1 });
-                  setSeed((n) => n + 1);
-                }}
+                aria-label={t.card(s.label[lang])}
+                // 옆 카드를 누르면 그 카드로 (스티커 다시 붙이기는 뺌 — 송희)
+                onClick={() => !isActive && goTo(i)}
                 onPointerMove={(e) => {
                   if (!isActive || e.pointerType !== "mouse") return;
                   const r = e.currentTarget.getBoundingClientRect();
@@ -402,7 +413,7 @@ export function ShareSheet({
                     }}
                     className="relative rounded-[22px] shadow-[0_16px_40px_rgba(0,0,0,0.45)]"
                   >
-                    <ShareCard style={s.id} post={post} theme={theme} seed={seed} lang={lang} />
+                    <ShareCard style={s.id} post={post} theme={theme} seed={0} lang={lang} shape={shape} />
                   </div>
                 </div>
               </button>

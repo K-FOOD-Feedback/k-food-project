@@ -19,6 +19,7 @@ import { VoteBowl } from "@/app/posts/[id]/VoteBowl";
 import { paperlogy } from "@/app/posts/[id]/font";
 import { ShareCard, type CardStyle } from "@/app/write/done/ShareCard";
 import { THEMES } from "@/app/write/done/ShareSheet";
+import { cardShapeAt } from "@/app/home/cardShapes";
 import { TextField } from "@/components/Field";
 import {
   CARD_CASES,
@@ -191,14 +192,14 @@ export function EdgeCasesScreen() {
             </div>
           </Case>
         ))}
-        {/* 색 5가지 × 언어 4가지 — 그라데이션·어두운 카드에서 글자·띠·스티커가 잘 보이는지, 언어별 큰 제목 길이 */}
+        {/* 색 5가지 × 언어 4가지 — 그라데이션·어두운 카드에서 글자·띠·스티커가 잘 보이는지, 언어별 큰 제목 길이 (사진 모양도 5가지 돌아가며) */}
         {(["en", "ko", "zh", "ja"] as const).map((l) => (
           <Case key={l} label={`색 5가지 · ${l}`}>
             <div className="flex gap-2 overflow-x-auto pb-2">
               {THEMES.map((th, i) =>
                 SHARE_STYLES.map((s) => (
                   <div key={`${i}-${s}`} className="shrink-0">
-                    <ShareCard style={s} post={SHARE_SAMPLE} theme={th} seed={i} lang={l} />
+                    <ShareCard style={s} post={SHARE_SAMPLE} theme={th} seed={i} lang={l} shape={cardShapeAt(i)} />
                   </div>
                 )),
               )}
