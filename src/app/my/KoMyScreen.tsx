@@ -111,7 +111,7 @@ const COPY: Record<
     votes: "投票",
     comments: "コメント",
     noVotes: "まだ投票した投稿がありません",
-    noVotesBody: "海外の友だちが作った韓国料理に一票入れてみよう。",
+    noVotesBody: "海外の友だちが作った韓国料理に一票入れてみましょう。",
     goVote: "投票しに行く",
     noComments: "まだコメントがありません",
     noCommentsBody: "投票した投稿にコメントを残すと、ここに集まります。",

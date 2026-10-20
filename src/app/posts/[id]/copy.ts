@@ -184,7 +184,7 @@ export const COMMENTS_COPY = {
     openAll: "コメントをすべて見る",
     emptyPile: "まだひとことがありません\n最初のひとことを残してみて",
     recent: "最近のコメント",
-    leave: "ひとこと残してみて",
+    leave: "ひとことどうぞ",
     leaveLabel: "ひとことを残す",
     send: "送信",
     leaveEmoji: (emoji: string) => `${emoji} を送る`,
@@ -205,16 +205,16 @@ export const COMMENTS_COPY = {
     deleteComment: "ひとことを削除",
     editLabel: "ひとことを直す",
     edited: "編集済み",
-    emptyReplies: "このひとこと、\nどう思う？",
+    emptyReplies: "このひとこと、\nどう思いますか？",
     editReply: "返信を編集",
     deleteReply: "返信を削除",
     reportReply: "返信を通報",
     cancelReplyTo: "返信をやめる",
-    leaveReply: "返信を残してみて",
+    leaveReply: "返信をどうぞ",
     leaveReplyLabel: "返信を残す",
     sendReply: "返信を送る",
     reportTitle: "この返信を通報しますか？",
-    reportAsk: "通報する理由は？",
+    reportAsk: "通報の理由を選んでください",
     reportPlaceholder: "理由を書いてください",
     reportNote: "通報すると、この返信はあなたの画面で非表示になります。確認したうえで対応します。",
     cancel: "キャンセル",
@@ -226,9 +226,9 @@ export const COMMENTS_COPY = {
     more: "その他",
     reportCommentTitle: "このひとことを通報しますか？",
     reportCommentNote: "通報すると、このひとことはあなたの画面で非表示になります。確認したうえで対応します。",
-    leaveCard: "ひとこと\n残してみて",
+    leaveCard: "ひとこと\nどうぞ",
     loginTitle: "ログインしてひとことを残す",
-    loginBody: "Google なら数秒で完了。韓国の人とこの料理について話してみて。",
+    loginBody: "Google なら数秒で完了。韓国の人とこの料理について話してみましょう。",
   },
 } satisfies Record<CommentsLang, Record<string, unknown>>;
 
@@ -363,16 +363,16 @@ export const DETAIL_COPY = {
     resultsTotal: (n: number) => ["", compactCount(n, "ja"), "人の韓国人が投票しました"],
     resultsNote: "投票できるのは韓国人だけです",
     resultLabel: (label: string, pct: number, top: boolean) => `${label} ${pct}%${top ? "（いちばん多い）" : ""}`,
-    voteAsk: ["あなたはどう思う？", "投票してね！"],
+    voteAsk: ["あなたはどう思いますか？", "投票してみましょう！"],
     voted: "投票完了！",
     sameThink: (total: number, same: number, side: SameSide) =>
       side === "alone"
-        ? [`${compactCount(total, "ja")}人中 `, "あなただけ", " がこの考え 😎"]
+        ? [`${compactCount(total, "ja")}人中 `, "あなただけ", " がこの考えです 😎"]
         : side === "top"
-          ? [`${compactCount(total, "ja")}人中 `, `${compactCount(same, "ja")}人`, " があなたの味方 🤝"]
+          ? [`${compactCount(total, "ja")}人中 `, `${compactCount(same, "ja")}人`, " があなたの味方です 🤝"]
           : side === "few"
-            ? [`${compactCount(total, "ja")}人中たった `, `${compactCount(same, "ja")}人`, " …少数派 😎"]
-            : [`${compactCount(total, "ja")}人中 `, `${compactCount(same, "ja")}人`, " があなたと同じ考え"],
+            ? [`${compactCount(total, "ja")}人中たった `, `${compactCount(same, "ja")}人`, " …少数派です 😎"]
+            : [`${compactCount(total, "ja")}人中 `, `${compactCount(same, "ja")}人`, " があなたと同じ考えです"],
     changeHint: "ほかの選択肢を押すと選び直せます",
     tokenLabel: "投票トークン — 選択肢までドラッグするか、選択肢を押して投票",
     optionVote: (label: string) => `${label}に投票`,
@@ -381,10 +381,10 @@ export const DETAIL_COPY = {
     voteConfirm: (label: string) => `「${label}」に投票しますか？`,
     voteNow: "投票する",
     lock: ["投票すると、みんなと", "ひとことを交わせます！"],
-    shareTitle: "自分の味覚が普通か確かめる",
-    shareSub: "シェアしてみんなの意見を聞いてみよう！",
-    shareTitleForeign: "韓国人の本音を見てみよう",
-    shareSubForeign: "友だちにシェアして一緒に語ろう！",
+    shareTitle: "自分の味覚が普通か確かめてみましょう",
+    shareSub: "シェアしてみんなの意見を聞いてみましょう！",
+    shareTitleForeign: "韓国人の本音を見てみましょう",
+    shareSubForeign: "友だちにシェアして一緒に話しましょう！",
     copied: "リンクをコピーしました",
     copyFail: "リンクをコピーできませんでした",
   },

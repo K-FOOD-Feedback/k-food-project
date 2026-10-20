@@ -22,7 +22,7 @@ export const TIME = { MIN, HOUR, DAY };
 
 /**
  * 한마디 시간 (화면 언어) — 지난 시간으로 셈 (달력 날짜 X)
- *   1분 안 방금/Just now/刚刚/たった今 · 1시간 안 5분 전/5m/5分钟前/5分前 · 24시간 안 3시간 전/3h/3小时前/3時間前
+ *   1분 안 방금/Just now/刚刚/今 · 1시간 안 5분 전/5m/5分钟前/5分前 · 24시간 안 3시간 전/3h/3小时前/3時間前
  *   · 48시간 안 어제/Yesterday/昨天/昨日 · 7일 안 3일 전/3d/3天前/3日前
  *   · 올해 9/4 (한·중·일 월/일) · Sep 4 (영어) · 작년 이전 2025/9/4 · Sep 4, 2025
  * 영어를 9/4/2025 처럼 숫자로만 쓰지 않는 이유: 미국은 월/일, 영국·호주 등은 일/월이라 9/4가 4월 9일로 읽힘
@@ -31,7 +31,7 @@ const AGO: Record<UiLang, { now: string; min: (n: number) => string; hour: (n: n
   en: { now: "Just now", min: (n) => `${n}m`, hour: (n) => `${n}h`, yesterday: "Yesterday", day: (n) => `${n}d` },
   ko: { now: "방금", min: (n) => `${n}분 전`, hour: (n) => `${n}시간 전`, yesterday: "어제", day: (n) => `${n}일 전` },
   zh: { now: "刚刚", min: (n) => `${n}分钟前`, hour: (n) => `${n}小时前`, yesterday: "昨天", day: (n) => `${n}天前` },
-  ja: { now: "たった今", min: (n) => `${n}分前`, hour: (n) => `${n}時間前`, yesterday: "昨日", day: (n) => `${n}日前` },
+  ja: { now: "今", min: (n) => `${n}分前`, hour: (n) => `${n}時間前`, yesterday: "昨日", day: (n) => `${n}日前` },
 };
 export function timeAgo(at: number, now: number, lang: UiLang) {
   const t = AGO[lang];
