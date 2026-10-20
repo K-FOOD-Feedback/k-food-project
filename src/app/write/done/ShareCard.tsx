@@ -1,5 +1,5 @@
 /* eslint-disable @next/next/no-img-element -- 이미지로 저장할 카드라 next/image 대신 img (html-to-image가 그대로 그림) */
-import type { CSSProperties } from "react";
+import { memo, type CSSProperties } from "react";
 import { CARD_SHAPES, type CardShape } from "@/app/home/cardShapes";
 
 /*
@@ -216,7 +216,8 @@ function Sparkles({ style, seed }: { style: CardStyle; seed: number }) {
   ));
 }
 
-export function ShareCard({
+/** 카드 — 넘기거나 기울일 때 부모가 다시 그려져도 카드 내용은 다시 그리지 않게 memo */
+export const ShareCard = memo(function ShareCard({
   style,
   post,
   theme,
@@ -243,25 +244,21 @@ export function ShareCard({
       {style === "vote" && <VoteCard post={post} theme={theme} t={t} shape={shape} />}
       {style === "verdict" && <VerdictCard post={post} theme={theme} t={t} />}
 
-      {/* 스티커 — 오려 붙인 것처럼 흰 테두리 + 그림자. key가 바뀌면 톡 튀어나옴 */}
+      {/* 스티커 — 오려 붙인 것처럼 흰 테두리 + 그림자
+          흰 테두리는 border로 (그림자 퍼짐으로 그리면 이미지 저장 때 기울어진 스티커 옆에 반원이 따로 찍힘)
+          기울기도 rotate 속성 대신 transform으로 (저장 라이브러리가 그대로 옮기게) */}
       {stickersFor(style, seed, lang).map((s, i) => (
         <span
           key={`${seed}-${i}`}
-          className="absolute animate-pop whitespace-nowrap rounded-full px-2.5 py-1.5 font-display text-[11px] leading-none text-on-light"
-          style={{
-            ...s.spot,
-            background: s.color,
-            rotate: `${s.rotate}deg`,
-            animationDelay: `${i * 90}ms`,
-            boxShadow: "0 0 0 2px #ffffff, 0 5px 12px rgba(0,0,0,0.28)",
-          }}
+          className="absolute whitespace-nowrap rounded-full border-2 border-white px-2 py-1 font-display text-[11px] leading-none text-on-light shadow-[0_5px_12px_rgba(0,0,0,0.28)]"
+          style={{ ...s.spot, background: s.color, transform: `rotate(${s.rotate}deg)` }}
         >
           {s.text}
         </span>
       ))}
     </div>
   );
-}
+});
 
 /*
   카드 안 간격 (위계)
@@ -276,12 +273,12 @@ function Footer({ t }: { t: Copy }) {
   return (
     <div className="mt-auto flex items-center justify-between border-t border-current/15 pt-2.5 text-[8px] font-bold leading-none">
       <span className="font-display text-[10px]">오늘의 참견</span>
-      <span className="opacity-70">{t.footer}</span>
+      <span className="whitespace-nowrap opacity-70">{t.footer}</span>
     </div>
   );
 }
 
-/** 흰 테두리 두께 — 사진과 같은 모양을 12방향으로 이만큼씩 밀어 깔아서 만듦 (모양이 오목해도 두께가 일정) */
+/** 흰 테두리 두께 — 사진과 같은 모양을 12방향으로 이만큼씩 밀어 겹친 흰 판 (모양이 오목해도 두께가 일정) */
 const OUTLINE_PX = 4;
 const OUTLINE_DIRS = Array.from({ length: 12 }, (_, i) => {
   const a = (i / 12) * Math.PI * 2;
@@ -291,18 +288,32 @@ const OUTLINE_DIRS = Array.from({ length: 12 }, (_, i) => {
 /**
  * 사진 스티커 — 그 글의 메인 카드 모양 + 흰 테두리 (오려 붙인 느낌)
  * 모양마다 채우는 면적이 달라서(꽃 68% ~ 겹친 알약 94%) 메인 카드처럼 scale로 크기를 맞춤 (자리는 같은 크기로 둠)
- * 테두리: 예전엔 줄인 사진을 큰 흰 모양 위에 얹었는데, 클로버·꽃처럼 오목한 모양은 줄이면 모양이 달라져서 두께가 들쭉날쭉
- *   → 같은 모양의 흰 판을 사방으로 조금씩 밀어 여러 장 깔고 그 위에 사진 (filter 없이 — 이미지 저장에도 그대로 찍히게)
+ * 테두리: 흰 판 하나에 마스크를 12겹(방향마다 4px씩 민 자리) 겹쳐 그림 — 판을 12장 쌓으면 넘길 때 무거워서 한 장으로
+ *   (filter·그림자 없이 — 넘길 때 다시 그리는 비용을 줄이고, 이미지 저장에도 그대로 찍히게)
  */
 function StickerPhoto({ src, size, rotate, shape, className = "" }: { src: string; size: number; rotate: number; shape: CardShape; className?: string }) {
   const mask = maskOf(shape);
   const box = Math.round((size - OUTLINE_PX * 2) * shape.scale);
+  const layers = OUTLINE_DIRS.map(() => mask).join(", ");
+  const positions = OUTLINE_DIRS.map((d) => `${(OUTLINE_PX + d.x).toFixed(2)}px ${(OUTLINE_PX + d.y).toFixed(2)}px`).join(", ");
+  const sizes = OUTLINE_DIRS.map(() => `${box}px ${box}px`).join(", ");
   return (
     <div className={`relative flex shrink-0 items-center justify-center ${className}`} style={{ width: size, height: size }}>
-      <div className="relative shrink-0 drop-shadow-[0_8px_14px_rgba(0,0,0,0.3)]" style={{ width: box, height: box, rotate: `${rotate}deg` }}>
-        {OUTLINE_DIRS.map((d, i) => (
-          <div key={i} className="absolute inset-0 bg-white" style={{ ...maskStyle(mask), translate: `${d.x}px ${d.y}px` }} />
-        ))}
+      <div className="relative shrink-0" style={{ width: box, height: box, transform: `rotate(${rotate}deg)` }}>
+        <div
+          className="absolute bg-white"
+          style={{
+            inset: -OUTLINE_PX,
+            maskImage: layers,
+            WebkitMaskImage: layers,
+            maskPosition: positions,
+            WebkitMaskPosition: positions,
+            maskSize: sizes,
+            WebkitMaskSize: sizes,
+            maskRepeat: "no-repeat",
+            WebkitMaskRepeat: "no-repeat",
+          }}
+        />
         <ShapePhoto src={src} size={box} mask={mask} className="absolute inset-0" />
       </div>
     </div>

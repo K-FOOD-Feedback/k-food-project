@@ -158,7 +158,16 @@ export function ShareSheet({
   const [prevBg, setPrevBg] = useState<string | null>(null);
 
   const [active, setActive] = useState(0); // 가운데 카드
-  const [scroll, setScroll] = useState(0); // 넘기는 중 위치 (0 ~ 2, 소수)
+  // 넘기는 중 카드 모양(작아짐·기울기·흐림)은 state 대신 바로 style로 — 매 프레임 다시 그리지 않게 (예전엔 넘길 때 카드가 떨리고 무거웠음)
+  const slides = useRef<(HTMLDivElement | null)[]>([]);
+  const placeSlides = (pos: number) => {
+    slides.current.forEach((el, i) => {
+      if (!el) return;
+      const d = Math.max(-1, Math.min(1, i - pos));
+      el.style.transform = `scale(${1 - Math.abs(d) * 0.1}) rotate(${d * 5}deg)`;
+      el.style.opacity = `${1 - Math.abs(d) * 0.45}`;
+    });
+  };
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [toast, setToast] = useState("");
   const style = CARD_STYLES[active].id;
@@ -170,10 +179,13 @@ export function ShareSheet({
     setWasOpen(open);
     if (open) {
       setActive(0);
-      setScroll(0);
       setTilt({ x: 0, y: 0 });
     }
   }
+  // 열릴 때 카드 모양도 첫 카드 기준으로 (넘기던 중 닫았다가 다시 열어도)
+  useLayoutEffect(() => {
+    if (open) placeSlides(0);
+  }, [open]);
 
   const rail = useRef<HTMLDivElement>(null);
   const cards = useRef<(HTMLDivElement | null)[]>([]);
@@ -258,7 +270,7 @@ export function ShareSheet({
     const el = rail.current;
     if (!el) return;
     const pos = el.scrollLeft / STEP;
-    setScroll(pos);
+    placeSlides(pos);
     const i = Math.max(0, Math.min(CARD_STYLES.length - 1, Math.round(pos)));
     if (i !== active) {
       setActive(i);
@@ -374,7 +386,6 @@ export function ShareSheet({
           style={{ gap: GAP, paddingInline: `calc(50% - ${CARD_W / 2}px)` }}
         >
           {CARD_STYLES.map((s, i) => {
-            const d = i - scroll;
             const isActive = i === active;
             return (
               <button
@@ -392,14 +403,20 @@ export function ShareSheet({
                 className="relative shrink-0 snap-center [perspective:800px] transition-transform active:scale-[0.97]"
                 style={{ width: CARD_W, height: CARD_H }}
               >
+                {/* 바깥: 넘기는 위치에 따라 작아지고 기울어짐 (손가락을 그대로 따라가야 해서 전환 효과 없음) */}
+                <div
+                  ref={(el) => {
+                    slides.current[i] = el;
+                  }}
+                  className="relative size-full will-change-transform"
+                  style={i === 0 ? undefined : { transform: "scale(0.9) rotate(5deg)", opacity: 0.55 }}
+                >
+                {/* 안: 마우스로 문지르면 3D로 기울어짐 (이것만 부드럽게 따라감) */}
                 <div
                   className="relative size-full"
                   style={{
-                    transform: `rotateY(${isActive ? tilt.y : 0}deg) rotateX(${isActive ? tilt.x : 0}deg) scale(${
-                      1 - Math.min(Math.abs(d), 1) * 0.1
-                    }) rotate(${Math.max(-1, Math.min(1, d)) * 5}deg)`,
+                    transform: isActive && (tilt.x || tilt.y) ? `rotateY(${tilt.y}deg) rotateX(${tilt.x}deg)` : undefined,
                     transition: "transform 160ms ease-out",
-                    opacity: 1 - Math.min(Math.abs(d), 1) * 0.45,
                   }}
                 >
                   {/* 이전 색 (새 색이 차오르는 동안 뒤에 보임) */}
@@ -412,6 +429,7 @@ export function ShareSheet({
                   >
                     <ShareCard style={s.id} post={post} theme={theme} seed={0} lang={lang} shape={shape} />
                   </div>
+                </div>
                 </div>
               </button>
             );
