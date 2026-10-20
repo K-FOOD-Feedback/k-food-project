@@ -36,6 +36,21 @@ const OPTIONS: Record<string, { zh: string[]; ja: string[] }> = {
   fix: { zh: ["少放\n芝士", "再辣\n一点", "这样就\n很完美"], ja: ["チーズ\n控えめに", "もっと\n辛く", "このままで\n完璧"] },
 };
 
+/** 투표 질문 영·중·일 (목업 — 한국어는 post.question.text). 공유 카드의 투표 질문에 씀 (송희) */
+const QUESTIONS: Record<string, { en: string; zh: string; ja: string }> = {
+  "1": { en: "Is it like the Buldak you eat in Korea?", zh: "和在韩国吃的火鸡面像吗？", ja: "韓国で食べるブルダックと似ていますか？" },
+  "2": { en: "Would you eat this Buldak?", zh: "这碗火鸡面，你想吃吗？", ja: "このブルダック、食べたいですか？" },
+  "3": { en: "What should I fix?", zh: "我该改进哪里？", ja: "どこを直せばいいですか？" },
+  "4": { en: "Do Koreans eat Buldak for breakfast too?", zh: "在韩国也会早餐吃火鸡面吗？", ja: "韓国でも朝ごはんにブルダックを食べますか？" },
+  "5": { en: "Would you eat Buldak with rice cakes?", zh: "加了年糕的火鸡面，你想吃吗？", ja: "トッポッキ入りブルダック、食べたいですか？" },
+};
+
+/** 투표 질문을 고른 언어로 (번역이 없으면 원문 — 내 글은 쓴 언어 그대로) */
+export function questionIn(post: HomePost, lang: UiLang): string {
+  if (lang === "ko") return post.question.text;
+  return QUESTIONS[post.id]?.[lang] ?? post.question.text;
+}
+
 /** 글 본문을 고른 언어로 (한국어가 아니면 번역, 없으면 영어) */
 export function bodyIn(post: HomePost, lang: UiLang): string {
   if (lang === "ko") return post.body;

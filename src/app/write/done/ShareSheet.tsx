@@ -22,28 +22,25 @@ import { CARD_H, CARD_STYLES, CARD_W, ShareCard, type CardLang, type CardTheme, 
 const GAP = 14; // 카드 사이 간격
 const STEP = CARD_W + GAP;
 
-// 카드 색 — 앱 화면에 쓰인 색(브랜드 색 · 메인 카드 색 · 한마디 말풍선 색)으로 서로 다른 느낌 5가지 (레퍼런스: TYB 카드)
-// 밝은 4개는 진한 띠(ink), 보라·어두운 카드는 노랑/라임 띠
+// 카드 색 — 앱 화면에 쓰인 색으로 느낌이 다른 5가지 (레퍼런스: TYB 카드)
+// 음식 사진이 주인공이라 배경은 흰색을 섞어 부드럽게 (쨍한 색끼리 섞으면 음식이 덜 맛있어 보임 — 송희)
+// 마지막은 어두운 카드 — 음식이 가장 돋보임
 const INK_DARK = { ink: "var(--color-on-light)", inkText: "var(--color-on-dark)" };
+const soft = (color: string, amount: number) => `color-mix(in oklab, ${color} ${amount}%, white)`;
 export const THEMES: CardTheme[] = [
-  // 라임 → 노랑 (상큼)
-  { bg: "linear-gradient(in oklab 160deg, var(--color-lime) 0%, var(--color-content) 100%)", fg: "var(--color-on-light)", ...INK_DARK },
-  // 복숭아 → 핑크 (따뜻)
-  { bg: "linear-gradient(in oklab 160deg, var(--color-peach) 0%, var(--color-primary) 100%)", fg: "var(--color-on-light)", ...INK_DARK },
-  // 하늘 → 연보라 (시원)
-  { bg: "linear-gradient(in oklab 160deg, var(--color-sky) 0%, var(--color-lavender) 100%)", fg: "var(--color-on-light)", ...INK_DARK },
-  // 진보라 → 핑크 (진하고 볼드)
+  // 버터 (따뜻한 크림 → 노랑)
+  { bg: `linear-gradient(in oklab 165deg, ${soft("var(--color-content)", 25)} 0%, ${soft("var(--color-content)", 75)} 100%)`, fg: "var(--color-on-light)", ...INK_DARK },
+  // 살구 (연한 복숭아 → 핑크)
+  { bg: `linear-gradient(in oklab 165deg, ${soft("var(--color-peach)", 35)} 0%, ${soft("var(--color-primary)", 60)} 100%)`, fg: "var(--color-on-light)", ...INK_DARK },
+  // 하늘 (연한 하늘 → 연보라)
+  { bg: `linear-gradient(in oklab 165deg, ${soft("var(--color-sky)", 40)} 0%, ${soft("var(--color-lavender)", 65)} 100%)`, fg: "var(--color-on-light)", ...INK_DARK },
+  // 라임 (연한 라임 → 버터)
+  { bg: `linear-gradient(in oklab 165deg, ${soft("var(--color-lime)", 45)} 0%, ${soft("var(--color-content)", 45)} 100%)`, fg: "var(--color-on-light)", ...INK_DARK },
+  // 어두운 카드 — 모서리에 은은한 노랑·핑크 빛
   {
-    bg: "linear-gradient(in oklab 160deg, var(--color-violet) 0%, var(--color-primary) 100%)",
+    bg: "radial-gradient(circle at 0% 0%, color-mix(in oklab, var(--color-content) 28%, transparent), transparent 55%), radial-gradient(circle at 100% 100%, color-mix(in oklab, var(--color-primary) 30%, transparent), transparent 60%), var(--color-surface)",
     fg: "var(--color-on-dark)",
     ink: "var(--color-content)",
-    inkText: "var(--color-on-light)",
-  },
-  // 어두운 카드 — 모서리에 라임·보라 빛
-  {
-    bg: "radial-gradient(circle at 0% 0%, color-mix(in oklab, var(--color-lime) 45%, transparent), transparent 55%), radial-gradient(circle at 100% 100%, color-mix(in oklab, var(--color-violet) 70%, transparent), transparent 60%), var(--color-surface)",
-    fg: "var(--color-on-dark)",
-    ink: "var(--color-lime)",
     inkText: "var(--color-on-light)",
   },
 ];

@@ -22,7 +22,7 @@ import { CommentPile } from "./CommentPile";
 import { DETAIL_COPY, type CommentsLang } from "./copy";
 import { nameIn, titleIn } from "@/app/home/titles";
 import { cjkPhrases, PhraseText } from "@/app/home/phrases";
-import { bodyIn, optionsIn } from "./postText";
+import { bodyIn, optionsIn, questionIn } from "./postText";
 import { notoSansJP, notoSansSC, paperlogy, titleFont } from "./font";
 import { isForeignFrom, withViewer } from "./viewer";
 import { saveKoreanLang, saveViewerLang, useKoreanUiLang, useViewerUiLang } from "./viewerLang";
@@ -990,7 +990,7 @@ function ShareVoteCard({
     title: titleIn(post, contentLang),
     dish: titleIn(post, contentLang),
     photo: post.cardPhoto,
-    voteQuestion: post.question.text,
+    voteQuestion: questionIn(post, contentLang),
     options: optionsIn(post, contentLang).map((o) => o.replace(/\n/g, " ")),
     author: `${post.author.flag} ${nameIn(post, contentLang)}`,
   };

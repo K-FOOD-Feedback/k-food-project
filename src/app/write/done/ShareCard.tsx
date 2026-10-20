@@ -179,7 +179,6 @@ function stickersFor(style: CardStyle, seed: number, lang: CardLang) {
 /*
   꾸밈 그래픽 (레퍼런스: TYB 카드의 반짝이 · 손그림 화살표)
   - 반짝이 ✦: 스타일마다 정해진 자리에 색·크기를 다르게 (탭하면 스티커와 함께 색이 바뀜)
-  - 화살표: 제목 → 사진을 가리키는 손그림 선
 */
 const SPARKLE_PATH = "M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z";
 const SPARKLE_COLORS = ["#ffffff", "var(--color-content)", "var(--color-primary)", "var(--color-secondary)", "var(--color-lilac)"];
@@ -282,55 +281,46 @@ function Footer({ t }: { t: Copy }) {
   );
 }
 
+/** 흰 테두리 두께 — 사진과 같은 모양을 12방향으로 이만큼씩 밀어 깔아서 만듦 (모양이 오목해도 두께가 일정) */
+const OUTLINE_PX = 4;
+const OUTLINE_DIRS = Array.from({ length: 12 }, (_, i) => {
+  const a = (i / 12) * Math.PI * 2;
+  return { x: Math.cos(a) * OUTLINE_PX, y: Math.sin(a) * OUTLINE_PX };
+});
+
 /**
  * 사진 스티커 — 그 글의 메인 카드 모양 + 흰 테두리 (오려 붙인 느낌)
  * 모양마다 채우는 면적이 달라서(꽃 68% ~ 겹친 알약 94%) 메인 카드처럼 scale로 크기를 맞춤 (자리는 같은 크기로 둠)
+ * 테두리: 예전엔 줄인 사진을 큰 흰 모양 위에 얹었는데, 클로버·꽃처럼 오목한 모양은 줄이면 모양이 달라져서 두께가 들쭉날쭉
+ *   → 같은 모양의 흰 판을 사방으로 조금씩 밀어 여러 장 깔고 그 위에 사진 (filter 없이 — 이미지 저장에도 그대로 찍히게)
  */
 function StickerPhoto({ src, size, rotate, shape, className = "" }: { src: string; size: number; rotate: number; shape: CardShape; className?: string }) {
   const mask = maskOf(shape);
-  const box = Math.round(size * shape.scale);
-  const pad = Math.round(box * 0.045);
+  const box = Math.round((size - OUTLINE_PX * 2) * shape.scale);
   return (
     <div className={`relative flex shrink-0 items-center justify-center ${className}`} style={{ width: size, height: size }}>
       <div className="relative shrink-0 drop-shadow-[0_8px_14px_rgba(0,0,0,0.3)]" style={{ width: box, height: box, rotate: `${rotate}deg` }}>
-        <div className="absolute inset-0 bg-white" style={maskStyle(mask)} />
-        <ShapePhoto src={src} size={box - pad * 2} mask={mask} className="absolute" style={{ left: pad, top: pad }} />
+        {OUTLINE_DIRS.map((d, i) => (
+          <div key={i} className="absolute inset-0 bg-white" style={{ ...maskStyle(mask), translate: `${d.x}px ${d.y}px` }} />
+        ))}
+        <ShapePhoto src={src} size={box} mask={mask} className="absolute inset-0" />
       </div>
     </div>
   );
 }
 
 /**
- * 큰 제목 두 줄 — 둘째 줄은 진한 띠로 강조 (레퍼런스: "achieve." 띠), 첫 줄 끝에 손그림 화살표(→ 사진)
+ * 큰 제목 두 줄 — 둘째 줄은 진한 띠로 강조 (레퍼런스: "achieve." 띠), 두 줄은 바짝 붙여 한 덩어리로
  * 중·일은 글자가 넓어서 조금 작게 (둘째 줄 띠가 카드 폭 176 안에 들어가게 — 7자 기준)
  */
 function Headline({ t, theme, cjk }: { t: Copy; theme: CardTheme; cjk: boolean }) {
   return (
-    <div className={`flex flex-col items-start font-display leading-[1.05] tracking-[-0.02em] ${cjk ? "text-[23px]" : "text-[25px]"}`}>
-      <span className="flex items-start gap-1.5">
-        {t.head[0]}
-        <Doodle color={theme.fg} />
-      </span>
-      <span className="-ml-1 mt-0.5 -rotate-2 rounded-[6px] px-1.5 pt-0.5 pb-1" style={{ background: theme.ink, color: theme.inkText }}>
+    <div className={`flex flex-col items-start font-display leading-none tracking-[-0.02em] ${cjk ? "text-[23px]" : "text-[25px]"}`}>
+      <span>{t.head[0]}</span>
+      <span className="-ml-1 -mt-0.5 -rotate-2 rounded-[6px] px-1.5 pt-1 pb-1" style={{ background: theme.ink, color: theme.inkText }}>
         {t.head[1]}
       </span>
     </div>
-  );
-}
-
-/** 손그림 화살표 (제목 → 사진) — 고리 하나 돌고 아래로, 화살촉은 선 끝에 이어 붙임 */
-function Doodle({ color }: { color: string }) {
-  return (
-    <svg viewBox="0 0 44 40" className="pointer-events-none mt-1 shrink-0" style={{ width: 34, height: 30 }} aria-hidden>
-      <path
-        d="M3 8C14 2 26 4 26 14C26 22 16 22 17 15C18 9 30 9 34 18C36 23 35 28 32 33"
-        fill="none"
-        stroke={color}
-        strokeWidth="2.6"
-        strokeLinecap="round"
-      />
-      <path d="M38.4 30.1L32 33L31.5 26" fill="none" stroke={color} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
   );
 }
 
