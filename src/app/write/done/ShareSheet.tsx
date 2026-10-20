@@ -20,13 +20,20 @@ import { CARD_H, CARD_STYLES, CARD_W, ShareCard, type CardLang, type CardTheme, 
 const GAP = 14; // 카드 사이 간격
 const STEP = CARD_W + GAP;
 
-// 카드 색 — 브랜드 색만 (사진에서 뽑은 색은 칙칙해서 뺌)
-const THEMES: CardTheme[] = [
-  { bg: "var(--color-primary)", fg: "var(--color-on-light)" },
-  { bg: "var(--color-content)", fg: "var(--color-on-light)" },
-  { bg: "var(--color-secondary)", fg: "var(--color-on-light)" },
-  { bg: "var(--color-lilac)", fg: "var(--color-on-light)" },
-  { bg: "var(--color-surface)", fg: "var(--color-on-dark)" },
+// 카드 색 — 브랜드 색끼리 섞은 그라데이션 (레퍼런스: TYB 카드). 사진에서 뽑은 색은 칙칙해서 뺌
+// 마지막은 어두운 카드 — 모서리에 브랜드 색 빛
+const INK_DARK = { ink: "var(--color-on-light)", inkText: "var(--color-on-dark)" };
+export const THEMES: CardTheme[] = [
+  { bg: "linear-gradient(in oklab 160deg, var(--color-content) 0%, var(--color-primary) 100%)", fg: "var(--color-on-light)", ...INK_DARK },
+  { bg: "linear-gradient(in oklab 160deg, var(--color-primary) 0%, var(--color-lilac) 55%, var(--color-secondary) 100%)", fg: "var(--color-on-light)", ...INK_DARK },
+  { bg: "linear-gradient(in oklab 160deg, var(--color-lilac) 0%, var(--color-content) 100%)", fg: "var(--color-on-light)", ...INK_DARK },
+  { bg: "linear-gradient(in oklab 160deg, var(--color-secondary) 0%, var(--color-lilac) 100%)", fg: "var(--color-on-light)", ...INK_DARK },
+  {
+    bg: "radial-gradient(circle at 0% 0%, color-mix(in oklab, var(--color-primary) 55%, transparent), transparent 55%), radial-gradient(circle at 100% 100%, color-mix(in oklab, var(--color-secondary) 55%, transparent), transparent 60%), var(--color-surface)",
+    fg: "var(--color-on-dark)",
+    ink: "var(--color-content)",
+    inkText: "var(--color-on-light)",
+  },
 ];
 
 // 시트 글 — 한국인 화면(상세 ⋯)은 한국어, 외국인 화면(글 올린 뒤)은 영어

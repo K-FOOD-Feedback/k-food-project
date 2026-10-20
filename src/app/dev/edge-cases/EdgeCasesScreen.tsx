@@ -18,6 +18,7 @@ import { LoginSheet } from "@/components/LoginSheet";
 import { VoteBowl } from "@/app/posts/[id]/VoteBowl";
 import { paperlogy } from "@/app/posts/[id]/font";
 import { ShareCard, type CardStyle } from "@/app/write/done/ShareCard";
+import { THEMES } from "@/app/write/done/ShareSheet";
 import { TextField } from "@/components/Field";
 import {
   CARD_CASES,
@@ -32,6 +33,7 @@ import {
   OPTIONS_CASES,
   PHOTO_CASES,
   SHARE_CASES,
+  SHARE_SAMPLE,
   TILE_CASES,
   TRANSLATION_CASES,
   AGO_CASES,
@@ -50,7 +52,7 @@ import {
   - 새 컴포넌트를 만들면 아래에 묶음을 하나 추가 (AGENTS.md)
 */
 const noop = () => {};
-const SHARE_THEME = { bg: "var(--color-primary)", fg: "var(--color-on-light)" };
+const SHARE_THEME = THEMES[0];
 const SHARE_STYLES: CardStyle[] = ["photo", "vote", "verdict"];
 
 export function EdgeCasesScreen() {
@@ -186,6 +188,20 @@ export function EdgeCasesScreen() {
                   <ShareCard style={s} post={c.post} theme={SHARE_THEME} seed={1} lang="en" />
                 </div>
               ))}
+            </div>
+          </Case>
+        ))}
+        {/* 색 5가지 × 언어 4가지 — 그라데이션·어두운 카드에서 글자·띠·스티커가 잘 보이는지, 언어별 큰 제목 길이 */}
+        {(["en", "ko", "zh", "ja"] as const).map((l) => (
+          <Case key={l} label={`색 5가지 · ${l}`}>
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              {THEMES.map((th, i) =>
+                SHARE_STYLES.map((s) => (
+                  <div key={`${i}-${s}`} className="shrink-0">
+                    <ShareCard style={s} post={SHARE_SAMPLE} theme={th} seed={i} lang={l} />
+                  </div>
+                )),
+              )}
             </div>
           </Case>
         ))}

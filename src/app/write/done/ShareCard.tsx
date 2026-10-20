@@ -22,11 +22,11 @@ const STAR_MASK = `url("data:image/svg+xml,${encodeURIComponent(
 )}")`;
 
 /** 별 모양으로 잘린 사진 */
-function StarPhoto({ src, size, className = "" }: { src: string; size: number; className?: string }) {
+function StarPhoto({ src, size, className = "", style }: { src: string; size: number; className?: string; style?: CSSProperties }) {
   return (
     <div
       className={`shrink-0 ${className}`}
-      style={{ width: size, height: size, maskImage: STAR_MASK, WebkitMaskImage: STAR_MASK, maskSize: "100% 100%", WebkitMaskSize: "100% 100%" }}
+      style={{ ...style, width: size, height: size, maskImage: STAR_MASK, WebkitMaskImage: STAR_MASK, maskSize: "100% 100%", WebkitMaskSize: "100% 100%" }}
     >
       <img src={src} alt="" className="size-full object-cover" draggable={false} />
     </div>
@@ -57,6 +57,8 @@ const COPY = {
     verdict: "VERDICT",
     pending: "VERDICT PENDING",
     voteNow: "VOTE NOW!",
+    head: ["JUDGE MY", "K-FOOD!"],
+    poll: "🇰🇷 KOREANS VOTE",
   },
   ko: {
     footer: "링크에서 투표하기 👉",
@@ -70,6 +72,8 @@ const COPY = {
     verdict: "판결",
     pending: "판결 대기 중",
     voteNow: "지금 투표하기!",
+    head: ["내 한식,", "판결해 줘!"],
+    poll: "🇰🇷 한국인 투표",
   },
   zh: {
     footer: "韩国人，点链接投票 👉",
@@ -83,6 +87,8 @@ const COPY = {
     verdict: "判决",
     pending: "等待判决",
     voteNow: "现在投票！",
+    head: ["我的韩餐，", "来评评理！"],
+    poll: "🇰🇷 韩国人投票",
   },
   ja: {
     footer: "韓国の人、リンクから投票 👉",
@@ -96,10 +102,16 @@ const COPY = {
     verdict: "判決",
     pending: "判決待ち",
     voteNow: "今すぐ投票！",
+    head: ["私の一皿、", "ジャッジして！"],
+    poll: "🇰🇷 韓国人の投票",
   },
 };
 
-export type CardTheme = { bg: string; fg: string };
+/**
+ * 카드 색 — bg는 그라데이션(CSS background), fg는 글자색,
+ * ink는 제목 강조 띠·선택지 번호처럼 "꽉 찬 덩어리" 색 (inkText는 그 위 글자)
+ */
+export type CardTheme = { bg: string; fg: string; ink: string; inkText: string };
 
 export type ShareCardPost = {
   title: string;
@@ -127,39 +139,80 @@ const STICKER_TEXTS: Record<CardLang, string[]> = {
   ja: ["本物の韓国料理？", "今すぐ投票！", "やりすぎ？🚫", "韓国人集合 🚨", "これって合法？😳", "韓国料理か犯罪か", "一票ください 🙏", "判決をお願い ⚖️"],
 };
 const STICKER_COLORS = ["var(--color-primary)", "var(--color-content)", "var(--color-secondary)", "var(--color-lilac)", "#ffffff"];
-// 카드 스타일마다 스티커가 붙을 만한 자리 — 모두 카드 안쪽(가장자리에서 8 이상)에 둬서 잘리지 않게
+// 카드 스타일마다 스티커가 붙을 만한 자리 — 모두 카드 안쪽(가장자리에서 6 이상)에 둬서 잘리지 않게
 // 두 장은 (0,2) 또는 (1,3) 짝으로 붙으므로 짝끼리 겹치지 않는 자리로
 const SPOTS: Record<CardStyle, CSSProperties[]> = {
-  // 사진 카드는 대각선으로 — 위 한 장 + 사진 아래쪽 한 장
+  // 사진 카드: 사진 오른쪽 위 · 왼쪽 아래 (제목 강조 띠와 제목은 가리지 않게)
   photo: [
-    { top: 14, right: 8 },
-    { top: 18, left: 8 },
-    { top: 156, left: 8 },
-    { top: 152, right: 8 },
+    { top: 76, right: 6 },
+    { top: 84, left: 6 },
+    { top: 200, left: 6 },
+    { top: 196, right: 6 },
   ],
-  // 투표 카드는 한 장은 왼쪽, 한 장은 오른쪽 (사진 양옆)
+  // 투표 카드: 투표 띠 아래 왼쪽 · 사진 아래 오른쪽 (질문·선택지는 가리지 않게 둘 다 질문 위에)
   vote: [
-    { top: 16, right: 8 },
-    { top: 20, left: 8 },
-    { top: 112, left: 8 },
-    { top: 116, right: 8 },
+    { top: 46, left: 8 },
+    { top: 42, left: 10 },
+    { top: 88, right: 8 },
+    { top: 84, right: 6 },
   ],
   // 영수증은 글이 빽빽하고 도장도 있어서 스티커 없음 (도장 아래 VOTE NOW!가 대신)
   verdict: [],
 };
 
-function stickersFor(style: CardStyle, seed: number, bg: string, lang: CardLang) {
-  const colors = STICKER_COLORS.filter((c) => c !== bg);
-  const count = style === "verdict" ? 0 : 2;
+function stickersFor(style: CardStyle, seed: number, lang: CardLang) {
+  // 투표 카드는 위쪽(투표 띠·사진)이 이미 붐벼서 한 장만
+  const count = style === "verdict" ? 0 : style === "vote" ? 1 : 2;
   return Array.from({ length: count }, (_, n) => {
     const k = seed * 7 + n * 3 + style.length;
     return {
       text: STICKER_TEXTS[lang][(seed * 3 + n * 5 + style.length) % STICKER_TEXTS[lang].length],
-      color: colors[(seed + n * 2) % colors.length],
+      color: STICKER_COLORS[(seed + n * 2) % STICKER_COLORS.length],
       spot: SPOTS[style][(seed + n * 2) % SPOTS[style].length],
       rotate: ((k * 37) % 22) - 11,
     };
   });
+}
+
+/*
+  꾸밈 그래픽 (레퍼런스: TYB 카드의 반짝이 · 손그림 화살표)
+  - 반짝이 ✦: 스타일마다 정해진 자리에 색·크기를 다르게 (탭하면 스티커와 함께 색이 바뀜)
+  - 화살표: 제목 → 사진을 가리키는 손그림 선
+*/
+const SPARKLE_PATH = "M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z";
+const SPARKLE_COLORS = ["#ffffff", "var(--color-content)", "var(--color-primary)", "var(--color-secondary)", "var(--color-lilac)"];
+const SPARKLES: Record<CardStyle, { x: number; y: number; s: number }[]> = {
+  photo: [
+    { x: 168, y: 18, s: 14 },
+    { x: 182, y: 46, s: 8 },
+    { x: 14, y: 222, s: 9 },
+    { x: 176, y: 236, s: 12 },
+  ],
+  vote: [
+    { x: 92, y: 20, s: 12 },
+    { x: 106, y: 44, s: 7 },
+    { x: 14, y: 132, s: 8 },
+  ],
+  verdict: [
+    { x: 14, y: 12, s: 12 },
+    { x: 178, y: 20, s: 9 },
+    { x: 20, y: 268, s: 10 },
+    { x: 170, y: 262, s: 14 },
+  ],
+};
+
+function Sparkles({ style, seed }: { style: CardStyle; seed: number }) {
+  return SPARKLES[style].map((p, i) => (
+    <svg
+      key={i}
+      viewBox="0 0 24 24"
+      className="pointer-events-none absolute drop-shadow-[0_1px_2px_rgba(0,0,0,0.15)]"
+      style={{ left: p.x - p.s / 2, top: p.y - p.s / 2, width: p.s, height: p.s }}
+      aria-hidden
+    >
+      <path d={SPARKLE_PATH} fill={SPARKLE_COLORS[(seed + i * 2) % SPARKLE_COLORS.length]} />
+    </svg>
+  ));
 }
 
 export function ShareCard({
@@ -181,16 +234,23 @@ export function ShareCard({
       className="relative overflow-hidden rounded-[22px] text-left break-keep"
       style={{ width: CARD_W, height: CARD_H, background: theme.bg, color: theme.fg }}
     >
-      {style === "photo" && <PhotoCard post={post} t={t} />}
-      {style === "vote" && <VoteCard post={post} t={t} />}
+      <Sparkles style={style} seed={seed} />
+      {style === "photo" && <PhotoCard post={post} theme={theme} t={t} cjk={lang === "zh" || lang === "ja"} />}
+      {style === "vote" && <VoteCard post={post} theme={theme} t={t} />}
       {style === "verdict" && <VerdictCard post={post} theme={theme} t={t} />}
 
-      {/* 스티커 — key가 바뀌면 톡 튀어나옴 */}
-      {stickersFor(style, seed, theme.bg, lang).map((s, i) => (
+      {/* 스티커 — 오려 붙인 것처럼 흰 테두리 + 그림자. key가 바뀌면 톡 튀어나옴 */}
+      {stickersFor(style, seed, lang).map((s, i) => (
         <span
           key={`${seed}-${i}`}
-          className="absolute animate-pop whitespace-nowrap rounded-full px-2.5 py-1.5 font-display text-[11px] leading-none text-on-light shadow-[0_4px_10px_rgba(0,0,0,0.25)]"
-          style={{ ...s.spot, background: s.color, rotate: `${s.rotate}deg`, animationDelay: `${i * 90}ms` }}
+          className="absolute animate-pop whitespace-nowrap rounded-full px-2.5 py-1.5 font-display text-[11px] leading-none text-on-light"
+          style={{
+            ...s.spot,
+            background: s.color,
+            rotate: `${s.rotate}deg`,
+            animationDelay: `${i * 90}ms`,
+            boxShadow: "0 0 0 2px #ffffff, 0 5px 12px rgba(0,0,0,0.28)",
+          }}
         >
           {s.text}
         </span>
@@ -201,13 +261,13 @@ export function ShareCard({
 
 /*
   카드 안 간격 (위계)
-  - 카드 바깥 여백 12 · 묶음 사이 14~16 · 묶음 안 2~4
+  - 카드 바깥 여백 12 · 묶음 사이 12~16 · 묶음 안 2~4
   - 맨 아래 출처 줄은 얇은 선으로 떼어 냄
 */
 
-/** 카드 맨 아래 — 어디서 투표하는지 (세 카드 모두 같은 문구) */
 type Copy = (typeof COPY)["en"];
 
+/** 카드 맨 아래 — 어디서 투표하는지 (세 카드 모두 같은 문구) */
 function Footer({ t }: { t: Copy }) {
   return (
     <div className="mt-auto flex items-center justify-between border-t border-current/15 pt-2.5 text-[8px] font-bold leading-none">
@@ -217,14 +277,65 @@ function Footer({ t }: { t: Copy }) {
   );
 }
 
-function PhotoCard({ post, t }: { post: ShareCardPost; t: Copy }) {
+/** 별 모양 사진 + 흰 테두리 (스티커처럼 오려 붙인 느낌) */
+function StickerPhoto({ src, size, rotate, className = "" }: { src: string; size: number; rotate: number; className?: string }) {
+  const pad = Math.round(size * 0.045);
   return (
-    <div className="flex h-full flex-col p-3">
-      <StarPhoto src={post.photo} size={176} className="mx-auto" />
-      {/* 제목 묶음 */}
-      <div className="flex flex-col gap-1 px-0.5 pt-4 pb-3.5">
-        {/* 제목 2줄·작성자 1줄까지, 넘치면 … (띄어쓰기 없는 긴 단어도 칸 안에서 줄바꿈) */}
-        <p className="line-clamp-2 font-display text-[19px] leading-[1.08] [text-wrap:balance] [overflow-wrap:anywhere]">{post.title}</p>
+    <div
+      className={`relative shrink-0 drop-shadow-[0_8px_14px_rgba(0,0,0,0.3)] ${className}`}
+      style={{ width: size, height: size, rotate: `${rotate}deg` }}
+    >
+      <div
+        className="absolute inset-0 bg-white"
+        style={{ maskImage: STAR_MASK, WebkitMaskImage: STAR_MASK, maskSize: "100% 100%", WebkitMaskSize: "100% 100%" }}
+      />
+      <StarPhoto src={src} size={size - pad * 2} className="absolute" style={{ left: pad, top: pad }} />
+    </div>
+  );
+}
+
+/**
+ * 큰 제목 두 줄 — 둘째 줄은 진한 띠로 강조 (레퍼런스: "achieve." 띠), 첫 줄 끝에 손그림 화살표(→ 사진)
+ * 중·일은 글자가 넓어서 조금 작게 (둘째 줄 띠가 카드 폭 176 안에 들어가게 — 7자 기준)
+ */
+function Headline({ t, theme, cjk }: { t: Copy; theme: CardTheme; cjk: boolean }) {
+  return (
+    <div className={`flex flex-col items-start font-display leading-[1.05] tracking-[-0.02em] ${cjk ? "text-[23px]" : "text-[25px]"}`}>
+      <span className="flex items-start gap-1.5">
+        {t.head[0]}
+        <Doodle color={theme.fg} />
+      </span>
+      <span className="-ml-1 mt-0.5 -rotate-2 rounded-[6px] px-1.5 pt-0.5 pb-1" style={{ background: theme.ink, color: theme.inkText }}>
+        {t.head[1]}
+      </span>
+    </div>
+  );
+}
+
+/** 손그림 화살표 (제목 → 사진) */
+function Doodle({ color }: { color: string }) {
+  return (
+    <svg viewBox="0 0 44 40" className="pointer-events-none mt-1 shrink-0" style={{ width: 34, height: 30 }} aria-hidden>
+      <path
+        d="M4 6c10-4 22-2 24 6 2 7-8 9-8 3 0-6 12-7 16 4 2 5 1 11-2 16"
+        fill="none"
+        stroke={color}
+        strokeWidth="2.6"
+        strokeLinecap="round"
+      />
+      <path d="M27 30l7 6 4-9" fill="none" stroke={color} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function PhotoCard({ post, theme, t, cjk }: { post: ShareCardPost; theme: CardTheme; t: Copy; cjk: boolean }) {
+  return (
+    <div className="relative flex h-full flex-col p-3 pt-3.5">
+      <Headline t={t} theme={theme} cjk={cjk} />
+      <StickerPhoto src={post.photo} size={158} rotate={4} className="mx-auto mt-3" />
+      {/* 제목 2줄·작성자 1줄까지, 넘치면 … (띄어쓰기 없는 긴 단어도 칸 안에서 줄바꿈) */}
+      <div className="flex flex-col gap-1 px-0.5 pt-3 pb-3">
+        <p className="line-clamp-2 font-display text-[17px] leading-[1.1] [text-wrap:balance] [overflow-wrap:anywhere]">{post.title}</p>
         <p className="truncate text-[9px] font-semibold opacity-70">{post.author}</p>
       </div>
       <Footer t={t} />
@@ -232,27 +343,52 @@ function PhotoCard({ post, t }: { post: ShareCardPost; t: Copy }) {
   );
 }
 
-function VoteCard({ post, t }: { post: ShareCardPost; t: Copy }) {
+/** 선택지 번호 칩 색 — 브랜드 색을 돌아가며 */
+const OPTION_DOTS = ["var(--color-primary)", "var(--color-content)", "var(--color-secondary)", "var(--color-lilac)"];
+
+function VoteCard({ post, theme, t }: { post: ShareCardPost; theme: CardTheme; t: Copy }) {
+  const many = post.options.length > 3;
   return (
-    <div className="flex h-full flex-col items-center p-3 pt-5">
-      {/* 별 모양 사진 (살짝 기울여서) */}
-      <StarPhoto src={post.photo} size={118} className="-rotate-6" />
-      {/* 인스타 투표 스티커: 질문 묶음 → 선택지 묶음 */}
-      <div className="mt-3.5 flex w-full flex-col gap-2.5 rounded-[16px] bg-white p-3 text-on-light shadow-[0_6px_16px_rgba(0,0,0,0.2)]">
-        {/* 질문 2줄까지, 넘치면 … */}
-        <p className="line-clamp-2 text-center font-display text-[13px] leading-[1.15] [text-wrap:balance] [overflow-wrap:anywhere]">{post.voteQuestion}</p>
-        <div className="flex flex-col gap-1">
+    <div className="relative flex h-full flex-col p-3 pt-3.5">
+      {/* 머리: 투표 표시 띠 + 오른쪽 위에 사진 스티커 */}
+      <span
+        className="self-start -rotate-3 rounded-full px-2.5 py-1.5 font-display text-[10px] leading-none"
+        style={{ background: theme.ink, color: theme.inkText }}
+      >
+        {t.poll}
+      </span>
+      <div className="absolute top-2 right-2">
+        <StickerPhoto src={post.photo} size={96} rotate={9} />
+      </div>
+      {/* 질문 — 크게. 선택지가 4개면 2줄, 아니면 3줄까지 (넘치면 …) */}
+      {/* 질문 + 선택지 묶음은 사진 아래 남는 자리의 가운데에 */}
+      <div className="flex flex-1 flex-col justify-center pt-[86px]">
+        <p
+          className={`font-display text-[20px] leading-[1.1] [text-wrap:balance] [overflow-wrap:anywhere] ${many ? "line-clamp-2" : "line-clamp-3"}`}
+        >
+          {post.voteQuestion}
+        </p>
+        {/* 선택지 — 흰 알약 + 번호 칩 (투표 스티커처럼) */}
+        <div className="mt-3 flex flex-col gap-1.5">
           {post.options.slice(0, 4).map((o, i) => (
             // 같은 글자 선택지가 있을 수 있어서 순서로 구분
-            <span key={i} className="flex min-h-6 items-center gap-1.5 rounded-full bg-black/[0.06] px-2.5 py-1 text-[10px] font-bold leading-[1.2]">
-              <span className="size-2.5 shrink-0 rounded-full border-[1.5px] border-black/30" />
+            <span
+              key={i}
+              className="flex min-h-[28px] items-center gap-1.5 rounded-full bg-white py-1 pr-2.5 pl-1 text-[11px] font-bold leading-[1.2] text-on-light shadow-[0_3px_8px_rgba(0,0,0,0.14)]"
+            >
+              <span
+                className="flex size-[18px] shrink-0 items-center justify-center rounded-full font-display text-[9px] leading-none text-on-light"
+                style={{ background: OPTION_DOTS[i % OPTION_DOTS.length] }}
+              >
+                {String.fromCharCode(65 + i)}
+              </span>
               {/* 한 줄, 넘치면 … (줄바꿈은 안 함 — 저장 이미지에선 글꼴 폭이 조금 달라져서 이모지만 내려가는 문제) */}
               <span className="min-w-0 truncate">{o}</span>
             </span>
           ))}
         </div>
       </div>
-      <div className="mt-auto w-full pt-4">
+      <div className="w-full pt-3">
         <Footer t={t} />
       </div>
     </div>
@@ -268,58 +404,60 @@ function VerdictCard({ post, theme, t }: { post: ShareCardPost; theme: CardTheme
   const row = "flex justify-between gap-2";
   return (
     <div className="flex h-full flex-col p-3 pt-4">
-      {/* 영수증 — 아래 가장자리를 톱니 모양으로 */}
-      <div
-        className="relative flex flex-col bg-white px-3 pt-3.5 pb-5 font-mono text-[8.5px] leading-[1.35] text-on-light"
-        style={{
-          maskImage: "radial-gradient(circle at 5px 100%, transparent 4px, #000 4.5px)",
-          maskSize: "10px 100%",
-          WebkitMaskImage: "radial-gradient(circle at 5px 100%, transparent 4px, #000 4.5px)",
-          WebkitMaskSize: "10px 100%",
-        }}
-      >
-        {/* 머리 */}
-        <div className="flex flex-col items-center gap-1">
-          <p className="font-display text-[13px] leading-none tracking-wide">{t.court}</p>
-          <p className="opacity-60">{t.caseNo}</p>
-        </div>
-        <Rule />
-        {/* 증거 */}
-        <div className="flex items-center gap-2.5">
-          <img src={post.photo} alt="" className="size-[56px] shrink-0 rounded-[4px] object-cover" draggable={false} />
-          <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="opacity-60">{t.exhibit}</span>
-            <span className="line-clamp-2 font-bold uppercase">{post.dish}</span>
-            <span className="truncate opacity-60">{t.cook}: {post.author}</span>
+      {/* 영수증 — 아래 가장자리를 톱니 모양으로, 살짝 기울여 올려 둔 종이처럼 */}
+      <div className="-rotate-[1.5deg] drop-shadow-[0_8px_14px_rgba(0,0,0,0.25)]">
+        <div
+          className="relative flex flex-col bg-white px-3 pt-3.5 pb-5 font-mono text-[8.5px] leading-[1.35] text-on-light"
+          style={{
+            maskImage: "radial-gradient(circle at 5px 100%, transparent 4px, #000 4.5px)",
+            maskSize: "10px 100%",
+            WebkitMaskImage: "radial-gradient(circle at 5px 100%, transparent 4px, #000 4.5px)",
+            WebkitMaskSize: "10px 100%",
+          }}
+        >
+          {/* 머리 */}
+          <div className="flex flex-col items-center gap-1">
+            <p className="font-display text-[13px] leading-none tracking-wide">{t.court}</p>
+            <p className="opacity-60">{t.caseNo}</p>
           </div>
-        </div>
-        <Rule />
-        {/* 혐의 */}
-        <div className="flex flex-col gap-0.5">
-          <span className="opacity-60">{t.charge}</span>
-          <p className="line-clamp-3 font-bold">{post.voteQuestion}</p>
-        </div>
-        <Rule />
-        {/* 판결 */}
-        <div className="flex flex-col gap-1">
-          <div className={row}>
-            <span>{t.jury}</span>
-            <span className="font-bold">{t.juryValue}</span>
+          <Rule />
+          {/* 증거 */}
+          <div className="flex items-center gap-2.5">
+            <img src={post.photo} alt="" className="size-[56px] shrink-0 rounded-[4px] object-cover" draggable={false} />
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <span className="opacity-60">{t.exhibit}</span>
+              <span className="line-clamp-2 font-bold uppercase">{post.dish}</span>
+              <span className="truncate opacity-60">{t.cook}: {post.author}</span>
+            </div>
           </div>
-          <div className={row}>
-            <span>{t.verdict}</span>
-            <span className="font-bold">???</span>
+          <Rule />
+          {/* 혐의 */}
+          <div className="flex flex-col gap-0.5">
+            <span className="opacity-60">{t.charge}</span>
+            <p className="line-clamp-3 font-bold">{post.voteQuestion}</p>
+          </div>
+          <Rule />
+          {/* 판결 */}
+          <div className="flex flex-col gap-1">
+            <div className={row}>
+              <span>{t.jury}</span>
+              <span className="font-bold">{t.juryValue}</span>
+            </div>
+            <div className={row}>
+              <span>{t.verdict}</span>
+              <span className="font-bold">???</span>
+            </div>
           </div>
         </div>
       </div>
-      {/* 판결 대기 도장 — 기울이면 영수증 끝에 아슬아슬하게 닿아 불안해 보여서 똑바로 */}
+      {/* 판결 대기 도장 — 진한 띠 + 겹테두리 (기울이면 영수증 끝에 아슬아슬하게 닿아 불안해 보여서 똑바로) */}
       <span
-        className="pointer-events-none mx-auto mt-4 rounded-[8px] border-[2.5px] px-2.5 py-1 font-display text-[15px] leading-none tracking-wide"
-        style={{ borderColor: theme.fg, color: theme.fg }}
+        className="pointer-events-none mx-auto mt-5 rounded-[9px] px-3 py-1.5 font-display text-[15px] leading-none tracking-wide"
+        style={{ background: theme.ink, color: theme.inkText, boxShadow: `0 0 0 2px ${theme.ink}, 0 0 0 4px #ffffff` }}
       >
         {t.pending}
       </span>
-      <p className={`mt-2 text-center font-display text-[11px] leading-none ${t === COPY.en ? "tracking-[0.12em]" : ""}`}>{t.voteNow}</p>
+      <p className={`mt-2.5 text-center font-display text-[12px] leading-none ${t === COPY.en ? "tracking-[0.12em]" : ""}`}>{t.voteNow}</p>
       <div className="mt-auto pt-3">
         <Footer t={t} />
       </div>

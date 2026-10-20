@@ -162,6 +162,16 @@ export const SHARE_CASES = [
   },
 ];
 
+/** 공유 카드 색 비교용 — 보통 길이의 실제 같은 글 */
+export const SHARE_SAMPLE = {
+  title: "My first Buldak Carbonara",
+  dish: "Buldak Carbonara",
+  photo: "/images/buldak-skillet.jpg",
+  voteQuestion: "Did I add too much cheese?",
+  options: ["Way too much 🙈", "Just right 👌", "Need more!"],
+  author: "Umami Chopsticks · Canada",
+};
+
 /** 작성 화면 입력칸 */
 export const FIELD_CASES = [
   { label: "Title", value: TEXTS.koMax(TITLE_MAX), max: TITLE_MAX, rows: 1 },
