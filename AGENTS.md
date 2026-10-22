@@ -31,6 +31,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 | 5. 수정 (+ 삭제) | `/posts/[id]/edit` | 송희 |
 | 6. 콘텐츠 작성 (로그인 포함) | `/write` | 송희 |
 | 7. 마이 (나중) | `/my` | 송희 |
+| 8. 어드민 (+ 의견) | `/admin` | 지현 |
 
 - 상대 담당 화면의 파일은 고치지 않습니다. 필요하면 상대에게 요청합니다.
 - 겹치는 지점:
