@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 /*
@@ -16,21 +16,39 @@ import { useEffect } from "react";
 const ALLOWED = [/^http:\/\/localhost:\d+$/, /^https:\/\/k-food-ds[\w-]*\.vercel\.app$/];
 
 /*
-  정리 도구가 화면을 처음 상태로 열 때 (?ds-reset) — 앱이 저장소를 읽기 전에(모듈을 불러올 때) 비움
-  투표 · 로그인 · 글쓰기 흐름을 한 번 돌고 나면 저장소에 로그인 등이 남아서, 다음 화면(로그인 시트 등)이 안 나오는 걸 막음
+  정리 도구가 화면을 처음 상태로 열 때 (?ds-reset) — 이 화면(iframe)만 쓰는 빈 임시 저장소로 바꿔 끼움
+  - 투표 · 로그인 · 글쓰기 흐름을 돌아도 다른 미리보기 화면이나 내 브라우저의 진짜 기록과 섞이지 않음
+  - 앱이 저장소를 읽기 전에(이 파일을 불러올 때) 바꿈 · 앱 안에서 이동하는 동안은 유지, 새로 열면 다시 빈 상태
   도구 안 iframe이고 부모 주소가 허용된 곳일 때만
 */
+class MemoryStorage {
+  private m = new Map<string, string>();
+  get length() {
+    return this.m.size;
+  }
+  key(i: number) {
+    return [...this.m.keys()][i] ?? null;
+  }
+  getItem(k: string) {
+    return this.m.get(k) ?? null;
+  }
+  setItem(k: string, v: string) {
+    this.m.set(k, String(v));
+  }
+  removeItem(k: string) {
+    this.m.delete(k);
+  }
+  clear() {
+    this.m.clear();
+  }
+}
 if (typeof window !== "undefined" && window.top !== window.self && new URLSearchParams(location.search).has("ds-reset")) {
   const parent = location.ancestorOrigins?.[0] ?? (document.referrer ? new URL(document.referrer).origin : "");
   if (ALLOWED.some((re) => re.test(parent))) {
     try {
-      localStorage.clear();
-      sessionStorage.clear();
+      Object.defineProperty(window, "localStorage", { value: new MemoryStorage(), configurable: true });
+      Object.defineProperty(window, "sessionStorage", { value: new MemoryStorage(), configurable: true });
     } catch {}
-    for (const c of document.cookie.split(";")) {
-      const name = c.split("=")[0].trim();
-      if (name) document.cookie = `${name}=; path=/; max-age=0`;
-    }
   }
 }
 
@@ -52,10 +70,46 @@ function covered(el: Element, r: DOMRect) {
   return hidden;
 }
 
+/*
+  컴포넌트 찾기 ("@comp:PillButton") — React 내부 연결(fiber)을 따라, 그 컴포넌트가 그린 맨 바깥 요소를 찾음
+  요소마다 자기 바로 위 화면 요소까지 거슬러 올라가며 지나친 컴포넌트 이름을 모음 (개발 모드에서만 이름이 남음)
+*/
+type Fiber = { tag: number; type: unknown; return: Fiber | null };
+let compCache: { at: number; map: Map<string, Element[]> } | null = null;
+function fiberName(f: Fiber) {
+  const t = f.type as { displayName?: string; name?: string; type?: { name?: string }; render?: { name?: string } } | null;
+  if (!t || typeof t === "string") return "";
+  return t.displayName || t.name || t.type?.name || t.render?.name || "";
+}
+function componentRoots() {
+  if (compCache && performance.now() - compCache.at < 150) return compCache.map;
+  const map = new Map<string, Element[]>();
+  for (const el of document.body.querySelectorAll("*")) {
+    const key = Object.keys(el).find((k) => k.startsWith("__reactFiber$"));
+    if (!key) continue;
+    let f = (el as unknown as Record<string, Fiber>)[key].return;
+    while (f && f.tag !== 5 && f.tag !== 3) {
+      const name = [0, 1, 11, 14, 15].includes(f.tag) ? fiberName(f) : "";
+      if (name) map.set(name, [...(map.get(name) ?? []), el]);
+      f = f.return;
+    }
+  }
+  compCache = { at: performance.now(), map };
+  return map;
+}
+
 /** 그 클래스를 쓰는, 화면에 보이는 요소들 (작업용 상단 토글 · 가려진 요소는 뺌) */
 function elementsOf(classes: string[]) {
   return classes
-    .flatMap((c) => (c.includes('"') ? [] : [...document.querySelectorAll(`[class~="${c}"]`)]))
+    .flatMap((c) =>
+      c.startsWith("@comp:")
+        ? (componentRoots().get(c.slice(6)) ?? [])
+        : c.startsWith("@svg:") // 아이콘 크기 (<Icon size> → svg width)
+          ? [...document.querySelectorAll(`svg[width="${parseInt(c.slice(5))}"][viewBox="0 0 24 24"]`)]
+          : c.includes('"')
+            ? []
+            : [...document.querySelectorAll(`[class~="${c}"]`)],
+    )
     .filter((el) => {
       const r = el.getBoundingClientRect();
       return r.width > 0 && r.height > 0 && !el.closest('[aria-label="화면 바꾸기 (작업용)"]') && !covered(el, r);
@@ -156,7 +210,9 @@ function mark(classes: string[], label: string, index = 0) {
 }
 
 // ── 상태 만들기 — 도구가 "이 버튼을 눌러라 · 사진을 넣어라"를 보내면 차례로 실행 (시트 · 팝업 · 글쓰기 뒤 단계를 보려고)
-type Step = { click?: string; upload?: string; wait?: number };
+type Step = { click?: string; upload?: string; wait?: number; go?: string };
+/** 앱 안 이동(저장소 유지) — 투표한 뒤 한마디 화면으로 가는 등 */
+let push: ((href: string) => void) | null = null;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 /** 누를 것 찾기 — CSS 선택자, 아니면 aria-label · 글자로 */
 function target(q: string): HTMLElement | null {
@@ -174,6 +230,10 @@ function target(q: string): HTMLElement | null {
 async function run(steps: Step[]) {
   for (const st of steps) {
     if (st.wait) await sleep(st.wait);
+    if (st.go && push) {
+      push(st.go);
+      await sleep(1500);
+    }
     if (st.click) {
       // 화면이 늦게 그려질 수 있어서 잠깐 기다리며 찾음
       let el: HTMLElement | null = null;
@@ -225,6 +285,10 @@ async function scanAll(groups: string[][]) {
 
 export function DsPreviewBridge() {
   const path = usePathname();
+  const router = useRouter();
+  useEffect(() => {
+    push = router.push;
+  }, [router]);
   // 화면이 바뀔 때마다 "준비됐어요"를 알려서 도구가 CSS를 다시 보내게 함
   useEffect(() => {
     if (window.top === window.self) return;
