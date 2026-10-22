@@ -53,9 +53,18 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - 개인정보·글 내용은 보내지 않습니다. 토큰은 `.env.local` (`.env.example` 참고).
 
 ## 작업 방식
-- 작업은 `feat/파트-이름` 브랜치에서 합니다.
-- **내 담당 화면만 바꾼 경우**: 검사 통과 후 PR 없이 main에 바로 합쳐서 올려도 됩니다. 올린 뒤 상대에게 알립니다.
-- **같이 쓰는 것을 바꾼 경우** (`src/components/`, `src/lib/`, `globals.css`, `layout.tsx`, `AGENTS.md`, `package.json`): 반드시 PR → 상대 확인 → 합치기.
-- 작업 시작 전에 항상 `git pull`로 main 최신 내용을 받아 옵니다.
+### 브랜치 — 출시용 `main` · 개발용 `dev`
+| 브랜치 | 뜻 | 배포 |
+| --- | --- | --- |
+| `main` | 출시용 — 실제 사용자가 보는 것 | toppytippy.com (Vercel Production) |
+| `dev` | 개발용 — 둘의 작업을 모아 확인하는 곳 | Vercel 미리보기 주소 |
+| `feat/파트-이름` | 각자 작업 | (필요할 때만 미리보기) |
+
+- 작업은 **`dev`에서 `feat/파트-이름` 브랜치를 따서** 합니다. 작업 시작 전에 `git pull`로 dev 최신 내용을 받아 옵니다.
+- **내 담당 화면만 바꾼 경우**: 검사 통과 후 PR 없이 **dev**에 바로 합쳐서 올려도 됩니다. 올린 뒤 상대에게 알립니다.
+- **같이 쓰는 것을 바꾼 경우** (`src/components/`, `src/lib/`, `globals.css`, `layout.tsx`, `AGENTS.md`, `package.json`): 반드시 **dev로 PR** → 상대 확인 → 합치기.
+- **출시 (dev → main)**: dev 미리보기에서 둘 다 확인한 뒤, `dev → main` PR을 만들어 합칩니다. **main에는 직접 커밋 · push 하지 않습니다.**
+- 출시 뒤 급한 수정(핫픽스)도 dev에서 고쳐 dev → main 으로 올립니다.
+- push 할 때마다 Vercel 배포가 하나씩 생깁니다 (하루 한도 있음). 작은 수정은 모아서 올립니다.
 - 커밋 전 `npm run lint`, `npm run typecheck`, `npm run build`를 모두 통과시킵니다.
 - 비밀번호·API 키는 코드에 쓰지 않고 `.env.local`에 둡니다.
