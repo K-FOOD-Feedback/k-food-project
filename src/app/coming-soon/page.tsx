@@ -21,9 +21,6 @@ export default function ComingSoonPage() {
           <br />
           soon
         </h1>
-        <p className="mt-6 animate-rise text-lg text-neutral-400 [animation-delay:120ms]">
-          곧 만나요!
-        </p>
       </Screen>
     </div>
   );
