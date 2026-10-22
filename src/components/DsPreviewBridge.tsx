@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 /*
-  디자인 시스템 정리 도구(k-food-ds)의 미리보기 연결 (송희)
+  디자인 시스템 정리 도구(k-food-design)의 미리보기 연결 (송희)
   - 정리 도구가 이 앱을 iframe으로 띄우고 "바꿀 값"을 CSS로 보내면, 화면에 덮어씌워 바뀐 모습을 보여 줌
   - "찾기": 도구가 클래스 이름을 보내면 그 값이 쓰인 첫 자리로 스크롤하고, 몇 곳 있는지 알려 줌
   - 상태 만들기: 도구가 보낸 순서대로 버튼을 누르고 사진을 넣어 시트 · 팝업 · 글쓰기 뒤 단계를 띄움
@@ -13,7 +13,7 @@ import { useEffect } from "react";
   - 코드는 바꾸지 않음. 덮어쓰기는 그 iframe 안에서만, 새로고침하면 사라짐
   - 정리 도구 주소에서 띄웠을 때만 동작 (다른 사이트가 이 앱을 띄워 화면을 바꾸지 못하게)
 */
-const ALLOWED = [/^http:\/\/localhost:\d+$/, /^https:\/\/k-food-ds[\w-]*\.vercel\.app$/];
+const ALLOWED = [/^http:\/\/localhost:\d+$/, /^https:\/\/k-food-(?:ds|design)[\w-]*\.vercel\.app$/];
 
 /*
   정리 도구가 화면을 처음 상태로 열 때 (?ds-reset) — 이 화면(iframe)만 쓰는 빈 임시 저장소로 바꿔 끼움
