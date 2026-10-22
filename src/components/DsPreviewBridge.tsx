@@ -48,7 +48,7 @@ function elementsOf(classes: string[]) {
 type ChangeItem = { classes: string[]; label: string; kind: string };
 const KIND_COLOR: Record<string, string> = { type: "255,153,0", radius: "46,170,90", shadow: "150,90,230", color: "230,60,120" };
 let changes: ChangeItem[] = [];
-let marked: { classes: string[]; label: string } = { classes: [], label: "" };
+let marked: { classes: string[]; label: string; index: number } = { classes: [], label: "", index: 0 };
 let raf = 0;
 let lastScan = 0;
 let changeEls: { el: Element; labels: string[]; kind: string }[] = [];
@@ -65,6 +65,9 @@ function scan() {
   }
   changeEls = [...byEl].map(([el, v]) => ({ el, ...v }));
   markEls = elementsOf(marked.classes);
+  // ◀ ▶로 고른 위치를 맨 앞으로 (진한 박스 + 말풍선)
+  const i = marked.index % (markEls.length || 1);
+  if (i) markEls = [markEls[i], ...markEls.slice(0, i), ...markEls.slice(i + 1)];
 }
 
 function draw() {
@@ -97,14 +100,17 @@ function draw() {
     html.push(`<div style="position:absolute;left:${x}px;top:${y}px;max-width:148px;padding:1px 4px;border-radius:3px;background:rgb(${c});color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(text)}</div>`);
   }
   if (markEls.length) {
-    for (const el of markEls.slice(0, 60)) {
+    markEls.slice(0, 60).forEach((el, k) => {
       const r = el.getBoundingClientRect();
-      html.push(`<div style="position:absolute;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;background:rgba(111,168,220,.55);outline:1px solid rgba(70,130,200,.9)"></div>`);
-    }
+      // 지금 위치는 진하게, 같은 화면의 나머지는 연하게
+      html.push(
+        `<div style="position:absolute;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;background:rgba(111,168,220,${k ? 0.25 : 0.6});outline:${k ? 1 : 2}px solid rgba(70,130,200,${k ? 0.6 : 1})"></div>`,
+      );
+    });
     const r = markEls[0].getBoundingClientRect();
     const below = r.bottom + 64 < innerHeight;
     html.push(
-      `<div style="position:absolute;left:${Math.max(6, Math.min(r.left, innerWidth - 236))}px;top:${below ? r.bottom + 8 : Math.max(6, r.top - 58)}px;max-width:230px;padding:8px 10px;border-radius:8px;background:#fff;color:#222;font-size:12px;box-shadow:0 2px 12px rgba(0,0,0,.35)"><span style="color:#881391">${esc(marked.label)}</span> <span style="color:#555;font-weight:500">${Math.round(r.width)} × ${Math.round(r.height)}</span>${markEls.length > 1 ? `<br><span style="color:#777;font-weight:500">이 화면에 ${markEls.length}곳</span>` : ""}</div>`,
+      `<div style="position:absolute;left:${Math.max(6, Math.min(r.left, innerWidth - 236))}px;top:${below ? r.bottom + 8 : Math.max(6, r.top - 58)}px;max-width:230px;padding:8px 10px;border-radius:8px;background:#fff;color:#222;font-size:12px;box-shadow:0 2px 12px rgba(0,0,0,.35)"><span style="color:#881391">${esc(marked.label)}</span> <span style="color:#555;font-weight:500">${Math.round(r.width)} × ${Math.round(r.height)}</span>${markEls.length > 1 ? `<br><span style="color:#777;font-weight:500">이 화면 ${(marked.index % markEls.length) + 1} / ${markEls.length}번째</span>` : ""}</div>`,
     );
   }
   layer.innerHTML = html.join("");
@@ -122,8 +128,8 @@ function start() {
   if (!raf) raf = requestAnimationFrame(loop);
   else scan();
 }
-function mark(classes: string[], label: string) {
-  marked = { classes, label };
+function mark(classes: string[], label: string, index = 0) {
+  marked = { classes, label, index };
   scan();
   start();
   return markEls;
@@ -162,10 +168,10 @@ export function DsPreviewBridge() {
         (e.source as Window | null)?.postMessage({ type: "kfood-ds-scanned", id: e.data.id, counts }, { targetOrigin: e.origin });
       }
       if (e.data?.type === "kfood-ds-highlight" && Array.isArray(e.data.classes)) {
-        mark(e.data.classes, String(e.data.label ?? ""));
+        mark(e.data.classes, String(e.data.label ?? ""), Number(e.data.index ?? 0));
       }
       if (e.data?.type === "kfood-ds-focus" && Array.isArray(e.data.classes)) {
-        const els = mark(e.data.classes, String(e.data.label ?? ""));
+        const els = mark(e.data.classes, String(e.data.label ?? ""), Number(e.data.index ?? 0));
         els[0]?.scrollIntoView({ block: "center", behavior: "smooth" });
         (e.source as Window | null)?.postMessage({ type: "kfood-ds-found", id: e.data.id, n: els.length }, { targetOrigin: e.origin });
       }
