@@ -6,6 +6,11 @@ import { Tile } from "@/components/Layout";
 import { track } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
 import { usePhotoCheck } from "./PhotoCheckNotice";
+import { clampText } from "@/lib/text-length";
+import { useWriteCopy } from "@/app/write/copy";
+
+/** 음식 이름 직접 고칠 때 한도 (칸 수) */
+export const DISH_MAX = 40;
 
 /**
  * ① 사진 화면 맨 위 — AI가 알아본 음식 + 이름 옆 ✎로 고치기 (담당 송희)
@@ -26,11 +31,20 @@ export function useDishFlow() {
   };
 }
 
-export function DishCard({ onEditingChange }: { onEditingChange?: (editing: boolean) => void }) {
-  const { draft, ai, writeStory } = useFlow();
+export function DishCard({
+  onEditingChange,
+  preview,
+}: {
+  onEditingChange?: (editing: boolean) => void;
+  /** 점검 화면(/dev/edge-cases) 전용: 작성 중인 글 대신 이 음식 이름을 보여 줌 */
+  preview?: string;
+}) {
+  const { draft: stored, ai, writeStory } = useFlow();
+  const w = useWriteCopy();
+  const draft = preview === undefined ? stored : { ...stored, dish: preview, ai: { ...stored.ai, dish: preview } };
   const [editing, setEditing] = useState(false);
   const [input, setInput] = useState("");
-  const working = ai.dish === "working";
+  const working = preview === undefined && ai.dish === "working";
 
   useEffect(() => onEditingChange?.(editing), [editing, onEditingChange]);
 
@@ -38,7 +52,7 @@ export function DishCard({ onEditingChange }: { onEditingChange?: (editing: bool
 
   const save = () => {
     const dish = input.trim();
-    if (dish && dish !== draft.dish) {
+    if (preview === undefined && dish && dish !== draft.dish) {
       track("dish_corrected", { ai_dish: draft.ai.dish || draft.dish, user_dish: dish });
       writeStory(dish); // 미리 쓰던 글은 버리고 고친 이름으로 다시
     }
@@ -50,7 +64,7 @@ export function DishCard({ onEditingChange }: { onEditingChange?: (editing: bool
       <div className="flex flex-col gap-2 px-5 py-5" aria-live="polite">
         <p className="flex items-center gap-1.5 text-[13px] font-semibold leading-[1.3] text-muted">
           <Icon name="sparkle" size={14} className={`text-content ${working ? "animate-spin [animation-duration:1.4s]" : ""}`} />
-          {working ? "Looking at your photos…" : "AI thinks this is"}
+          {working ? w.dishLooking : w.dishThinks}
         </p>
 
         {working ? (
@@ -66,27 +80,31 @@ export function DishCard({ onEditingChange }: { onEditingChange?: (editing: bool
             <input
               autoFocus
               value={input}
-              onChange={(e) => setInput(e.target.value)}
-              maxLength={40}
-              aria-label="What did you make?"
-              placeholder="What did you make?"
+              // 40칸까지 (한·중·일 글자 2칸, src/lib/text-length.ts) — 한글 조합 중엔 자르지 않음
+              onChange={(e) =>
+                setInput((e.nativeEvent as InputEvent).isComposing ? e.target.value : clampText(e.target.value, DISH_MAX))
+              }
+              onCompositionEnd={(e) => setInput(clampText(e.currentTarget.value, DISH_MAX))}
+              aria-label={w.dishAsk}
+              placeholder={w.dishAsk}
               className="h-12 min-w-0 flex-1 rounded-full bg-surface-2 px-4 text-[16px] outline-none ring-on-dark focus:ring-2"
             />
             <button
               type="submit"
               className="h-12 shrink-0 rounded-full bg-on-dark px-5 text-[15px] font-bold text-on-light transition active:scale-95"
             >
-              Save
+              {w.dishSave}
             </button>
           </form>
         ) : (
           <>
             {/* 음식 이름 옆 ✎ — 눌러서 고치기 */}
             <p key={draft.dish} className="flex animate-fade-in items-center gap-2">
-              <span className="font-display text-[26px] leading-[1.15] break-keep">{draft.dish}</span>
+              {/* 띄어쓰기 없는 긴 이름도 칸 안에서 줄바꿈 (✎가 밀려나지 않게) */}
+              <span className="min-w-0 font-display text-[26px] leading-[1.15] break-keep [overflow-wrap:anywhere]">{draft.dish}</span>
               <button
                 type="button"
-                aria-label="Edit dish name"
+                aria-label={w.dishEdit}
                 onClick={() => {
                   track("dish_correction_opened", { ai_dish: draft.dish });
                   setInput(draft.dish);

@@ -86,7 +86,6 @@ export type EventName =
   | "post_shared"
   | "share_card_style_changed"
   | "share_card_color_changed"
-  | "share_card_shuffled"
   | "notifications_clicked"
   | "notifications_viewed"
   | "my_page_viewed"

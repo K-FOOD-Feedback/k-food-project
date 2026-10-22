@@ -4,6 +4,8 @@
   영어 용어는 다른 영어 화면(마이·알림)과 맞춥니다: 한마디 = Comments, 답글 = reply.
 */
 
+import { compactCount } from "@/lib/format";
+
 export type Lang = "ko" | "en";
 /** 투표 후 내 편: top 가장 많은 칸(동점 포함) · few 20% 미만 소수 · alone 나 혼자 · mid 그 사이 */
 export type SameSide = "top" | "mid" | "few" | "alone";
@@ -12,6 +14,7 @@ export type CommentsLang = Lang | "zh" | "ja";
 
 export const COMMENTS_COPY = {
   ko: {
+    count: (n: number) => compactCount(n, "ko"),
     title: "한마디",
     section: "댓글",
     openAll: "댓글 전체 보기",
@@ -25,7 +28,7 @@ export const COMMENTS_COPY = {
     openComment: (text: string) => `한마디 보기: ${text}`,
     me: "나",
     author: "글쓴이",
-    replyCount: (n: number) => `답글 ${n}개`,
+    replyCount: (n: number) => `답글 ${compactCount(n, "ko")}개`,
     hidden: "가려진 한마디예요",
     backToDetail: "상세로 돌아가기",
     backToNotifications: "알림으로 돌아가기",
@@ -69,6 +72,7 @@ export const COMMENTS_COPY = {
     loginBody: "구글로 3초면 끝나요. 한국인들과 이 음식 이야기를 나눠 보세요.",
   },
   en: {
+    count: (n: number) => compactCount(n, "en"),
     title: "Comments",
     section: "Comments",
     openAll: "See all comments",
@@ -82,7 +86,7 @@ export const COMMENTS_COPY = {
     openComment: (text: string) => `Open comment: ${text}`,
     me: "Me",
     author: "Author",
-    replyCount: (n: number) => `${n} ${n === 1 ? "reply" : "replies"}`,
+    replyCount: (n: number) => `${compactCount(n, "en")} ${n === 1 ? "reply" : "replies"}`,
     hidden: "Hidden comment",
     backToDetail: "Back to post",
     backToNotifications: "Back to notifications",
@@ -112,7 +116,7 @@ export const COMMENTS_COPY = {
     deleteAsk: "Delete this?",
     no: "No",
     yes: "Yes",
-    reported: "Report received",
+    reported: "Thanks, we got your report",
     more: "More",
     reportCommentTitle: "Report this comment?",
     reportCommentNote: "Once reported, this comment is hidden on your screen. We'll review it and take action.",
@@ -121,6 +125,7 @@ export const COMMENTS_COPY = {
     loginBody: "Chat with Koreans about this dish. It only takes a few seconds with Google.",
   },
   zh: {
+    count: (n: number) => compactCount(n, "zh"),
     title: "评论",
     section: "评论",
     openAll: "查看全部评论",
@@ -134,7 +139,7 @@ export const COMMENTS_COPY = {
     openComment: (text: string) => `查看评论：${text}`,
     me: "我",
     author: "作者",
-    replyCount: (n: number) => `${n} 条回复`,
+    replyCount: (n: number) => `${compactCount(n, "zh")} 条回复`,
     hidden: "已隐藏的评论",
     backToDetail: "返回帖子",
     backToNotifications: "返回通知",
@@ -164,7 +169,7 @@ export const COMMENTS_COPY = {
     deleteAsk: "确定要删除吗？",
     no: "否",
     yes: "是",
-    reported: "已收到举报",
+    reported: "已收到你的举报",
     more: "更多",
     reportCommentTitle: "要举报这条评论吗？",
     reportCommentNote: "举报后，这条评论会在你的画面中隐藏。我们会核实后处理。",
@@ -173,12 +178,13 @@ export const COMMENTS_COPY = {
     loginBody: "用 Google 几秒就能登录。和韩国人聊聊这道菜吧。",
   },
   ja: {
+    count: (n: number) => compactCount(n, "ja"),
     title: "ひとこと",
     section: "コメント",
     openAll: "コメントをすべて見る",
     emptyPile: "まだひとことがありません\n最初のひとことを残してみて",
     recent: "最近のコメント",
-    leave: "ひとこと残してみて",
+    leave: "ひとことどうぞ",
     leaveLabel: "ひとことを残す",
     send: "送信",
     leaveEmoji: (emoji: string) => `${emoji} を送る`,
@@ -186,7 +192,7 @@ export const COMMENTS_COPY = {
     openComment: (text: string) => `ひとことを見る：${text}`,
     me: "自分",
     author: "投稿者",
-    replyCount: (n: number) => `返信 ${n}件`,
+    replyCount: (n: number) => `返信 ${compactCount(n, "ja")}件`,
     hidden: "非表示のひとこと",
     backToDetail: "投稿に戻る",
     backToNotifications: "通知に戻る",
@@ -199,16 +205,16 @@ export const COMMENTS_COPY = {
     deleteComment: "ひとことを削除",
     editLabel: "ひとことを直す",
     edited: "編集済み",
-    emptyReplies: "このひとこと、\nどう思う？",
+    emptyReplies: "このひとこと、\nどう思いますか？",
     editReply: "返信を編集",
     deleteReply: "返信を削除",
     reportReply: "返信を通報",
     cancelReplyTo: "返信をやめる",
-    leaveReply: "返信を残してみて",
+    leaveReply: "返信をどうぞ",
     leaveReplyLabel: "返信を残す",
     sendReply: "返信を送る",
     reportTitle: "この返信を通報しますか？",
-    reportAsk: "通報する理由は？",
+    reportAsk: "通報の理由を選んでください",
     reportPlaceholder: "理由を書いてください",
     reportNote: "通報すると、この返信はあなたの画面で非表示になります。確認したうえで対応します。",
     cancel: "キャンセル",
@@ -220,9 +226,9 @@ export const COMMENTS_COPY = {
     more: "その他",
     reportCommentTitle: "このひとことを通報しますか？",
     reportCommentNote: "通報すると、このひとことはあなたの画面で非表示になります。確認したうえで対応します。",
-    leaveCard: "ひとこと\n残してみて",
+    leaveCard: "ひとこと\nどうぞ",
     loginTitle: "ログインしてひとことを残す",
-    loginBody: "Google なら数秒で完了。韓国の人とこの料理について話してみて。",
+    loginBody: "Google なら数秒で完了。韓国の人とこの料理について話してみましょう。",
   },
 } satisfies Record<CommentsLang, Record<string, unknown>>;
 
@@ -234,14 +240,15 @@ export type CommentsCopy = (typeof COMMENTS_COPY)[CommentsLang];
 */
 export const DETAIL_COPY = {
   ko: {
+    count: (n: number) => compactCount(n, "ko"),
     back: "뒤로 가기",
-    participants: (n: number) => `${n}명 참여 중`,
+    participants: (n: number) => `${compactCount(n, "ko")}명 참여 중`,
     next: "다음 훈수 거리",
     openComments: "한마디 전체 보기",
     vote: "투표",
     resultsTitle: "한국인들의 생각",
     // [앞, 숫자, 뒤] — 숫자만 흰색으로 강조하고 0부터 세어 올림 (외국인 상세 결과 카드)
-    resultsTotal: (n: number) => ["", `${n}`, "명의 한국인이 투표했어요"],
+    resultsTotal: (n: number) => ["", compactCount(n, "ko"), "명의 한국인이 투표했어요"],
     resultsNote: "투표는 한국인만 할 수 있어요",
     resultLabel: (label: string, pct: number, top: boolean) => `${label} ${pct}%${top ? " (가장 많음)" : ""}`,
     // 한국인 상세 (지구본으로 영어를 고르면 영어로)
@@ -250,12 +257,12 @@ export const DETAIL_COPY = {
     // 편 가르기: [앞, 강조(사람 수 — 0부터 세어 올라감), 뒤] — 투표 후 요약 (VoteBowl SameThink)
     sameThink: (total: number, same: number, side: SameSide) =>
       side === "alone"
-        ? [`${total}명 중 `, "나만", " 이 생각이에요 😎"]
+        ? [`${compactCount(total, "ko")}명 중 `, "나만", " 이 생각이에요 😎"]
         : side === "top"
-          ? [`${total}명 중 `, `${same}명`, "이 내 편이에요 🤝"]
+          ? [`${compactCount(total, "ko")}명 중 `, `${compactCount(same, "ko")}명`, "이 내 편이에요 🤝"]
           : side === "few"
-            ? [`${total}명 중 `, `${same}명`, "만 나와 같아요… 소수 의견 😎"]
-            : [`${total}명 중 `, `${same}명`, "이 나와 같은 생각이에요"],
+            ? [`${compactCount(total, "ko")}명 중 `, `${compactCount(same, "ko")}명`, "만 나와 같아요… 소수 의견 😎"]
+            : [`${compactCount(total, "ko")}명 중 `, `${compactCount(same, "ko")}명`, "이 나와 같은 생각이에요"],
     changeHint: "다른 칸을 누르면 선택을 바꿀 수 있어요",
     tokenLabel: "투표 토큰 — 원하는 칸으로 끌어다 놓거나 칸을 눌러 투표하세요",
     optionVote: (label: string) => `${label}에 투표`,
@@ -273,27 +280,28 @@ export const DETAIL_COPY = {
     copyFail: "링크를 복사하지 못했어요",
   },
   en: {
+    count: (n: number) => compactCount(n, "en"),
     back: "Back",
-    participants: (n: number) => `${n} joined`,
+    participants: (n: number) => `${compactCount(n, "en")} joined`,
     next: "Next one to judge",
     openComments: "See all comments",
     vote: "Vote",
     resultsTitle: "What Koreans think",
-    resultsTotal: (n: number) => ["", `${n}`, ` ${n === 1 ? "Korean" : "Koreans"} voted`],
+    resultsTotal: (n: number) => ["", compactCount(n, "en"), ` ${n === 1 ? "Korean" : "Koreans"} voted`],
     resultsNote: "Only Koreans can vote",
     resultLabel: (label: string, pct: number, top: boolean) => `${label} ${pct}%${top ? " (top pick)" : ""}`,
     voteAsk: ["What do you think?", "Cast your vote!"],
     voted: "Voted!",
     sameThink: (total: number, same: number, side: SameSide) =>
       side === "alone"
-        ? ["", "Only you", ` out of ${total} think so 😎`]
+        ? ["", "Only you", ` out of ${compactCount(total, "en")} think so 😎`]
         : side === "top"
-          ? ["", `${same}`, ` of ${total} are on your side 🤝`]
+          ? ["", `${compactCount(same, "en")}`, ` of ${compactCount(total, "en")} are on your side 🤝`]
           : side === "few"
-            ? ["Only ", `${same}`, ` of ${total} agree… a rare take 😎`]
-            : ["", `${same}`, ` of ${total} people agree with you`],
-    changeHint: "Tap another option to change your vote",
-    tokenLabel: "Vote token — drag it into an option or tap an option to vote",
+            ? ["Only ", `${compactCount(same, "en")}`, ` of ${compactCount(total, "en")} agree… a rare take 😎`]
+            : ["", `${compactCount(same, "en")}`, ` of ${compactCount(total, "en")} people agree with you`],
+    changeHint: "Tap another choice to change your vote",
+    tokenLabel: "Vote token — drag it into a choice or tap a choice to vote",
     optionVote: (label: string) => `Vote for ${label}`,
     optionMine: " (your pick)",
     optionChange: " — tap to change",
@@ -309,25 +317,26 @@ export const DETAIL_COPY = {
   },
   // 중국어·일본어 (지구본으로 고르면 그 자리에서 — 글 본문·투표 칸은 번역 데이터가 없어 영어 원문)
   zh: {
+    count: (n: number) => compactCount(n, "zh"),
     back: "返回",
-    participants: (n: number) => `${n}人参与`,
+    participants: (n: number) => `${compactCount(n, "zh")}人参与`,
     next: "下一个来评评",
     openComments: "查看全部评论",
     vote: "投票",
     resultsTitle: "韩国人怎么看",
-    resultsTotal: (n: number) => ["", `${n}`, "位韩国人投了票"],
+    resultsTotal: (n: number) => ["", compactCount(n, "zh"), "位韩国人投了票"],
     resultsNote: "只有韩国人可以投票",
     resultLabel: (label: string, pct: number, top: boolean) => `${label} ${pct}%${top ? "（最多）" : ""}`,
     voteAsk: ["你怎么看？", "来投一票吧！"],
     voted: "投票完成！",
     sameThink: (total: number, same: number, side: SameSide) =>
       side === "alone"
-        ? [`${total}人中 `, "只有你", " 这么想 😎"]
+        ? [`${compactCount(total, "zh")}人中 `, "只有你", " 这么想 😎"]
         : side === "top"
-          ? [`${total}人中有 `, `${same}人`, " 站在你这边 🤝"]
+          ? [`${compactCount(total, "zh")}人中有 `, `${compactCount(same, "zh")}人`, " 站在你这边 🤝"]
           : side === "few"
-            ? [`${total}人中只有 `, `${same}人`, " 和你一样…少数派 😎"]
-            : [`${total}人中有 `, `${same}人`, " 和你想法一样"],
+            ? [`${compactCount(total, "zh")}人中只有 `, `${compactCount(same, "zh")}人`, " 和你一样…少数派 😎"]
+            : [`${compactCount(total, "zh")}人中有 `, `${compactCount(same, "zh")}人`, " 和你想法一样"],
     changeHint: "点其他选项可以改投",
     tokenLabel: "投票令牌 — 拖到选项里，或直接点选项投票",
     optionVote: (label: string) => `投给 ${label}`,
@@ -344,25 +353,26 @@ export const DETAIL_COPY = {
     copyFail: "无法复制链接",
   },
   ja: {
+    count: (n: number) => compactCount(n, "ja"),
     back: "戻る",
-    participants: (n: number) => `${n}人参加中`,
+    participants: (n: number) => `${compactCount(n, "ja")}人参加中`,
     next: "次のお題へ",
     openComments: "コメントをすべて見る",
     vote: "投票",
     resultsTitle: "韓国人の考え",
-    resultsTotal: (n: number) => ["", `${n}`, "人の韓国人が投票しました"],
+    resultsTotal: (n: number) => ["", compactCount(n, "ja"), "人の韓国人が投票しました"],
     resultsNote: "投票できるのは韓国人だけです",
     resultLabel: (label: string, pct: number, top: boolean) => `${label} ${pct}%${top ? "（いちばん多い）" : ""}`,
-    voteAsk: ["あなたはどう思う？", "投票してね！"],
+    voteAsk: ["あなたはどう思いますか？", "投票してみましょう！"],
     voted: "投票完了！",
     sameThink: (total: number, same: number, side: SameSide) =>
       side === "alone"
-        ? [`${total}人中 `, "あなただけ", " がこの考え 😎"]
+        ? [`${compactCount(total, "ja")}人中 `, "あなただけ", " がこの考えです 😎"]
         : side === "top"
-          ? [`${total}人中 `, `${same}人`, " があなたの味方 🤝"]
+          ? [`${compactCount(total, "ja")}人中 `, `${compactCount(same, "ja")}人`, " があなたの味方です 🤝"]
           : side === "few"
-            ? [`${total}人中たった `, `${same}人`, " …少数派 😎"]
-            : [`${total}人中 `, `${same}人`, " があなたと同じ考え"],
+            ? [`${compactCount(total, "ja")}人中たった `, `${compactCount(same, "ja")}人`, " …少数派です 😎"]
+            : [`${compactCount(total, "ja")}人中 `, `${compactCount(same, "ja")}人`, " があなたと同じ考えです"],
     changeHint: "ほかの選択肢を押すと選び直せます",
     tokenLabel: "投票トークン — 選択肢までドラッグするか、選択肢を押して投票",
     optionVote: (label: string) => `${label}に投票`,
@@ -371,10 +381,10 @@ export const DETAIL_COPY = {
     voteConfirm: (label: string) => `「${label}」に投票しますか？`,
     voteNow: "投票する",
     lock: ["投票すると、みんなと", "ひとことを交わせます！"],
-    shareTitle: "自分の味覚が普通か確かめる",
-    shareSub: "シェアしてみんなの意見を聞いてみよう！",
-    shareTitleForeign: "韓国人の本音を見てみよう",
-    shareSubForeign: "友だちにシェアして一緒に語ろう！",
+    shareTitle: "自分の味覚が普通か確かめてみましょう",
+    shareSub: "シェアしてみんなの意見を聞いてみましょう！",
+    shareTitleForeign: "韓国人の本音を見てみましょう",
+    shareSubForeign: "友だちにシェアして一緒に話しましょう！",
     copied: "リンクをコピーしました",
     copyFail: "リンクをコピーできませんでした",
   },

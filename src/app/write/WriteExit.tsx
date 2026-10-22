@@ -6,6 +6,7 @@ import { IconButton, PillButton } from "@/components/Buttons";
 import { BottomSheet } from "@/components/Layout";
 import { track } from "@/lib/analytics";
 import { useFlow, type DraftStep } from "@/lib/write-store";
+import { useWriteCopy } from "@/app/write/copy";
 
 /**
  * 글 작성 어느 단계에서든 바로 나가기 (오른쪽 위 ×) — 담당 송희
@@ -15,21 +16,22 @@ export function WriteExit({ step, exitHref = "/home?lang=en" }: { step: DraftSte
   const router = useRouter();
   const { saveDraftForLater, discardDraft } = useFlow();
   const [open, setOpen] = useState(false);
+  const w = useWriteCopy();
 
   return (
     <>
       <IconButton
         icon="x"
-        label="Leave"
+        label={w.leave}
         onClick={() => {
           track("write_exit_opened", { step });
           setOpen(true);
         }}
       />
-      <BottomSheet open={open} onClose={() => setOpen(false)} label="Leave writing">
+      <BottomSheet open={open} onClose={() => setOpen(false)} label={w.leaveLabel}>
         <div className="flex w-full flex-col gap-2 px-6 pt-2">
-          <h2 className="font-display text-[22px] leading-[1.25]">Leave without posting?</h2>
-          <p className="text-[15px] leading-[1.5] text-muted">Save it to finish later, or delete it.</p>
+          <h2 className="font-display text-[22px] leading-[1.25]">{w.leaveTitle}</h2>
+          <p className="text-[15px] leading-[1.5] text-muted">{w.leaveBody}</p>
         </div>
         <div className="flex w-full flex-col gap-1">
           <PillButton
@@ -41,7 +43,7 @@ export function WriteExit({ step, exitHref = "/home?lang=en" }: { step: DraftSte
               router.push(exitHref);
             }}
           >
-            Save and leave
+            {w.saveLeave}
           </PillButton>
           <PillButton
             tone="soft"
@@ -52,14 +54,14 @@ export function WriteExit({ step, exitHref = "/home?lang=en" }: { step: DraftSte
               router.push(exitHref);
             }}
           >
-            Delete and leave
+            {w.deleteLeave}
           </PillButton>
           <button
             type="button"
             onClick={() => setOpen(false)}
             className="h-12 text-[15px] font-semibold text-neutral-400"
           >
-            Keep writing
+            {w.keepWriting}
           </button>
         </div>
       </BottomSheet>

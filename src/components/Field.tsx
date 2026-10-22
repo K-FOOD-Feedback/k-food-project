@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef } from "react";
+import { clampText, textLength } from "@/lib/text-length";
 import { Icon } from "./Icon";
 
 /** Input/Title · Input/Story — 라벨 + 글자 수 + 자동 높이 텍스트 영역 */
@@ -53,10 +54,11 @@ export function TextField({
         {maxLength && !locked && (
           <span
             className={`font-medium tabular-nums text-neutral-400 transition-opacity ${
-              value.length >= maxLength * 0.9 ? "" : "opacity-0 group-focus-within:opacity-100"
+              textLength(value) >= maxLength * 0.9 ? "" : "opacity-0 group-focus-within:opacity-100"
             }`}
           >
-            {value.length}/{maxLength}
+            {/* 한도는 칸 수 — 한·중·일 글자는 2칸 (src/lib/text-length.ts) */}
+            {textLength(value)}/{maxLength}
           </span>
         )}
       </div>
@@ -67,11 +69,16 @@ export function TextField({
           rows={rows}
           value={value}
           placeholder={placeholder}
-          maxLength={maxLength}
           readOnly={locked}
           aria-readonly={locked}
           onBlur={(e) => onBlur?.(e.target.value)}
-          onChange={(e) => onChange?.(e.target.value.replace(rows === 1 ? /\n/g : /$^/, ""))}
+          onChange={(e) => {
+            const v = e.target.value.replace(rows === 1 ? /\n/g : /$^/, "");
+            // 한글 등을 조합하는 중엔 자르지 않고(글자가 깨짐), 조합이 끝나면 자름
+            const composing = (e.nativeEvent as InputEvent).isComposing;
+            onChange?.(maxLength && !composing ? clampText(v, maxLength) : v);
+          }}
+          onCompositionEnd={(e) => maxLength && onChange?.(clampText(e.currentTarget.value, maxLength))}
           className={`min-w-0 flex-1 resize-none overflow-hidden overscroll-contain bg-transparent text-[15px] leading-[1.5] outline-none placeholder:text-neutral-400 ${
             locked ? "text-muted" : "text-on-dark"
           }`}

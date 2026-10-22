@@ -58,6 +58,14 @@ export type PickLang = ServiceLang | "zh" | "ja";
 
 type Option = { id: string; flag: string; ko: string; en: string; href?: string };
 
+/** 언어 창 문구 — 지금 화면 언어로 (언어 이름은 한국어 + 영어로 같이 보여서 따로 번역 안 함) */
+const PICKER_COPY: Record<PickLang, { change: string; close: string; recommended: string; autoDesc: string; soon: string }> = {
+  ko: { change: "언어 선택", close: "닫기", recommended: "추천", autoDesc: "다른 언어로 쓴 글·한마디를 내 언어로 보여 줘요", soon: "곧 지원할게요" },
+  en: { change: "Change language", close: "Close", recommended: "Recommended", autoDesc: "Show posts and comments in your language", soon: "Coming soon" },
+  zh: { change: "切换语言", close: "关闭", recommended: "推荐", autoDesc: "把其他语言的帖子和评论显示成你的语言", soon: "即将支持" },
+  ja: { change: "言語を変更", close: "閉じる", recommended: "おすすめ", autoDesc: "ほかの言語の投稿やコメントをあなたの言語で表示します", soon: "近日対応予定" },
+};
+
 const OPTIONS: Option[] = [
   { id: "ko", flag: "🇰🇷", ko: "한국어", en: "Korean", href: "/home" },
   { id: "en", flag: "🇺🇸", ko: "영어", en: "English", href: "/home?lang=en" },
@@ -92,7 +100,7 @@ export function LanguageButton({
           setOpen(true);
         }}
         className={className}
-        aria-label={en ? "Change language" : "언어 선택"}
+        aria-label={PICKER_COPY[lang].change}
         aria-haspopup="dialog"
       >
         {/* eslint-disable-next-line @next/next/no-img-element -- 작은 SVG 아이콘 */}
@@ -117,7 +125,8 @@ function LanguagePicker({
   onClose: () => void;
 }) {
   const router = useRouter();
-  const en = lang !== "ko"; // 중국어·일본어 화면에서도 영어 문구 (송희)
+  const en = lang !== "ko"; // 분석용 viewer (외국인 · 한국인)
+  const t = PICKER_COPY[lang];
   const [soon, setSoon] = useState(false);
   const autoTranslate = useAutoTranslate();
 
@@ -170,12 +179,12 @@ function LanguagePicker({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label={en ? "Change language" : "언어 변경"}
+        aria-label={t.change}
         className="bleed-top relative mx-auto h-full w-full max-w-[430px] animate-[lang-fade_200ms_ease-out] bg-background/80 backdrop-blur-[8px]"
       >
         <PageHeader
           left={
-            <button type="button" onClick={onClose} className={HEADER_BUTTON} aria-label={en ? "Close" : "닫기"}>
+            <button type="button" onClick={onClose} className={HEADER_BUTTON} aria-label={t.close}>
               <Icon name="x" />
             </button>
           }
@@ -234,7 +243,7 @@ function LanguagePicker({
             >
               {/* 켜 두기를 권하는 표시 — 칸 위쪽 테두리에 걸쳐 붙임 */}
               <span className="absolute -top-2.5 left-5 rounded-full bg-secondary px-2.5 py-1 text-[11px] leading-none font-bold text-background">
-                {en ? "Recommended" : "추천"}
+                {t.recommended}
               </span>
               <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span className="font-(family-name:--font-paperlogy) text-[16px] leading-[1.3] tracking-[-0.32px]">자동 번역</span>
@@ -253,7 +262,7 @@ function LanguagePicker({
               </span>
             </button>
             <p className="text-center text-[12px] leading-[1.4] break-keep text-muted">
-              {en ? "Show posts and comments in your language" : "다른 언어로 쓴 글·한마디를 내 언어로 보여 줘요"}
+              {t.autoDesc}
             </p>
           </div>
         </div>
@@ -265,7 +274,7 @@ function LanguagePicker({
             soon ? "opacity-100" : "pointer-events-none opacity-0"
           }`}
         >
-          {soon ? (en ? "Coming soon" : "곧 지원할게요") : ""}
+          {soon ? t.soon : ""}
         </p>
 
       </div>

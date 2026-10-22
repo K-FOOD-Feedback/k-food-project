@@ -22,7 +22,7 @@ import { CommentPile } from "./CommentPile";
 import { DETAIL_COPY, type CommentsLang } from "./copy";
 import { nameIn, titleIn } from "@/app/home/titles";
 import { cjkPhrases, PhraseText } from "@/app/home/phrases";
-import { bodyIn, optionsIn } from "./postText";
+import { bodyIn, optionsIn, questionIn } from "./postText";
 import { notoSansJP, notoSansSC, paperlogy, titleFont } from "./font";
 import { isForeignFrom, withViewer } from "./viewer";
 import { saveKoreanLang, saveViewerLang, useKoreanUiLang, useViewerUiLang } from "./viewerLang";
@@ -494,6 +494,13 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
       e.preventDefault();
       const now = performance.now();
       const mag = Math.abs(wx);
+      // 넘긴 직후(새 글을 그리는 동안)는 전부 무시 — 그리느라 화면이 잠깐 멈추면 관성 신호 사이에 틈이 생겨
+      // "새 쓸기"로 잘못 읽고 한 번 더 넘어가던 것 (한 번 쓸었는데 글이 두 개씩 넘어감)
+      if (now - wheelGate.leftAt < WHEEL_COOLDOWN_MS) {
+        wheelGate.lastAt = now;
+        wheelGate.lastMag = mag;
+        return;
+      }
       const gap = now - wheelGate.lastAt;
       const newSwipe = gap >= WHEEL_GAP_MS && mag <= Math.max(wheelGate.lastMag, 8);
       wheelGate.lastAt = now;
@@ -510,6 +517,7 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
         const dir = wheelX < 0 ? "next" : "prev";
         wheelX = 0;
         wheelGate.locked = true;
+        wheelGate.leftAt = now;
         leave(dir);
         return;
       }
@@ -527,6 +535,7 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
       if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
       if ((e.target as Element | null)?.closest?.('input, textarea, select, [contenteditable="true"], [role=dialog]')) return;
       e.preventDefault();
+      if (e.repeat) return; // 꾹 누르고 있으면 한 번만 (계속 넘어가지 않게)
       leave(e.key === "ArrowRight" ? "next" : "prev");
     };
     // 시스템이 터치를 가로채면(전화 등) 넘기지 않고 제자리로
@@ -932,7 +941,9 @@ const WHEEL_IDLE_MS = 140;
 /** 이벤트가 이만큼(ms) 끊겼다가 작게 다시 시작하면 새 쓸기 */
 const WHEEL_GAP_MS = 28;
 /** 트랙패드로 넘긴 뒤 잠금 — 새 글 화면으로 바뀌어도 관성이 이어지므로 컴포넌트 밖에 둠 */
-const wheelGate = { locked: false, lastAt: -Infinity, lastMag: 0 };
+const wheelGate = { locked: false, lastAt: -Infinity, lastMag: 0, leftAt: -Infinity };
+/** 트랙패드로 넘긴 뒤 이만큼(ms)은 가로 쓸기를 아예 받지 않음 (새 글을 그리는 동안 관성이 또 넘기지 않게) */
+const WHEEL_COOLDOWN_MS = 700;
 const SWIPE_IN_PX = 160;
 const SWIPE_IN_MS = 620;
 const SWIPE_IN_DELAY_MS = 100;
@@ -942,10 +953,10 @@ const NEXT_EASE = "cubic-bezier(0.22, 1, 0.36, 1)"; // 빠르게 출발해 길�
 const TRIP_TTL_MS = 30 * 60_000;
 // 게시글 원어 — 지금 글은 모두 외국인이 쓴 글이라 영어 (자동 번역을 끄면 이 언어로 보임)
 const POST_ORIGINAL_LANG: CommentsLang = "en";
-// 상세 제목: 최대 줄 수, 줄이다가 멈추는 가장 작은 글자 크기
+// 상세 제목: 이 줄 수를 넘으면 글자를 줄이고, 줄이다가 멈추는 가장 작은 글자 크기 (그래도 넘치면 줄이 늘어남 — 자르지 않음)
 const TITLE_MAX_LINES = 3;
 const TITLE_MIN_PX = 18;
-const TITLE_MIN_PX_CJK = 14;
+const TITLE_MIN_PX_CJK = 18; // 송희: 14px는 너무 작음 — 모든 언어 18px까지만
 const BACK_CARD_MS = 320;
 // 사진 자동 넘김 간격 (가만히 있은 지 이만큼 지나면 다음 사진)
 const AUTOPLAY_MS = 3500;
@@ -979,7 +990,7 @@ function ShareVoteCard({
     title: titleIn(post, contentLang),
     dish: titleIn(post, contentLang),
     photo: post.cardPhoto,
-    voteQuestion: post.question.text,
+    voteQuestion: questionIn(post, contentLang),
     options: optionsIn(post, contentLang).map((o) => o.replace(/\n/g, " ")),
     author: `${post.author.flag} ${nameIn(post, contentLang)}`,
   };
@@ -1017,7 +1028,8 @@ function ShareVoteCard({
 }
 
 /** 본문 카드 안 글 (진짜 카드와 전환용 카드가 같은 모양을 쓰도록) */
-function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: HomePost; lang?: CommentsLang; contentLang?: CommentsLang }) {
+/** 상세 본문 카드 안 글 (점검 화면 /dev/edge-cases 에서도 씀) */
+export function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: HomePost; lang?: CommentsLang; contentLang?: CommentsLang }) {
   // contentLang: 글쓴이가 쓴 제목·본문 (원어 또는 자동 번역) — 제목은 중·일까지, 본문은 한국어가 아니면 영어
   const enText = contentLang === "en";
   const titleRef = useRef<HTMLHeadingElement>(null);
@@ -1060,12 +1072,12 @@ function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: HomePost
         {/* 닉네임도 글 언어를 따라감 (중·일 번역 — 메인 카드와 같은 nameIn) */}
         {nameIn(post, contentLang)}
       </p>
-      {/* 제목: 글 영역 폭의 3/5, 최대 3줄 (아래 0.15em 여백: 행간이 좁아도 g·y 꼬리가 잘리지 않게) — 3줄을 넘으면 넘지 않을 때까지 글자를 조금씩 줄임(최소 18px, 그래도 넘치면 3줄에서 자름)
+      {/* 제목: 글 영역 폭의 3/5, 최대 3줄 (아래 0.15em 여백: 행간이 좁아도 g·y 꼬리가 잘리지 않게) — 3줄을 넘으면 넘지 않을 때까지 글자를 조금씩 줄임(모든 언어 최소 18px), 그래도 넘치면 자르지 않고 전부 보여 줌 (송희: 상세는 제목 전부)
           영어는 소문자가 낮아 같은 행간이면 줄 사이가 비어 보여서 좁게 (한국어 1.2 → 영어 1.05)
           줄 길이는 고르게(text-balance) */}
       <h1
         ref={titleRef}
-        className={`line-clamp-3 w-3/5 pb-[0.15em] ${titleFont(contentLang)} text-[31px] ${enText ? "leading-[1.05]" : "leading-[1.2]"} tracking-[-0.62px] break-keep ${contentLang === "zh" || contentLang === "ja" ? "[overflow-wrap:anywhere]" : ""} text-balance`}
+        className={`w-3/5 pb-[0.15em] ${titleFont(contentLang)} text-[31px] ${enText ? "leading-[1.05]" : "leading-[1.2]"} tracking-[-0.62px] break-keep ${contentLang === "zh" || contentLang === "ja" ? "[overflow-wrap:anywhere]" : ""} text-balance`}
       >
         {/* 중·일은 단어(말덩이) 사이에서만 줄바꿈 — "食谱"가 갈라지지 않게 (메인과 같은 cjkPhrases·PhraseText).
             말덩이 하나가 칸보다 길면 overflow-wrap:anywhere로 그 안에서 끊음 */}
@@ -1080,7 +1092,8 @@ function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: HomePost
 const boxStyle = (b: Box) => ({ left: b.left, top: b.top, width: b.width, height: b.height });
 
 /** 사진 넘겨 보기 + 참여 인원 칩 (Figma: Tile/Photo) */
-function PhotoTile({
+/** 상세 사진 칸 + 참여 인원 칩 (점검 화면 /dev/edge-cases 에서도 씀) */
+export function PhotoTile({
   postId,
   photos,
   chip,

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { getHomePost } from "@/app/home/mockPosts";
+import { compactCount } from "@/lib/format";
 import { titleIn } from "@/app/home/titles";
 import { useViewerUiLang, type UiLang } from "@/app/posts/[id]/viewerLang";
 import { useAutoTranslate } from "@/components/LanguagePicker";
@@ -35,14 +36,14 @@ import { AccountFooter, GOOGLE_ACCOUNT, AccountMenu, countryFlag, countryName, P
   - 없음: 카드 없이 안내 문구 + 중간 크기 버튼(Share your K-food)
   - 제목: 2줄까지, 넘치면 … / 제목이 비면 "Untitled post"
   - 사진이 없으면: 회색 칸 + 이미지 아이콘
-  - 받은 투표: 0 → "No votes yet" · 1 → "1 vote" · 2~999 → "12 votes" · 1,000부터 줄여서 "1.2K votes"
+  - 받은 투표: 0 → "No votes yet" · 1 → "1 vote" · 9,999까지 "9,999 votes" · 1만부터 줄여서 "12K votes" (src/lib/format.ts)
   [Comments]
   - 없음: 안내 문구 + 중간 크기 버튼(Browse posts → 외국인 메인)
   - 한마디: 2줄까지, 넘치면 …
   - 어느 글: "On 글 제목" / 내 글 댓글에 단 답글이면 "Reply on 글 제목" · 1줄, 넘치면 …
   - 글이 지워졌으면: "On a deleted post", 사진 자리는 회색, 누를 수 없음(화살표 없음). 카드는 흐리게 하지 않음 (읽은 것처럼 보여 헷갈림)
   - 시간 (timeAgo):
-      1분 안 "Just now" · 1시간 안 "5m" · 오늘 "3h" · 어제 "Yesterday"
+      1분 안 "Just now" · 1시간 안 "5m" · 24시간 안 "3h" · 48시간 안 "Yesterday"
       · 7일 안 "3d" · 올해 "Oct 10" · 작년 이전 "Oct 10, 2025"
 */
 
@@ -162,13 +163,11 @@ const COPY: Record<
   },
 };
 
-/** 받은 투표 — 위 "받은 투표" 규칙 (1,000부터 줄여서: 1.2K · 1.2천 · 1200 → 1.2千) */
+/** 받은 투표 — 숫자는 앱 공통 규칙 (9,999까지 그대로 · 1.2만 · 1.2万 · 12K) */
 function votesLabel(n: number, lang: UiLang) {
   const T = COPY[lang];
   if (n === 0) return T.noVotes;
-  const locale = { en: "en", ko: "ko", zh: "zh-CN", ja: "ja" }[lang];
-  const compact = n < 1000 ? n.toLocaleString(locale) : new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(n);
-  return T.votes(n, compact);
+  return T.votes(n, compactCount(n, lang));
 }
 
 type Tab = "posts" | "comments";
@@ -232,6 +231,7 @@ export function MyScreen({ noComments = false }: { noComments?: boolean }) {
       />
 
       <MyTabs
+        lang={ui}
         label={T.activity}
         tabs={[
           ["posts", T.posts, posts.length],

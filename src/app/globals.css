@@ -24,6 +24,12 @@
   --color-secondary: #8e9afe; /* action/secondary (페리윙클) */
   --color-content: #fae276; /* surface/content (노랑) */
   --color-lilac: #ffc6ff; /* Color/Brand/Lilac */
+  /* 메인 카드 · 한마디 말풍선에 쓰던 색 (공유 카드 그라데이션도 이걸로) */
+  --color-lime: #ccf54b;
+  --color-sky: #9fe7ff;
+  --color-lavender: #c8b5ff;
+  --color-peach: #ffae8f;
+  --color-violet: #7144ff;
   --color-error: #ff5b5b; /* feedback/error */
   --color-kakao: #fee500; /* 카카오 브랜드 가이드 색 (토큰 외) */
 
@@ -499,4 +505,14 @@ body {
     backdrop-filter: inherit;
     pointer-events: none;
   }
+}
+
+/*
+  break-keep (한국어 낱말 단위 줄바꿈) + 넘칠 때는 줄바꿈 (송희)
+  중국어·일본어는 띄어쓰기가 없어서 keep-all만 걸면 문장 전체가 한 낱말로 취급돼 한 줄로 넘침 (、。에서만 줄바꿈)
+  → break-word를 같이 걸어 칸 끝에서 줄을 바꿈. 한국어는 그대로 낱말 단위
+*/
+@utility break-keep {
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }

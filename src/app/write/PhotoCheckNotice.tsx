@@ -5,6 +5,7 @@ import { Icon } from "@/components/Icon";
 import { Toast } from "@/components/Layout";
 import { track } from "@/lib/analytics";
 import { useFlow } from "@/lib/write-store";
+import { useWriteCopy } from "@/app/write/copy";
 
 /**
  * 사진 검사 상태 (작성 ①사진 · ②글 공용, 담당 송희)
@@ -22,6 +23,7 @@ export function usePhotoCheck() {
 /** 사진 아래 안내 + 혐오·선정 사진을 뺐을 때 토스트 */
 export function PhotoCheckNotice({ step }: { step: "photos" | "post" }) {
   const { unsafeRemoved } = useFlow();
+  const w = useWriteCopy();
   const { notFood, checking, unsure } = usePhotoCheck();
 
   // 검사에서 걸려 사진을 뺐으면 한 번 알려 줌 (사진은 다시 보여 주지 않음)
@@ -45,28 +47,26 @@ export function PhotoCheckNotice({ step }: { step: "photos" | "post" }) {
       {notFood > 0 ? (
         <p className="flex items-start gap-2 rounded-[20px] bg-error/15 px-4 py-3 text-[14px] font-semibold leading-[1.4] text-error">
           <Icon name="alert" size={18} className="mt-px shrink-0" />
-          {notFood === 1
-            ? "This photo doesn't look like food. Remove it to continue."
-            : `${notFood} photos don't look like food. Remove them to continue.`}
+          {notFood === 1 ? w.notFoodOne : w.notFoodMany(notFood)}
         </p>
       ) : checking ? (
         <p className="flex items-center gap-2 px-1 text-[13px] font-medium text-muted">
           <Icon name="sparkle" size={14} className="animate-spin [animation-duration:1.4s]" />
-          Checking your photos…
+          {w.checking}
         </p>
       ) : unsure ? (
         <p className="flex items-start gap-2 px-1 text-[13px] leading-[1.4] text-muted">
           <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-content text-[10px] font-bold text-on-light">
             !
           </span>
-          Some photos look dark or blurry. You can still use them.
+          {w.unsure}
         </p>
       ) : null}
       <Toast
         open={toast}
         onClose={close}
-        title="We removed a photo"
-        body="It can't be posted here. Please choose a photo of your dish."
+        title={w.removedTitle}
+        body={w.removedBody}
       />
     </>
   );

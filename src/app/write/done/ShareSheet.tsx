@@ -5,6 +5,8 @@ import { useLayoutEffect, useRef, useState, type ReactNode, type RefObject } fro
 import { Icon, type IconName } from "@/components/Icon";
 import { BottomSheet } from "@/components/Layout";
 import { track } from "@/lib/analytics";
+import { cardShapeAt, type CardShape } from "@/app/home/cardShapes";
+import { HOME_POSTS } from "@/app/home/mockPosts";
 import { CARD_H, CARD_STYLES, CARD_W, ShareCard, type CardLang, type CardTheme, type ShareCardPost } from "./ShareCard";
 
 /**
@@ -12,22 +14,42 @@ import { CARD_H, CARD_STYLES, CARD_W, ShareCard, type CardLang, type CardTheme, 
  * 레퍼런스: Spotify 공유 카드 · Eimi 공유 카드
  * - 열릴 때: 완료 화면의 카드가 아래로 내려오며 작아져 시트 안 카드 자리로 들어감 (origin)
  * - 위: 인스타 스토리용 세로 카드. 옆으로 넘겨 디자인 고르기 (Photo · Vote · Verdict)
- *   카드를 탭하면 스티커가 다시 붙음 / 마우스로 문지르면 3D로 기울어짐
- * - 가운데: 디자인 탭 + 색 고르기 (브랜드 색 5) → 아래에서 차오르듯 바뀜
+ *   사진은 그 글의 메인 카드 모양 그대로 / 마우스로 문지르면 3D로 기울어짐
+ * - 가운데: 디자인 탭 + 색 고르기 (앱 색 그라데이션 5) → 아래에서 차오르듯 바뀜
  * - 아래: 이미지 저장 · 스토리 · 링크 복사 · 메시지 · WhatsApp · X · 더보기
  * TODO: 서버 연결 후 링크가 실제 글 주소로 열리게 / 카카오톡은 Kakao SDK 앱 키 받으면 추가
  */
 const GAP = 14; // 카드 사이 간격
 const STEP = CARD_W + GAP;
 
-// 카드 색 — 브랜드 색만 (사진에서 뽑은 색은 칙칙해서 뺌)
-const THEMES: CardTheme[] = [
-  { bg: "var(--color-primary)", fg: "var(--color-on-light)" },
-  { bg: "var(--color-content)", fg: "var(--color-on-light)" },
-  { bg: "var(--color-secondary)", fg: "var(--color-on-light)" },
-  { bg: "var(--color-lilac)", fg: "var(--color-on-light)" },
-  { bg: "var(--color-surface)", fg: "var(--color-on-dark)" },
+// 카드 색 — 앱 화면에 쓰인 색으로 느낌이 다른 5가지 (레퍼런스: TYB 카드)
+// 음식 사진이 주인공이라 배경은 흰색을 섞어 부드럽게 (쨍한 색끼리 섞으면 음식이 덜 맛있어 보임 — 송희)
+// 마지막은 어두운 카드 — 음식이 가장 돋보임
+const INK_DARK = { ink: "var(--color-on-light)", inkText: "var(--color-on-dark)" };
+const soft = (color: string, amount: number) => `color-mix(in oklab, ${color} ${amount}%, white)`;
+export const THEMES: CardTheme[] = [
+  // 버터 (따뜻한 크림 → 노랑)
+  { bg: `linear-gradient(in oklab 165deg, ${soft("var(--color-content)", 25)} 0%, ${soft("var(--color-content)", 75)} 100%)`, fg: "var(--color-on-light)", ...INK_DARK },
+  // 살구 (연한 복숭아 → 핑크)
+  { bg: `linear-gradient(in oklab 165deg, ${soft("var(--color-peach)", 35)} 0%, ${soft("var(--color-primary)", 60)} 100%)`, fg: "var(--color-on-light)", ...INK_DARK },
+  // 하늘 (연한 하늘 → 연보라)
+  { bg: `linear-gradient(in oklab 165deg, ${soft("var(--color-sky)", 40)} 0%, ${soft("var(--color-lavender)", 65)} 100%)`, fg: "var(--color-on-light)", ...INK_DARK },
+  // 라임 (연한 라임 → 버터)
+  { bg: `linear-gradient(in oklab 165deg, ${soft("var(--color-lime)", 45)} 0%, ${soft("var(--color-content)", 45)} 100%)`, fg: "var(--color-on-light)", ...INK_DARK },
+  // 어두운 카드 — 모서리에 은은한 노랑·핑크 빛
+  {
+    bg: "radial-gradient(circle at 0% 0%, color-mix(in oklab, var(--color-content) 28%, transparent), transparent 55%), radial-gradient(circle at 100% 100%, color-mix(in oklab, var(--color-primary) 30%, transparent), transparent 60%), var(--color-surface)",
+    fg: "var(--color-on-dark)",
+    ink: "var(--color-content)",
+    inkText: "var(--color-on-light)",
+  },
 ];
+
+/** 이 글의 사진 모양 — 메인 카드와 같게 (덱 순서대로 모양이 정해짐, 내 글은 맨 앞 카드 모양) */
+export function shapeOfPost(postId: string): CardShape {
+  const i = HOME_POSTS.findIndex((p) => p.id === postId);
+  return cardShapeAt(Math.max(0, i));
+}
 
 // 시트 글 — 한국인 화면(상세 ⋯)은 한국어, 외국인 화면(글 올린 뒤)은 영어
 const COPY = {
@@ -35,7 +57,6 @@ const COPY = {
     sheet: "Share with friends",
     text: (title: string) => `Is this real K-food? 🇰🇷 Koreans, judge my "${title}"`,
     card: (label: string) => `${label} card`,
-    shuffle: "tap to shuffle stickers",
     styles: "Card style",
     colors: "Card color",
     color: (n: number) => `Color ${n}`,
@@ -47,14 +68,13 @@ const COPY = {
     saved: "Saved! 📸",
     savedStory: "Saved! Add it to your story 📸",
     imageFail: "Couldn't make the image",
-    copied: "Link copied!",
+    copied: "Link copied",
     copyFail: "Couldn't copy the link",
   },
   ko: {
     sheet: "친구에게 공유",
     text: (title: string) => `이거 찐 한식 맞아? 🇰🇷 "${title}" 같이 판결해 줘`,
     card: (label: string) => `${label} 카드`,
-    shuffle: "누르면 스티커가 바뀌어요",
     styles: "카드 모양",
     colors: "카드 색",
     color: (n: number) => `색 ${n}`,
@@ -74,7 +94,6 @@ const COPY = {
     sheet: "分享给朋友",
     text: (title: string) => `这是正宗韩餐吗？🇰🇷 韩国人来评评我的「${title}」`,
     card: (label: string) => `${label}卡片`,
-    shuffle: "点一下换贴纸",
     styles: "卡片样式",
     colors: "卡片颜色",
     color: (n: number) => `颜色 ${n}`,
@@ -86,14 +105,13 @@ const COPY = {
     saved: "已保存！📸",
     savedStory: "已保存！发到快拍吧 📸",
     imageFail: "无法生成图片",
-    copied: "已复制链接！",
+    copied: "已复制链接",
     copyFail: "无法复制链接",
   },
   ja: {
     sheet: "友だちにシェア",
     text: (title: string) => `これって本物の韓国料理？🇰🇷 韓国の人、私の「${title}」をジャッジして`,
     card: (label: string) => `${label}カード`,
-    shuffle: "タップでステッカーが変わる",
     styles: "カードの形",
     colors: "カードの色",
     color: (n: number) => `色 ${n}`,
@@ -103,9 +121,9 @@ const COPY = {
     sms: "メッセージ",
     more: "その他",
     saved: "保存しました 📸",
-    savedStory: "保存しました！ストーリーに載せてみて 📸",
+    savedStory: "保存しました！ストーリーに載せてみましょう 📸",
     imageFail: "画像を作れませんでした",
-    copied: "リンクをコピーしました！",
+    copied: "リンクをコピーしました",
     copyFail: "リンクをコピーできませんでした",
   },
 };
@@ -130,6 +148,7 @@ export function ShareSheet({
   lang?: CardLang;
 }) {
   const t = COPY[lang];
+  const shape = shapeOfPost(postId);
   // 시트는 버튼을 누른 뒤(브라우저에서만) 열리므로 여기서 주소를 읽어도 됩니다
   const url = open ? `${window.location.origin}/posts/${postId}` : "";
   const text = t.text(post.title);
@@ -139,8 +158,16 @@ export function ShareSheet({
   const [prevBg, setPrevBg] = useState<string | null>(null);
 
   const [active, setActive] = useState(0); // 가운데 카드
-  const [scroll, setScroll] = useState(0); // 넘기는 중 위치 (0 ~ 2, 소수)
-  const [seed, setSeed] = useState(0);
+  // 넘기는 중 카드 모양(작아짐·기울기·흐림)은 state 대신 바로 style로 — 매 프레임 다시 그리지 않게 (예전엔 넘길 때 카드가 떨리고 무거웠음)
+  const slides = useRef<(HTMLDivElement | null)[]>([]);
+  const placeSlides = (pos: number) => {
+    slides.current.forEach((el, i) => {
+      if (!el) return;
+      const d = Math.max(-1, Math.min(1, i - pos));
+      el.style.transform = `scale(${1 - Math.abs(d) * 0.1}) rotate(${d * 5}deg)`;
+      el.style.opacity = `${1 - Math.abs(d) * 0.45}`;
+    });
+  };
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [toast, setToast] = useState("");
   const style = CARD_STYLES[active].id;
@@ -152,10 +179,13 @@ export function ShareSheet({
     setWasOpen(open);
     if (open) {
       setActive(0);
-      setScroll(0);
       setTilt({ x: 0, y: 0 });
     }
   }
+  // 열릴 때 카드 모양도 첫 카드 기준으로 (넘기던 중 닫았다가 다시 열어도)
+  useLayoutEffect(() => {
+    if (open) placeSlides(0);
+  }, [open]);
 
   const rail = useRef<HTMLDivElement>(null);
   const cards = useRef<(HTMLDivElement | null)[]>([]);
@@ -240,7 +270,7 @@ export function ShareSheet({
     const el = rail.current;
     if (!el) return;
     const pos = el.scrollLeft / STEP;
-    setScroll(pos);
+    placeSlides(pos);
     const i = Math.max(0, Math.min(CARD_STYLES.length - 1, Math.round(pos)));
     if (i !== active) {
       setActive(i);
@@ -280,13 +310,18 @@ export function ShareSheet({
       easing: "ease-out",
     });
     try {
+      // 카드 안 사진이 다 불러와진 뒤에 찍음
+      await Promise.all(Array.from(card.querySelectorAll("img"), (img) => img.decode().catch(() => {})));
       // 스토리는 화면을 꽉 채우므로 둥근 모서리 없이 찍음
-      const blob = await toBlob(card, {
+      const options = {
         pixelRatio: 1080 / CARD_W,
         cacheBust: true,
         style: { borderRadius: "0" },
         fontEmbedCSS: await ownFontCSS(),
-      });
+      };
+      // 아이폰 사파리는 첫 번째로 찍을 때 사진이 빈칸으로 나오는 문제(html-to-image 알려진 문제)가 있어서 한 번 찍고 버린 뒤 다시 찍음
+      if (/iP(hone|ad|od)|^((?!chrome|android|crios|fxios).)*safari/i.test(navigator.userAgent)) await toBlob(card, options);
+      const blob = await toBlob(card, options);
       return blob ? new File([blob], `k-food-${style}.png`, { type: "image/png" }) : null;
     } catch {
       return null;
@@ -356,18 +391,14 @@ export function ShareSheet({
           style={{ gap: GAP, paddingInline: `calc(50% - ${CARD_W / 2}px)` }}
         >
           {CARD_STYLES.map((s, i) => {
-            const d = i - scroll;
             const isActive = i === active;
             return (
               <button
                 key={s.id}
                 type="button"
-                aria-label={isActive ? `${t.card(s.label[lang])} — ${t.shuffle}` : t.card(s.label[lang])}
-                onClick={() => {
-                  if (!isActive) return goTo(i);
-                  track("share_card_shuffled", { style: s.id, taps: seed + 1 });
-                  setSeed((n) => n + 1);
-                }}
+                aria-label={t.card(s.label[lang])}
+                // 옆 카드를 누르면 그 카드로 (스티커 다시 붙이기는 뺌 — 송희)
+                onClick={() => !isActive && goTo(i)}
                 onPointerMove={(e) => {
                   if (!isActive || e.pointerType !== "mouse") return;
                   const r = e.currentTarget.getBoundingClientRect();
@@ -377,14 +408,20 @@ export function ShareSheet({
                 className="relative shrink-0 snap-center [perspective:800px] transition-transform active:scale-[0.97]"
                 style={{ width: CARD_W, height: CARD_H }}
               >
+                {/* 바깥: 넘기는 위치에 따라 작아지고 기울어짐 (손가락을 그대로 따라가야 해서 전환 효과 없음) */}
+                <div
+                  ref={(el) => {
+                    slides.current[i] = el;
+                  }}
+                  className="relative size-full will-change-transform"
+                  style={i === 0 ? undefined : { transform: "scale(0.9) rotate(5deg)", opacity: 0.55 }}
+                >
+                {/* 안: 마우스로 문지르면 3D로 기울어짐 (이것만 부드럽게 따라감) */}
                 <div
                   className="relative size-full"
                   style={{
-                    transform: `rotateY(${isActive ? tilt.y : 0}deg) rotateX(${isActive ? tilt.x : 0}deg) scale(${
-                      1 - Math.min(Math.abs(d), 1) * 0.1
-                    }) rotate(${Math.max(-1, Math.min(1, d)) * 5}deg)`,
+                    transform: isActive && (tilt.x || tilt.y) ? `rotateY(${tilt.y}deg) rotateX(${tilt.x}deg)` : undefined,
                     transition: "transform 160ms ease-out",
-                    opacity: 1 - Math.min(Math.abs(d), 1) * 0.45,
                   }}
                 >
                   {/* 이전 색 (새 색이 차오르는 동안 뒤에 보임) */}
@@ -395,8 +432,9 @@ export function ShareSheet({
                     }}
                     className="relative rounded-[22px] shadow-[0_16px_40px_rgba(0,0,0,0.45)]"
                   >
-                    <ShareCard style={s.id} post={post} theme={theme} seed={seed} lang={lang} />
+                    <ShareCard style={s.id} post={post} theme={theme} seed={0} lang={lang} shape={shape} />
                   </div>
+                </div>
                 </div>
               </button>
             );

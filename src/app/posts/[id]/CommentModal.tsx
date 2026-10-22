@@ -8,6 +8,7 @@ import { COMMENT_MAX, whoOf, type Comment } from "./comments";
 import { COMMENTS_COPY, type CommentsCopy, type CommentsLang } from "./copy";
 import { HIDDEN_COLOR } from "./hidden";
 import { splitLines } from "./GravityPile";
+import { clampText, limitTyped, textLength } from "@/lib/text-length";
 
 /**
   한마디(원글) 말풍선을 누르면 뜨는 답글 레이어
@@ -752,14 +753,15 @@ export function CommentModal({
               value={draft}
               readOnly={writeLocked}
               onClick={writeLocked ? onLockedWrite : undefined}
-              onChange={(e) => setDraft(e.target.value.slice(0, COMMENT_MAX))}
+              onChange={(e) => setDraft(limitTyped(e, COMMENT_MAX))}
+              onCompositionEnd={(e) => setDraft(clampText(e.currentTarget.value, COMMENT_MAX))}
               placeholder={t.leaveReply}
               enterKeyHint="send"
               tabIndex={editing ? -1 : 0}
               className="min-w-0 flex-1 bg-transparent text-[16px] text-on-dark outline-none placeholder:text-white/40"
             />
             <span className="shrink-0 text-[12px] text-white/40">
-              {draft.length}/{COMMENT_MAX}
+              {textLength(draft)}/{COMMENT_MAX}
             </span>
           </label>
           </div>
@@ -1051,7 +1053,8 @@ function EditCard({
               <textarea
                 ref={field}
                 value={draft}
-                onChange={(e) => onDraft(e.target.value.replace(/\n/g, "").slice(0, COMMENT_MAX))}
+                onChange={(e) => onDraft(limitTyped(e, COMMENT_MAX, e.target.value.replace(/\n/g, "")))}
+                onCompositionEnd={(e) => onDraft(clampText(e.currentTarget.value.replace(/\n/g, ""), COMMENT_MAX))}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
@@ -1064,7 +1067,7 @@ function EditCard({
               />
             </label>
             <span className="absolute right-5 bottom-3 text-[12px] text-white/40">
-              {draft.length}/{COMMENT_MAX}
+              {textLength(draft)}/{COMMENT_MAX}
             </span>
           </div>
         </div>
@@ -1146,13 +1149,14 @@ function ReportDialog({
           <textarea
             ref={field}
             value={reason}
-            onChange={(e) => setReason(e.target.value.slice(0, REPORT_MAX))}
+            onChange={(e) => setReason(limitTyped(e, REPORT_MAX))}
+            onCompositionEnd={(e) => setReason(clampText(e.currentTarget.value, REPORT_MAX))}
             rows={3}
             placeholder={t.reportPlaceholder}
             className="resize-none rounded-[20px] bg-surface-2 px-4 py-3 text-[15px] leading-[1.5] outline-none placeholder:text-white/40"
           />
           <span className="self-end text-[12px] text-white/40">
-            {reason.length}/{REPORT_MAX}
+            {textLength(reason)}/{REPORT_MAX}
           </span>
         </label>
         <p className="flex items-start gap-2 text-[14px] leading-[1.5] text-white/70">
@@ -1172,7 +1176,8 @@ function ReportDialog({
   );
 }
 
-const REPORT_MAX = 100;
+/** 신고 이유 — 칸 단위 (한국어 100자 · 영어 200자) */
+const REPORT_MAX = 200;
 
 /**
   지우기 전 확인 창 — 신고 확인 창과 같은 모양. 실수로 지우지 않게 "아니오"에 먼저 초점이 갑니다.

@@ -38,7 +38,7 @@ import { AccountFooter, GOOGLE_ACCOUNT, AccountMenu, ProfileHeader, ProfileSheet
   - 한마디 2줄까지 · 이모지 한마디도 그대로
   - 어느 글: "글 제목" / 답글이면 "답글 · 글 제목", 1줄
   - 글이 지워졌으면: "삭제된 글", 누를 수 없음
-  - 시간: 방금 · 5분 전 · 3시간 전 · 어제 · 3일 전 · 9월 3일 · 2025년 9월 8일
+  - 시간: 방금 · 5분 전 · 3시간 전 · 어제(24~48시간) · 3일 전 · 9/3 · 2025/9/8
 */
 
 /* 화면 언어 = 지구본에서 고른 언어(한국인 기억 kfood:korean-lang), 글 제목 = 자동 번역이면 화면 언어 · 아니면 원문(영어) — 메인·상세와 같은 규칙 */
@@ -66,7 +66,7 @@ const COPY: Record<
     votes: "투표",
     comments: "한마디",
     noVotes: "아직 투표한 글이 없어요",
-    noVotesBody: "외국인이 만든 한식에 한 표 던져 보세요.",
+    noVotesBody: "외국인 친구가 만든 한식에 한 표 던져 보세요.",
     goVote: "투표하러 가기",
     noComments: "아직 남긴 한마디가 없어요",
     noCommentsBody: "투표한 글에 한마디를 남기면 여기 모여요.",
@@ -81,7 +81,7 @@ const COPY: Record<
     votes: "Votes",
     comments: "Comments",
     noVotes: "No votes yet",
-    noVotesBody: "Cast your vote on K-food made by foreigners.",
+    noVotesBody: "Vote on K-food made by friends abroad.",
     goVote: "Go vote",
     noComments: "No comments yet",
     noCommentsBody: "Comments you leave on posts you voted on will show up here.",
@@ -99,7 +99,7 @@ const COPY: Record<
     noVotesBody: "给外国朋友做的韩食投上一票吧。",
     goVote: "去投票",
     noComments: "还没有留下评论",
-    noCommentsBody: "在投过票的帖子下留言，就会出现在这里。",
+    noCommentsBody: "在投过票的帖子下发表的评论会显示在这里。",
     browse: "随便看看",
     reply: "回复 · ",
     deleted: "已删除的帖子",
@@ -111,7 +111,7 @@ const COPY: Record<
     votes: "投票",
     comments: "コメント",
     noVotes: "まだ投票した投稿がありません",
-    noVotesBody: "海外の友だちが作った韓国料理に一票入れてみよう。",
+    noVotesBody: "海外の友だちが作った韓国料理に一票入れてみましょう。",
     goVote: "投票しに行く",
     noComments: "まだコメントがありません",
     noCommentsBody: "投票した投稿にコメントを残すと、ここに集まります。",
@@ -172,6 +172,7 @@ export function KoMyScreen() {
       />
 
       <MyTabs
+        lang={ui}
         label={T.activity}
         tabs={[
           ["votes", T.votes, votedPosts.length],

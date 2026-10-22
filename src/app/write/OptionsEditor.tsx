@@ -4,6 +4,8 @@ import { useRef } from "react";
 import { Icon } from "@/components/Icon";
 import { track } from "@/lib/analytics";
 import { OPTION_MAX, OPTIONS_MAX, OPTIONS_MIN } from "@/lib/write-data";
+import { clampText, textLength } from "@/lib/text-length";
+import { useWriteCopy } from "@/app/write/copy";
 
 /**
  * 투표 선택지 편집 (④ Your vote · 수정 화면 공용, 담당 송희)
@@ -22,6 +24,7 @@ export function OptionsEditor({
   source: "write" | "edit";
 }) {
   const focusedValue = useRef("");
+  const w = useWriteCopy();
   const set = (i: number, value: string) =>
     onChange?.(options.map((o, j) => (j === i ? value.replace(/\n/g, "") : o)));
   const remove = (i: number) => {
@@ -46,11 +49,14 @@ export function OptionsEditor({
             </span>
             <input
               value={opt}
-              maxLength={OPTION_MAX}
               readOnly={locked}
-              placeholder="Write a choice"
-              aria-label={`Choice ${i + 1}`}
-              onChange={(e) => set(i, e.target.value)}
+              placeholder={w.writeChoice}
+              aria-label={w.choiceN(i + 1)}
+              // 한도는 칸 수 (한·중·일 글자 2칸) — 한글 조합 중엔 자르지 않고 조합이 끝나면 자름
+              onChange={(e) =>
+                set(i, (e.nativeEvent as InputEvent).isComposing ? e.target.value : clampText(e.target.value, OPTION_MAX))
+              }
+              onCompositionEnd={(e) => set(i, clampText(e.currentTarget.value, OPTION_MAX))}
               onFocus={(e) => (focusedValue.current = e.target.value)}
               onBlur={(e) => {
                 if (e.target.value !== focusedValue.current)
@@ -66,11 +72,11 @@ export function OptionsEditor({
               <>
                 {/* 글자 수는 고치는 중에만 */}
                 <span className="hidden shrink-0 text-[12px] font-medium tabular-nums text-neutral-400 group-focus-within:inline">
-                  {opt.length}/{OPTION_MAX}
+                  {textLength(opt)}/{OPTION_MAX}
                 </span>
                 <button
                   type="button"
-                  aria-label={`Remove choice ${i + 1}`}
+                  aria-label={w.removeChoiceN(i + 1)}
                   disabled={options.length <= OPTIONS_MIN}
                   onClick={() => remove(i)}
                   className="flex size-10 shrink-0 items-center justify-center rounded-full text-neutral-400 transition active:scale-90 disabled:opacity-25"
@@ -89,7 +95,7 @@ export function OptionsEditor({
           className="flex h-14 items-center justify-center gap-2 rounded-full border-[1.5px] border-dashed border-white/25 text-[15px] font-semibold text-muted transition active:scale-[0.99]"
         >
           <Icon name="plus" size={18} />
-          Add a choice
+          {w.addChoice}
         </button>
       )}
     </div>

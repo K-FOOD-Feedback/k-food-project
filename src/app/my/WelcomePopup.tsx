@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { IconButton, PillButton } from "@/components/Buttons";
 import { Icon } from "@/components/Icon";
 import { track } from "@/lib/analytics";
+import { useViewerUiLang } from "@/app/posts/[id]/viewerLang";
 import type { MyLang } from "./parts";
 import {
   countryFlag,
@@ -103,6 +104,32 @@ const COPY = {
     start: "Let's go",
     close: "Close",
   },
+  zh: {
+    label: "欢迎",
+    title: "欢迎！👋",
+    sub: "开始之前，只需设置几项。",
+    nickname: "你的昵称",
+    country: "你来自哪里？",
+    all: "全部同意",
+    items: ["我已年满14岁", "服务条款", "隐私政策"],
+    required: "必选",
+    view: "查看",
+    start: "开始吧",
+    close: "关闭",
+  },
+  ja: {
+    label: "ようこそ",
+    title: "ようこそ！👋",
+    sub: "はじめる前に、少しだけ設定してください。",
+    nickname: "ニックネーム",
+    country: "どこから来ましたか？",
+    all: "すべてに同意",
+    items: ["14歳以上です", "利用規約", "プライバシーポリシー"],
+    required: "必須",
+    view: "見る",
+    start: "はじめる",
+    close: "閉じる",
+  },
   ko: {
     label: "가입 환영",
     title: "반가워요! 👋",
@@ -142,7 +169,10 @@ export function WelcomePopup({
   /** 시작 — 원래 하려던 행동으로 (사진 고르기 등은 이 클릭 안에서 열어야 브라우저가 막지 않음) */
   onDone: () => void;
 }) {
-  const t = COPY[lang];
+  // 외국인은 🌐에서 고른 언어로 (영·중·일), 한국인은 한국어
+  const ui = useViewerUiLang();
+  const fl = ui === "zh" || ui === "ja" ? ui : "en";
+  const t = lang === "ko" ? COPY.ko : COPY[fl];
   const open = useWelcomeOpen();
   const foreigner = lang === "en";
   const [nickname, setNickname] = useState("");
@@ -168,7 +198,7 @@ export function WelcomePopup({
 
   const allAgreed = agreed.every(Boolean);
   const canStart = allAgreed && !spinning && (!foreigner || !!country);
-  const countries = [...COUNTRIES].sort((a, b) => countryName(a).localeCompare(countryName(b)));
+  const countries = [...COUNTRIES].sort((a, b) => countryName(a, fl).localeCompare(countryName(b, fl), fl));
 
   return createPortal(
     <div
@@ -199,7 +229,7 @@ export function WelcomePopup({
         <section className="flex flex-col gap-3">
           <h2 className="px-2 text-[15px] leading-[1.4] font-bold">{t.nickname}</h2>
           {nickname && (
-            <NicknameSlot lang={lang} value={nickname} onChange={setNickname} onSpinningChange={setSpinning} from="signup" />
+            <NicknameSlot lang={lang} ui={lang === "ko" ? "ko" : fl} value={nickname} onChange={setNickname} onSpinningChange={setSpinning} from="signup" />
           )}
         </section>
 
@@ -219,7 +249,7 @@ export function WelcomePopup({
               >
                 {countries.map((c) => (
                   <option key={c} value={c}>
-                    {countryName(c)}
+                    {countryName(c, fl)}
                   </option>
                 ))}
               </select>

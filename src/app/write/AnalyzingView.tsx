@@ -5,15 +5,17 @@ import { Icon } from "@/components/Icon";
 import { Tile } from "@/components/Layout";
 import { coverOf, useFlow } from "@/lib/write-store";
 import { usePhotoCheck } from "./PhotoCheckNotice";
+import { useWriteCopy } from "@/app/write/copy";
 
 /**
  * 사진을 고른 직후 분석 화면 (① 사진 화면이 열리기 전, 담당 송희)
  * 업로드 → 음식 사진인지 확인 → 음식 알아보기가 끝나면 ① 화면이 결과와 함께 열림
  */
-const STEPS = ["Uploading your photos", "Checking it's food", "Recognizing your dish"];
 
 export function AnalyzingView() {
   const { draft, ai } = useFlow();
+  const w = useWriteCopy();
+  const STEPS = w.analyzingSteps;
   const { checking } = usePhotoCheck();
   const cover = coverOf(draft);
   // 끝난 단계 수 — 업로드는 바로 끝, 검사가 끝나면 2, 음식을 알아보면 3
@@ -22,8 +24,8 @@ export function AnalyzingView() {
   return (
     <div className="flex flex-col" aria-live="polite">
       <div className="mx-8 mt-1 flex animate-rise flex-col items-center gap-2 text-center">
-        <h1 className="font-display text-[28px] leading-[1.1]">Looking at your photos…</h1>
-        <p className="text-[15px] leading-[1.5] text-muted">AI is figuring out what you made.</p>
+        <h1 className="font-display text-[28px] leading-[1.1]">{w.analyzingTitle}</h1>
+        <p className="text-[15px] leading-[1.5] text-muted">{w.analyzingBody}</p>
       </div>
 
       <div className="relative mx-auto mt-8 h-[280px] w-full max-w-[375px]">

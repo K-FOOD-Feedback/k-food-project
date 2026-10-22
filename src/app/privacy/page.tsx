@@ -5,5 +5,5 @@ export const metadata: Metadata = { title: "개인정보처리방침 · 오늘�
 
 // 개인정보처리방침 (자리만, 내용은 나중에)
 export default function Page() {
-  return <PolicyPlaceholder ko="개인정보처리방침" en="Privacy Policy" />;
+  return <PolicyPlaceholder doc="privacy" />;
 }

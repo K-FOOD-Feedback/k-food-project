@@ -5,7 +5,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { getHomePost } from "@/app/home/mockPosts";
 import { nameIn, titleIn } from "@/app/home/titles";
-import { optionsIn } from "@/app/posts/[id]/postText";
+import { optionsIn, questionIn } from "@/app/posts/[id]/postText";
 import { ShareSheet } from "@/app/write/done/ShareSheet";
 import type { ShareCardPost } from "@/app/write/done/ShareCard";
 import { track } from "@/lib/analytics";
@@ -57,7 +57,7 @@ const COPY = {
     copyFailed: "Couldn't copy the link",
     deleteLabel: "Delete post",
     deleteTitle: "Delete this post?",
-    deleteBody: "Its votes and comments will be gone too. You can't undo this.",
+    deleteBody: "Its votes and comments will be gone too. This can't be undone.",
     cancel: "Cancel",
     reportTitle: "Report this post?",
     reportBody: "Tell us why. We'll review it and take action.",
@@ -183,7 +183,7 @@ export function PostMenu({
       title: titleIn(p, lang),
       dish: titleIn(p, lang),
       photo: p.cardPhoto,
-      voteQuestion: p.question.text,
+      voteQuestion: questionIn(p, lang),
       options: optionsIn(p, lang).map((o) => o.replace(/\n/g, " ")),
       author: `${p.author.flag} ${nameIn(p, lang)}`,
     };
