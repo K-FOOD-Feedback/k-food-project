@@ -7,7 +7,8 @@ import { useEffect } from "react";
   디자인 시스템 정리 도구(k-food-ds)의 미리보기 연결 (송희)
   - 정리 도구가 이 앱을 iframe으로 띄우고 "바꿀 값"을 CSS로 보내면, 화면에 덮어씌워 바뀐 모습을 보여 줌
   - "찾기": 도구가 클래스 이름을 보내면 그 값이 쓰인 첫 자리로 스크롤하고, 몇 곳 있는지 알려 줌
-  - 화면 훑기: 값마다 이 화면에서 몇 곳 보이는지 세어 줌 (도구가 "이 값은 메인 3 · 상세 5"처럼 보여 줌)
+  - 상태 만들기: 도구가 보낸 순서대로 버튼을 누르고 사진을 넣어 시트 · 팝업 · 글쓰기 뒤 단계를 띄움
+  - 화면 훑기: 화면 맨 아래까지 스크롤하며 값마다 몇 곳 보이는지 세어 줌 (도구가 "이 값은 메인 3 · 상세 5"처럼 보여 줌)
   - 영역 표시: 브라우저 개발자 도구처럼 그 값이 쓰인 요소마다 파란 반투명 박스 + 첫 요소에 이름 · 크기 말풍선
   - 코드는 바꾸지 않음. 덮어쓰기는 그 iframe 안에서만, 새로고침하면 사라짐
   - 정리 도구 주소에서 띄웠을 때만 동작 (다른 사이트가 이 앱을 띄워 화면을 바꾸지 못하게)
@@ -135,6 +136,74 @@ function mark(classes: string[], label: string, index = 0) {
   return markEls;
 }
 
+// ── 상태 만들기 — 도구가 "이 버튼을 눌러라 · 사진을 넣어라"를 보내면 차례로 실행 (시트 · 팝업 · 글쓰기 뒤 단계를 보려고)
+type Step = { click?: string; upload?: string; wait?: number };
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+/** 누를 것 찾기 — CSS 선택자, 아니면 aria-label · 글자로 */
+function target(q: string): HTMLElement | null {
+  if (/^[\[#.]|^(button|input|a|div)\b/.test(q)) return document.querySelector<HTMLElement>(q);
+  const els = [...document.querySelectorAll<HTMLElement>("button,a,input,[role=tab],[role=menuitem],[role=checkbox],[role=option],[role=button]")].filter(
+    (el) => el.getBoundingClientRect().width > 0 && !el.closest('[aria-label="화면 바꾸기 (작업용)"]'),
+  );
+  const txt = (el: HTMLElement) => (el.innerText || "").replace(/\s+/g, " ").trim();
+  return (
+    els.find((el) => el.getAttribute("aria-label") === q || txt(el) === q) ??
+    els.find((el) => el.getAttribute("aria-label")?.startsWith(q) || txt(el).startsWith(q)) ??
+    null
+  );
+}
+async function run(steps: Step[]) {
+  for (const st of steps) {
+    if (st.wait) await sleep(st.wait);
+    if (st.click) {
+      // 화면이 늦게 그려질 수 있어서 잠깐 기다리며 찾음
+      let el: HTMLElement | null = null;
+      for (let i = 0; i < 20 && !el; i++) {
+        el = target(st.click);
+        if (!el) await sleep(150);
+      }
+      el?.click();
+      await sleep(700);
+    }
+    if (st.upload) {
+      const input = document.querySelector<HTMLInputElement>('input[type="file"]');
+      if (input) {
+        const blob = await fetch(st.upload).then((r) => r.blob());
+        const dt = new DataTransfer();
+        dt.items.add(new File([blob], st.upload.split("/").pop() ?? "photo.jpg", { type: blob.type }));
+        input.files = dt.files;
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      await sleep(800);
+    }
+  }
+}
+
+/** 훑기 — 화면 맨 아래까지 실제로 스크롤하면서 보이는 요소를 모음 (스크롤해야 그려지는 부분까지) */
+async function scanAll(groups: string[][]) {
+  const seen = groups.map(() => new Set<Element>());
+  const collect = () => groups.forEach((g, i) => elementsOf(g).forEach((el) => seen[i].add(el)));
+  // 창 스크롤 + 안쪽에 스크롤되는 큰 영역(시트 · 목록)
+  const boxes: (Element | Window)[] = [window];
+  for (const el of document.querySelectorAll("*")) {
+    const cs = getComputedStyle(el);
+    if (/(auto|scroll)/.test(cs.overflowY) && el.scrollHeight > el.clientHeight + 40 && el.clientHeight > 200) boxes.push(el);
+  }
+  collect();
+  for (const box of boxes) {
+    const isWin = box === window;
+    const total = isWin ? document.documentElement.scrollHeight : (box as Element).scrollHeight;
+    const view = isWin ? innerHeight : (box as Element).clientHeight;
+    for (let y = view * 0.8; y < total; y += view * 0.8) {
+      box.scrollTo({ top: y, behavior: "instant" as ScrollBehavior });
+      await sleep(250);
+      collect();
+    }
+    box.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+  }
+  return seen.map((s) => s.size);
+}
+
 export function DsPreviewBridge() {
   const path = usePathname();
   // 화면이 바뀔 때마다 "준비됐어요"를 알려서 도구가 CSS를 다시 보내게 함
@@ -164,8 +233,12 @@ export function DsPreviewBridge() {
       }
       // 화면 훑기 — 값(클래스 묶음)마다 이 화면에서 몇 곳 보이는지 세어 돌려줌 (어느 화면에 쓰였는지 미리 알기)
       if (e.data?.type === "kfood-ds-scan" && Array.isArray(e.data.groups)) {
-        const counts = e.data.groups.map((g: string[]) => elementsOf(g).length);
-        (e.source as Window | null)?.postMessage({ type: "kfood-ds-scanned", id: e.data.id, counts }, { targetOrigin: e.origin });
+        const src = e.source as Window | null;
+        scanAll(e.data.groups).then((counts) => src?.postMessage({ type: "kfood-ds-scanned", id: e.data.id, counts }, { targetOrigin: e.origin }));
+      }
+      if (e.data?.type === "kfood-ds-act" && Array.isArray(e.data.steps)) {
+        const src = e.source as Window | null;
+        run(e.data.steps).then(() => src?.postMessage({ type: "kfood-ds-acted", id: e.data.id }, { targetOrigin: e.origin }));
       }
       if (e.data?.type === "kfood-ds-highlight" && Array.isArray(e.data.classes)) {
         mark(e.data.classes, String(e.data.label ?? ""), Number(e.data.index ?? 0));
