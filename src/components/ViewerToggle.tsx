@@ -81,7 +81,7 @@ const subscribe = () => () => {};
 function isLiveSite() {
   if (process.env.NEXT_PUBLIC_VERCEL_ENV === "production") return true;
   const host = window.location.hostname;
-  return host === "toppytippy.com" || host.endsWith(".toppytippy.com");
+  return host === "toppytippy.com" || host === "www.toppytippy.com"; // dev.toppytippy.com 은 개발용이라 보임
 }
 
 function readEnabled() {
