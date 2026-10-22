@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Figtree } from "next/font/google";
 import { Suspense } from "react";
 import { ViewerToggle } from "@/components/ViewerToggle";
+import { DsPreviewBridge } from "@/components/DsPreviewBridge";
 import { FlowProvider } from "@/lib/write-store";
 import { Analytics } from "./Analytics";
 import { paperlogy } from "./posts/[id]/font";
@@ -46,6 +47,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Suspense>
           <ViewerToggle />
         </Suspense>
+        {/* 디자인 시스템 정리 도구(k-food-ds)의 미리보기 연결 — 그 도구 안에 띄웠을 때만 동작 */}
+        <DsPreviewBridge />
         {/* Mixpanel (토큰 없으면 동작 안 함) */}
         <Analytics />
       </body>
