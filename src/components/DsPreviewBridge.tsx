@@ -195,6 +195,33 @@ function scan() {
   if (i) markEls = [markEls[i], ...markEls.slice(0, i), ...markEls.slice(i + 1)];
 }
 
+/*
+  레이아웃 그리드 겹쳐 보기 — 피그마 레이아웃 그리드처럼 칸 · 좌우 여백 · 칸 사이를 화면 위에 그림
+  앱 틀(최대 430px, 가운데)에 맞춰 그림
+*/
+type Grid = { show: boolean; columns: number; margin: number; gutter: number; maxWidth: number };
+let grid: Grid = { show: false, columns: 4, margin: 20, gutter: 8, maxWidth: 430 };
+function drawGrid() {
+  let layer = document.getElementById("kfood-ds-grid");
+  if (!grid.show) {
+    layer?.remove();
+    return;
+  }
+  if (!layer) {
+    layer = document.createElement("div");
+    layer.id = "kfood-ds-grid";
+    layer.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:2147483646";
+    document.body.appendChild(layer);
+  }
+  const w = Math.min(innerWidth, grid.maxWidth);
+  const left = (innerWidth - w) / 2;
+  const n = Math.max(1, Math.round(grid.columns));
+  const col = (w - grid.margin * 2 - grid.gutter * (n - 1)) / n;
+  const cols = Array.from({ length: n }, (_, i) => `<div style="position:absolute;top:0;bottom:0;left:${left + grid.margin + i * (col + grid.gutter)}px;width:${col}px;background:rgba(255,64,129,.12);border-left:1px solid rgba(255,64,129,.35);border-right:1px solid rgba(255,64,129,.35)"></div>`);
+  layer.innerHTML = cols.join("");
+}
+if (typeof window !== "undefined") window.addEventListener("resize", () => grid.show && drawGrid());
+
 function draw() {
   let layer = document.getElementById("kfood-ds-overlay");
   if (!changes.length && !marked.classes.length) {
@@ -386,6 +413,10 @@ export function DsPreviewBridge() {
       if (e.data?.type === "kfood-ds-act" && Array.isArray(e.data.steps)) {
         const src = e.source as Window | null;
         run(e.data.steps).then(() => src?.postMessage({ type: "kfood-ds-acted", id: e.data.id }, { targetOrigin: e.origin }));
+      }
+      if (e.data?.type === "kfood-ds-grid" && e.data.grid) {
+        grid = { ...grid, ...e.data.grid };
+        drawGrid();
       }
       if (e.data?.type === "kfood-ds-highlight" && Array.isArray(e.data.classes)) {
         mark(e.data.classes, String(e.data.label ?? ""), Number(e.data.index ?? 0));
