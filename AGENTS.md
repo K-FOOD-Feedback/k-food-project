@@ -12,6 +12,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 두 사람이 각자 Claude Code로 화면을 만들어 하나의 앱에 합칩니다. 아래 규칙을 반드시 따르세요.
 
+## Claude 세션 안내 — 작업은 항상 `dev` 기준 (송희·지현 공통)
+- 세션의 **첫 답변 맨 앞**에 지금 브랜치를 확인하고 한 줄로 알립니다: "dev 기준으로 작업할게요." (지금 브랜치가 dev가 아니면 그 사실도 같이 알리고, dev 최신에서 작업 브랜치를 따서 시작)
+- 작업은 항상 최신 `dev`에서 따서 `dev`로 합칩니다. `main`은 출시할 때만 씁니다.
+- 사용자가 출시·main·실서비스 반영을 말하면, 하기 전에 먼저 묻습니다: "출시할 거면 main으로 바꿀까요? (dev → main)". 답을 받기 전에는 main에 커밋·push·합치기를 하지 않습니다.
+
 ## 기술 스택 — 바꾸지 않음
 - Next.js (App Router) + TypeScript + Tailwind CSS 4. 다른 프레임워크(Vite, React Router 등)나 CSS Modules를 새로 들이지 않습니다.
 - 새 라이브러리를 추가해야 하면 PR 설명에 이유를 적습니다.
