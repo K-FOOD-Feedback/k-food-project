@@ -15,6 +15,25 @@ import { useEffect } from "react";
 */
 const ALLOWED = [/^http:\/\/localhost:\d+$/, /^https:\/\/k-food-ds[\w-]*\.vercel\.app$/];
 
+/*
+  정리 도구가 화면을 처음 상태로 열 때 (?ds-reset) — 앱이 저장소를 읽기 전에(모듈을 불러올 때) 비움
+  투표 · 로그인 · 글쓰기 흐름을 한 번 돌고 나면 저장소에 로그인 등이 남아서, 다음 화면(로그인 시트 등)이 안 나오는 걸 막음
+  도구 안 iframe이고 부모 주소가 허용된 곳일 때만
+*/
+if (typeof window !== "undefined" && window.top !== window.self && new URLSearchParams(location.search).has("ds-reset")) {
+  const parent = location.ancestorOrigins?.[0] ?? (document.referrer ? new URL(document.referrer).origin : "");
+  if (ALLOWED.some((re) => re.test(parent))) {
+    try {
+      localStorage.clear();
+      sessionStorage.clear();
+    } catch {}
+    for (const c of document.cookie.split(";")) {
+      const name = c.split("=")[0].trim();
+      if (name) document.cookie = `${name}=; path=/; max-age=0`;
+    }
+  }
+}
+
 /** 다른 요소에 완전히 가려졌는지 (카드 덱 뒤쪽 카드처럼) — 몇 군데 찍어 봐서 하나라도 자기 것이면 보이는 것 */
 function covered(el: Element, r: DOMRect) {
   const overlay = document.getElementById("kfood-ds-overlay");
