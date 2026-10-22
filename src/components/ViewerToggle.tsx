@@ -13,6 +13,7 @@ import { saveViewerLang, useViewerUiLang } from "@/app/posts/[id]/viewerLang";
     이 브라우저에서 꺼지고, ?dev=1 이면 다시 켜짐
   - 외국인은 언어별로 영어 · 일본어 · 중국어 — 누르면 외국인 화면으로 가면서 🌐 언어도 그 언어로 (이미 외국인 화면이면 언어만)
   - 맨 오른쪽 "어드민": 의견 보기(/admin/feedback)로 바로 감. 어드민에서 한국인·외국인을 누르면 그쪽 메인으로
+  - 출시용 사이트(main = toppytippy.com, Vercel Production)에서는 늘 숨김 — 개발용(dev 미리보기)·로컬에서만 보임
     → 작업용이라 출시 전에 지울 것
 */
 type Viewer = "ko" | "en";
@@ -76,8 +77,16 @@ function withQuery(path: string, q: URLSearchParams) {
 }
 
 const subscribe = () => () => {};
+/** 출시용 사이트인지 — Vercel Production 배포이거나 toppytippy.com 주소 */
+function isLiveSite() {
+  if (process.env.NEXT_PUBLIC_VERCEL_ENV === "production") return true;
+  const host = window.location.hostname;
+  return host === "toppytippy.com" || host.endsWith(".toppytippy.com");
+}
+
 function readEnabled() {
   if (process.env.NODE_ENV === "development") return true;
+  if (isLiveSite()) return false;
   try {
     const flag = new URLSearchParams(window.location.search).get("dev");
     if (flag === "0") localStorage.setItem(DEV_KEY, "0");
