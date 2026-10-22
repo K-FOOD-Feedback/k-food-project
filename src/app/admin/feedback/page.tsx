@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Screen } from "@/components/Layout";
+import { requireAdmin } from "../auth";
 import { listFeedback, type FeedbackRow, type FeedbackViewer } from "./db";
 
 /*
@@ -10,7 +11,7 @@ import { listFeedback, type FeedbackRow, type FeedbackViewer } from "./db";
   - 의견 카드: 왼쪽 국기 동그라미(한마디 말풍선과 같은 모양) · 위에 "실제 이름 · 닉네임"(굵게, 내용보다 살짝 크게) · 내용 · 화면 언어·시간
   - 외국인 탭: 탭 아래 왼쪽 "자동 번역" 토글 (기본 켜짐, ?tr=0 이면 원문) — 켜면 한국어 번역(text_ko)을 보여 주고,
     번역이 아직 없으면 원문 + "번역 없음"
-  - 지금은 비밀번호 없음 (지현 요청). 검색 엔진에 나오지 않게 noindex
+  - 비밀번호(숫자 4자리)를 맞혀야 들어옴 — 아니면 /admin/login 으로 (auth.ts). 검색 엔진에 나오지 않게 noindex
   데이터는 Supabase K-food 프로젝트 public.feedback (db.ts)
 */
 export const metadata: Metadata = {
@@ -37,6 +38,10 @@ const flagOf = (code: string | null) =>
 
 export default async function Page(props: PageProps<"/admin/feedback">) {
   const q = await props.searchParams;
+  const qs = new URLSearchParams(
+    Object.entries(q).flatMap(([k, v]) => (typeof v === "string" ? [[k, v]] : [])),
+  ).toString();
+  await requireAdmin(`/admin/feedback${qs ? `?${qs}` : ""}`);
   const tab: FeedbackViewer = q.viewer === "foreigner" ? "foreigner" : "korean";
   const translate = tab === "foreigner" && q.tr !== "0";
 
