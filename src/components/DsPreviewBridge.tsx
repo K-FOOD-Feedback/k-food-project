@@ -98,13 +98,64 @@ function componentRoots() {
   return map;
 }
 
+/*
+  코드 안 목록에 적어 둔 색 (style={{ background: theme.bg }} 처럼 실행 중에 칠해지는 색)
+  — 클래스 이름이 없어서 CSS로는 못 고르니, 요소의 style · fill 값을 직접 찾아 바꿔 칠함
+*/
+const rgbOf = (hex: string) => {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
+};
+function colorEls(hex: string) {
+  const rgb = rgbOf(hex);
+  const out: Element[] = [];
+  for (const el of document.querySelectorAll("[style], [fill], [stroke]")) {
+    const st = el.getAttribute("style") ?? "";
+    const own = painted.get(el);
+    const orig = own ? Object.values(own).join(" ") : st;
+    if (orig.includes(rgb) || orig.toLowerCase().includes(hex) || el.getAttribute("fill")?.toLowerCase() === hex || el.getAttribute("stroke")?.toLowerCase() === hex) out.push(el);
+  }
+  return out;
+}
+let inlineMap: Record<string, string> = {};
+/** 바꿔 칠한 요소 → 원래 style 값 (지도 바뀌면 되돌리려고) */
+const painted = new Map<Element, Record<string, string>>();
+function paintInline() {
+  for (const [el, orig] of painted) for (const [prop, v] of Object.entries(orig)) (el as HTMLElement).style.setProperty(prop, v);
+  painted.clear();
+  const pairs = Object.entries(inlineMap).map(([from, to]) => [rgbOf(from), from, to] as const);
+  if (!pairs.length) return;
+  for (const el of document.querySelectorAll<HTMLElement | SVGElement>("[style]")) {
+    for (let i = 0; i < el.style.length; i++) {
+      const prop = el.style[i];
+      const v = el.style.getPropertyValue(prop);
+      let next = v;
+      for (const [rgb, hex, to] of pairs) next = next.split(rgb).join(to).split(hex).join(to);
+      if (next !== v) {
+        (painted.get(el) ?? painted.set(el, {}).get(el)!)[prop] = v;
+        el.style.setProperty(prop, next);
+      }
+    }
+  }
+}
+/** 컴포넌트 안 값 바꿔 보기용 — 컴포넌트가 그린 맨 바깥 요소에 data-ds-comp="이름" 표시 */
+let compNames: string[] = [];
+function markComponents() {
+  for (const el of document.querySelectorAll("[data-ds-comp]")) el.removeAttribute("data-ds-comp");
+  if (!compNames.length) return;
+  const roots = componentRoots();
+  for (const name of compNames) for (const el of roots.get(name) ?? []) el.setAttribute("data-ds-comp", `${el.getAttribute("data-ds-comp") ?? ""} ${name}`.trim());
+}
+
 /** 그 클래스를 쓰는, 화면에 보이는 요소들 (작업용 상단 토글 · 가려진 요소는 뺌) */
 function elementsOf(classes: string[]) {
   return classes
     .flatMap((c) =>
       c.startsWith("@comp:")
         ? (componentRoots().get(c.slice(6)) ?? [])
-        : c.startsWith("@svg:") // 아이콘 크기 (<Icon size> → svg width)
+        : c.startsWith("@color:") // 코드 안 목록에 적어 둔 색
+          ? colorEls(c.slice(7))
+          : c.startsWith("@svg:") // 아이콘 크기 (<Icon size> → svg width)
           ? [...document.querySelectorAll(`svg[width="${parseInt(c.slice(5))}"][viewBox="0 0 24 24"]`)]
           : c.includes('"')
             ? []
@@ -308,6 +359,19 @@ export function DsPreviewBridge() {
           document.head.appendChild(tag);
         }
         tag.textContent = e.data.css;
+        // CSS 맨 앞 주석에 담겨 오는 것: 코드 안 색 바꾸기 지도 · 컴포넌트 표시 필요 여부
+        try {
+          inlineMap = JSON.parse(e.data.css.match(/\/\*ds-inline:(.*?)\*\//)?.[1] ?? "{}");
+        } catch {
+          inlineMap = {};
+        }
+        try {
+          compNames = JSON.parse(e.data.css.match(/\/\*ds-comps:(.*?)\*\//)?.[1] ?? "[]");
+        } catch {
+          compNames = [];
+        }
+        paintInline();
+        markComponents();
       }
       if (e.data?.type === "kfood-ds-changes" && Array.isArray(e.data.items)) {
         changes = e.data.items;
@@ -333,7 +397,13 @@ export function DsPreviewBridge() {
       }
     };
     window.addEventListener("message", onMsg);
+    // 화면이 다시 그려져도 코드 안 색 · 컴포넌트 표시가 따라가게 0.4초마다
+    const tick = setInterval(() => {
+      if (Object.keys(inlineMap).length || painted.size) paintInline();
+      if (compNames.length || document.querySelector("[data-ds-comp]")) markComponents();
+    }, 400);
     return () => {
+      clearInterval(tick);
       window.removeEventListener("message", onMsg);
       cancelAnimationFrame(raf);
       raf = 0;
