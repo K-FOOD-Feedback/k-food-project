@@ -104,11 +104,11 @@ export function EditScreen({ detailHref = `/posts/${MY_POST_ID}` }: { detailHref
         <Tile>
           <div className="flex items-center px-5 pt-5 pb-2">
             <h2 className="flex-1 font-display text-[20px] leading-[1.2]">{w.photosLabel}</h2>
-            <span className="text-[15px] font-bold leading-[1.3] text-neutral-400 tabular-nums">
+            <span className="text-[16px] font-bold leading-[1.4] text-neutral-400 tabular-nums">
               {form.photos.length}/{MAX_PHOTOS}
             </span>
           </div>
-          <div className="px-5 pt-3.5 pb-3">
+          <div className="px-5 pt-4 pb-3">
             <PhotoGrid
               photos={form.photos}
               onRemove={removePhoto}
@@ -118,7 +118,7 @@ export function EditScreen({ detailHref = `/posts/${MY_POST_ID}` }: { detailHref
               labels={w.grid}
             />
           </div>
-          <p className="px-5 pt-1 pb-5 text-[13px] leading-[1.4] text-muted">
+          <p className="px-5 pt-1 pb-5 text-[14px] leading-[1.4] text-muted">
             {w.photosHint(form.photos.length, MAX_PHOTOS).split(" · ").slice(0, 2).join(" · ")}
           </p>
         </Tile>
@@ -140,16 +140,16 @@ export function EditScreen({ detailHref = `/posts/${MY_POST_ID}` }: { detailHref
               }`}
             >
               {/* 투표 질문은 글을 쓸 때 쓴 언어 그대로 저장돼 있음 (주제 문구 또는 직접 쓴 질문) */}
-              <span className="text-[17px] font-bold">{form.voteQuestion || questionLabel(form.questionId, form.lang)}</span>
+              <span className="text-[16px] font-bold">{form.voteQuestion || questionLabel(form.questionId, form.lang)}</span>
               <Icon name="lock" size={16} className="text-neutral-400" />
             </button>
           </div>
           <div className="flex flex-col gap-2 px-5 pt-3 pb-4">
-            <p className="text-[13px] font-semibold leading-[1.3]">{w.choices}</p>
+            <p className="text-[14px] font-semibold leading-[1.4]">{w.choices}</p>
             <OptionsEditor source="edit" options={form.options} locked onChange={() => {}} />
           </div>
-          <p className="flex items-center gap-1.5 px-5 pb-5 text-[13px] font-medium leading-[1.3] text-muted">
-            <Icon name="info" size={14} />
+          <p className="flex items-center gap-2 px-5 pb-5 text-[14px] font-medium leading-[1.4] text-muted">
+            <Icon name="info" size={16} />
             {w.votesLocked}
           </p>
         </Tile>
@@ -188,8 +188,8 @@ export function EditScreen({ detailHref = `/posts/${MY_POST_ID}` }: { detailHref
       {/* 고친 내용이 있는데 × — 버릴지 확인 */}
       <BottomSheet open={confirmLeave} onClose={() => setConfirmLeave(false)} label={w.discardLabel}>
         <div className="flex w-full flex-col gap-2 px-6 pt-2 break-keep">
-          <h2 className="font-display text-[22px] leading-[1.25]">{w.discardTitle}</h2>
-          <p className="text-[15px] leading-[1.5] text-muted">{w.discardBody}</p>
+          <h2 className="font-display text-[24px] leading-[1.2]">{w.discardTitle}</h2>
+          <p className="text-[16px] leading-[1.5] text-muted">{w.discardBody}</p>
         </div>
         <div className="flex w-full gap-1">
           <PillButton tone="soft" onClick={() => setConfirmLeave(false)}>

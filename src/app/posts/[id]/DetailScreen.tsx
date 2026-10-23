@@ -698,7 +698,7 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
 
         <article
           ref={articleRef}
-          className={`flex flex-col gap-5 rounded-[32px] px-7 py-[30px] text-on-light ${hiddenUntilIntro}`}
+          className={`flex flex-col gap-6 rounded-[32px] px-8 py-8 text-on-light ${hiddenUntilIntro}`}
           style={{ background: post.color }}
         >
           <ArticleBody post={post} lang={lang} contentLang={contentLang} />
@@ -811,7 +811,7 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
             style={{ ...boxStyle(intro.card), borderRadius: 34.8, background: intro.color }}
           >
             {/* 진짜 본문 카드와 같은 글을 같이 실어 나름 (도착하면 그대로 이어짐) */}
-            <div ref={cardGhostText} className="flex flex-col gap-5 px-7 py-[30px] text-on-light">
+            <div ref={cardGhostText} className="flex flex-col gap-6 px-8 py-8 text-on-light">
               <ArticleBody post={post} lang={lang} contentLang={contentLang} />
             </div>
           </div>
@@ -893,9 +893,9 @@ function CommentLock({
         locked ? "opacity-100" : "pointer-events-none opacity-0"
       }`}
     >
-      <div className="flex w-[178px] flex-col items-center gap-[30px]">
-        <div className="flex flex-col items-center gap-5">
-          <span className="flex size-[60px] items-center justify-center rounded-full bg-[#292929]">
+      <div className="flex w-[178px] flex-col items-center gap-6">
+        <div className="flex flex-col items-center gap-6">
+          <span className="flex size-16 items-center justify-center rounded-full bg-[#292929]">
             {/* 자물쇠 모양(icon-lock.svg)을 마스크로 써서 카드 색으로 칠함 */}
             <span
               aria-hidden
@@ -903,7 +903,7 @@ function CommentLock({
               style={{ backgroundColor: color }}
             />
           </span>
-          <p className="text-center font-(family-name:--font-paperlogy) text-[20px] leading-[1.45] tracking-[-0.4px] whitespace-nowrap text-white">
+          <p className="text-center font-(family-name:--font-paperlogy) text-[20px] leading-[1.5] tracking-[-0.4px] whitespace-nowrap text-white">
             {lines[0]}
             <br />
             {lines[1]}
@@ -913,7 +913,7 @@ function CommentLock({
           type="button"
           onClick={onVote}
           tabIndex={locked ? 0 : -1}
-          className="rounded-full px-5 py-3.5 text-[18px] leading-[1.45] font-extrabold tracking-[-0.36px] text-on-light transition-transform active:scale-95"
+          className="rounded-full px-5 py-4 text-[20px] leading-[1.5] font-extrabold tracking-[-0.36px] text-on-light transition-transform active:scale-95"
           style={{ backgroundColor: color }}
         >
           {button}
@@ -1003,13 +1003,13 @@ function ShareVoteCard({
           track("share_sheet_opened", { from: "detail_vote", post_id: post.id, viewer: foreigner ? "foreigner" : "korean" });
           setOpen(true);
         }}
-        className="flex w-full items-center gap-4 rounded-[32px] bg-secondary py-5 pr-4 pl-7 text-left text-on-light transition-[scale,opacity,translate] duration-500 active:scale-[0.98] starting:translate-y-3 starting:opacity-0"
+        className="flex w-full items-center gap-4 rounded-[32px] bg-secondary py-5 pr-4 pl-8 text-left text-on-light transition-[scale,opacity,translate] duration-500 active:scale-[0.98] starting:translate-y-3 starting:opacity-0"
       >
         <span className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className={`${titleFont(lang)} text-[22px] ${lang === "en" ? "leading-[1.1]" : "leading-[1.25]"} tracking-[-0.44px] ${lang === "zh" || lang === "ja" ? "" : "break-keep"}`}>
+          <span className={`${titleFont(lang)} text-[24px] ${lang === "en" ? "leading-[1.2]" : "leading-[1.2]"} tracking-[-0.44px] ${lang === "zh" || lang === "ja" ? "" : "break-keep"}`}>
             {foreigner ? T.shareTitleForeign : T.shareTitle}
           </span>
-          <span className={`text-[14px] leading-[1.4] font-semibold opacity-70 ${lang === "zh" || lang === "ja" ? "" : "break-keep"}`}>
+          <span className={`text-[14px] leading-[1.4] font-semibold opacity-60 ${lang === "zh" || lang === "ja" ? "" : "break-keep"}`}>
             {foreigner ? T.shareSubForeign : T.shareSub}
           </span>
         </span>
@@ -1065,7 +1065,7 @@ export function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: H
   return (
     <>
       {/* 글쓴이: 하얀 원(24px) 안 국기 + 닉네임 (메인 카드와 같은 디자인, 한마디는 익명) */}
-      <p className="flex items-center gap-1.5 font-sans text-[14px] leading-none font-semibold tracking-[-0.28px] text-[#242424]">
+      <p className="flex items-center gap-2 font-sans text-[14px] leading-none font-semibold tracking-[-0.28px] text-[#242424]">
         <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-white text-[14px]" aria-hidden>
           {post.author.flag}
         </span>
@@ -1077,13 +1077,13 @@ export function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: H
           줄 길이는 고르게(text-balance) */}
       <h1
         ref={titleRef}
-        className={`w-3/5 pb-[0.15em] ${titleFont(contentLang)} text-[31px] ${enText ? "leading-[1.05]" : "leading-[1.2]"} tracking-[-0.62px] break-keep ${contentLang === "zh" || contentLang === "ja" ? "[overflow-wrap:anywhere]" : ""} text-balance`}
+        className={`w-3/5 pb-[0.15em] ${titleFont(contentLang)} text-[32px] ${enText ? "leading-[1.2]" : "leading-[1.2]"} tracking-[-0.62px] break-keep ${contentLang === "zh" || contentLang === "ja" ? "[overflow-wrap:anywhere]" : ""} text-balance`}
       >
         {/* 중·일은 단어(말덩이) 사이에서만 줄바꿈 — "食谱"가 갈라지지 않게 (메인과 같은 cjkPhrases·PhraseText).
             말덩이 하나가 칸보다 길면 overflow-wrap:anywhere로 그 안에서 끊음 */}
         {contentLang === "zh" || contentLang === "ja" ? <PhraseText phrases={cjkPhrases(titleText, contentLang)} /> : titleText}
       </h1>
-      <p className="text-[16px] leading-[1.55] font-medium tracking-[-0.32px] whitespace-pre-line text-[#444]">
+      <p className="text-[16px] leading-[1.5] font-medium tracking-[-0.32px] whitespace-pre-line text-[#444]">
         {bodyIn(post, contentLang)}
       </p>
     </>
@@ -1258,7 +1258,7 @@ export function PhotoTile({
       {/* 참여 인원 칩 — 본문(16px)보다 작게 14px, 사진 둥근 모서리(32px)에 붙어 보이지 않게 24px 안쪽 */}
       <p
         ref={chipRef}
-        className={`absolute top-6 left-6 rounded-full bg-black px-3 py-1.5 text-[14px] leading-[1.4] font-semibold text-white ${
+        className={`absolute top-6 left-6 rounded-full bg-black px-3 py-2 text-[14px] leading-[1.4] font-semibold text-white ${
           hideChip ? "invisible" : ""
         }`}
       >
@@ -1266,11 +1266,11 @@ export function PhotoTile({
       </p>
       {/* 사진이 여러 장일 때만 장수만큼 점 표시 (1장이면 없음) */}
       {many && (
-        <div className="absolute bottom-[13px] left-1/2 flex -translate-x-1/2 gap-1.5" aria-hidden>
+        <div className="absolute bottom-[13px] left-1/2 flex -translate-x-1/2 gap-2" aria-hidden>
           {photos.map((_, i) => (
             <span
               key={i}
-              className={`h-1.5 rounded-full transition-[width] duration-300 ${i === index ? "w-[18px] bg-white" : "w-1.5 bg-white/50"}`}
+              className={`h-1.5 rounded-full transition-[width] duration-300 ${i === index ? "w-4 bg-white" : "w-1.5 bg-white/50"}`}
             />
           ))}
         </div>

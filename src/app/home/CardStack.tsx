@@ -536,12 +536,12 @@ function CardContent({
       {/* 참여 인원 스티커 */}
       <span
         data-card-sticker
-        className="absolute top-[14px] right-[14px] flex size-[68px] rotate-12 flex-col items-center justify-center gap-0.5 rounded-full bg-background text-white shadow-[0_4px_12px_rgba(0,0,0,0.18)]"
+        className="absolute top-[14px] right-[14px] flex size-16 rotate-12 flex-col items-center justify-center gap-1 rounded-full bg-background text-white shadow-[0_4px_12px_rgba(0,0,0,0.18)]"
       >
         <span className="text-[20px] leading-none font-extrabold tracking-[-0.4px]">
           {compactCount(participantsOf(post), lang)}
         </span>
-        <span className="text-[11px] leading-none font-semibold">
+        <span className="text-[12px] leading-none font-semibold">
           {t.joined}
         </span>
       </span>
@@ -550,7 +550,7 @@ function CardContent({
       {voted && (
         <span
           data-card-badge
-          className="absolute flex -rotate-6 items-center gap-1 rounded-full bg-background px-3 py-2 text-[13px] leading-none font-bold whitespace-nowrap text-white shadow-[0_4px_12px_rgba(0,0,0,0.18)]"
+          className="absolute flex -rotate-6 items-center gap-1 rounded-full bg-background px-3 py-2 text-[14px] leading-none font-bold whitespace-nowrap text-white shadow-[0_4px_12px_rgba(0,0,0,0.18)]"
           style={{ left: VOTED_BADGE.left, top: VOTED_BADGE.top }}
         >
           <svg
@@ -579,22 +579,22 @@ function CardContent({
         <span
           // 띄어쓰기 없는 긴 단어도 칸 안에서 줄을 바꾸고, 2줄을 넘으면 … (점검 화면 /dev/edge-cases)
           // 글꼴: 한국어 Paperlogy · 영어 Gilroy(font-title-en) · 중국어 Noto Sans SC · 일본어 Noto Sans JP (titleFont)
-          className={`mb-2 w-full text-[23px] font-extrabold tracking-[-0.69px] text-balance [overflow-wrap:anywhere] ${
+          className={`mb-2 w-full text-[24px] font-extrabold tracking-[-0.69px] text-balance [overflow-wrap:anywhere] ${
             contentLang === "en"
-              ? "line-clamp-2 break-keep font-title-en leading-[1.18]"
+              ? "line-clamp-2 break-keep font-title-en leading-[1.2]"
               : contentLang === "ko"
-                ? "line-clamp-2 break-keep font-(family-name:--font-paperlogy) leading-[1.18]"
+                ? "line-clamp-2 break-keep font-(family-name:--font-paperlogy) leading-[1.2]"
                 : // 중국어·일본어: 말덩이 사이에서만 줄을 바꾸고(phrases.tsx), 짧아도 두 줄로 고르게 나눔
-                  `line-clamp-2 break-keep leading-[1.18] ${titleFont(contentLang)}`
+                  `line-clamp-2 break-keep leading-[1.2] ${titleFont(contentLang)}`
           }`}
           style={phrases ? { maxWidth: twoLineWidth(phrases) } : undefined}
         >
           {phrases ? <PhraseText phrases={phrases} /> : title}
         </span>
         {/* 닉네임이 길면 … (한마디 수와 겹치지 않게 사이 12px) */}
-        <span className="flex w-full items-center justify-between gap-3 text-[13px] font-semibold text-black/60">
+        <span className="flex w-full items-center justify-between gap-3 text-[14px] font-semibold text-black/60">
           {/* 작성자: 하얀 원 속 국기 + 닉네임 (상세 화면 작성자와 같은 디자인, 언어 상관없이) */}
-          <span className="flex min-w-0 items-center gap-1.5 font-sans text-[14px] leading-none font-semibold tracking-[-0.28px] text-[#242424]">
+          <span className="flex min-w-0 items-center gap-2 font-sans text-[14px] leading-none font-semibold tracking-[-0.28px] text-[#242424]">
             <span
               className="flex size-6 shrink-0 items-center justify-center rounded-full bg-white text-[14px]"
               aria-hidden

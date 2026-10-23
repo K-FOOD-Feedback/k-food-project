@@ -425,12 +425,12 @@ export function ShareSheet({
                   }}
                 >
                   {/* 이전 색 (새 색이 차오르는 동안 뒤에 보임) */}
-                  {prevBg && <div className="absolute inset-0 rounded-[22px]" style={{ background: prevBg }} />}
+                  {prevBg && <div className="absolute inset-0 rounded-[20px]" style={{ background: prevBg }} />}
                   <div
                     ref={(el) => {
                       cards.current[i] = el;
                     }}
-                    className="relative rounded-[22px] shadow-[0_16px_40px_rgba(0,0,0,0.45)]"
+                    className="relative rounded-[20px] shadow-[0_16px_40px_rgba(0,0,0,0.45)]"
                   >
                     <ShareCard style={s.id} post={post} theme={theme} seed={0} lang={lang} shape={shape} />
                   </div>
@@ -461,7 +461,7 @@ export function ShareSheet({
               role="tab"
               aria-selected={i === active}
               onClick={() => goTo(i)}
-              className={`h-9 rounded-full px-4 text-[14px] font-bold transition ${
+              className={`h-10 rounded-full px-4 text-[14px] font-bold transition ${
                 i === active ? "bg-on-dark text-on-light" : "text-neutral-400"
               }`}
             >
@@ -478,7 +478,7 @@ export function ShareSheet({
               aria-checked={i === themeIndex}
               aria-label={t.color(i + 1)}
               onClick={() => pickTheme(i)}
-              className={`size-9 rounded-full transition active:scale-90 ${
+              className={`size-10 rounded-full transition active:scale-90 ${
                 // 다크 색은 시트 배경과 같아서 얇은 테두리로 보이게
                 i === themeIndex ? "scale-110 ring-2 ring-on-dark ring-offset-2 ring-offset-surface" : "ring-1 ring-white/20"
               }`}
@@ -582,7 +582,7 @@ function Channel({
       <span className="whitespace-nowrap text-[12px] font-semibold text-neutral-400">{label}</span>
     </>
   );
-  const cls = "flex w-[60px] shrink-0 flex-col items-center gap-2 transition active:scale-90";
+  const cls = "flex w-16 shrink-0 flex-col items-center gap-2 transition active:scale-90";
   return href ? (
     <a href={href} target="_blank" rel="noreferrer" onClick={onClick} className={cls}>
       {inner}

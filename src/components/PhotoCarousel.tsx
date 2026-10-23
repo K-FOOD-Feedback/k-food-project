@@ -48,17 +48,17 @@ export function PhotoCarousel({
       </div>
 
       {indicator === "dots" && photos.length > 1 && (
-        <div className="pointer-events-none absolute bottom-[15px] left-1/2 flex -translate-x-1/2 gap-1.5">
+        <div className="pointer-events-none absolute bottom-[15px] left-1/2 flex -translate-x-1/2 gap-2">
           {photos.map((src, i) => (
             <span
               key={`${src}-dot-${i}`}
-              className={`h-1.5 rounded-full transition-all ${i === index ? "w-[18px] bg-white" : "w-1.5 bg-white/50"}`}
+              className={`h-1.5 rounded-full transition-all ${i === index ? "w-4 bg-white" : "w-1.5 bg-white/50"}`}
             />
           ))}
         </div>
       )}
       {indicator === "count" && (
-        <span className="absolute left-4 top-4 rounded-full bg-surface px-3 py-[7px] text-[13px] font-semibold leading-[1.3] tabular-nums">
+        <span className="absolute left-4 top-4 rounded-full bg-surface px-3 py-2 text-[14px] font-semibold leading-[1.4] tabular-nums">
           {index + 1} / {photos.length}
         </span>
       )}

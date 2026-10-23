@@ -35,7 +35,7 @@ const SWIPE_EASE = "cubic-bezier(0.3, 0, 0.2, 1)";
 const SETTLE_MS = 420;
 /** 모양 마스크를 이만큼 크게 씌우면 사진 칸 전체가 보여 네모처럼 보임 (랜딩 photo-frame과 같은 값) */
 const MASK_OPEN = "340% 340%";
-/** 카드 스티커 크기 (CardStack의 size-[68px]) — 회전된 요소의 바깥 상자 대신 이 크기로 가운데를 맞춥니다 */
+/** 카드 스티커 크기 (CardStack의 size-16) — 회전된 요소의 바깥 상자 대신 이 크기로 가운데를 맞춥니다 */
 const STICKER = 68;
 
 const place = (b: Box, radius: string) => ({
@@ -454,7 +454,7 @@ export function ReturnGhosts({
             {/* 상세 본문 글 — 본문 카드 원래 자리(아래쪽 기준)에 그대로 두어, 카드가 위로 늘어나도 움직이지 않음 */}
             <div
               ref={detailText}
-              className="absolute bottom-0 left-0 flex flex-col gap-5 px-7 py-[30px] text-on-light"
+              className="absolute bottom-0 left-0 flex flex-col gap-6 px-8 py-8 text-on-light"
               style={{ width: t.card.width, height: t.card.height }}
             >
               <DetailArticleBody post={post} lang={contentLang} />
@@ -517,7 +517,7 @@ export function ReturnGhosts({
               />
               <span
                 ref={chipTo}
-                className="absolute inset-0 flex flex-col items-center justify-center gap-0.5 opacity-0"
+                className="absolute inset-0 flex flex-col items-center justify-center gap-1 opacity-0"
               />
             </div>
           )}
@@ -558,7 +558,7 @@ function DetailArticleBody({
   const phrases = lang === "zh" || lang === "ja" ? cjkPhrases(title, lang) : null;
   return (
     <>
-      <p className="flex items-center gap-1.5 font-sans text-[14px] leading-none font-semibold tracking-[-0.28px] text-[#242424]">
+      <p className="flex items-center gap-2 font-sans text-[14px] leading-none font-semibold tracking-[-0.28px] text-[#242424]">
         <span
           className="flex size-6 shrink-0 items-center justify-center rounded-full bg-white text-[14px]"
           aria-hidden
@@ -569,13 +569,13 @@ function DetailArticleBody({
       </p>
       <h1
         // 상세 제목과 같게 (글 영역 폭의 3/5, 최대 3줄, 중·일은 말덩이 사이에서만 줄바꿈 — phrases.tsx)
-        className={`line-clamp-3 w-3/5 pb-[0.15em] ${titleFont(lang)} text-[31px] ${
-          lang === "en" ? "leading-[1.05]" : "leading-[1.2]"
+        className={`line-clamp-3 w-3/5 pb-[0.15em] ${titleFont(lang)} text-[32px] ${
+          lang === "en" ? "leading-[1.2]" : "leading-[1.2]"
         } tracking-[-0.62px] break-keep text-balance [overflow-wrap:anywhere]`}
       >
         {phrases ? <PhraseText phrases={phrases} /> : title}
       </h1>
-      <p className="text-[16px] leading-[1.55] font-medium tracking-[-0.32px] whitespace-pre-line text-[#444]">
+      <p className="text-[16px] leading-[1.5] font-medium tracking-[-0.32px] whitespace-pre-line text-[#444]">
         {(lang !== "ko" && post.en.body) || post.body}
       </p>
     </>

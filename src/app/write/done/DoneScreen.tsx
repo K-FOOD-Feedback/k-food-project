@@ -116,7 +116,7 @@ export function DoneScreen() {
                 </div>
                 <span
                   key={`stamp-${burst}`}
-                  className="absolute -right-10 top-1 -rotate-[10deg] animate-stamp rounded-full bg-primary px-7 py-4 font-display text-[30px] leading-[1.1] text-on-light shadow-[0_10px_28px_rgba(0,0,0,0.45)]"
+                  className="absolute -right-10 top-1 -rotate-[10deg] animate-stamp rounded-full bg-primary px-8 py-4 font-display text-[32px] leading-[1.2] text-on-light shadow-[0_10px_28px_rgba(0,0,0,0.45)]"
                   style={{ animationDelay: `${stampDelay}ms`, transform: "translateZ(40px)" }}
                 >
                   {w.posted}
@@ -131,7 +131,7 @@ export function DoneScreen() {
             className="absolute left-[calc(50%+92px)] top-[330px] flex size-16 animate-pop items-center justify-center rounded-full bg-secondary text-on-light shadow-[0_8px_20px_rgba(0,0,0,0.35)]"
             style={{ animationDelay: `${T.check}ms` }}
           >
-            <Icon name="check" size={30} strokeWidth={2.5} />
+            <Icon name="check" size={32} strokeWidth={2.5} />
           </span>
         </div>
       </div>
@@ -143,8 +143,8 @@ export function DoneScreen() {
         className="mx-8 mt-2 flex animate-rise flex-col items-center gap-2 text-center"
         style={{ animationDelay: `${T.text}ms` }}
       >
-        <h1 className="font-display text-[28px] leading-[1.1]">{w.live}</h1>
-        <p className="text-[15px] leading-[1.5] text-muted">
+        <h1 className="font-display text-[32px] leading-[1.2]">{w.live}</h1>
+        <p className="text-[16px] leading-[1.5] text-muted">
           {w.liveBody}
         </p>
       </div>
@@ -204,7 +204,7 @@ const PIECES = Array.from({ length: 28 }, (_, i) => {
     y: Math.round(Math.sin(angle) * dist * 0.85 + 70),
     r: ((i * 83) % 360) + 180,
     color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
-    shape: i % 3 === 0 ? "size-2.5 rounded-full" : i % 3 === 1 ? "h-3.5 w-1.5 rounded-sm" : "size-2 rotate-45",
+    shape: i % 3 === 0 ? "size-2.5 rounded-full" : i % 3 === 1 ? "h-4 w-1.5 rounded-sm" : "size-2 rotate-45",
     stagger: (i % 4) * 30,
   };
 });

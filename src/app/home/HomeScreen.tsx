@@ -220,10 +220,10 @@ export function HomeScreen({ lang = "ko" }: { lang?: "ko" | "en" }) {
           <h1
             className={`shrink-0 px-6 text-center text-[24px] tracking-[-0.48px] text-white break-keep ${
               ui === "en"
-                ? "font-title-en leading-[1.15]"
+                ? "font-title-en leading-[1.2]"
                 : ui === "ko"
-                  ? "font-(family-name:--font-paperlogy) leading-[1.3]"
-                  : `leading-[1.3] ${titleFont(ui)}`
+                  ? "font-(family-name:--font-paperlogy) leading-[1.4]"
+                  : `leading-[1.4] ${titleFont(ui)}`
             }`}
           >
             {HEADLINE[lang][ui].map((line) => (

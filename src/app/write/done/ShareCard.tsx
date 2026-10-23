@@ -238,7 +238,7 @@ export const ShareCard = memo(function ShareCard({
     // 글꼴은 우리 사이트 글꼴(Gilroy·Figtree·Paperlogy)만 — 본문 글꼴 Pretendard는 외부(CDN)라 이미지 저장 때 빠지고
     // 폰 기본 글꼴로 바뀌어 폭이 넓어짐 → 화면과 저장 이미지의 글자 폭이 달라 잘림
     <div
-      className="relative overflow-hidden rounded-[22px] text-left break-keep"
+      className="relative overflow-hidden rounded-[20px] text-left break-keep"
       style={{ width: CARD_W, height: CARD_H, background: theme.bg, color: theme.fg, fontFamily: "var(--font-gilroy)" }}
     >
       <Sparkles style={style} seed={seed} />
@@ -252,7 +252,7 @@ export const ShareCard = memo(function ShareCard({
       {stickersFor(style, seed, lang).map((s, i) => (
         <span
           key={`${seed}-${i}`}
-          className="absolute whitespace-nowrap rounded-full border-2 border-white px-2 py-1 font-display text-[11px] leading-none text-on-light"
+          className="absolute whitespace-nowrap rounded-full border-2 border-white px-2 py-1 font-display text-[12px] leading-none text-on-light"
           style={{ ...s.spot, background: s.color, transform: `rotate(${s.rotate}deg)` }}
         >
           {s.text}
@@ -273,10 +273,10 @@ type Copy = (typeof COPY)["en"];
 /** 카드 맨 아래 — 어디서 투표하는지 (세 카드 모두 같은 문구) */
 function Footer({ t }: { t: Copy }) {
   return (
-    <div className="mt-auto flex items-center justify-between gap-2 border-t border-current/15 pt-2.5 text-[8px] font-bold leading-none">
-      <span className="shrink-0 font-display text-[10px]">오늘의 참견</span>
+    <div className="mt-auto flex items-center justify-between gap-2 border-t border-current/15 pt-3 text-[8px] font-bold leading-none">
+      <span className="shrink-0 font-display text-[12px]">오늘의 참견</span>
       {/* 넘치면 … (저장 이미지에서 글자 폭이 조금 달라져도 카드 밖으로 나가지 않게) */}
-      <span className="min-w-0 truncate opacity-70">{t.footer}</span>
+      <span className="min-w-0 truncate opacity-60">{t.footer}</span>
     </div>
   );
 }
@@ -329,9 +329,9 @@ function StickerPhoto({ src, size, rotate, shape, className = "" }: { src: strin
  */
 function Headline({ t, theme, cjk }: { t: Copy; theme: CardTheme; cjk: boolean }) {
   return (
-    <div className={`flex flex-col items-start font-display leading-none tracking-[-0.02em] ${cjk ? "text-[23px]" : "text-[25px]"}`}>
+    <div className={`flex flex-col items-start font-display leading-none tracking-[-0.02em] ${cjk ? "text-[24px]" : "text-[24px]"}`}>
       <span>{t.head[0]}</span>
-      <span className="-ml-1 -mt-0.5 -rotate-2 rounded-[6px] px-1.5 pt-1 pb-1" style={{ background: theme.ink, color: theme.inkText }}>
+      <span className="-ml-1 -mt-1 -rotate-2 rounded-[6px] px-2 pt-1 pb-1" style={{ background: theme.ink, color: theme.inkText }}>
         {t.head[1]}
       </span>
     </div>
@@ -340,13 +340,13 @@ function Headline({ t, theme, cjk }: { t: Copy; theme: CardTheme; cjk: boolean }
 
 function PhotoCard({ post, theme, t, cjk, shape }: { post: ShareCardPost; theme: CardTheme; t: Copy; cjk: boolean; shape: CardShape }) {
   return (
-    <div className="relative flex h-full flex-col px-3.5 pt-3.5 pb-3">
+    <div className="relative flex h-full flex-col px-4 pt-4 pb-3">
       <Headline t={t} theme={theme} cjk={cjk} />
       <StickerPhoto src={post.photo} size={158} rotate={4} shape={shape} className="mx-auto mt-3" />
       {/* 제목 2줄·작성자 1줄까지, 넘치면 … (띄어쓰기 없는 긴 단어도 칸 안에서 줄바꿈) */}
       <div className="flex flex-col gap-1 pt-3 pb-3">
-        <p className="line-clamp-2 font-display text-[17px] leading-[1.1] [text-wrap:balance] [overflow-wrap:anywhere]">{post.title}</p>
-        <p className="truncate text-[9px] font-semibold opacity-70">{post.author}</p>
+        <p className="line-clamp-2 font-display text-[16px] leading-[1.2] [text-wrap:balance] [overflow-wrap:anywhere]">{post.title}</p>
+        <p className="truncate text-[9px] font-semibold opacity-60">{post.author}</p>
       </div>
       <Footer t={t} />
     </div>
@@ -359,10 +359,10 @@ const OPTION_DOTS = ["var(--color-primary)", "var(--color-content)", "var(--colo
 function VoteCard({ post, theme, t, shape }: { post: ShareCardPost; theme: CardTheme; t: Copy; shape: CardShape }) {
   const many = post.options.length > 3;
   return (
-    <div className="relative flex h-full flex-col px-3.5 pt-3.5 pb-3">
+    <div className="relative flex h-full flex-col px-4 pt-4 pb-3">
       {/* 머리: 투표 표시 띠 + 오른쪽 위에 사진 스티커 */}
       <span
-        className="self-start -rotate-3 rounded-full px-2.5 py-1.5 font-display text-[10px] leading-none"
+        className="self-start -rotate-3 rounded-full px-3 py-2 font-display text-[12px] leading-none"
         style={{ background: theme.ink, color: theme.inkText }}
       >
         {t.poll}
@@ -374,20 +374,20 @@ function VoteCard({ post, theme, t, shape }: { post: ShareCardPost; theme: CardT
       {/* 질문 + 선택지 묶음은 사진 아래 남는 자리의 가운데에 */}
       <div className="flex flex-1 flex-col justify-center pt-[86px]">
         <p
-          className={`font-display text-[20px] leading-[1.1] [text-wrap:balance] [overflow-wrap:anywhere] ${many ? "line-clamp-2" : "line-clamp-3"}`}
+          className={`font-display text-[20px] leading-[1.2] [text-wrap:balance] [overflow-wrap:anywhere] ${many ? "line-clamp-2" : "line-clamp-3"}`}
         >
           {post.voteQuestion}
         </p>
         {/* 선택지 — 흰 알약 + 번호 칩 (투표 스티커처럼) */}
-        <div className="mt-3 flex flex-col gap-1.5">
+        <div className="mt-3 flex flex-col gap-2">
           {post.options.slice(0, 4).map((o, i) => (
             // 같은 글자 선택지가 있을 수 있어서 순서로 구분
             <span
               key={i}
-              className="flex min-h-[28px] items-center gap-1.5 rounded-full bg-white py-1 pr-2.5 pl-1 text-[11px] font-bold leading-[1.2] text-on-light shadow-[0_3px_8px_rgba(0,0,0,0.14)]"
+              className="flex min-h-8 items-center gap-2 rounded-full bg-white py-1 pr-3 pl-1 text-[12px] font-bold leading-[1.2] text-on-light shadow-[0_3px_8px_rgba(0,0,0,0.14)]"
             >
               <span
-                className="flex size-[18px] shrink-0 items-center justify-center rounded-full font-display text-[9px] leading-none text-on-light"
+                className="flex size-4 shrink-0 items-center justify-center rounded-full font-display text-[9px] leading-none text-on-light"
                 style={{ background: OPTION_DOTS[i % OPTION_DOTS.length] }}
               >
                 {String.fromCharCode(65 + i)}
@@ -407,17 +407,17 @@ function VoteCard({ post, theme, t, shape }: { post: ShareCardPost; theme: CardT
 
 /** 영수증 점선 — 묶음 사이를 나눔 */
 function Rule() {
-  return <span className="my-2.5 block border-t border-dashed border-black/30" />;
+  return <span className="my-3 block border-t border-dashed border-black/30" />;
 }
 
 function VerdictCard({ post, theme, t }: { post: ShareCardPost; theme: CardTheme; t: Copy }) {
   const row = "flex justify-between gap-2";
   return (
-    <div className="flex h-full flex-col px-3.5 pt-4 pb-3">
+    <div className="flex h-full flex-col px-4 pt-4 pb-3">
       {/* 영수증 — 아래 가장자리를 톱니 모양으로, 살짝 기울여 올려 둔 종이처럼 */}
       <div className="-rotate-[1.5deg] drop-shadow-[0_8px_14px_rgba(0,0,0,0.25)]">
         <div
-          className="relative flex flex-col bg-white px-3 pt-3.5 pb-5 font-mono text-[8.5px] leading-[1.35] text-on-light"
+          className="relative flex flex-col bg-white px-3 pt-4 pb-5 font-mono text-[8.5px] leading-[1.4] text-on-light"
           style={{
             maskImage: "radial-gradient(circle at 5px 100%, transparent 4px, #000 4.5px)",
             maskSize: "10px 100%",
@@ -427,14 +427,14 @@ function VerdictCard({ post, theme, t }: { post: ShareCardPost; theme: CardTheme
         >
           {/* 머리 */}
           <div className="flex flex-col items-center gap-1">
-            <p className="font-display text-[13px] leading-none tracking-wide">{t.court}</p>
+            <p className="font-display text-[14px] leading-none tracking-wide">{t.court}</p>
             <p className="opacity-60">{t.caseNo}</p>
           </div>
           <Rule />
           {/* 증거 */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-3">
             <img src={post.photo} alt="" className="size-[56px] shrink-0 rounded-[4px] object-cover" draggable={false} />
-            <div className="flex min-w-0 flex-col gap-0.5">
+            <div className="flex min-w-0 flex-col gap-1">
               <span className="opacity-60">{t.exhibit}</span>
               <span className="line-clamp-2 font-bold uppercase">{post.dish}</span>
               <span className="truncate opacity-60">{t.cook}: {post.author}</span>
@@ -442,7 +442,7 @@ function VerdictCard({ post, theme, t }: { post: ShareCardPost; theme: CardTheme
           </div>
           <Rule />
           {/* 혐의 */}
-          <div className="flex flex-col gap-0.5">
+          <div className="flex flex-col gap-1">
             <span className="opacity-60">{t.charge}</span>
             <p className="line-clamp-3 font-bold">{post.voteQuestion}</p>
           </div>
@@ -462,12 +462,12 @@ function VerdictCard({ post, theme, t }: { post: ShareCardPost; theme: CardTheme
       </div>
       {/* 판결 대기 도장 — 진한 띠 + 겹테두리 (기울이면 영수증 끝에 아슬아슬하게 닿아 불안해 보여서 똑바로) */}
       <span
-        className="pointer-events-none mx-auto mt-5 rounded-[9px] px-3 py-1.5 font-display text-[15px] leading-none tracking-wide"
+        className="pointer-events-none mx-auto mt-6 rounded-[9px] px-3 py-2 font-display text-[16px] leading-none tracking-wide"
         style={{ background: theme.ink, color: theme.inkText, boxShadow: `0 0 0 2px ${theme.ink}, 0 0 0 4px #ffffff` }}
       >
         {t.pending}
       </span>
-      <p className={`mt-2.5 text-center font-display text-[12px] leading-none ${t === COPY.en ? "tracking-[0.12em]" : ""}`}>{t.voteNow}</p>
+      <p className={`mt-3 text-center font-display text-[12px] leading-none ${t === COPY.en ? "tracking-[0.12em]" : ""}`}>{t.voteNow}</p>
       <div className="mt-auto pt-3">
         <Footer t={t} />
       </div>

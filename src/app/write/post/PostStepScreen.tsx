@@ -55,8 +55,8 @@ export function PostStepScreen() {
             <span className="relative size-14 shrink-0 overflow-hidden rounded-[16px] bg-surface">
               <PhotoImage src={cover.src} sizes="56px" className="object-cover" />
             </span>
-            <span className="flex min-w-0 flex-col gap-0.5">
-              <span className="text-[13px] font-medium text-muted">
+            <span className="flex min-w-0 flex-col gap-1">
+              <span className="text-[14px] font-medium text-muted">
                 {w.photoCount(draft.photos.length)}
               </span>
               <span className="truncate font-display text-[20px] leading-[1.2]">{draft.dish || w.yourKfood}</span>
@@ -85,8 +85,8 @@ export function PostStepScreen() {
           )}
         </div>
 
-        <p className="flex items-center gap-1.5 px-6 pt-3 text-[13px] font-medium leading-[1.3] text-muted">
-          <Icon name="info" size={14} />
+        <p className="flex items-center gap-2 px-6 pt-3 text-[14px] font-medium leading-[1.4] text-muted">
+          <Icon name="info" size={16} />
           {w.writtenByAi}
         </p>
       </div>
@@ -126,11 +126,11 @@ function WritingSkeleton({ dish }: { dish: string }) {
         {w.writingAbout(dish)}
       </p>
       <div className="flex flex-col gap-2">
-        <span className="text-[13px] font-semibold text-muted">{w.titleLabel}</span>
-        <span className="h-[52px] animate-pulse rounded-[20px] bg-surface-2" />
+        <span className="text-[14px] font-semibold text-muted">{w.titleLabel}</span>
+        <span className="h-14 animate-pulse rounded-[20px] bg-surface-2" />
       </div>
       <div className="flex flex-col gap-2">
-        <span className="text-[13px] font-semibold text-muted">{w.storyLabel}</span>
+        <span className="text-[14px] font-semibold text-muted">{w.storyLabel}</span>
         <span className="h-[230px] animate-pulse rounded-[20px] bg-surface-2 [animation-delay:150ms]" />
       </div>
     </div>

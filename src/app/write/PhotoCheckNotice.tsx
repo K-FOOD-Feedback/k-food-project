@@ -46,17 +46,17 @@ export function PhotoCheckNotice({ step }: { step: "photos" | "post" }) {
     <>
       {notFood > 0 ? (
         <p className="flex items-start gap-2 rounded-[20px] bg-error/15 px-4 py-3 text-[14px] font-semibold leading-[1.4] text-error">
-          <Icon name="alert" size={18} className="mt-px shrink-0" />
+          <Icon name="alert" size={20} className="mt-px shrink-0" />
           {notFood === 1 ? w.notFoodOne : w.notFoodMany(notFood)}
         </p>
       ) : checking ? (
-        <p className="flex items-center gap-2 px-1 text-[13px] font-medium text-muted">
-          <Icon name="sparkle" size={14} className="animate-spin [animation-duration:1.4s]" />
+        <p className="flex items-center gap-2 px-1 text-[14px] font-medium text-muted">
+          <Icon name="sparkle" size={16} className="animate-spin [animation-duration:1.4s]" />
           {w.checking}
         </p>
       ) : unsure ? (
-        <p className="flex items-start gap-2 px-1 text-[13px] leading-[1.4] text-muted">
-          <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-content text-[10px] font-bold text-on-light">
+        <p className="flex items-start gap-2 px-1 text-[14px] leading-[1.4] text-muted">
+          <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-content text-[12px] font-bold text-on-light">
             !
           </span>
           {w.unsure}

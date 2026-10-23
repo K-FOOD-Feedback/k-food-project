@@ -54,10 +54,10 @@ export default async function Page(props: PageProps<"/admin/feedback">) {
 
   return (
     // 맨 위 작업용 토글 밑으로 (토글 높이만큼 더 내림)
-    <Screen className="gap-5 px-4 pt-[calc(56px+env(safe-area-inset-top))] pb-16">
+    <Screen className="gap-6 px-4 pt-[calc(56px+env(safe-area-inset-top))] pb-16">
       <header className="flex flex-col gap-1 px-2">
-        <h1 className="font-display text-[26px] leading-[1.2]">의견</h1>
-        <p className="text-[13px] text-muted">최신 순 · 최대 500개</p>
+        <h1 className="font-display text-[24px] leading-[1.2]">의견</h1>
+        <p className="text-[14px] text-muted">최신 순 · 최대 500개</p>
       </header>
 
       {/* 한국인 / 외국인 탭 (마이 탭과 같은 모양) */}
@@ -71,12 +71,12 @@ export default async function Page(props: PageProps<"/admin/feedback">) {
                 : "/admin/feedback?viewer=foreigner"
             }
             aria-current={tab === v ? "page" : undefined}
-            className={`flex h-11 flex-1 items-center justify-center gap-1.5 rounded-full text-[15px] font-semibold transition ${
+            className={`flex h-12 flex-1 items-center justify-center gap-2 rounded-full text-[16px] font-semibold transition ${
               tab === v ? "bg-on-dark text-on-light" : "text-neutral-400"
             }`}
           >
             {label}
-            <span className={`tabular-nums ${tab === v ? "opacity-50" : ""}`}>
+            <span className={`tabular-nums ${tab === v ? "opacity-60" : ""}`}>
               {count(v)}
             </span>
           </Link>
@@ -95,14 +95,14 @@ export default async function Page(props: PageProps<"/admin/feedback">) {
           aria-checked={translate}
           replace
           scroll={false}
-          className="flex items-center gap-2.5 self-start px-2 text-[14px] font-semibold text-neutral-300"
+          className="flex items-center gap-3 self-start px-2 text-[14px] font-semibold text-neutral-300"
         >
           <span
             aria-hidden
-            className={`relative h-7 w-[46px] shrink-0 rounded-full transition-colors duration-200 ${translate ? "bg-secondary" : "bg-surface-2"}`}
+            className={`relative h-8 w-12 shrink-0 rounded-full transition-colors duration-200 ${translate ? "bg-secondary" : "bg-surface-2"}`}
           >
             <span
-              className={`absolute top-[3px] left-[3px] size-[22px] rounded-full bg-white shadow-[0_2px_6px_rgba(0,0,0,0.25)] transition-transform duration-200 ${
+              className={`absolute top-[3px] left-[3px] size-6 rounded-full bg-white shadow-[0_2px_6px_rgba(0,0,0,0.25)] transition-transform duration-200 ${
                 translate ? "translate-x-[18px]" : ""
               }`}
             />
@@ -112,11 +112,11 @@ export default async function Page(props: PageProps<"/admin/feedback">) {
       )}
 
       {error ? (
-        <p className="px-2 pt-10 text-center text-[15px] text-error">
+        <p className="px-2 pt-8 text-center text-[16px] text-error">
           의견을 불러오지 못했어요. 잠시 후 새로고침해 주세요.
         </p>
       ) : shown.length === 0 ? (
-        <p className="px-2 pt-10 text-center text-[15px] text-muted">
+        <p className="px-2 pt-8 text-center text-[16px] text-muted">
           아직 들어온 의견이 없어요
         </p>
       ) : (
@@ -124,22 +124,22 @@ export default async function Page(props: PageProps<"/admin/feedback">) {
           {shown.map((r) => (
             <li
               key={r.id}
-              className="flex items-start gap-3 rounded-[24px] bg-surface p-5"
+              className="flex items-start gap-3 rounded-[20px] bg-surface p-5"
             >
               {/* 국기 — 한마디 말풍선의 국기 동그라미와 같은 모양 */}
               <span
-                className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white text-[20px] leading-none"
+                className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white text-[20px] leading-none"
                 aria-hidden
               >
                 {flagOf(r.country ?? (r.viewer === "korean" ? "KR" : null))}
               </span>
-              <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+              <div className="flex min-w-0 flex-1 flex-col gap-2">
                 {/* 보낸 사람: 실제 이름 · 닉네임 (내용보다 살짝 크게, 굵게) */}
                 <p className="truncate text-[16px] leading-[1.4] font-bold">
                   {[r.author_name, r.nickname].filter(Boolean).join(" · ") ||
                     "이름 없음"}
                 </p>
-                <p className="text-[15px] leading-[1.55] font-medium break-keep whitespace-pre-line text-neutral-200 [overflow-wrap:anywhere]">
+                <p className="text-[16px] leading-[1.5] font-medium break-keep whitespace-pre-line text-neutral-200 [overflow-wrap:anywhere]">
                   {translate && r.text_ko ? r.text_ko : r.text}
                 </p>
                 <p className="text-[12px] text-muted">
