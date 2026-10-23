@@ -334,6 +334,36 @@ async function scanAll(groups: string[][]) {
   return seen.map((s) => s.size);
 }
 
+/*
+  값 재기 — 도구의 컴포넌트 관리 탭이 언어마다 실제로 그려진 값을 나란히 보여 줄 때
+  root(선택자)에 맞는 요소와 그 안 요소마다 클래스 · 계산된 값(글자 · 줄 간격 · 자간 · 여백 · 모서리 · 색 · 크기)
+*/
+function measure(root: string) {
+  const roots = [...document.querySelectorAll(root)];
+  const items = roots.flatMap((r) =>
+    [r, ...r.querySelectorAll("*")].map((el) => {
+      const cs = getComputedStyle(el);
+      const b = el.getBoundingClientRect();
+      return {
+        root: el === r,
+        classes: [...el.classList],
+        fontSize: cs.fontSize,
+        fontWeight: cs.fontWeight,
+        lineHeight: cs.lineHeight,
+        letterSpacing: cs.letterSpacing,
+        padding: [cs.paddingTop, cs.paddingRight, cs.paddingBottom, cs.paddingLeft],
+        gap: [cs.rowGap, cs.columnGap],
+        radius: cs.borderTopLeftRadius,
+        color: cs.color,
+        background: cs.backgroundColor,
+        border: cs.borderTopColor,
+        size: [b.width, b.height],
+      };
+    }),
+  );
+  return { lang: document.documentElement.lang, items };
+}
+
 export function DsPreviewBridge() {
   const path = usePathname();
   const router = useRouter();
@@ -386,6 +416,15 @@ export function DsPreviewBridge() {
       if (e.data?.type === "kfood-ds-act" && Array.isArray(e.data.steps)) {
         const src = e.source as Window | null;
         run(e.data.steps).then(() => src?.postMessage({ type: "kfood-ds-acted", id: e.data.id }, { targetOrigin: e.origin }));
+      }
+      if (e.data?.type === "kfood-ds-measure" && typeof e.data.root === "string") {
+        let out: ReturnType<typeof measure> | { error: string };
+        try {
+          out = measure(e.data.root);
+        } catch (err) {
+          out = { error: String(err) };
+        }
+        (e.source as Window | null)?.postMessage({ type: "kfood-ds-measured", id: e.data.id, ...out }, { targetOrigin: e.origin });
       }
       if (e.data?.type === "kfood-ds-highlight" && Array.isArray(e.data.classes)) {
         mark(e.data.classes, String(e.data.label ?? ""), Number(e.data.index ?? 0));
