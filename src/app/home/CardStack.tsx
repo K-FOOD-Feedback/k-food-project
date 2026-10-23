@@ -582,7 +582,8 @@ function CardContent({
           // 글꼴: 한국어 Paperlogy · 영어 Figtree(font-title-en) · 중국어 MiSans · 일본어 M PLUS 2 (titleFont)
           className={`mb-2 w-full text-[24px] font-extrabold tracking-[-0.69px] text-balance [overflow-wrap:anywhere] ${
             contentLang === "en"
-              ? "line-clamp-2 break-keep font-title-en leading-[1.2]"
+              ? // 영어는 font-title-en 이 글자를 약 1.11배 키워서(대문자 높이 보정) 1.2면 2줄째 g·y 꼬리가 칸 아래로 1px쯤 잘림 → 1.3
+                "line-clamp-2 break-keep font-title-en leading-[1.3]"
               : contentLang === "ko"
                 ? "line-clamp-2 break-keep font-(family-name:--font-paperlogy) leading-[1.2]"
                 : // 중국어·일본어: 말덩이 사이에서만 줄을 바꾸고(phrases.tsx), 짧아도 두 줄로 고르게 나눔
