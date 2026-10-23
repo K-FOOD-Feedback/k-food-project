@@ -25,6 +25,7 @@ import { HOME_POSTS, type HomePost } from "./mockPosts";
 import { useVotedIds } from "./votes";
 import { titleFont } from "../posts/[id]/font";
 import { useKoreanUiLang, useViewerUiLang } from "../posts/[id]/viewerLang";
+import { useDocLang } from "@/lib/docLang";
 import { useAutoTranslate } from "@/components/LanguagePicker";
 
 /** 메인 상단 두 줄 — 참여를 부르는 한마디. [버전][화면 언어]
@@ -91,6 +92,8 @@ export function HomeScreen({ lang = "ko" }: { lang?: "ko" | "en" }) {
   const viewerLang = useViewerUiLang();
   const koreanLang = useKoreanUiLang();
   const ui: Lang = lang === "en" ? viewerLang : koreanLang;
+  // 화면 언어별 본문 글꼴 (영어 Inter · 일본어 M PLUS 2 · 중국어 MiSans)
+  useDocLang(ui);
   const autoTranslate = useAutoTranslate();
   const content: Lang = autoTranslate ? ui : "en";
   const current = posts[index];
@@ -270,7 +273,7 @@ export function HomeScreen({ lang = "ko" }: { lang?: "ko" | "en" }) {
 
       {lang === "en" && (
         // 외국인 메인 하단 CTA (Figma 259:7823): 로그인 시트 → 사진 선택 → /write (동작은 송희 담당 ShareKfoodButton)
-        // 영어 문구는 Gilroy(font-display), 중국어·일본어는 Noto Sans SC/JP, 한국어는 기본 글꼴
+        // 영어 문구는 Figtree(font-display), 중국어 MiSans · 일본어 M PLUS 2, 한국어는 기본 글꼴
         <ShareKfoodButton
           className={`fixed bottom-[calc(40px+env(safe-area-inset-bottom))] left-1/2 z-10 -translate-x-1/2 rounded-full bg-primary px-8 py-6 text-[20px] leading-none font-extrabold tracking-[-0.4px] whitespace-nowrap text-white shadow-[0_18px_48px_4px_rgba(0,0,0,0.55),0_10px_24px_-6px_rgba(255,135,196,0.55)] transition-transform active:scale-95 ${
             ui === "en" ? "font-display" : ui === "ko" ? "" : titleFont(ui)

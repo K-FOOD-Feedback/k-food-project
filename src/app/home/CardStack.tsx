@@ -575,10 +575,10 @@ function CardContent({
             아래 8px은 제목 칸 바깥 여백(mb-2)으로 둬서 제목~닉네임 간격에 더해짐
             (칸 안에 여백을 두면 … 로 자를 때 다음 줄 윗부분이 그 여백에 비쳐 보임 — 영어도 마찬가지라 칸 안 여백 없음)
             줄 간격은 모든 언어 1.18 — 영어도 같게 해서 g·y 꼬리가 줄 칸 안에 들어가고, 사진~제목 간격이 언어마다 같음
-            한국어는 상세 제목과 같은 Paperlogy, 영어는 Gilroy를 한글 크기에 맞춘 font-title-en */}
+            한국어는 상세 제목과 같은 Paperlogy, 영어는 Figtree를 한글 크기에 맞춘 font-title-en */}
         <span
           // 띄어쓰기 없는 긴 단어도 칸 안에서 줄을 바꾸고, 2줄을 넘으면 … (점검 화면 /dev/edge-cases)
-          // 글꼴: 한국어 Paperlogy · 영어 Gilroy(font-title-en) · 중국어 Noto Sans SC · 일본어 Noto Sans JP (titleFont)
+          // 글꼴: 한국어 Paperlogy · 영어 Figtree(font-title-en) · 중국어 MiSans · 일본어 M PLUS 2 (titleFont)
           className={`mb-2 w-full text-[24px] font-extrabold tracking-[-0.69px] text-balance [overflow-wrap:anywhere] ${
             contentLang === "en"
               ? "line-clamp-2 break-keep font-title-en leading-[1.2]"
