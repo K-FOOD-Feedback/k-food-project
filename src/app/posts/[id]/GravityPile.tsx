@@ -670,7 +670,7 @@ function tagsOf(comment: Comment, replyCounts: Map<string, number>, t: CommentsC
   };
 }
 
-const TAG = "flex h-[18px] shrink-0 items-center gap-0.5 rounded-full bg-black text-[10px] leading-none font-bold tracking-[-0.2px] whitespace-nowrap text-white";
+const TAG = "flex h-4 shrink-0 items-center gap-1 rounded-full bg-black text-[12px] leading-none font-bold tracking-[-0.2px] whitespace-nowrap text-white";
 // PC에서 마우스를 올리면 흰 테두리 + 은은한 빛 (Figma 344:3248). outline이라 크기는 그대로입니다.
 const HOVER =
   "outline-2 outline-transparent transition-[outline-color,box-shadow] duration-150 hover:shadow-[0_2px_12px_rgba(255,255,255,0.3)] hover:outline-white";
@@ -698,7 +698,7 @@ function Bubble({
   const bubble = emoji ? (
     <span
       data-part="bubble"
-      className={`flex size-[54px] items-center justify-center rounded-full text-[16px] ${hoverClass}`}
+      className={`flex size-14 items-center justify-center rounded-full text-[16px] ${hoverClass}`}
       style={{ background: comment.color }}
     >
       {comment.text}
@@ -707,12 +707,12 @@ function Bubble({
     <span
       data-part="bubble"
       className={`flex items-center justify-center gap-2 rounded-[32px] py-4 text-center text-[16px] leading-[1.4] font-bold tracking-[-0.32px] whitespace-pre text-black ${
-        author.kind === "korean" ? "px-5" : "pr-5 pl-2.5"
+        author.kind === "korean" ? "px-5" : "pr-5 pl-3"
       } ${hoverClass}`}
       style={{ background: comment.color }}
     >
       {author.kind !== "korean" && (
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white text-[20px] leading-none">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white text-[20px] leading-none">
           {author.flag}
         </span>
       )}
@@ -721,13 +721,13 @@ function Bubble({
   );
   if (!tags.who && !tags.replies) return bubble;
   return (
-    <span className="relative block pt-2.5">
+    <span className="relative block pt-3">
       {bubble}
       {/* 이모지는 태그를 가운데에. transform으로 옮기면 물리 몸체 위치(offsetLeft)가 어긋나서 flex로 가운데 맞춤 */}
-      <span data-part="tag" className={`absolute top-0 flex gap-0.5 ${emoji ? "inset-x-0 justify-center" : "left-6"}`}>
-        {tags.who && <span className={`${TAG} px-1.5`}>{tags.who}</span>}
+      <span data-part="tag" className={`absolute top-0 flex gap-1 ${emoji ? "inset-x-0 justify-center" : "left-6"}`}>
+        {tags.who && <span className={`${TAG} px-2`}>{tags.who}</span>}
         {tags.replies > 0 && (
-          <span className={`${TAG} pr-1.5 pl-1`} aria-label={replyLabel(tags.replies)}>
+          <span className={`${TAG} pr-2 pl-1`} aria-label={replyLabel(tags.replies)}>
             <RepliesIcon />
             {tags.replies}
           </span>

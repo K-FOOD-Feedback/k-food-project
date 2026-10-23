@@ -58,7 +58,7 @@ export function TopBar({
           <div className="flex-1" />
           <div className="flex items-center gap-1">{right}</div>
           {title && (
-            <h1 className="pointer-events-none absolute left-1/2 top-1/2 w-[219px] -translate-x-1/2 -translate-y-1/2 text-center font-display text-[20px] leading-[1.15] text-on-dark">
+            <h1 className="pointer-events-none absolute left-1/2 top-1/2 w-[219px] -translate-x-1/2 -translate-y-1/2 text-center font-display text-[20px] leading-[1.2] text-on-dark">
               {title}
             </h1>
           )}
@@ -81,7 +81,7 @@ export function StickyBottom({
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 mx-auto w-full max-w-[430px]">
       <div
-        className={`pointer-events-auto flex flex-col gap-2 bg-gradient-to-b via-35% px-2 pt-10 pb-[calc(24px+env(safe-area-inset-bottom))] ${fade} ${className}`}
+        className={`pointer-events-auto flex flex-col gap-2 bg-gradient-to-b via-35% px-2 pt-8 pb-[calc(24px+env(safe-area-inset-bottom))] ${fade} ${className}`}
       >
         {children}
       </div>
@@ -179,14 +179,14 @@ export function Toast({
       <div
         role="status"
         aria-labelledby={id}
-        className="flex animate-toast-in items-start gap-2 rounded-[36px] bg-on-dark py-5 pl-6 pr-5 text-[14px] leading-[1.4] text-on-light shadow-[0_12px_32px_rgba(0,0,0,0.5)]"
+        className="flex animate-toast-in items-start gap-2 rounded-[32px] bg-on-dark py-5 pl-6 pr-5 text-[14px] leading-[1.4] text-on-light shadow-[0_12px_32px_rgba(0,0,0,0.5)]"
       >
         <Icon name="alert" size={20} className="shrink-0 text-error" />
-        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
           <p id={id} className="font-semibold">
             {title}
           </p>
-          {body && <p className="opacity-70">{body}</p>}
+          {body && <p className="opacity-60">{body}</p>}
         </div>
         <button
           type="button"
@@ -265,7 +265,7 @@ export function Chip({
   };
   return (
     <span
-      className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-[7px] text-[13px] font-semibold leading-[1.3] ${tones[tone]} ${className}`}
+      className={`inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-3 py-2 text-[14px] font-semibold leading-[1.4] ${tones[tone]} ${className}`}
     >
       {children}
     </span>

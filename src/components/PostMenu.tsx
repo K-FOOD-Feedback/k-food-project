@@ -264,12 +264,12 @@ export function PostMenu({
                   aria-label={t.closeMenu}
                   tabIndex={-1}
                   onClick={() => setOpen(false)}
-                  className="bleed-top fixed inset-0 z-40 animate-fade-in bg-black/50"
+                  className="bleed-top fixed inset-0 z-40 animate-fade-in bg-black/60"
                 />
                 <div className="pointer-events-none fixed inset-x-0 top-[calc(env(safe-area-inset-top)+88px)] z-50 mx-auto flex w-full max-w-[430px] justify-end px-2">
                   <div
                     role="menu"
-                    className="pointer-events-auto flex w-fit origin-top-right animate-menu flex-col gap-0.5 rounded-[24px] bg-surface p-1.5 text-on-dark shadow-[0_12px_32px_rgba(0,0,0,0.4)]"
+                    className="pointer-events-auto flex w-fit origin-top-right animate-menu flex-col gap-1 rounded-[20px] bg-surface p-2 text-on-dark shadow-[0_12px_32px_rgba(0,0,0,0.4)]"
                   >
                     {items.map((item) => (
                       <button
@@ -280,7 +280,7 @@ export function PostMenu({
                           setOpen(false);
                           item.onClick();
                         }}
-                        className={`flex h-12 w-[184px] items-center gap-3 rounded-[18px] px-3 text-[14px] font-bold leading-[1.3] hover:bg-surface-2 ${
+                        className={`flex h-12 w-[184px] items-center gap-3 rounded-[20px] px-3 text-[14px] font-bold leading-[1.4] hover:bg-surface-2 ${
                           item.danger ? "text-error" : ""
                         }`}
                       >
@@ -297,10 +297,10 @@ export function PostMenu({
             <BottomSheet open={sheet === "delete"} onClose={() => setSheet(null)} label={t.deleteLabel}>
               <div className="flex w-full flex-col items-center gap-2 px-6 pt-2 text-center break-keep">
                 <span className="mb-2 flex size-16 items-center justify-center rounded-full bg-surface-2 text-error">
-                  <Icon name="trash" size={28} />
+                  <Icon name="trash" size={32} />
                 </span>
-                <h2 className="font-display text-[22px] leading-[1.25]">{t.deleteTitle}</h2>
-                <p className="text-[15px] leading-[1.5] text-muted">{t.deleteBody}</p>
+                <h2 className="font-display text-[24px] leading-[1.2]">{t.deleteTitle}</h2>
+                <p className="text-[16px] leading-[1.5] text-muted">{t.deleteBody}</p>
               </div>
               <div className="flex w-full gap-1">
                 <PillButton
@@ -329,8 +329,8 @@ export function PostMenu({
             {/* 신고 (남의 글) */}
             <BottomSheet open={sheet === "report"} onClose={() => setSheet(null)} label={t.report}>
               <div className="flex w-full flex-col gap-2 px-6 pt-2 break-keep">
-                <h2 className="font-display text-[22px] leading-[1.25]">{t.reportTitle}</h2>
-                <p className="text-[15px] leading-[1.5] text-muted">{t.reportBody}</p>
+                <h2 className="font-display text-[24px] leading-[1.2]">{t.reportTitle}</h2>
+                <p className="text-[16px] leading-[1.5] text-muted">{t.reportBody}</p>
               </div>
               <div role="radiogroup" aria-label={t.reportReason} className="flex w-full flex-col gap-1">
                 {t.reasons.map((r) => {
@@ -342,12 +342,12 @@ export function PostMenu({
                       role="radio"
                       aria-checked={on}
                       onClick={() => setReason(r)}
-                      className={`flex h-14 items-center gap-3 rounded-full px-5 text-left text-[15px] font-semibold transition ${
+                      className={`flex h-14 items-center gap-3 rounded-full px-5 text-left text-[16px] font-semibold transition ${
                         on ? "bg-on-dark text-on-light" : "bg-surface-2 text-on-dark"
                       }`}
                     >
                       <span
-                        className={`flex size-5 shrink-0 items-center justify-center rounded-full border-2 ${
+                        className={`flex size-6 shrink-0 items-center justify-center rounded-full border-2 ${
                           on ? "border-on-light bg-on-light text-on-dark" : "border-white/30"
                         }`}
                         aria-hidden="true"

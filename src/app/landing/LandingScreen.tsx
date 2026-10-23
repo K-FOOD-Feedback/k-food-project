@@ -295,7 +295,7 @@ export function LandingScreen() {
       {/* 상단: 로고 · 건너뛰기 · 언어(🌐) · 로그인 */}
       {/* 위치·버튼 크기는 메인 상단 바(PageHeader)와 같게 — 위·아래·오른쪽 8px, 🌐는 메인과 같은 64px 버튼 */}
       <header className="fixed inset-x-0 top-0 z-40 mx-auto flex w-full max-w-[430px] items-center justify-between pt-[calc(8px+env(safe-area-inset-top))] pr-2 pb-2 pl-5">
-        <span className="font-display text-[19px] leading-none">{t.brand}</span>
+        <span className="font-display text-[20px] leading-none">{t.brand}</span>
         <div className="flex items-center gap-1">
         {/* 건너뛰기 — 스토리를 생략하고 바로 "당신은 누구인가요?" (마지막 장면에선 숨김) */}
         {p < 0.97 && (
@@ -378,7 +378,7 @@ export function LandingScreen() {
           <div className="relative mx-auto w-full" style={{ maxWidth: `calc(300px + (100% - 300px) * ${voteShown})` }}>
             {/* 피드 카드 (앱 메인과 같은 모양: 물결 사진 + 질문 칩 + 제목 + 작성자)
                 첫 진입: 사진이 크게 "올라왔다가" 삐죽한 물결 모양으로 오므라들고, 그 둘레로 카드가 생김 */}
-            <div ref={postRef} className="relative isolate rounded-[32px] px-5 pt-7 pb-6 text-on-dark">
+            <div ref={postRef} className="relative isolate rounded-[32px] px-5 pt-8 pb-6 text-on-dark">
               <span
                 aria-hidden="true"
                 className="absolute inset-0 -z-10 animate-[fade-in_500ms_ease-out_1300ms_both] rounded-[32px] bg-surface/70"
@@ -412,29 +412,29 @@ export function LandingScreen() {
                 />
               </div>
               <div className="mt-6 flex flex-col items-start gap-2">
-                <span className="animate-pop rounded-full bg-white/10 px-2.5 py-[5px] text-[12px] font-semibold leading-[1.2] mb-1.5 text-neutral-400 [animation-delay:1500ms]">
+                <span className="animate-pop rounded-full bg-white/10 px-3 py-1 text-[12px] font-semibold leading-[1.2] mb-2 text-neutral-400 [animation-delay:1500ms]">
                   {t.question}
                 </span>
                 {/* 완성된 글 크기만큼 자리를 먼저 잡고, 그 위에 타이핑 (아래가 비거나 들썩이지 않게) */}
-                <p className="relative w-full whitespace-pre-line break-keep font-display text-[22px] leading-[1.25]">
+                <p className="relative w-full whitespace-pre-line break-keep font-display text-[24px] leading-[1.2]">
                   <span className="invisible">{t.story}</span>
                   <span className="absolute inset-0">
                     {t.story.slice(0, typed)}
                     {clock >= 34 && typed < t.story.length && (
-                      <span className="ml-0.5 inline-block h-[0.9em] w-[3px] translate-y-[2px] animate-pulse bg-on-dark" />
+                      <span className="ml-1 inline-block h-[0.9em] w-[3px] translate-y-[2px] animate-pulse bg-on-dark" />
                     )}
                   </span>
                 </p>
                 {/* 자리만 잡아 둠 — 실제 작성자 표시는 아래 traveler (답글 단계에서 답글 자리로 옮겨 감) */}
-                <span ref={authorRef} className="invisible flex items-center gap-[5px] text-[13px] font-semibold" aria-hidden="true">
-                  <span className="text-[15px]">🇨🇦</span>
+                <span ref={authorRef} className="invisible flex items-center gap-1 text-[14px] font-semibold" aria-hidden="true">
+                  <span className="text-[16px]">🇨🇦</span>
                   {t.author}
                 </span>
               </div>
 
               {/* 작성자: 카드에서 → 답글 작성자 자리로 이동 */}
               <span
-                className="absolute z-20 flex animate-pop items-center gap-[5px] whitespace-nowrap text-[13px] font-semibold text-neutral-400 [animation-delay:1650ms]"
+                className="absolute z-20 flex animate-pop items-center gap-1 whitespace-nowrap text-[14px] font-semibold text-neutral-400 [animation-delay:1650ms]"
                 style={{
                   left: box.author.x,
                   top: box.author.y,
@@ -443,7 +443,7 @@ export function LandingScreen() {
                   transformOrigin: "0 50%",
                 }}
               >
-                <span className="text-[15px]" aria-hidden="true">
+                <span className="text-[16px]" aria-hidden="true">
                   🇨🇦
                 </span>
                 {t.author}
@@ -455,14 +455,14 @@ export function LandingScreen() {
                 style={{ top: box.author.y - 2, rotate: `${REPLY_TILT}deg`, transformOrigin: "16px 19px" }}
               >
                 <span
-                  className="flex max-w-[240px] flex-col gap-1 rounded-[24px] bg-surface-2/80 px-4 pt-2.5 pb-3 text-on-dark"
+                  className="flex max-w-[240px] flex-col gap-1 rounded-[20px] bg-surface-2/80 px-4 pt-3 pb-3 text-on-dark"
                   style={fly(p, 0.72, 0.79, { y: 40, s: 0.6 })}
                 >
-                  <span ref={slotRef} className="invisible flex items-center gap-[5px] whitespace-nowrap text-[13px] font-semibold" aria-hidden="true">
-                    <span className="text-[15px]">🇨🇦</span>
+                  <span ref={slotRef} className="invisible flex items-center gap-1 whitespace-nowrap text-[14px] font-semibold" aria-hidden="true">
+                    <span className="text-[16px]">🇨🇦</span>
                     {t.author}
                   </span>
-                  <span className="break-keep text-[14px] font-bold leading-[1.35]">{t.reply}</span>
+                  <span className="break-keep text-[14px] font-bold leading-[1.4]">{t.reply}</span>
                 </span>
               </div>
             </div>
@@ -470,12 +470,12 @@ export function LandingScreen() {
             {/* 투표 (앱 상세와 같은 모양: 세로 칸이 아래에서 차오름) */}
             <div className="mt-3" style={{ opacity: 1 - voteOut, translate: `0 ${voteOut * 60}px` }} aria-hidden={voteOut >= 1}>
             <div className="relative rounded-[32px] bg-surface-2/75 px-4 pt-5 pb-4" style={fly(p, 0.1, 0.17, { y: 260, r: -6 })}>
-              <p className="text-center font-display text-[18px] leading-[1.3]">{t.voteTitle}</p>
+              <p className="text-center font-display text-[20px] leading-[1.4]">{t.voteTitle}</p>
               {/* 토큰 자리 (상세 투표 카드처럼 제목과 칸 사이 가운데) — 실제 토큰은 아래 하나가 여기서 내 칸으로 날아감 */}
               <div className="flex h-12 items-center justify-center">
                 <span ref={tokenSlotRef} className="size-10" aria-hidden="true" />
               </div>
-              <div className="flex h-[min(128px,15svh)] gap-1.5">
+              <div className="flex h-[min(128px,15svh)] gap-2">
                 {t.options.map((opt, i) => {
                   const fill = seg(p, 0.27 + i * 0.015, 0.36) * SAMPLE_PCTS[i];
                   const mine = i === 0;
@@ -501,11 +501,11 @@ export function LandingScreen() {
                           style={{ bottom: `min(max(calc(${SAMPLE_PCTS[0]}% + 6px), 34px), calc(100% - 64px))` }}
                         />
                       )}
-                      <span className="absolute left-3 top-2.5 whitespace-pre-line pr-1 text-[13px] font-semibold leading-[1.25]">
+                      <span className="absolute left-3 top-2.5 whitespace-pre-line pr-1 text-[14px] font-semibold leading-[1.2]">
                         {opt}
                       </span>
                       <span
-                        className={`absolute bottom-2 left-3 font-display text-[18px] tabular-nums ${mine ? "text-on-light" : "text-on-dark"}`}
+                        className={`absolute bottom-2 left-3 font-display text-[20px] tabular-nums ${mine ? "text-on-light" : "text-on-dark"}`}
                         style={{ opacity: seg(p, 0.28, 0.32) }}
                       >
                         {Math.round(fill)}%
@@ -564,7 +564,7 @@ export function LandingScreen() {
           {/* 스크롤 안내 — 조금 내리면 사라짐 */}
           <span
             aria-hidden="true"
-            className="absolute bottom-[calc(20px+env(safe-area-inset-bottom))] left-1/2 flex size-11 -translate-x-1/2 items-center justify-center rounded-full bg-surface text-[16px] font-semibold text-neutral-400 transition-opacity duration-500"
+            className="absolute bottom-[calc(20px+env(safe-area-inset-bottom))] left-1/2 flex size-12 -translate-x-1/2 items-center justify-center rounded-full bg-surface text-[16px] font-semibold text-neutral-400 transition-opacity duration-500"
             style={{ opacity: clock > 45 && p < 0.03 ? 1 : 0 }}
           >
             <span className="animate-float">↓</span>
@@ -635,8 +635,8 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
       {/* 나타날 때마다 연출을 처음부터 (active 바뀌면 새로 그림)
           제목·안내 → 두 칸이 차례로 올라옴 → 👋 토큰이 위에서 톡 떨어져 손 흔들기
           → 토큰이 왼쪽 칸, 오른쪽 칸을 번갈아 살짝 들어갔다 나오며 "넣어 보세요" 힌트 */}
-      <div key={active ? "on" : "off"} className="relative rounded-[32px] bg-surface-2 px-5 pt-7 pb-5">
-        <p className="animate-rise text-center font-display text-[24px] leading-[1.3] [animation-delay:150ms]">{t.pickTitle}</p>
+      <div key={active ? "on" : "off"} className="relative rounded-[32px] bg-surface-2 px-5 pt-8 pb-5">
+        <p className="animate-rise text-center font-display text-[24px] leading-[1.4] [animation-delay:150ms]">{t.pickTitle}</p>
 
         {/* 토큰 */}
         <div className="mt-6 flex h-14 items-center justify-center">
@@ -652,7 +652,7 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
               }}
             >
             <div
-              className={`flex size-14 touch-none select-none items-center justify-center rounded-full bg-on-light text-[26px] shadow-[0_6px_16px_rgba(0,0,0,0.35)] ${
+              className={`flex size-14 touch-none select-none items-center justify-center rounded-full bg-on-light text-[24px] shadow-[0_6px_16px_rgba(0,0,0,0.35)] ${
                 drag ? "cursor-grabbing" : "cursor-grab"
               }`}
               style={{ transform: drag ? `translate(${drag.x}px, ${drag.y}px) scale(1.12)` : undefined }}
@@ -688,7 +688,7 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
         </div>
 
         {/* 두 칸 */}
-        <div className="mt-5 flex h-[min(200px,26svh)] gap-2">
+        <div className="mt-6 flex h-[min(200px,26svh)] gap-2">
           {ROLES.map((role, i) => {
             const mine = picked === i;
             const near = hover === i;
@@ -702,7 +702,7 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
                 onClick={() => pick(i, "tap")}
                 disabled={picked !== null && !mine}
                 style={{ animationDelay: `${350 + i * 120}ms` }}
-                className={`relative min-w-0 flex-1 animate-rise overflow-hidden rounded-[24px] text-left transition-[background-color,scale] duration-200 ${
+                className={`relative min-w-0 flex-1 animate-rise overflow-hidden rounded-[20px] text-left transition-[background-color,scale] duration-200 ${
                   near ? "scale-[1.03] bg-white/10" : "bg-surface"
                 } ${picked !== null && !mine ? "opacity-40" : ""}`}
               >
@@ -740,7 +740,7 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
           track("login_sheet_opened", { from: "landing" });
           setLoginOpen(true);
         }}
-        className="mt-3 py-1 text-center text-[14px] font-bold leading-[1.3] text-neutral-400"
+        className="mt-3 py-1 text-center text-[14px] font-bold leading-[1.4] text-neutral-400"
       >
         {t.loginLead} <span className="text-on-dark">{t.loginAction}</span>
       </button>
@@ -793,9 +793,9 @@ function ColumnText({ role, action, dark = false, picked = false }: { role: stri
     >
       <span className="font-display text-[20px] leading-[1.2]">{role}</span>
       <span className="flex items-end justify-between gap-1">
-        <span className={`text-[13px] font-semibold leading-[1.35] ${dark ? "opacity-70" : "text-neutral-400"}`}>{action}</span>
+        <span className={`text-[14px] font-semibold leading-[1.4] ${dark ? "opacity-60" : "text-neutral-400"}`}>{action}</span>
         {picked && (
-          <span className="flex size-9 shrink-0 animate-pop items-center justify-center rounded-full bg-on-light text-[18px] shadow-[0_6px_16px_rgba(0,0,0,0.35)]">👋</span>
+          <span className="flex size-10 shrink-0 animate-pop items-center justify-center rounded-full bg-on-light text-[20px] shadow-[0_6px_16px_rgba(0,0,0,0.35)]">👋</span>
         )}
       </span>
     </span>
@@ -822,11 +822,11 @@ function Bubble({
       {/* 보는 사람의 모국어를 크게, 한국어 원문은 작게 아래 (한국어 화면은 한국어만) */}
       {/* 한국어·영어는 단어 단위로 줄바꿈, 띄어쓰기가 없는 중국어·일본어는 글자 단위로 (안 그러면 한 줄로 쭉 늘어남) */}
       <span
-        className={`whitespace-pre-line text-[15px] font-bold leading-[1.35] tracking-[-0.3px] ${cjk ? "break-all" : "break-keep"}`}
+        className={`whitespace-pre-line text-[16px] font-bold leading-[1.4] tracking-[-0.3px] ${cjk ? "break-all" : "break-keep"}`}
       >
         {lang === "ko" ? r.ko : r[lang]}
       </span>
-      {lang !== "ko" && <span className="break-keep text-[11px] font-semibold leading-[1.3] opacity-60">{r.ko}</span>}
+      {lang !== "ko" && <span className="break-keep text-[12px] font-semibold leading-[1.4] opacity-60">{r.ko}</span>}
     </div>
   );
 }
@@ -892,7 +892,7 @@ const Decor = memo(function Decor() {
             className="absolute -translate-x-1/2 -translate-y-1/2"
             style={{ left: `${x}%`, top: `${y}%`, rotate: `${r}deg`, width: d.size, height: d.size }}
           >
-            <div className="size-full animate-drift opacity-35" style={{ animationDelay: `${i * -1.7}s`, animationDuration: `${7 + i}s` }}>
+            <div className="size-full animate-drift opacity-40" style={{ animationDelay: `${i * -1.7}s`, animationDuration: `${7 + i}s` }}>
               <Shape kind={d.kind} color={d.color} />
             </div>
           </div>

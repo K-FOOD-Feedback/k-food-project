@@ -64,10 +64,10 @@ export function LoginSheet({
       {children}
       {/* 제목·안내는 가운데 정렬 (아래 버튼과 같은 축), 제목과 안내 사이 12px */}
       <div className="flex w-full flex-col items-center gap-3 px-6 pt-3 text-center break-keep">
-        <h2 className="font-display text-[22px] leading-[1.25]">
+        <h2 className="font-display text-[24px] leading-[1.2]">
           {title ?? t.title}
         </h2>
-        <p className="text-[15px] leading-[1.5] whitespace-pre-line text-muted">{body ?? t.body}</p>
+        <p className="text-[16px] leading-[1.5] whitespace-pre-line text-muted">{body ?? t.body}</p>
       </div>
       <button
         type="button"

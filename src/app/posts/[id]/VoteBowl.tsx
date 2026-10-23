@@ -69,21 +69,21 @@ export function VoteBowl({
   const optionLang = contentLang;
   const options = optionsIn(post, contentLang);
   const T = DETAIL_COPY[lang];
-  // 제목·칸 이름·% 글꼴 (영어면 Gilroy)
+  // 제목·칸 이름·% 글꼴 (영어면 Figtree)
   const font = titleFont(lang);
-  // 칸 이름은 글쓴이가 쓴 글이라 글 언어 글꼴 (한국어 Paperlogy · 영어 Gilroy)
+  // 칸 이름은 글쓴이가 쓴 글이라 글 언어 글꼴 (한국어 Paperlogy · 영어 Figtree)
   const optionFont = titleFont(optionLang);
   // 영어 행간은 한국어보다 0.15 좁게 (소문자가 낮아 같은 행간이면 줄 사이가 비어 보임 — 상세 제목과 같은 규칙)
-  const title = `${font} ${titleSize} ${lang === "en" ? "leading-[1.15]" : "leading-[1.3]"}`;
-  const optionLeading = optionLang === "en" ? "leading-[1.15]" : "leading-[1.3]";
+  const title = `${font} ${titleSize} ${lang === "en" ? "leading-[1.2]" : "leading-[1.4]"}`;
+  const optionLeading = optionLang === "en" ? "leading-[1.2]" : "leading-[1.4]";
   // 선택지는 잘리지 않고 전부 보임 (글자 수는 입력할 때 OPTION_MAX로 제한). 4칸이면 칸이 좁아서 글자·%를 조금 작게
   const narrow = options.length >= 4;
   const optionText = narrow ? "pl-3 text-[14px] tracking-[-0.28px]" : "pl-4 text-[16px] tracking-[-0.32px]";
   // % 숫자는 언어와 상관없이 Paperlogy (한국인·외국인 버전 같은 모양)
   const pctFont = titleFont("ko");
   const pctText = narrow
-    ? `${pctFont} left-3 text-[19px] leading-none tracking-[-0.57px]`
-    : `${pctFont} ${titleSize} leading-[1.3] left-4`;
+    ? `${pctFont} left-3 text-[20px] leading-none tracking-[-0.57px]`
+    : `${pctFont} ${titleSize} leading-[1.4] left-4`;
   const columns = useRef<(HTMLButtonElement | null)[]>([]);
   const token = useRef<HTMLDivElement>(null);
   // 내 칸에 들어가 앉은 토큰 (칸 이름과 % 사이, 차오른 색 바로 위)
@@ -287,7 +287,7 @@ export function VoteBowl({
   const tokenEl = (
     <div
       ref={token}
-      className="flex size-16 items-center justify-center rounded-full bg-on-light text-[25px] leading-none shadow-[0_6px_16px_rgba(0,0,0,0.35)]"
+      className="flex size-16 items-center justify-center rounded-full bg-on-light text-[24px] leading-none shadow-[0_6px_16px_rgba(0,0,0,0.35)]"
     >
       <span className={`inline-block origin-[50%_85%] ${inView ? "animate-[wave_1.2s_ease-in-out_650ms_infinite]" : ""}`}>🇰🇷</span>
     </div>
@@ -297,7 +297,7 @@ export function VoteBowl({
     <section
       ref={sectionRef}
       id="vote"
-      className="flex scroll-mt-4 flex-col gap-6 rounded-[32px] bg-[#292929] px-7 py-[30px]"
+      className="flex scroll-mt-4 flex-col gap-6 rounded-[32px] bg-[#292929] px-8 py-8"
       aria-label={T.vote}
     >
       <h2 className={`${title} text-center`}>
@@ -319,7 +319,7 @@ export function VoteBowl({
         {viewOnly ? (
           <div className="flex flex-col items-center gap-1 text-center">
             {/* 투표한 한국인 수만 흰색으로 강조, 투표 영역이 보이면 0부터 세어 올라감 (한국인 요약 문구와 같은 방식) */}
-            <p className="text-[18px] leading-[1.35] font-bold tracking-[-0.36px] text-balance text-neutral-400">
+            <p className="text-[20px] leading-[1.4] font-bold tracking-[-0.36px] text-balance text-neutral-400">
               {(() => {
                 const [a, b, c] = T.resultsTotal(total);
                 return (
@@ -338,7 +338,7 @@ export function VoteBowl({
         ) : myVote !== null ? (
           <div className="flex flex-col items-center gap-1 text-center">
             {/* 투표 완료(24px)보다 작게, 편 가르기 문구 — 같은 생각인 사람 수(나 포함)만 흰색, 0부터 세어 올라감 */}
-            <p className="text-[18px] leading-[1.35] font-bold tracking-[-0.36px] text-balance text-neutral-400">
+            <p className="text-[20px] leading-[1.4] font-bold tracking-[-0.36px] text-balance text-neutral-400">
               {(() => {
                 const same = votes[myVote];
                 const side: SameSide =
@@ -380,7 +380,7 @@ export function VoteBowl({
         )}
       </div>
 
-      <div className="flex gap-1.5">
+      <div className="flex gap-2">
         {options.map((label, i) => {
           const mine = i === filled;
           return (
@@ -472,7 +472,7 @@ export function VoteBowl({
                 <span
                   ref={landed}
                   aria-hidden="true"
-                  className="absolute left-[calc(50%-32px)] z-[2] flex size-16 items-center justify-center rounded-full bg-on-light text-[25px] leading-none shadow-[0_6px_16px_rgba(0,0,0,0.35)]"
+                  className="absolute left-[calc(50%-32px)] z-[2] flex size-16 items-center justify-center rounded-full bg-on-light text-[24px] leading-none shadow-[0_6px_16px_rgba(0,0,0,0.35)]"
                   // 색 바로 위에 앉되, 색이 낮으면 % 글자(아래 12px + 글자 높이)보다 위로 올려 가리지 않게
                   style={{ bottom: `min(max(calc(${pcts[i]}% + 8px), ${TOKEN_ABOVE_PCT}px), 110px)` }}
                 >

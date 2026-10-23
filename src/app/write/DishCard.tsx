@@ -62,8 +62,8 @@ export function DishCard({
   return (
     <Tile>
       <div className="flex flex-col gap-2 px-5 py-5" aria-live="polite">
-        <p className="flex items-center gap-1.5 text-[13px] font-semibold leading-[1.3] text-muted">
-          <Icon name="sparkle" size={14} className={`text-content ${working ? "animate-spin [animation-duration:1.4s]" : ""}`} />
+        <p className="flex items-center gap-2 text-[14px] font-semibold leading-[1.4] text-muted">
+          <Icon name="sparkle" size={16} className={`text-content ${working ? "animate-spin [animation-duration:1.4s]" : ""}`} />
           {working ? w.dishLooking : w.dishThinks}
         </p>
 
@@ -91,7 +91,7 @@ export function DishCard({
             />
             <button
               type="submit"
-              className="h-12 shrink-0 rounded-full bg-on-dark px-5 text-[15px] font-bold text-on-light transition active:scale-95"
+              className="h-12 shrink-0 rounded-full bg-on-dark px-5 text-[16px] font-bold text-on-light transition active:scale-95"
             >
               {w.dishSave}
             </button>
@@ -101,7 +101,7 @@ export function DishCard({
             {/* 음식 이름 옆 ✎ — 눌러서 고치기 */}
             <p key={draft.dish} className="flex animate-fade-in items-center gap-2">
               {/* 띄어쓰기 없는 긴 이름도 칸 안에서 줄바꿈 (✎가 밀려나지 않게) */}
-              <span className="min-w-0 font-display text-[26px] leading-[1.15] break-keep [overflow-wrap:anywhere]">{draft.dish}</span>
+              <span className="min-w-0 font-display text-[24px] leading-[1.2] break-keep [overflow-wrap:anywhere]">{draft.dish}</span>
               <button
                 type="button"
                 aria-label={w.dishEdit}
@@ -110,7 +110,7 @@ export function DishCard({
                   setInput(draft.dish);
                   setEditing(true);
                 }}
-                className="flex size-9 shrink-0 items-center justify-center rounded-full bg-surface-2 text-neutral-400 transition active:scale-90"
+                className="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-neutral-400 transition active:scale-90"
               >
                 <Icon name="pencil" size={16} />
               </button>

@@ -60,7 +60,7 @@ export function EdgeCasesScreen() {
   return (
     <main className={`${paperlogy.variable} mx-auto flex w-full max-w-[430px] flex-col gap-14 bg-background px-2 pt-6 pb-24 text-on-dark`}>
       <header className="flex flex-col gap-2 px-2">
-        <h1 className="font-display text-[28px] leading-[1.15]">Edge cases</h1>
+        <h1 className="font-display text-[32px] leading-[1.2]">Edge cases</h1>
         <p className="text-[14px] leading-[1.5] text-muted break-keep">
           극단 데이터를 넣은 실제 컴포넌트예요. 글자가 겹치거나, 칸 밖으로 나가거나, 잘려서 뜻을 알 수 없으면 깨진 거예요.
         </p>
@@ -77,7 +77,7 @@ export function EdgeCasesScreen() {
       </Group>
 
       <Group title="번역 — 메인 카드 제목 (원문 50자 → 다른 언어)" owner="지현">
-        <p className="px-2 text-[13px] text-muted break-keep">기준: 메인 카드는 2줄까지, 넘치면 … (글자 크기는 그대로)</p>
+        <p className="px-2 text-[14px] text-muted break-keep">기준: 메인 카드는 2줄까지, 넘치면 … (글자 크기는 그대로)</p>
         {TRANSLATION_CASES.map((c) => (
           <Case key={c.label} label={c.label}>
             <div className="-mx-2 overflow-hidden">
@@ -88,10 +88,10 @@ export function EdgeCasesScreen() {
       </Group>
 
       <Group title="번역 — 상세 제목 (원문 50자 → 다른 언어)" owner="지현">
-        <p className="px-2 text-[13px] text-muted break-keep">기준: 상세는 제목을 잘리지 않게 전부</p>
+        <p className="px-2 text-[14px] text-muted break-keep">기준: 상세는 제목을 잘리지 않게 전부</p>
         {TRANSLATION_CASES.map((c) => (
           <Case key={c.label} label={c.label}>
-            <article className="flex flex-col gap-5 rounded-[32px] px-7 py-[30px] text-on-light" style={{ background: c.post.color }}>
+            <article className="flex flex-col gap-6 rounded-[32px] px-8 py-8 text-on-light" style={{ background: c.post.color }}>
               <ArticleBody post={c.post} lang={c.lang} contentLang={c.lang} />
             </article>
           </Case>
@@ -110,7 +110,7 @@ export function EdgeCasesScreen() {
         {DETAIL_CASES.map((c) => (
           <Case key={c.label} label={c.label}>
             {/* 상세 화면의 본문 카드와 같은 틀 (DetailScreen article) */}
-            <article className="flex flex-col gap-5 rounded-[32px] px-7 py-[30px] text-on-light" style={{ background: c.post.color }}>
+            <article className="flex flex-col gap-6 rounded-[32px] px-8 py-8 text-on-light" style={{ background: c.post.color }}>
               <ArticleBody post={c.post} lang={c.lang} contentLang={c.lang} />
             </article>
           </Case>
@@ -133,7 +133,7 @@ export function EdgeCasesScreen() {
       </Group>
 
       <Group title="답글 레이어 (한마디 상세)" owner="지현">
-        <p className="px-2 text-[13px] text-muted">화면 전체를 덮는 레이어라 눌러서 열어 봐요. ×나 빈 곳을 누르면 닫혀요.</p>
+        <p className="px-2 text-[14px] text-muted">화면 전체를 덮는 레이어라 눌러서 열어 봐요. ×나 빈 곳을 누르면 닫혀요.</p>
         {MODAL_CASES.map((c) => (
           <ModalCase key={c.label} c={c} />
         ))}
@@ -209,7 +209,7 @@ export function EdgeCasesScreen() {
       </Group>
 
       <Group title="숫자 표시" owner="공통">
-        <p className="px-2 text-[13px] text-muted break-keep">0 · 1 · 999 · 9,999 · 12,345 · 1,234,567 — 칸 밖으로 나가거나 겹치면 깨진 것</p>
+        <p className="px-2 text-[14px] text-muted break-keep">0 · 1 · 999 · 9,999 · 12,345 · 1,234,567 — 칸 밖으로 나가거나 겹치면 깨진 것</p>
         <Case label="상세 참여 인원 칩 (한·영·중·일, 1,234,567명)">
           <div className="flex flex-col gap-2">
             {LANGS.map((l) => (
@@ -255,7 +255,7 @@ export function EdgeCasesScreen() {
       </Group>
 
       <Group title="가입 화면 (나라 고르기 · 닉네임)" owner="송희">
-        <p className="px-2 text-[13px] text-muted break-keep">열어서 나라 목록에서 가장 긴 이름(Bosnia and Herzegovina 등)을 골라 봐요.</p>
+        <p className="px-2 text-[14px] text-muted break-keep">열어서 나라 목록에서 가장 긴 이름(Bosnia and Herzegovina 등)을 골라 봐요.</p>
         <div className="flex">
           <PillButton tone="soft" size="md" onClick={openWelcome}>
             열어 보기
@@ -316,9 +316,9 @@ export function EdgeCasesScreen() {
 function Group({ title, owner, children }: { title: string; owner: string; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="flex items-baseline gap-2 border-b border-white/10 px-2 pb-2 font-display text-[22px] leading-[1.2]">
+      <h2 className="flex items-baseline gap-2 border-b border-white/10 px-2 pb-2 font-display text-[24px] leading-[1.2]">
         {title}
-        <span className="text-[13px] font-semibold text-muted">담당 {owner}</span>
+        <span className="text-[14px] font-semibold text-muted">담당 {owner}</span>
       </h2>
       {children}
     </section>
@@ -328,7 +328,7 @@ function Group({ title, owner, children }: { title: string; owner: string; child
 function Case({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-2">
-      <p className="px-2 text-[13px] font-semibold text-muted">{label}</p>
+      <p className="px-2 text-[14px] font-semibold text-muted">{label}</p>
       {children}
     </div>
   );
@@ -429,7 +429,7 @@ function AgoCase() {
   // 화면을 그릴 때 한 번만 지금 시각을 잡음 (그릴 때마다 바뀌지 않게)
   const [now] = useState(() => Date.now());
   return (
-    <div className="flex flex-col gap-1 rounded-[24px] bg-surface p-4 text-[13px]">
+    <div className="flex flex-col gap-1 rounded-[20px] bg-surface p-4 text-[14px]">
       {AGO_CASES.map((ms) => (
         <p key={ms} className="flex gap-3 tabular-nums">
           {LANGS.map((l) => (

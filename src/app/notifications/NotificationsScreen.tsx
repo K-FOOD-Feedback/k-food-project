@@ -54,19 +54,19 @@ export function NotificationsScreen({ lang }: { lang: Lang }) {
         left={<IconButton icon="chevron-left" label={t.back} href={lang === "en" ? "/home?lang=en" : "/home"} />}
       />
 
-      <div className="flex flex-col gap-7 px-4 pt-2">
+      <div className="flex flex-col gap-6 px-4 pt-2">
         {now > 0 && days.length === 0 && (
           <div className="flex flex-col items-center gap-2 py-24 text-center">
-            <span className="text-[40px]" aria-hidden="true">
+            <span className="text-[32px]" aria-hidden="true">
               🫥
             </span>
-            <p className="text-[15px] font-semibold">{t.emptyTitle}</p>
+            <p className="text-[16px] font-semibold">{t.emptyTitle}</p>
             <p className="text-[14px] text-muted">{lang === "en" ? t.emptyForeigner : t.emptyKorean}</p>
           </div>
         )}
         {days.map(({ day, items }) => (
           <section key={day} className="flex flex-col gap-3">
-            <h2 className="px-1 text-[13px] font-semibold text-muted">{day}</h2>
+            <h2 className="px-1 text-[14px] font-semibold text-muted">{day}</h2>
             {items.map((n) => (
               <Link
                 key={n.id}
@@ -122,7 +122,7 @@ export function NotificationCard({
   className?: string;
 }) {
   return (
-    <span className={`flex items-start gap-3.5 rounded-[24px] bg-surface p-5 ${className}`}>
+    <span className={`flex items-start gap-4 rounded-[20px] bg-surface p-5 ${className}`}>
       {/* 그 글의 음식 사진 (앱의 물결 모양) */}
       <span
         className="relative size-12 shrink-0"
@@ -139,11 +139,11 @@ export function NotificationCard({
       <span className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="flex items-start gap-2">
           {/* 한국어는 낱말 단위로 줄바꿈(break-keep), 중·일은 띄어쓰기가 없어 글자 단위로 (break-keep이면 한 줄에서 잘림) */}
-          <span className={`line-clamp-2 min-w-0 flex-1 text-[15px] font-semibold leading-[1.4] ${ui === "zh" || ui === "ja" ? "" : "break-keep"}`}>{titleOf(n, lang, ui)}</span>
-          <span className="shrink-0 pt-0.5 text-[12px] font-medium tabular-nums text-muted">{timeOf(n, now, ui)}</span>
+          <span className={`line-clamp-2 min-w-0 flex-1 text-[16px] font-semibold leading-[1.4] ${ui === "zh" || ui === "ja" ? "" : "break-keep"}`}>{titleOf(n, lang, ui)}</span>
+          <span className="shrink-0 pt-1 text-[12px] font-medium tabular-nums text-muted">{timeOf(n, now, ui)}</span>
         </span>
         <span className="flex items-center gap-2">
-          <span className="line-clamp-1 min-w-0 flex-1 text-[13px] leading-[1.45] text-muted">{bodyOf(n, ui, translate)}</span>
+          <span className="line-clamp-1 min-w-0 flex-1 text-[14px] leading-[1.5] text-muted">{bodyOf(n, ui, translate)}</span>
           <Icon name="chevron-right" size={16} className="shrink-0 text-muted" />
         </span>
       </span>

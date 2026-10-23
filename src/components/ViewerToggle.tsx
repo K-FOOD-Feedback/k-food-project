@@ -125,7 +125,7 @@ export function ViewerToggle() {
     <div
       role="radiogroup"
       aria-label="화면 바꾸기 (작업용)"
-      className="fixed top-[calc(env(safe-area-inset-top)+2px)] left-1/2 z-[60] flex -translate-x-1/2 gap-0.5 whitespace-nowrap rounded-full bg-black/70 p-0.5 text-[11px] leading-none font-bold text-white shadow-[0_4px_12px_rgba(0,0,0,0.4)] ring-1 ring-white/15 backdrop-blur-md"
+      className="fixed top-[calc(env(safe-area-inset-top)+2px)] left-1/2 z-50 flex -translate-x-1/2 gap-1 whitespace-nowrap rounded-full bg-black/80 p-1 text-[12px] leading-none font-bold text-white shadow-[0_4px_12px_rgba(0,0,0,0.4)] ring-1 ring-white/15 backdrop-blur-md"
     >
       {CHOICES.map(({ id, label }) => (
         <button
@@ -134,7 +134,7 @@ export function ViewerToggle() {
           role="radio"
           aria-checked={isOn(id)}
           onClick={() => pick(id)}
-          className={`rounded-full px-2 py-1.5 transition ${isOn(id) ? "bg-white text-black" : "text-white/70"}`}
+          className={`rounded-full px-2 py-2 transition ${isOn(id) ? "bg-white text-black" : "text-white/70"}`}
         >
           {label}
         </button>
@@ -144,7 +144,7 @@ export function ViewerToggle() {
         role="radio"
         aria-checked={admin}
         onClick={() => !admin && router.push("/admin/feedback")}
-        className={`rounded-full px-2 py-1.5 transition ${admin ? "bg-white text-black" : "text-white/70"}`}
+        className={`rounded-full px-2 py-2 transition ${admin ? "bg-white text-black" : "text-white/70"}`}
       >
         🛠 어드민
       </button>

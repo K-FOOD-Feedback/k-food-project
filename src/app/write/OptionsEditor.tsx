@@ -62,12 +62,12 @@ export function OptionsEditor({
                 if (e.target.value !== focusedValue.current)
                   track("vote_option_edited", { position: i, length: e.target.value.length, source });
               }}
-              className={`min-w-0 flex-1 bg-transparent text-[15px] leading-[1.5] outline-none placeholder:text-neutral-400 ${
+              className={`min-w-0 flex-1 bg-transparent text-[16px] leading-[1.5] outline-none placeholder:text-neutral-400 ${
                 locked ? "text-muted" : "text-on-dark"
               }`}
             />
             {locked ? (
-              <Icon name="lock" size={18} className="mr-2 shrink-0" />
+              <Icon name="lock" size={20} className="mr-2 shrink-0" />
             ) : (
               <>
                 {/* 글자 수는 고치는 중에만 */}
@@ -81,7 +81,7 @@ export function OptionsEditor({
                   onClick={() => remove(i)}
                   className="flex size-10 shrink-0 items-center justify-center rounded-full text-neutral-400 transition active:scale-90 disabled:opacity-25"
                 >
-                  <Icon name="x" size={18} />
+                  <Icon name="x" size={20} />
                 </button>
               </>
             )}
@@ -92,9 +92,9 @@ export function OptionsEditor({
         <button
           type="button"
           onClick={add}
-          className="flex h-14 items-center justify-center gap-2 rounded-full border-[1.5px] border-dashed border-white/25 text-[15px] font-semibold text-muted transition active:scale-[0.99]"
+          className="flex h-14 items-center justify-center gap-2 rounded-full border-[1.5px] border-dashed border-white/25 text-[16px] font-semibold text-muted transition active:scale-[0.99]"
         >
-          <Icon name="plus" size={18} />
+          <Icon name="plus" size={20} />
           {w.addChoice}
         </button>
       )}

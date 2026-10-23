@@ -219,15 +219,15 @@ export function WelcomePopup({
         />
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto px-4 pt-[30px] pb-6 break-keep">
+      <div className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto px-4 pt-8 pb-6 break-keep">
         <div className="flex flex-col gap-2 px-2">
-          <h1 className="font-display text-[32px] leading-[1.1]">{t.title}</h1>
-          <p className="text-[15px] leading-[1.5] text-muted">{t.sub}</p>
+          <h1 className="font-display text-[32px] leading-[1.2]">{t.title}</h1>
+          <p className="text-[16px] leading-[1.5] text-muted">{t.sub}</p>
         </div>
 
         {/* 닉네임 */}
         <section className="flex flex-col gap-3">
-          <h2 className="px-2 text-[15px] leading-[1.4] font-bold">{t.nickname}</h2>
+          <h2 className="px-2 text-[16px] leading-[1.4] font-bold">{t.nickname}</h2>
           {nickname && (
             <NicknameSlot lang={lang} ui={lang === "ko" ? "ko" : fl} value={nickname} onChange={setNickname} onSpinningChange={setSpinning} from="signup" />
           )}
@@ -236,9 +236,9 @@ export function WelcomePopup({
         {/* 나라 (외국인만) */}
         {foreigner && (
           <section className="flex flex-col gap-3">
-            <h2 className="px-2 text-[15px] leading-[1.4] font-bold">{t.country}</h2>
-            <label className="relative flex h-14 items-center gap-3 rounded-[24px] bg-surface-2 px-5">
-              <span className="text-[22px] leading-none" aria-hidden="true">
+            <h2 className="px-2 text-[16px] leading-[1.4] font-bold">{t.country}</h2>
+            <label className="relative flex h-14 items-center gap-3 rounded-[20px] bg-surface-2 px-5">
+              <span className="text-[24px] leading-none" aria-hidden="true">
                 {countryFlag(country)}
               </span>
               <select
@@ -253,7 +253,7 @@ export function WelcomePopup({
                   </option>
                 ))}
               </select>
-              <Icon name="chevron-right" size={18} className="rotate-90 text-muted" />
+              <Icon name="chevron-right" size={20} className="rotate-90 text-muted" />
             </label>
           </section>
         )}
@@ -261,7 +261,7 @@ export function WelcomePopup({
 
       {/* 약관 동의 + 시작 */}
       <div className="flex flex-col gap-3 border-t border-white/10 px-4 pt-4 pb-[calc(16px+env(safe-area-inset-bottom))]">
-        <div className="flex items-center rounded-[24px] bg-surface">
+        <div className="flex items-center rounded-[20px] bg-surface">
           <button
             type="button"
             role="checkbox"
@@ -292,7 +292,7 @@ export function WelcomePopup({
                   role="checkbox"
                   aria-checked={agreed[i]}
                   onClick={() => setAgreed(agreed.map((v, j) => (j === i ? !v : v)))}
-                  className="flex h-11 flex-1 items-center gap-3 pl-3 text-left text-[14px]"
+                  className="flex h-12 flex-1 items-center gap-3 pl-3 text-left text-[14px]"
                 >
                   <Check on={agreed[i]} small />
                   <span>
@@ -304,7 +304,7 @@ export function WelcomePopup({
                   <Link
                     href={LINKS[i]}
                     target="_blank"
-                    className="shrink-0 px-3 py-2 text-[13px] text-muted underline underline-offset-2"
+                    className="shrink-0 px-3 py-2 text-[14px] text-muted underline underline-offset-2"
                   >
                     {t.view}
                   </Link>
@@ -339,7 +339,7 @@ export function WelcomePopup({
 function Check({ on, small = false }: { on: boolean; small?: boolean }) {
   return (
     <span
-      className={`flex shrink-0 items-center justify-center rounded-full transition ${small ? "size-5" : "size-6"} ${
+      className={`flex shrink-0 items-center justify-center rounded-full transition ${small ? "size-6" : "size-6"} ${
         on ? "bg-primary text-on-light" : "border-2 border-white/25"
       }`}
       aria-hidden="true"

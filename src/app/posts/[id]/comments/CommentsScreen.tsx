@@ -8,6 +8,7 @@ import { CommentPile } from "../CommentPile";
 import { useCommentLogin } from "../CommentLogin";
 import { COMMENTS_COPY, type CommentsLang, type Lang } from "../copy";
 import { saveKoreanLang, saveViewerLang, useKoreanUiLang, useViewerUiLang } from "../viewerLang";
+import { useDocLang } from "@/lib/docLang";
 
 /**
   한마디 전체 화면의 상단 바 + 한마디 칸.
@@ -51,6 +52,8 @@ export function CommentsScreen({
   const koreanLang = useKoreanUiLang();
   const viewerLang = useViewerUiLang();
   const lang = foreigner ? viewerLang : (urlLang ?? koreanLang);
+  // 화면 언어별 본문 글꼴 (영어 Inter · 일본어 M PLUS 2 · 중국어 MiSans)
+  useDocLang(lang);
   const t = COMMENTS_COPY[lang];
   const login = useCommentLogin({ enabled: foreigner, lang, postId, screen: "comments" });
 
