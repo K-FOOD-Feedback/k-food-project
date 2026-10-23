@@ -523,11 +523,12 @@ export function CommentPile({
             </span>
           </span>
         </label>
-        <span className="absolute top-[123px] left-[84px] flex h-14 w-[112px] items-center justify-center">
+        {/* 보내기 스티커 — 글자가 커져도 한 줄로 (가운데는 그대로 140px) */}
+        <span className="absolute top-[123px] left-[76px] flex h-14 w-[128px] items-center justify-center">
           <button
             type="submit"
             disabled={!draft.trim()}
-            className="flex rotate-[4.89deg] items-center gap-2 rounded-full bg-white px-4 py-3 text-[20px] leading-[1.5] font-bold tracking-[-0.4px] text-black"
+            className="flex rotate-[4.89deg] items-center gap-2 rounded-full bg-white px-4 py-3 text-[20px] leading-[1.5] font-bold tracking-[-0.4px] whitespace-nowrap text-black"
           >
             {/* eslint-disable-next-line @next/next/no-img-element -- 작은 SVG 아이콘 */}
             <img src="/images/icon-send.svg" width={22} height={22} alt="" />

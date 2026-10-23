@@ -431,15 +431,8 @@ function VerdictCard({ post, theme, t }: { post: ShareCardPost; theme: CardTheme
             <p className="opacity-60">{t.caseNo}</p>
           </div>
           <Rule />
-          {/* 증거 */}
-          <div className="flex items-center gap-3">
-            <img src={post.photo} alt="" className="size-[56px] shrink-0 rounded-[4px] object-cover" draggable={false} />
-            <div className="flex min-w-0 flex-col gap-1">
-              <span className="opacity-60">{t.exhibit}</span>
-              <span className="line-clamp-2 font-bold uppercase">{post.dish}</span>
-              <span className="truncate opacity-60">{t.cook}: {post.author}</span>
-            </div>
-          </div>
+          {/* 증거 — 사진만 (음식 이름 · 만든 사람은 뺌: 사진 · 혐의 · 배심원 · 판결만 남김, 송희) */}
+          <img src={post.photo} alt="" className="h-[96px] w-full rounded-[4px] object-cover" draggable={false} />
           <Rule />
           {/* 혐의 */}
           <div className="flex flex-col gap-1">
