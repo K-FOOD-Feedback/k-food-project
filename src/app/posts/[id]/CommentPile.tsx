@@ -280,7 +280,7 @@ export function CommentPile({
   };
 
   const emojiKeys = (
-    <div className={`flex w-full gap-0.5 ${full ? "px-2" : ""}`}>
+    <div className={`flex w-full gap-1 ${full ? "px-2" : ""}`}>
       {QUICK_EMOJIS.map((emoji) => (
         <button
           key={emoji}
@@ -302,16 +302,16 @@ export function CommentPile({
     return (
       <div className="flex min-h-0 flex-1 flex-col gap-4">
         <div ref={titleRow} className="flex flex-col gap-3 px-5">
-          <h2 className="flex items-center gap-1.5 text-[18px] leading-[1.3] font-bold tracking-[-0.54px]">
+          <h2 className="flex items-center gap-2 text-[20px] leading-[1.4] font-bold tracking-[-0.54px]">
             {t.title} <span className="text-neutral-400">{t.count(count)}</span>
           </h2>
           {postTitle && (
-            // 한국어는 Paperlogy, 영어는 Gilroy(font-title-en, 한글과 크기 보정) — 메인 카드 제목과 같은 규칙
-            // 중국어·일본어는 Noto Sans SC·JP 800 (titleFont, 메인과 같은 규칙)
+            // 한국어는 Paperlogy, 영어는 Figtree(font-title-en, 한글과 크기 보정) — 메인 카드 제목과 같은 규칙
+            // 중국어 MiSans · 일본어 M PLUS 2 800 (titleFont, 메인과 같은 규칙)
             // 영어 행간은 한국어보다 0.15 좁게 (상세 제목과 같은 규칙)
             <p
               className={`${titleFont(lang)} text-[24px] ${
-                lang === "en" ? "leading-[1.25]" : "leading-[1.4]"
+                lang === "en" ? "leading-[1.2]" : "leading-[1.4]"
               } tracking-[-0.48px] break-keep text-neutral-400`}
             >
               {postTitle}
@@ -361,7 +361,7 @@ export function CommentPile({
         {emojiKeys}
 
         {/* 한마디 입력칸 + 보내기 (Figma 332:3284 — 한마디 전체 화면만. 상세 화면은 아래 기울어진 카드 그대로) */}
-        <form onSubmit={onSubmit} className="flex items-center gap-0.5 px-2">
+        <form onSubmit={onSubmit} className="flex items-center gap-1 px-2">
           <label
             ref={(el) => {
               card.current = el;
@@ -439,7 +439,7 @@ export function CommentPile({
         aria-label={t.section}
       >
         <div ref={titleRow} className="flex h-16 items-center gap-10 pl-5">
-          <h2 className="flex flex-1 items-center gap-1.5 text-[18px] leading-[1.3] font-bold tracking-[-0.54px]">
+          <h2 className="flex flex-1 items-center gap-2 text-[20px] leading-[1.4] font-bold tracking-[-0.54px]">
             {t.title} <span className="text-neutral-400">{t.count(commentCount + addedCount)}</span>
           </h2>
           {/* 상세 화면(DetailScreen)이 이 주소로 가는 링크 클릭을 감지해 돌아올 때의 전환·스크롤 위치를 씁니다.
@@ -473,7 +473,7 @@ export function CommentPile({
             className={ready && comments.length === 0 ? "h-[132px]" : "h-[286px]"}
           />
           {ready && comments.length === 0 && (
-            <p className="pointer-events-none absolute inset-0 flex items-center justify-center pb-6 text-center text-[15px] leading-[1.45] font-semibold whitespace-pre-line text-white/50">
+            <p className="pointer-events-none absolute inset-0 flex items-center justify-center pb-6 text-center text-[16px] leading-[1.5] font-semibold whitespace-pre-line text-white/50">
               {t.emptyPile}
             </p>
           )}
@@ -484,7 +484,7 @@ export function CommentPile({
             일자로 잘려 줄처럼 보였습니다. 위 그라데이션은 제목 줄 아래(칸 시작 72px)부터 */}
         <div
           // in-[[inert]]:hidden — 투표 전 잠금(어둡게 흐린) 상태에서는 위 그라데이션을 아예 끔 (흐린 칸 위에서 줄처럼 보여서, 지현 요청)
-          className={`pointer-events-none absolute inset-x-0 top-[72px] h-[80px] transition-opacity in-[[inert]]:hidden ${entering ? "opacity-100 duration-0" : fades.top ? "opacity-100 duration-300" : "opacity-0 duration-300"}`}
+          className={`pointer-events-none absolute inset-x-0 top-[72px] h-16 transition-opacity in-[[inert]]:hidden ${entering ? "opacity-100 duration-0" : fades.top ? "opacity-100 duration-300" : "opacity-0 duration-300"}`}
           style={{ background: scrim("to bottom", CARD_BG) }}
         />
         <div
@@ -501,7 +501,7 @@ export function CommentPile({
       <form onSubmit={onSubmit} className="relative h-[181px] w-[270px]">
         <label className="absolute inset-x-0 top-0 flex h-[152px] items-center justify-center">
           <span className="sr-only">{t.leaveLabel}</span>
-          <span ref={card} className="relative flex h-[130px] w-[260px] -rotate-[4.91deg] items-center justify-center rounded-[26px] bg-[#292929] px-6 py-[30px]">
+          <span ref={card} className="relative flex h-[130px] w-[260px] -rotate-[4.91deg] items-center justify-center rounded-[26px] bg-[#292929] px-6 py-8">
             <textarea
               value={draft}
               readOnly={writeLocked}
@@ -516,18 +516,19 @@ export function CommentPile({
               }}
               rows={2}
               placeholder={t.leaveCard}
-              className="w-full resize-none overflow-hidden bg-transparent text-center text-[20px] leading-[1.45] font-bold tracking-[-0.4px] text-on-dark outline-none placeholder:text-white/70"
+              className="w-full resize-none overflow-hidden bg-transparent text-center text-[20px] leading-[1.5] font-bold tracking-[-0.4px] text-on-dark outline-none placeholder:text-white/70"
             />
-            <span className="absolute right-4 bottom-[26px] text-[10px] font-bold text-white/70">
+            <span className="absolute right-4 bottom-[26px] text-[12px] font-bold text-white/70">
               {charCount(draft)}/{COMMENT_MAX}
             </span>
           </span>
         </label>
-        <span className="absolute top-[123px] left-[84px] flex h-[58px] w-[112px] items-center justify-center">
+        {/* 보내기 스티커 — 글자가 커져도 한 줄로 (가운데는 그대로 140px) */}
+        <span className="absolute top-[123px] left-[76px] flex h-14 w-[128px] items-center justify-center">
           <button
             type="submit"
             disabled={!draft.trim()}
-            className="flex rotate-[4.89deg] items-center gap-1.5 rounded-full bg-white px-3.5 py-2.5 text-[20px] leading-[1.45] font-bold tracking-[-0.4px] text-black"
+            className="flex rotate-[4.89deg] items-center gap-2 rounded-full bg-white px-4 py-3 text-[20px] leading-[1.5] font-bold tracking-[-0.4px] whitespace-nowrap text-black"
           >
             {/* eslint-disable-next-line @next/next/no-img-element -- 작은 SVG 아이콘 */}
             <img src="/images/icon-send.svg" width={22} height={22} alt="" />
@@ -614,7 +615,7 @@ function FlyingCircle({ flight, onArrive }: { flight: Flight; onArrive: (vy: num
     >
       <div ref={el} className="absolute top-0 left-0 flex items-center justify-center overflow-hidden text-center">
         {kind === "text" && (
-          <span ref={label} className="px-4 text-[20px] leading-[1.45] font-bold tracking-[-0.4px] whitespace-pre text-on-dark">
+          <span ref={label} className="px-4 text-[20px] leading-[1.5] font-bold tracking-[-0.4px] whitespace-pre text-on-dark">
             {text}
           </span>
         )}
@@ -691,7 +692,7 @@ function EmojiBurst({ burst, onDone }: { burst: Burst; onDone: () => void }) {
           ref={(el) => {
             refs.current[i] = el;
           }}
-          className="absolute top-0 left-0 text-[28px] leading-none opacity-0"
+          className="absolute top-0 left-0 text-[32px] leading-none opacity-0"
         >
           {burst.emoji}
         </span>

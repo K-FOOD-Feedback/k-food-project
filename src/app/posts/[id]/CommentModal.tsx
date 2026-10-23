@@ -564,7 +564,7 @@ export function CommentModal({
                       <div className="fixed inset-0 z-0" onClick={() => setMenuOpen(false)} aria-hidden />
                       <div
                         role="menu"
-                        className="absolute top-[calc(100%+8px)] right-0 z-10 min-w-[160px] origin-top-right overflow-hidden rounded-[24px] bg-surface p-1.5 shadow-[0_12px_32px_rgba(0,0,0,0.45)] transition-[opacity,scale] duration-150 ease-out starting:scale-95 starting:opacity-0"
+                        className="absolute top-[calc(100%+8px)] right-0 z-10 min-w-[160px] origin-top-right overflow-hidden rounded-[20px] bg-surface p-2 shadow-[0_12px_32px_rgba(0,0,0,0.45)] transition-[opacity,scale] duration-150 ease-out starting:scale-95 starting:opacity-0"
                       >
                         <button
                           type="button"
@@ -574,7 +574,7 @@ export function CommentModal({
                             setActiveId(null);
                             setReporting(comment);
                           }}
-                          className="flex h-12 w-full items-center gap-2.5 rounded-[18px] px-4 text-left text-[15px] font-semibold text-on-dark active:bg-white/10"
+                          className="flex h-12 w-full items-center gap-3 rounded-[20px] px-4 text-left text-[16px] font-semibold text-on-dark active:bg-white/10"
                         >
                           <ReportIcon />
                           {t.report}
@@ -590,15 +590,15 @@ export function CommentModal({
         </div>
 
         {/* 원글 카드 — 수정하면 이 카드가 화면 가운데로 날아가 뒤집힙니다 (EditCard). 그동안 제자리는 비워 둠 */}
-        <div data-keep-open className="mx-5 mt-4 h-[130px] shrink-0 transition-[opacity,scale] duration-250 ease-out starting:scale-95 starting:opacity-0">
+        <div data-keep-open className="mx-6 mt-4 h-[130px] shrink-0 transition-[opacity,scale] duration-250 ease-out starting:scale-95 starting:opacity-0">
           <div
             ref={rootCard}
-            className={`relative flex size-full flex-col items-center justify-center rounded-[32px] px-10 py-[30px] ${
+            className={`relative flex size-full flex-col items-center justify-center rounded-[32px] px-8 py-8 ${
               editTarget?.id === comment.id ? "invisible" : ""
             }`}
             style={{ background: comment.color }}
           >
-            <p className="text-center text-[22px] leading-[1.45] font-bold tracking-[-0.44px] whitespace-pre-line text-black">{lines}</p>
+            <p className="text-center text-[24px] leading-[1.5] font-bold tracking-[-0.44px] whitespace-pre-line text-black">{lines}</p>
             <Badges comment={comment} replies={replyCounts.get(comment.id) ?? 0} t={t} card />
             {comment.edited && <span className="absolute bottom-3 text-[12px] leading-none font-semibold text-black/50">{t.edited}</span>}
           </div>
@@ -607,7 +607,7 @@ export function CommentModal({
         {/* 답글 목록 */}
         <div className="relative min-h-0 flex-1">
           {replies.length === 0 ? (
-            <p className="absolute inset-0 flex items-center justify-center text-center text-[20px] leading-[1.45] font-extrabold tracking-[-0.4px] whitespace-pre-line text-white/70">
+            <p className="absolute inset-0 flex items-center justify-center text-center text-[20px] leading-[1.5] font-extrabold tracking-[-0.4px] whitespace-pre-line text-white/70">
               {t.emptyReplies}
             </p>
           ) : (
@@ -622,7 +622,7 @@ export function CommentModal({
                 touching.current = false;
                 scheduleSettle();
               }}
-              className={`relative flex h-full flex-col items-center gap-0.5 overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+              className={`relative flex h-full flex-col items-center gap-1 overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
                 overflowing
                   ? "[mask-image:linear-gradient(to_bottom,transparent,black_var(--fade-top,56px),black_calc(100%-56px),transparent)]"
                   : ""
@@ -666,25 +666,25 @@ export function CommentModal({
                       <div data-row className={`flex items-center ${!parent || hasBadge ? "pt-3" : ""}`}>
                         <p
                           data-bubble
-                          className={`relative flex items-center gap-2 ${editTarget?.id === r.id ? "invisible" : ""} rounded-[32px] py-4 pr-6 pl-2.5 text-center text-[20px] leading-[1.45] font-bold tracking-[-0.4px] whitespace-pre-line ${
+                          className={`relative flex items-center gap-2 ${editTarget?.id === r.id ? "invisible" : ""} rounded-[32px] py-4 pr-6 pl-3 text-center text-[20px] leading-[1.5] font-bold tracking-[-0.4px] whitespace-pre-line ${
                             isHidden ? "text-black/55" : "text-black"
                           }`}
                           style={{ background: isHidden ? HIDDEN_COLOR : r.color }}
                         >
                           <span
-                            className={`flex size-9 shrink-0 items-center justify-center rounded-full bg-white text-[20px] leading-none ${isHidden ? "opacity-50 grayscale" : ""}`}
+                            className={`flex size-10 shrink-0 items-center justify-center rounded-full bg-white text-[20px] leading-none ${isHidden ? "opacity-60 grayscale" : ""}`}
                             aria-hidden
                           >
                             {r.author.kind === "korean" ? "🇰🇷" : r.author.flag}
                           </span>
                           {splitLines(r.text.replace(/\n/g, " ")).join("\n")}
-                          {r.edited && !isHidden && <span className="self-end pb-1 text-[11px] leading-none font-semibold text-black/45">{t.edited}</span>}
+                          {r.edited && !isHidden && <span className="self-end pb-1 text-[12px] leading-none font-semibold text-black/45">{t.edited}</span>}
                           <Badges comment={r} replies={replyCounts.get(r.id) ?? 0} t={t} />
                         </p>
                         {/* 가운데 답글을 누르면 오른쪽에 펼쳐지는 버튼 (펼치는 동안 말풍선이 왼쪽으로 비켜남) */}
                         <div
                           className={`flex gap-1 overflow-hidden transition-[width,opacity,padding] duration-250 ease-out ${
-                            active ? `pl-2.5 opacity-100 ${r.mine ? "w-[110px]" : "w-[58px]"}` : "w-0 pl-0 opacity-0"
+                            active ? `pl-3 opacity-100 ${r.mine ? "w-[110px]" : "w-14"}` : "w-0 pl-0 opacity-0"
                           }`}
                           onClick={(e) => e.stopPropagation()}
                           aria-hidden={!active}
@@ -729,18 +729,18 @@ export function CommentModal({
         </div>
 
         {/* 답글 입력 */}
-        <form onSubmit={sendReply} className="flex shrink-0 items-end gap-0.5 px-2 pb-[calc(24px+env(safe-area-inset-bottom))]">
+        <form onSubmit={sendReply} className="flex shrink-0 items-end gap-1 px-2 pb-[calc(24px+env(safe-area-inset-bottom))]">
           <div className={`flex min-w-0 flex-1 flex-col bg-surface-2 font-semibold ${banner ? "rounded-[32px]" : "rounded-full"}`}>
             {/* 답글에 답글을 달 때: 입력칸 위에 그 답글 (메시지 답장처럼) */}
             {banner && (
-              <div className="flex animate-toast-in items-center gap-2 pt-3.5 pr-3 pl-5 text-[16px] text-white/60">
+              <div className="flex animate-toast-in items-center gap-2 pt-4 pr-3 pl-5 text-[16px] text-white/60">
                 <ReplyArrowIcon size={20} />
                 <span className="min-w-0 flex-1 truncate font-bold text-white">{banner.text.replace(/\n/g, " ")}</span>
                 <button
                   type="button"
                   onClick={() => setTarget(null)}
                   aria-label={t.cancelReplyTo}
-                  className="flex size-7 shrink-0 items-center justify-center rounded-full text-white/60"
+                  className="flex size-8 shrink-0 items-center justify-center rounded-full text-white/60"
                 >
                   <Icon name="x" size={16} />
                 </button>
@@ -1041,13 +1041,13 @@ function EditCard({
             style={{ background: comment.color }}
             aria-hidden
           >
-            <p className="text-center text-[22px] leading-[1.45] font-bold tracking-[-0.44px] whitespace-pre-line text-black">
+            <p className="text-center text-[24px] leading-[1.5] font-bold tracking-[-0.44px] whitespace-pre-line text-black">
               {splitLines(front.text.replace(/\n/g, " ")).join("\n")}
             </p>
             {front.edited && <span className="absolute bottom-3 text-[12px] leading-none font-semibold text-black/50">{t.edited}</span>}
           </div>
           {/* 뒷면: 수정 칸 */}
-          <div className="absolute inset-0 flex rotate-y-180 items-center justify-center rounded-[32px] bg-surface-2 px-10 shadow-[0_4px_15px_rgba(0,0,0,0.25)] backface-hidden">
+          <div className="absolute inset-0 flex rotate-y-180 items-center justify-center rounded-[32px] bg-surface-2 px-8 shadow-[0_4px_15px_rgba(0,0,0,0.25)] backface-hidden">
             <label className="w-full">
               <span className="sr-only">{t.editLabel}</span>
               <textarea
@@ -1063,7 +1063,7 @@ function EditCard({
                 }}
                 rows={1}
                 // 글 길이만큼만 높아져서(최대 2줄) 카드 가운데에 옵니다.
-                className="block max-h-[64px] w-full resize-none overflow-hidden bg-transparent text-center [field-sizing:content] text-[22px] leading-[1.45] font-bold tracking-[-0.44px] text-on-dark outline-none"
+                className="block max-h-[64px] w-full resize-none overflow-hidden bg-transparent text-center [field-sizing:content] text-[24px] leading-[1.5] font-bold tracking-[-0.44px] text-on-dark outline-none"
               />
             </label>
             <span className="absolute right-5 bottom-3 text-[12px] text-white/40">
@@ -1090,7 +1090,7 @@ function Badges({ comment, replies, t, card = false }: { comment: Comment; repli
     <span className={`absolute flex gap-1 ${card ? "top-3 left-1/2 -translate-x-1/2" : "-top-2.5 left-6"}`}>
       {who && <span className={BADGE}>{who}</span>}
       {replies > 0 && (
-        <span className={`${BADGE} gap-0.5 pl-1.5`} aria-label={t.replyCount(replies)}>
+        <span className={`${BADGE} gap-1 pl-2`} aria-label={t.replyCount(replies)}>
           <ReplyArrowIcon size={12} />
           {replies}
         </span>
@@ -1099,7 +1099,7 @@ function Badges({ comment, replies, t, card = false }: { comment: Comment; repli
   );
 }
 
-const BADGE = "flex h-[22px] items-center rounded-full bg-black px-2 text-[12px] leading-none font-bold tracking-[-0.24px] whitespace-nowrap text-white";
+const BADGE = "flex h-6 items-center rounded-full bg-black px-2 text-[12px] leading-none font-bold tracking-[-0.24px] whitespace-nowrap text-white";
 
 /**
   답글 신고 확인 모달 — 답글 레이어 위에 한 겹 더 뜹니다.
@@ -1136,13 +1136,13 @@ function ReportDialog({
           e.preventDefault();
           if (ok) onSubmit(reason.trim());
         }}
-        className="relative flex w-full flex-col gap-5 rounded-[32px] bg-surface p-6 break-keep text-on-dark shadow-[0_12px_40px_rgba(0,0,0,0.5)] transition-[opacity,scale] duration-250 ease-out starting:scale-95 starting:opacity-0"
+        className="relative flex w-full flex-col gap-6 rounded-[32px] bg-surface p-6 break-keep text-on-dark shadow-[0_12px_40px_rgba(0,0,0,0.5)] transition-[opacity,scale] duration-250 ease-out starting:scale-95 starting:opacity-0"
       >
         <div className="flex flex-col gap-2">
-          <h2 id="report-title" className="font-display text-[22px] leading-[1.25]">
+          <h2 id="report-title" className="font-display text-[24px] leading-[1.2]">
             {isRoot ? t.reportCommentTitle : t.reportTitle}
           </h2>
-          <p className="truncate text-[15px] leading-[1.5] text-white/60">“{reply.text.replace(/\n/g, " ")}”</p>
+          <p className="truncate text-[16px] leading-[1.5] text-white/60">“{reply.text.replace(/\n/g, " ")}”</p>
         </div>
         <label className="flex flex-col gap-2">
           <span className="text-[14px] font-semibold">{t.reportAsk}</span>
@@ -1153,14 +1153,14 @@ function ReportDialog({
             onCompositionEnd={(e) => setReason(clampText(e.currentTarget.value, REPORT_MAX))}
             rows={3}
             placeholder={t.reportPlaceholder}
-            className="resize-none rounded-[20px] bg-surface-2 px-4 py-3 text-[15px] leading-[1.5] outline-none placeholder:text-white/40"
+            className="resize-none rounded-[20px] bg-surface-2 px-4 py-3 text-[16px] leading-[1.5] outline-none placeholder:text-white/40"
           />
           <span className="self-end text-[12px] text-white/40">
             {textLength(reason)}/{REPORT_MAX}
           </span>
         </label>
         <p className="flex items-start gap-2 text-[14px] leading-[1.5] text-white/70">
-          <Icon name="info" size={18} className="mt-0.5 shrink-0" />
+          <Icon name="info" size={20} className="mt-1 shrink-0" />
           {isRoot ? t.reportCommentNote : t.reportNote}
         </p>
         <div className="flex gap-1">
@@ -1208,12 +1208,12 @@ function ConfirmDialog({
         onClick={onNo}
         aria-hidden
       />
-      <div className="relative flex w-full flex-col gap-5 rounded-[32px] bg-surface p-6 break-keep text-on-dark shadow-[0_12px_40px_rgba(0,0,0,0.5)] transition-[opacity,scale] duration-250 ease-out starting:scale-95 starting:opacity-0">
+      <div className="relative flex w-full flex-col gap-6 rounded-[32px] bg-surface p-6 break-keep text-on-dark shadow-[0_12px_40px_rgba(0,0,0,0.5)] transition-[opacity,scale] duration-250 ease-out starting:scale-95 starting:opacity-0">
         <div className="flex flex-col gap-2">
-          <h2 id="confirm-title" className="font-display text-[22px] leading-[1.25]">
+          <h2 id="confirm-title" className="font-display text-[24px] leading-[1.2]">
             {title}
           </h2>
-          <p className="truncate text-[15px] leading-[1.5] text-white/60">“{quote.replace(/\n/g, " ")}”</p>
+          <p className="truncate text-[16px] leading-[1.5] text-white/60">“{quote.replace(/\n/g, " ")}”</p>
         </div>
         <div ref={noButton} className="flex gap-1">
           <PillButton tone="soft" onClick={onNo}>

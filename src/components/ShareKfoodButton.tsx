@@ -101,17 +101,17 @@ export function ShareKfoodButton({
       {/* 쓰다 만 글이 있으면 이어 쓸지 */}
       <BottomSheet open={sheet === "resume"} onClose={() => setSheet(null)} label={w.resumeLabel}>
         <div className="flex w-full flex-col gap-2 px-6 pt-2">
-          <h2 className="font-display text-[22px] leading-[1.25]">{w.resumeTitle}</h2>
-          <p className="text-[15px] leading-[1.5] text-muted">{w.resumeBody}</p>
+          <h2 className="font-display text-[24px] leading-[1.2]">{w.resumeTitle}</h2>
+          <p className="text-[16px] leading-[1.5] text-muted">{w.resumeBody}</p>
         </div>
         {hasDraft && draft.savedStep && (
-          <div className="flex w-full items-center gap-3.5 rounded-[24px] bg-surface-2 p-3">
+          <div className="flex w-full items-center gap-4 rounded-[20px] bg-surface-2 p-3">
             <span className="relative size-14 shrink-0 overflow-hidden rounded-[16px] bg-surface">
               {coverOf(draft) && <PhotoImage src={coverOf(draft).src} sizes="56px" className="object-cover" />}
             </span>
-            <span className="flex min-w-0 flex-col gap-0.5">
-              <span className="truncate text-[15px] font-semibold">{draft.title || draft.dish || w.untitled}</span>
-              <span className="text-[13px] text-muted">
+            <span className="flex min-w-0 flex-col gap-1">
+              <span className="truncate text-[16px] font-semibold">{draft.title || draft.dish || w.untitled}</span>
+              <span className="text-[14px] text-muted">
                 {w.savedAt(STEP_LABEL[draft.savedStep], draft.photos.length)}
               </span>
             </span>

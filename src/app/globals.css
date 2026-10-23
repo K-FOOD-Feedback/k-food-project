@@ -34,15 +34,22 @@
   --color-kakao: #fee500; /* 카카오 브랜드 가이드 색 (토큰 외) */
 
   /*
-    글꼴. Gilroy는 유료라 저장소에 넣지 않았습니다.
-    기기에 Gilroy가 설치돼 있으면 Gilroy로, 없으면 비슷한 Figtree로 보입니다.
+    글꼴 (디자인 정리 도구 · 토큰 관리 기준) — 한국어 Pretendard · Paperlogy / 영어 Inter · Figtree /
+    일본어 M PLUS 2 / 중국어 간체 MiSans · 번체 LINE Seed TW. 영어 · 중국어 · 일본어 본문은 html lang 으로 (아래 html:lang)
   */
   --font-sans: "Pretendard Variable", Pretendard, -apple-system,
     BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", system-ui,
     sans-serif;
-  /* 영문 글자에는 Gilroy/Figtree, 한글에는 Paperlogy가 쓰입니다 (영문 폰트에 한글이 없어서 다음 폰트로 넘어감) */
-  --font-gilroy: "Gilroy", var(--font-figtree), var(--font-paperlogy), "Pretendard Variable",
+  /* 영어 제목 — 영문 글자에는 Figtree, 한글에는 Paperlogy가 쓰입니다 (영문 폰트에 한글이 없어서 다음 폰트로 넘어감) */
+  --font-en-title: var(--font-figtree), var(--font-paperlogy), "Pretendard Variable",
     Pretendard, system-ui, sans-serif;
+  /* 송희 ShareCard(이미지 저장)가 쓰는 예전 이름 — 같은 영어 제목 글꼴 */
+  --font-gilroy: var(--font-en-title);
+  /* 중국어 — 간체 MiSans (layout.tsx 에서 jsDelivr 로 불러옴, 가변 150~700 + Heavy) · 번체 LINE Seed TW (아직 번체 화면이 없어 기기에 있을 때만) */
+  --font-zh-hans: "MiSans VF", MiSans, "Pretendard Variable", Pretendard, system-ui, sans-serif;
+  /* 중국어 제목(800) — 가변 글꼴은 700까지라 Heavy(MiSans 900)를 앞에 */
+  --font-zh-hans-title: MiSans, var(--font-zh-hans);
+  --font-zh-hant: "LINE Seed TW", "LINE Seed TW_OTF", var(--font-zh-hans);
 
   /* 진입 애니메이션 (지연은 [animation-delay:…]로 지정) */
   --animate-rise: rise 560ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
@@ -395,23 +402,23 @@
   }
 }
 
-/* 영문 제목용 Gilroy ExtraBold (굵기까지 같이 지정해야 Light가 잡히지 않음) */
+/* 영문 제목용 Figtree ExtraBold (굵기까지 같이 지정해야 Light가 잡히지 않음) */
 @utility font-display {
-  font-family: var(--font-gilroy);
+  font-family: var(--font-en-title);
   font-weight: 800;
 }
 
 /*
   한국어 Paperlogy 자리에 들어가는 영어 제목 — 같은 글자 크기·행간 클래스를 그대로 쓰면서 한글과 크기가 맞아 보이게 보정
   (상세 제목·투표 카드·메인 카드 제목 등: 한국어면 font-(family-name:--font-paperlogy), 영어면 font-title-en)
-  Gilroy 대문자 높이는 글자 크기의 0.70배라, 같은 크기의 한글(0.85배)보다 작아 보이고 줄 사이가 넓어 보입니다.
-  Paperlogy가 한글 옆에 쓰는 영문 대문자 높이(0.78배)에 맞춰 Gilroy를 키웁니다 (약 1.11배).
-  글자 크기 값 자체는 그대로라 줄 간격(px)은 한국어와 같습니다. 이 기능을 모르는 브라우저는 보정 없이 Gilroy.
+  Figtree 대문자 높이는 글자 크기의 0.70배라, 같은 크기의 한글(0.85배)보다 작아 보이고 줄 사이가 넓어 보입니다.
+  Paperlogy가 한글 옆에 쓰는 영문 대문자 높이(0.78배)에 맞춰 Figtree를 키웁니다 (약 1.11배).
+  글자 크기 값 자체는 그대로라 줄 간격(px)은 한국어와 같습니다. 이 기능을 모르는 브라우저는 보정 없이 Figtree.
   행간: 영어는 소문자가 낮아 같은 행간이면 줄 사이가 비어 보이므로, 각 자리에서 한국어 행간보다 0.15 좁게 씁니다
   (예: 한국어 leading-[1.2] → 영어 leading-[1.05], 1.3 → 1.15, 1.4 → 1.25).
 */
 @utility font-title-en {
-  font-family: var(--font-gilroy);
+  font-family: var(--font-en-title);
   font-weight: 800;
   font-size-adjust: cap-height 0.78;
 }
@@ -447,6 +454,24 @@ body {
 
 body {
   font-family: var(--font-sans);
+}
+/*
+  화면 언어별 본문 글꼴 — 화면이 useDocLang(언어)로 html lang 을 정함 (정하지 않은 화면은 한국어 그대로)
+  영문 · 숫자는 각 글꼴에 있는 것으로, 없는 글자(한글 등)는 Pretendard로 넘어감
+*/
+html:lang(en) body {
+  font-family: var(--font-inter), var(--font-sans);
+}
+html:lang(ja) body {
+  font-family: var(--font-mplus2), var(--font-sans);
+}
+html:lang(zh-Hans) body {
+  font-family: var(--font-zh-hans), var(--font-sans);
+}
+html:lang(zh-Hant) body {
+  font-family: var(--font-zh-hant), var(--font-sans);
+}
+body {
   /* Figma 전 텍스트 자간 -2% */
   letter-spacing: -0.02em;
   /* 모바일에서 가로 스크롤이 생기지 않도록 합니다. */

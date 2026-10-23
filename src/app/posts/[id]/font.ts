@@ -1,4 +1,4 @@
-import { Noto_Sans_JP, Noto_Sans_SC } from "next/font/google";
+import { M_PLUS_2 } from "next/font/google";
 import localFont from "next/font/local";
 import type { UiLang } from "./viewerLang";
 
@@ -11,19 +11,19 @@ export const paperlogy = localFont({
 });
 
 /*
-  중국어·일본어 제목 글꼴 — Paperlogy·Gilroy에는 한자·가나가 없어서, 같은 굵기(800)의 깔끔한 고딕을 Google Fonts에서
-  - preload: false → 미리 받지 않고, 중·일 글자가 화면에 나올 때만 받음
-  - 글자 범위별로 잘게 나뉜 파일이라, 화면에 실제로 나온 글자가 든 조각만 받음 (전체 수 MB를 한 번에 받지 않음)
+  일본어 글꼴 — M PLUS 2 (SIL OFL, Google Fonts) · 제목 · 본문 같은 글꼴, 굵기는 한 파일(가변)
+  - preload: false → 미리 받지 않고, 일본어 글자가 화면에 나올 때만 받음 (글자 범위별로 잘게 나뉜 파일)
+  중국어 글꼴 — 간체 MiSans (Xiaomi, 상업용 무료) · 번체 LINE Seed TW (아직 번체 화면이 없어서 기기에 있을 때만)
+  - MiSans 는 layout.tsx 에서 jsDelivr 로 불러옴 (Pretendard 처럼, 글자 범위별 조각만 받음) — 이름은 globals.css --font-zh-hans
 */
-export const notoSansSC = Noto_Sans_SC({ weight: "800", preload: false, display: "swap" });
-export const notoSansJP = Noto_Sans_JP({ weight: "800", preload: false, display: "swap" });
+export const mPlus2 = M_PLUS_2({ subsets: ["latin"], preload: false, display: "swap", variable: "--font-mplus2" });
 
-/** Paperlogy 자리의 글꼴 — 영어 Gilroy(font-title-en, 한글과 크기가 맞게 보정) · 한국어 Paperlogy · 중국어 Noto Sans SC · 일본어 Noto Sans JP (모두 800) */
+/** 제목 글꼴 — 영어 Figtree(font-title-en, 한글과 크기가 맞게 보정) · 한국어 Paperlogy · 중국어 MiSans · 일본어 M PLUS 2 (모두 800) */
 export const titleFont = (lang: UiLang) =>
   lang === "en"
     ? "font-title-en"
     : lang === "zh"
-      ? `${notoSansSC.className} font-extrabold`
+      ? "font-(family-name:--font-zh-hans-title) font-extrabold"
       : lang === "ja"
-        ? `${notoSansJP.className} font-extrabold`
+        ? `${mPlus2.className} font-extrabold`
         : "font-(family-name:--font-paperlogy)";

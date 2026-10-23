@@ -62,22 +62,22 @@ export function FeedCard({
 }) {
   return (
     <div
-      className={`flex w-full flex-col items-center gap-4 rounded-[32px] px-6 pt-6 pb-7 text-on-light ${color}`}
+      className={`flex w-full flex-col items-center gap-4 rounded-[32px] px-6 pt-6 pb-8 text-on-light ${color}`}
       style={scale !== 1 ? { zoom: scale } : undefined}
     >
       <BlobPhoto src={photo} size={242} priority={priority} />
       <div className="flex w-full flex-col items-start gap-3">
-        <p className="font-display text-[26px] leading-[1.1] text-on-light [text-wrap:balance]">{title}</p>
+        <p className="font-display text-[24px] leading-[1.2] text-on-light [text-wrap:balance]">{title}</p>
         <div className="flex items-center gap-2">
           <span className="size-6 rounded-full bg-lilac ring-2 ring-white/60" aria-hidden="true" />
-          <span className="text-[14px] font-bold leading-[1.3]">{author}</span>
+          <span className="text-[14px] font-bold leading-[1.4]">{author}</span>
         </div>
         <div className="flex flex-wrap gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-background px-3 py-1.5 text-[13px] font-bold leading-[1.3] text-on-dark">
-            <Icon name="heart" size={14} />
+          <span className="inline-flex items-center gap-2 rounded-full bg-background px-3 py-2 text-[14px] font-bold leading-[1.4] text-on-dark">
+            <Icon name="heart" size={16} />
             {votesLabel}
           </span>
-          <span className="inline-flex items-center rounded-full bg-white px-3 py-1.5 text-[13px] font-bold leading-[1.3] text-on-light">
+          <span className="inline-flex items-center rounded-full bg-white px-3 py-2 text-[14px] font-bold leading-[1.4] text-on-light">
             {questionLabel}
           </span>
         </div>

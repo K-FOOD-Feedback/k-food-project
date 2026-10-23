@@ -37,10 +37,10 @@ export function PolicyPlaceholder({ doc }: { doc: keyof typeof POLICY }) {
     <Screen className="pb-16">
       <TopBar left={<IconButton icon="x" label={`닫기 · ${CLOSE[fl]}`} onClick={close} />} />
       <div className="px-6 pt-4">
-        <h1 className="font-display text-[28px] leading-[1.15]">{ko}</h1>
-        <p className="mt-1 text-[15px] text-muted">{other}</p>
+        <h1 className="font-display text-[32px] leading-[1.2]">{ko}</h1>
+        <p className="mt-1 text-[16px] text-muted">{other}</p>
         {/* 중·일은 띄어쓰기가 없어 break-keep을 걸면 한 줄로 넘침 → 한국어 줄에만 */}
-        <p className="mt-8 text-[15px] leading-[1.6] text-muted">
+        <p className="mt-8 text-[16px] leading-[1.5] text-muted">
           <span className="break-keep">정식 내용은 서비스를 시작하기 전에 올라와요.</span>
           <br />
           {SOON[fl]}

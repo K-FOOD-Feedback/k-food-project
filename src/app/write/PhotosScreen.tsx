@@ -75,13 +75,13 @@ export function PhotosScreen({ backHref = "/home?lang=en" }: { backHref?: string
               </div>
               {/* 대표 사진이 음식이 아니면 크게도 알려 줌 */}
               {cover.check === "not_food" && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70 text-white">
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/80 text-white">
                   <Icon name="alert" size={32} />
-                  <span className="text-[15px] font-bold">{w.notFood}</span>
+                  <span className="text-[16px] font-bold">{w.notFood}</span>
                 </div>
               )}
               <Chip className="absolute left-4 top-4">
-                <Icon name="check" size={14} strokeWidth={2.5} />
+                <Icon name="check" size={16} strokeWidth={2.5} />
                 {w.cover}
               </Chip>
             </div>
@@ -92,10 +92,10 @@ export function PhotosScreen({ backHref = "/home?lang=en" }: { backHref?: string
               className="flex aspect-square w-full flex-col items-center justify-center gap-3 rounded-[32px] border-[1.5px] border-dashed border-on-dark/40 bg-surface text-muted transition active:scale-[0.99]"
             >
               <span className="flex size-16 animate-float items-center justify-center rounded-full bg-primary text-on-light">
-                <Icon name="plus" size={28} />
+                <Icon name="plus" size={32} />
               </span>
-              <span className="text-[15px] font-semibold">{w.addPhotos}</span>
-              <span className="text-[13px]">{w.upTo(MAX_PHOTOS)}</span>
+              <span className="text-[16px] font-semibold">{w.addPhotos}</span>
+              <span className="text-[14px]">{w.upTo(MAX_PHOTOS)}</span>
             </button>
           )}
 
@@ -110,7 +110,7 @@ export function PhotosScreen({ backHref = "/home?lang=en" }: { backHref?: string
                   labels={w.grid}
                 />
               </div>
-              <p className="px-5 pt-1 pb-5 text-[13px] leading-[1.4] text-muted">
+              <p className="px-5 pt-1 pb-5 text-[14px] leading-[1.4] text-muted">
                 {w.photosHint(draft.photos.length, MAX_PHOTOS)}
               </p>
             </Tile>

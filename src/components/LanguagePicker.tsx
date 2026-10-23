@@ -69,7 +69,7 @@ const PICKER_COPY: Record<PickLang, { change: string; close: string; recommended
 const OPTIONS: Option[] = [
   { id: "ko", flag: "🇰🇷", ko: "한국어", en: "Korean", href: "/home" },
   { id: "en", flag: "🇺🇸", ko: "영어", en: "English", href: "/home?lang=en" },
-  { id: "zh", flag: "🇨🇳", ko: "중국어", en: "Chinese" },
+  { id: "zh", flag: "🇨🇳", ko: "중국어 간체", en: "Simplified Chinese" },
   { id: "ja", flag: "🇯🇵", ko: "일본어", en: "Japanese" },
 ];
 
@@ -191,7 +191,7 @@ function LanguagePicker({
         />
 
         {/* 언어 목록 + 자동 번역을 한 덩어리로 묶어 화면 가운데에 */}
-        <div className="absolute top-1/2 left-1/2 flex w-[230px] -translate-x-1/2 -translate-y-1/2 flex-col gap-10">
+        <div className="absolute top-1/2 left-1/2 flex w-[310px] max-w-[calc(100%-32px)] -translate-x-1/2 -translate-y-1/2 flex-col gap-10">
           <ul className="flex flex-col gap-2">
             {OPTIONS.map((o, i) => {
               const selected = o.id === lang;
@@ -205,23 +205,23 @@ function LanguagePicker({
                     type="button"
                     onClick={() => choose(o)}
                     aria-pressed={selected}
-                    className={`flex w-full items-center gap-4 rounded-[32px] py-2.5 pr-5 pl-2.5 text-left transition-transform active:scale-[0.97] ${
+                    className={`flex w-full items-center gap-4 rounded-[32px] py-3 pr-5 pl-3 text-left transition-transform active:scale-[0.97] ${
                       selected ? "bg-secondary text-background" : "bg-surface-2 text-white"
                     }`}
                   >
                     <span
-                      className={`flex size-[54px] shrink-0 items-center justify-center rounded-full text-[32px] leading-none ${
+                      className={`flex size-14 shrink-0 items-center justify-center rounded-full text-[32px] leading-none ${
                         selected ? "bg-white" : "bg-background"
                       }`}
                       aria-hidden
                     >
                       {o.flag}
                     </span>
-                    <span className="flex min-w-0 flex-col gap-0.5">
-                      <span className="font-(family-name:--font-paperlogy) text-[18px] leading-[1.3] tracking-[-0.36px]">
+                    <span className="flex min-w-0 flex-col gap-1">
+                      <span className="font-(family-name:--font-paperlogy) text-[20px] leading-[1.4] tracking-[-0.36px]">
                         {o.ko}
                       </span>
-                      <span className="font-display text-[22px] leading-[1.3] tracking-[-0.44px]">{o.en}</span>
+                      <span className="font-display text-[24px] leading-[1.4] tracking-[-0.44px] whitespace-nowrap">{o.en}</span>
                     </span>
                   </button>
                 </li>
@@ -242,20 +242,20 @@ function LanguagePicker({
               className="relative flex w-full items-center gap-3 rounded-[32px] bg-surface-2 py-3 pr-3 pl-5 text-left text-white transition-transform active:scale-[0.97]"
             >
               {/* 켜 두기를 권하는 표시 — 칸 위쪽 테두리에 걸쳐 붙임 */}
-              <span className="absolute -top-2.5 left-5 rounded-full bg-secondary px-2.5 py-1 text-[11px] leading-none font-bold text-background">
+              <span className="absolute -top-2.5 left-5 rounded-full bg-secondary px-3 py-1 text-[12px] leading-none font-bold text-background">
                 {t.recommended}
               </span>
-              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className="font-(family-name:--font-paperlogy) text-[16px] leading-[1.3] tracking-[-0.32px]">자동 번역</span>
-                <span className="font-display text-[18px] leading-[1.3] tracking-[-0.36px]">Auto-translate</span>
+              <span className="flex min-w-0 flex-1 flex-col gap-1">
+                <span className="font-(family-name:--font-paperlogy) text-[16px] leading-[1.4] tracking-[-0.32px]">자동 번역</span>
+                <span className="font-display text-[20px] leading-[1.4] tracking-[-0.36px] whitespace-nowrap">Auto-translate</span>
               </span>
               {/* 스위치 */}
               <span
                 aria-hidden
-                className={`relative h-8 w-[52px] shrink-0 rounded-full transition-colors duration-200 ${autoTranslate ? "bg-secondary" : "bg-background"}`}
+                className={`relative h-8 w-14 shrink-0 rounded-full transition-colors duration-200 ${autoTranslate ? "bg-secondary" : "bg-background"}`}
               >
                 <span
-                  className={`absolute top-[3px] left-[3px] size-[26px] rounded-full bg-white shadow-[0_2px_6px_rgba(0,0,0,0.25)] transition-transform duration-200 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
+                  className={`absolute top-[3px] left-[3px] size-6 rounded-full bg-white shadow-[0_2px_6px_rgba(0,0,0,0.25)] transition-transform duration-200 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
                     autoTranslate ? "translate-x-5" : ""
                   }`}
                 />
@@ -270,7 +270,7 @@ function LanguagePicker({
         {/* 중국어·일본어를 누르면 잠깐 알려 줌 */}
         <p
           role="status"
-          className={`absolute bottom-[calc(40px+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 rounded-full bg-surface-2 px-4 py-2.5 text-[14px] font-semibold whitespace-nowrap text-white transition-opacity duration-200 ${
+          className={`absolute bottom-[calc(40px+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 rounded-full bg-surface-2 px-4 py-3 text-[14px] font-semibold whitespace-nowrap text-white transition-opacity duration-200 ${
             soon ? "opacity-100" : "pointer-events-none opacity-0"
           }`}
         >

@@ -30,8 +30,8 @@ export function WriteExit({ step, exitHref = "/home?lang=en" }: { step: DraftSte
       />
       <BottomSheet open={open} onClose={() => setOpen(false)} label={w.leaveLabel}>
         <div className="flex w-full flex-col gap-2 px-6 pt-2">
-          <h2 className="font-display text-[22px] leading-[1.25]">{w.leaveTitle}</h2>
-          <p className="text-[15px] leading-[1.5] text-muted">{w.leaveBody}</p>
+          <h2 className="font-display text-[24px] leading-[1.2]">{w.leaveTitle}</h2>
+          <p className="text-[16px] leading-[1.5] text-muted">{w.leaveBody}</p>
         </div>
         <div className="flex w-full flex-col gap-1">
           <PillButton
@@ -59,7 +59,7 @@ export function WriteExit({ step, exitHref = "/home?lang=en" }: { step: DraftSte
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="h-12 text-[15px] font-semibold text-neutral-400"
+            className="h-12 text-[16px] font-semibold text-neutral-400"
           >
             {w.keepWriting}
           </button>

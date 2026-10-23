@@ -55,12 +55,12 @@ export function ArrowCta({
 }) {
   return (
     <Clickable
-      className={`flex w-full items-center gap-3 overflow-hidden rounded-full bg-primary py-1 pl-7 pr-1 text-left text-on-light transition active:scale-[0.98] disabled:cursor-not-allowed [&:disabled:not(.animate-pulse)]:opacity-40 ${className}`}
+      className={`flex w-full items-center gap-3 overflow-hidden rounded-full bg-primary py-1 pl-8 pr-1 text-left text-on-light transition active:scale-[0.98] disabled:cursor-not-allowed [&:disabled:not(.animate-pulse)]:opacity-40 ${className}`}
       {...props}
     >
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5 leading-[1.3]">
-        {caption && <span className="truncate text-[13px] font-medium opacity-70">{caption}</span>}
-        <span className="text-[18px] font-bold">{title}</span>
+      <span className="flex min-w-0 flex-1 flex-col gap-1 leading-[1.4]">
+        {caption && <span className="truncate text-[14px] font-medium opacity-60">{caption}</span>}
+        <span className="text-[20px] font-bold">{title}</span>
       </span>
       <span
         className={`flex shrink-0 items-center justify-center rounded-full bg-background text-on-dark ${compact ? "size-14" : "size-16"}`}
@@ -83,7 +83,7 @@ const PILL_TONES = {
 /** 크기 — lg: 화면 아래 CTA(h64, 칸을 채움) · md: 화면 중간의 작은 버튼(h48, 글자만큼) */
 const PILL_SIZES = {
   lg: "h-16 min-w-0 flex-1 text-[16px]",
-  md: "h-12 flex-none px-6 text-[15px]",
+  md: "h-12 flex-none px-6 text-[16px]",
 } as const;
 
 /** 일반 CTA — SemiBold. 저장·확인·이동처럼 그 자리에서 끝나는 행동 */
@@ -117,7 +117,7 @@ export function BrandButton({
 }: Clickable & { tone: "primary" | "secondary"; children: ReactNode }) {
   return (
     <Clickable
-      className={`flex h-[72px] w-full items-center justify-center rounded-full px-6 font-display text-[20px] leading-none text-on-dark transition active:scale-[0.99] ${
+      className={`flex h-16 w-full items-center justify-center rounded-full px-6 font-display text-[20px] leading-none text-on-dark transition active:scale-[0.99] ${
         tone === "primary" ? "bg-primary" : "bg-secondary"
       }`}
       {...props}

@@ -233,17 +233,17 @@ export function ProfileHeader({
   onOpen: () => void;
 }) {
   return (
-    <div className="flex flex-col gap-1.5 px-6 pt-2 pb-6">
+    <div className="flex flex-col gap-2 px-6 pt-2 pb-6">
       <button
         type="button"
         onClick={onOpen}
         aria-label={`${COPY[ui].edit}: ${nickname}`}
-        className="flex min-h-[35px] items-center gap-1 self-start text-left transition active:scale-[0.98]"
+        className="flex min-h-8 items-center gap-1 self-start text-left transition active:scale-[0.98]"
       >
-        <span className="font-display text-[32px] leading-[1.1] break-keep">{nickname}</span>
+        <span className="font-display text-[32px] leading-[1.2] break-keep">{nickname}</span>
         {nickname && <Icon name="chevron-right" size={24} className="shrink-0 text-muted" />}
       </button>
-      {line && <p className="text-[15px] text-muted">{line}</p>}
+      {line && <p className="text-[16px] text-muted">{line}</p>}
     </div>
   );
 }
@@ -323,7 +323,7 @@ export function NicknameSlot({
   }, [reel]);
 
   return (
-    <div className="flex h-[72px] items-center gap-2 rounded-[24px] bg-surface-2 pl-5 pr-3">
+    <div className="flex h-16 items-center gap-2 rounded-[20px] bg-surface-2 pl-5 pr-3">
       <div className="relative min-w-0 flex-1 overflow-hidden" style={{ height: REEL_H }}>
         <div ref={reelRef} className="flex flex-col">
           {reel.map((name, i) => (
@@ -345,7 +345,7 @@ export function NicknameSlot({
         className="flex size-12 shrink-0 items-center justify-center rounded-full bg-on-dark text-on-light transition active:scale-90 disabled:opacity-60"
       >
         <span className={spinning ? "animate-spin [animation-duration:600ms]" : ""}>
-          <Icon name="refresh" size={22} />
+          <Icon name="refresh" size={24} />
         </span>
       </button>
     </div>
@@ -382,7 +382,7 @@ export function ProfileSheet({
   return (
     <BottomSheet open={open} onClose={onClose} label={t.sheet}>
       <div className="flex w-full flex-col gap-3 px-4 pt-2">
-        <h2 className="px-2 text-[15px] leading-[1.4] font-bold">{t.title}</h2>
+        <h2 className="px-2 text-[16px] leading-[1.4] font-bold">{t.title}</h2>
         <NicknameSlot lang={lang} ui={ui} value={candidate} onChange={setCandidate} onSpinningChange={setSpinning} from="profile" />
       </div>
 
@@ -479,13 +479,13 @@ export function AccountMenu({
               aria-label={t.closeMenu}
               tabIndex={-1}
               onClick={() => setOpen(false)}
-              className="bleed-top fixed inset-0 z-40 animate-fade-in bg-black/50"
+              className="bleed-top fixed inset-0 z-40 animate-fade-in bg-black/60"
             />
             {/* 상세 화면 ⋯ 메뉴(PostMenu)와 같은 모양 */}
             <div className="pointer-events-none fixed inset-x-0 top-[calc(env(safe-area-inset-top)+64px)] z-50 mx-auto flex w-full max-w-[430px] justify-end px-2">
               <div
                 role="menu"
-                className="pointer-events-auto flex w-fit origin-top-right animate-menu flex-col gap-0.5 rounded-[24px] bg-surface p-1.5 text-on-dark shadow-[0_12px_32px_rgba(0,0,0,0.4)]"
+                className="pointer-events-auto flex w-fit origin-top-right animate-menu flex-col gap-1 rounded-[20px] bg-surface p-2 text-on-dark shadow-[0_12px_32px_rgba(0,0,0,0.4)]"
               >
                 {items.map((it) => (
                   <button
@@ -497,7 +497,7 @@ export function AccountMenu({
                       setOpen(false);
                       it.onClick();
                     }}
-                    className={`flex h-12 w-[184px] items-center gap-3 rounded-[18px] px-3 text-[14px] font-bold leading-[1.3] hover:bg-surface-2 ${
+                    className={`flex h-12 w-[184px] items-center gap-3 rounded-[20px] px-3 text-[14px] font-bold leading-[1.4] hover:bg-surface-2 ${
                       it.danger ? "text-error" : ""
                     }`}
                   >
@@ -514,8 +514,8 @@ export function AccountMenu({
       {/* 계정 삭제 확인 */}
       <BottomSheet open={confirm} onClose={() => setConfirm(false)} label={t.delete}>
         <div className="flex w-full flex-col gap-2 px-6 pt-2 break-keep">
-          <h2 className="font-display text-[22px] leading-[1.25]">{t.delTitle}</h2>
-          <p className="text-[15px] leading-[1.5] text-muted">{t.delBody}</p>
+          <h2 className="font-display text-[24px] leading-[1.2]">{t.delTitle}</h2>
+          <p className="text-[16px] leading-[1.5] text-muted">{t.delBody}</p>
         </div>
         <div className="flex w-full gap-1">
           <PillButton tone="soft" onClick={() => setConfirm(false)}>

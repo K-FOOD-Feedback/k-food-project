@@ -129,7 +129,7 @@ export function FeedbackButton({
 
   return (
     <>
-      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-20 mx-auto flex w-full max-w-[430px] flex-col items-center bg-linear-to-t from-background from-70% to-transparent px-6 pt-10 pb-[calc(20px+env(safe-area-inset-bottom))]">
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-20 mx-auto flex w-full max-w-[430px] flex-col items-center bg-linear-to-t from-background from-70% to-transparent px-6 pt-8 pb-[calc(20px+env(safe-area-inset-bottom))]">
         <button
           type="button"
           onClick={() => {
@@ -152,8 +152,8 @@ export function FeedbackButton({
           }}
         >
           <div className="flex flex-col gap-2 px-2 pt-2 break-keep">
-            <h2 className="font-display text-[22px] leading-[1.25]">{t.title}</h2>
-            <p className="text-[15px] leading-[1.5] text-muted">{t.body}</p>
+            <h2 className="font-display text-[24px] leading-[1.2]">{t.title}</h2>
+            <p className="text-[16px] leading-[1.5] text-muted">{t.body}</p>
           </div>
           <label className="flex flex-col gap-2">
             <textarea
@@ -166,7 +166,7 @@ export function FeedbackButton({
               rows={4}
               placeholder={t.placeholder}
               disabled={state === "sending"}
-              className="resize-none rounded-[20px] bg-surface-2 px-4 py-3 text-[15px] leading-[1.5] outline-none placeholder:text-white/40 disabled:opacity-60"
+              className="resize-none rounded-[20px] bg-surface-2 px-4 py-3 text-[16px] leading-[1.5] outline-none placeholder:text-white/40 disabled:opacity-60"
             />
             <span className="flex justify-between gap-3 px-1 text-[12px]">
               <span className="text-error">{state === "error" ? t.error : ""}</span>
@@ -203,7 +203,7 @@ function Thanks({ text, onDone }: { text: string; onDone: () => void }) {
     <div className="pointer-events-none fixed inset-0 z-50 mx-auto flex w-full max-w-[430px] items-center justify-center px-8">
       <p
         role="status"
-        className={`flex items-center gap-2 rounded-[32px] bg-on-dark px-8 py-6 text-center font-display text-[24px] leading-[1.3] break-keep text-on-light shadow-[0_16px_48px_rgba(0,0,0,0.55)] transition-[opacity,scale] duration-300 ease-[cubic-bezier(0.3,1.4,0.5,1)] starting:scale-50 starting:opacity-0 ${
+        className={`flex items-center gap-2 rounded-[32px] bg-on-dark px-8 py-6 text-center font-display text-[24px] leading-[1.4] break-keep text-on-light shadow-[0_16px_48px_rgba(0,0,0,0.55)] transition-[opacity,scale] duration-300 ease-[cubic-bezier(0.3,1.4,0.5,1)] starting:scale-50 starting:opacity-0 ${
           leaving ? "scale-90 opacity-0" : ""
         }`}
       >

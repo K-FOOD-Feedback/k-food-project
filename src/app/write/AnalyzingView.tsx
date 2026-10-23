@@ -24,8 +24,8 @@ export function AnalyzingView() {
   return (
     <div className="flex flex-col" aria-live="polite">
       <div className="mx-8 mt-1 flex animate-rise flex-col items-center gap-2 text-center">
-        <h1 className="font-display text-[28px] leading-[1.1]">{w.analyzingTitle}</h1>
-        <p className="text-[15px] leading-[1.5] text-muted">{w.analyzingBody}</p>
+        <h1 className="font-display text-[32px] leading-[1.2]">{w.analyzingTitle}</h1>
+        <p className="text-[16px] leading-[1.5] text-muted">{w.analyzingBody}</p>
       </div>
 
       <div className="relative mx-auto mt-8 h-[280px] w-full max-w-[375px]">
@@ -45,18 +45,18 @@ export function AnalyzingView() {
             {STEPS.map((label, i) => {
               const state = i < done ? "done" : i === done ? "active" : "todo";
               return (
-                <li key={label} className="flex items-center gap-3 px-5 py-3.5">
+                <li key={label} className="flex items-center gap-3 px-5 py-4">
                   {state === "done" && (
                     <span className="flex size-6 animate-pop items-center justify-center rounded-full bg-on-dark text-on-light">
-                      <Icon name="check" size={14} strokeWidth={3} />
+                      <Icon name="check" size={16} strokeWidth={3} />
                     </span>
                   )}
                   {state === "active" && (
-                    <span className="size-6 animate-spin rounded-full border-[3px] border-dashed border-on-dark [animation-duration:2.4s]" />
+                    <span className="size-6 animate-spin rounded-full border-2 border-dashed border-on-dark [animation-duration:2.4s]" />
                   )}
                   {state === "todo" && <span className="size-6 rounded-full border-2 border-on-dark/70" />}
                   <span
-                    className={`text-[15px] leading-[1.5] transition-colors duration-300 ${
+                    className={`text-[16px] leading-[1.5] transition-colors duration-300 ${
                       state === "active" ? "font-bold" : state === "todo" ? "font-medium text-neutral-400" : "font-medium"
                     }`}
                   >

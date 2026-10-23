@@ -107,7 +107,7 @@ export function VoteStepScreen() {
           <Tile>
             <div className="flex items-center gap-3 px-5 py-4">
               <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-content text-on-light">
-                <Icon name="refresh" size={18} />
+                <Icon name="refresh" size={20} />
               </span>
               <p className="flex-1 text-[14px] font-semibold leading-[1.4]">
                 {w.postChanged}
@@ -118,7 +118,7 @@ export function VoteStepScreen() {
                   track("vote_update_accepted");
                   remake(variant, "update");
                 }}
-                className="h-9 shrink-0 rounded-full bg-on-dark px-4 text-[13px] font-bold text-on-light transition active:scale-95"
+                className="h-10 shrink-0 rounded-full bg-on-dark px-4 text-[14px] font-bold text-on-light transition active:scale-95"
               >
                 {w.update}
               </button>
@@ -160,16 +160,16 @@ export function VoteStepScreen() {
             <div key={`vote-${variant}-${draft.voteBasis}`} className="animate-fade-in">
               <div className="flex flex-col gap-2 px-5 pt-3 pb-5">
                 <div className="flex items-center">
-                  <p className="flex-1 text-[13px] font-semibold leading-[1.3]">{w.choices}</p>
+                  <p className="flex-1 text-[14px] font-semibold leading-[1.4]">{w.choices}</p>
                   <button
                     type="button"
                     onClick={() => {
                       track("vote_remade", { attempt: variant + 1 });
                       remake(variant + 1, "remake");
                     }}
-                    className="flex items-center gap-1 text-[13px] font-semibold leading-[1.3] transition active:scale-95"
+                    className="flex items-center gap-1 text-[14px] font-semibold leading-[1.4] transition active:scale-95"
                   >
-                    <Icon name="refresh" size={14} />
+                    <Icon name="refresh" size={16} />
                     {w.remake}
                   </button>
                 </div>
@@ -179,8 +179,8 @@ export function VoteStepScreen() {
           )}
         </div>
 
-        <p className="flex items-center gap-1.5 px-6 pt-3 text-[13px] font-medium leading-[1.3] text-muted">
-          <Icon name="info" size={14} />
+        <p className="flex items-center gap-2 px-6 pt-3 text-[14px] font-medium leading-[1.4] text-muted">
+          <Icon name="info" size={16} />
           {w.voteLocked}
         </p>
       </div>
@@ -225,7 +225,7 @@ function MakingVote() {
         <Icon name="sparkle" size={16} className="animate-spin [animation-duration:2s]" />
         {w.makingVote}
       </p>
-      <div className="h-[78px] animate-pulse rounded-[20px] bg-surface-2" />
+      <div className="h-16 animate-pulse rounded-[20px] bg-surface-2" />
       {[0, 1, 2].map((i) => (
         <div
           key={i}

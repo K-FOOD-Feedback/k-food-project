@@ -78,13 +78,13 @@ export function MyTabs<T extends string>({
             role="tab"
             aria-selected={value === id}
             onClick={() => value !== id && onChange(id)}
-            className={`flex h-11 flex-1 items-center justify-center gap-1.5 rounded-full text-[15px] font-bold transition ${
+            className={`flex h-12 flex-1 items-center justify-center gap-2 rounded-full text-[16px] font-bold transition ${
               value === id ? "bg-on-dark text-on-light" : "text-neutral-400"
             }`}
           >
             {text}
             {/* 숫자는 앱 공통 규칙 (9,999 · 1.2만) */}
-            <span className={`tabular-nums ${value === id ? "opacity-50" : ""}`}>{compactCount(n, lang)}</span>
+            <span className={`tabular-nums ${value === id ? "opacity-60" : ""}`}>{compactCount(n, lang)}</span>
           </button>
         ))}
       </div>
@@ -95,7 +95,7 @@ export function MyTabs<T extends string>({
 /** 빈 상태 — 카드 없이 문구 + 중간 크기 버튼 */
 /** 빈 화면 버튼 모양 — PillButton md primary와 같음 (다른 동작의 버튼에 같은 모양을 입힐 때) */
 export const EMPTY_CTA =
-  "flex h-12 flex-none items-center justify-center rounded-full bg-primary px-6 text-[15px] leading-[1.5] font-semibold text-on-light transition active:scale-[0.99]";
+  "flex h-12 flex-none items-center justify-center rounded-full bg-primary px-6 text-[16px] leading-[1.5] font-semibold text-on-light transition active:scale-[0.99]";
 
 /**
  * 빈 화면 (마이의 모든 탭 · 한국인/외국인 공통) — 안내 글 + 분홍 버튼 하나
@@ -115,7 +115,7 @@ export function Empty({
     // 안내 글과 버튼 사이 48px (붙어 보이지 않게)
     <div className="flex flex-col items-center gap-12 px-6 pt-14 text-center break-keep">
       <div className="flex flex-col gap-1">
-        <p className="text-[15px] font-semibold">{title}</p>
+        <p className="text-[16px] font-semibold">{title}</p>
         <p className="text-[14px] leading-[1.5] text-muted">{body}</p>
       </div>
       {action &&
@@ -152,27 +152,27 @@ export function PhotoTile({
 }) {
   return (
     // 카드 테두리 없이 사진 + 제목 (사진이 주인공) — 사진 모서리와 제목 왼쪽 끝을 맞춤
-    <Link href={href} onClick={onClick} className="flex min-w-0 flex-col gap-2.5 transition active:scale-[0.98]">
-      <span className="relative aspect-square overflow-hidden rounded-[24px] bg-surface-2">
+    <Link href={href} onClick={onClick} className="flex min-w-0 flex-col gap-3 transition active:scale-[0.98]">
+      <span className="relative aspect-square overflow-hidden rounded-[20px] bg-surface-2">
         {photo ? (
           <Image src={photo} alt="" fill sizes="200px" unoptimized={photo.startsWith("blob:")} className="object-cover" />
         ) : (
           <span className="absolute inset-0 flex items-center justify-center text-muted">
-            <Icon name="image" size={28} />
+            <Icon name="image" size={32} />
           </span>
         )}
         {/* 칩: 한 줄, 길면 … (선택지는 최대 28자라 다 못 보여 줌 — 전체는 상세에서) */}
         <span
-          className={`absolute bottom-3 left-3 flex max-w-[calc(100%-24px)] items-center gap-1 rounded-full py-1.5 pr-3 text-[12px] leading-none font-bold tabular-nums ${
+          className={`absolute bottom-3 left-3 flex max-w-[calc(100%-24px)] items-center gap-1 rounded-full py-2 pr-3 text-[12px] leading-none font-bold tabular-nums ${
             chipIcon ? "pl-2" : "pl-3"
           } ${chipStrong ? "bg-content text-on-light" : "bg-background/80 text-on-dark"}`}
         >
-          {chipIcon && <Icon name={chipIcon} size={14} strokeWidth={3} className="shrink-0" />}
+          {chipIcon && <Icon name={chipIcon} size={16} strokeWidth={3} className="shrink-0" />}
           <span className="min-w-0 truncate">{chip}</span>
         </span>
       </span>
       {/* 제목: 2줄까지, 길면 … */}
-      <span className="line-clamp-2 break-keep px-1 text-[15px] font-semibold leading-[1.35]">{title}</span>
+      <span className="line-clamp-2 break-keep px-1 text-[16px] font-semibold leading-[1.4]">{title}</span>
     </Link>
   );
 }
@@ -211,17 +211,17 @@ export function CommentCard({
       <span className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="flex items-start gap-2">
           {/* 2줄까지 …, 띄어쓰기 없는 긴 단어도 칸 안에서 줄바꿈 (시간 아래로 파고들지 않게) */}
-          <span className="line-clamp-2 min-w-0 flex-1 break-keep text-[15px] font-semibold leading-[1.4] [overflow-wrap:anywhere]">{text}</span>
-          <span className="shrink-0 pt-0.5 text-[12px] font-medium tabular-nums text-muted">{time}</span>
+          <span className="line-clamp-2 min-w-0 flex-1 break-keep text-[16px] font-semibold leading-[1.4] [overflow-wrap:anywhere]">{text}</span>
+          <span className="shrink-0 pt-1 text-[12px] font-medium tabular-nums text-muted">{time}</span>
         </span>
         <span className="flex items-center gap-2">
-          <span className="line-clamp-1 min-w-0 flex-1 text-[13px] leading-[1.45] text-muted [overflow-wrap:anywhere]">{where}</span>
+          <span className="line-clamp-1 min-w-0 flex-1 text-[14px] leading-[1.5] text-muted [overflow-wrap:anywhere]">{where}</span>
           {href && <Icon name="chevron-right" size={16} className="shrink-0 text-muted" />}
         </span>
       </span>
     </>
   );
-  const card = "flex items-start gap-3.5 rounded-[24px] bg-surface py-4 pl-4 pr-3";
+  const card = "flex items-start gap-4 rounded-[20px] bg-surface py-4 pl-4 pr-3";
   return href ? (
     <Link href={href} onClick={onClick} className={`${card} transition active:scale-[0.99]`}>
       {body}
@@ -279,8 +279,8 @@ export function LogoutSheet({
   return (
     <BottomSheet open={open} onClose={onClose} label={t.label}>
       <div className="flex w-full flex-col gap-2 px-6 pt-2 break-keep">
-        <h2 className="font-display text-[22px] leading-[1.25]">{t.title}</h2>
-        <p className="text-[15px] leading-[1.5] text-muted">{t.body}</p>
+        <h2 className="font-display text-[24px] leading-[1.2]">{t.title}</h2>
+        <p className="text-[16px] leading-[1.5] text-muted">{t.body}</p>
       </div>
       <div className="flex w-full gap-1">
         <PillButton tone="soft" onClick={onClose}>

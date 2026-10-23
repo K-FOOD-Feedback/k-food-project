@@ -46,7 +46,7 @@ export function TextField({
 
   return (
     <div className="group flex w-full flex-col gap-2 px-5 py-3">
-      <div className="flex items-start text-[13px] leading-[1.3]">
+      <div className="flex items-start text-[14px] leading-[1.4]">
         <label htmlFor={id} className="flex-1 font-semibold">
           {label}
         </label>
@@ -62,7 +62,7 @@ export function TextField({
           </span>
         )}
       </div>
-      <div className="flex items-start gap-2 rounded-[20px] border-2 border-transparent bg-surface-2 px-4 py-[14px] focus-within:border-on-dark">
+      <div className="flex items-start gap-2 rounded-[20px] border-2 border-transparent bg-surface-2 px-4 py-4 focus-within:border-on-dark">
         <textarea
           ref={ref}
           id={id}
@@ -79,11 +79,11 @@ export function TextField({
             onChange?.(maxLength && !composing ? clampText(v, maxLength) : v);
           }}
           onCompositionEnd={(e) => maxLength && onChange?.(clampText(e.currentTarget.value, maxLength))}
-          className={`min-w-0 flex-1 resize-none overflow-hidden overscroll-contain bg-transparent text-[15px] leading-[1.5] outline-none placeholder:text-neutral-400 ${
+          className={`min-w-0 flex-1 resize-none overflow-hidden overscroll-contain bg-transparent text-[16px] leading-[1.5] outline-none placeholder:text-neutral-400 ${
             locked ? "text-muted" : "text-on-dark"
           }`}
         />
-        {locked && <Icon name="lock" size={18} className="mt-0.5 shrink-0" />}
+        {locked && <Icon name="lock" size={20} className="mt-1 shrink-0" />}
       </div>
     </div>
   );

@@ -13,6 +13,7 @@ import { saveViewerLang, useViewerUiLang } from "@/app/posts/[id]/viewerLang";
     이 브라우저에서 꺼지고, ?dev=1 이면 다시 켜짐
   - 외국인은 언어별로 영어 · 일본어 · 중국어 — 누르면 외국인 화면으로 가면서 🌐 언어도 그 언어로 (이미 외국인 화면이면 언어만)
   - 맨 오른쪽 "어드민": 의견 보기(/admin/feedback)로 바로 감. 어드민에서 한국인·외국인을 누르면 그쪽 메인으로
+  - 출시용 사이트(main = toppytippy.com, Vercel Production)에서는 늘 숨김 — 개발용(dev 미리보기)·로컬에서만 보임
     → 작업용이라 출시 전에 지울 것
 */
 type Viewer = "ko" | "en";
@@ -22,7 +23,7 @@ const CHOICES = [
   { id: "ko", label: "🇰🇷 한국인" },
   { id: "en", label: "🇺🇸 영어" },
   { id: "ja", label: "🇯🇵 일본어" },
-  { id: "zh", label: "🇨🇳 중국어" },
+  { id: "zh", label: "🇨🇳 중국어 간체" },
 ] as const;
 
 const DEV_KEY = "kfood:dev-toggle";
@@ -76,8 +77,16 @@ function withQuery(path: string, q: URLSearchParams) {
 }
 
 const subscribe = () => () => {};
+/** 출시용 사이트인지 — Vercel Production 배포이거나 toppytippy.com 주소 */
+function isLiveSite() {
+  if (process.env.NEXT_PUBLIC_VERCEL_ENV === "production") return true;
+  const host = window.location.hostname;
+  return host === "toppytippy.com" || host === "www.toppytippy.com"; // dev.toppytippy.com 은 개발용이라 보임
+}
+
 function readEnabled() {
   if (process.env.NODE_ENV === "development") return true;
+  if (isLiveSite()) return false;
   try {
     const flag = new URLSearchParams(window.location.search).get("dev");
     if (flag === "0") localStorage.setItem(DEV_KEY, "0");
@@ -116,7 +125,7 @@ export function ViewerToggle() {
     <div
       role="radiogroup"
       aria-label="화면 바꾸기 (작업용)"
-      className="fixed top-[calc(env(safe-area-inset-top)+2px)] left-1/2 z-[60] flex -translate-x-1/2 gap-0.5 whitespace-nowrap rounded-full bg-black/70 p-0.5 text-[11px] leading-none font-bold text-white shadow-[0_4px_12px_rgba(0,0,0,0.4)] ring-1 ring-white/15 backdrop-blur-md"
+      className="fixed top-[calc(env(safe-area-inset-top)+2px)] left-1/2 z-50 flex -translate-x-1/2 gap-1 whitespace-nowrap rounded-full bg-black/80 p-1 text-[12px] leading-none font-bold text-white shadow-[0_4px_12px_rgba(0,0,0,0.4)] ring-1 ring-white/15 backdrop-blur-md"
     >
       {CHOICES.map(({ id, label }) => (
         <button
@@ -125,7 +134,7 @@ export function ViewerToggle() {
           role="radio"
           aria-checked={isOn(id)}
           onClick={() => pick(id)}
-          className={`rounded-full px-2 py-1.5 transition ${isOn(id) ? "bg-white text-black" : "text-white/70"}`}
+          className={`rounded-full px-2 py-2 transition ${isOn(id) ? "bg-white text-black" : "text-white/70"}`}
         >
           {label}
         </button>
@@ -135,7 +144,7 @@ export function ViewerToggle() {
         role="radio"
         aria-checked={admin}
         onClick={() => !admin && router.push("/admin/feedback")}
-        className={`rounded-full px-2 py-1.5 transition ${admin ? "bg-white text-black" : "text-white/70"}`}
+        className={`rounded-full px-2 py-2 transition ${admin ? "bg-white text-black" : "text-white/70"}`}
       >
         🛠 어드민
       </button>
