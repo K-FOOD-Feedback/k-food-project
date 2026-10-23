@@ -13,6 +13,7 @@ const LABELS: Record<Lang, { notifications: string; my: string }> = {
   ko: { notifications: "알림", my: "내 정보" },
   en: { notifications: "Notifications", my: "My page" },
   zh: { notifications: "通知", my: "我的" },
+  zht: { notifications: "通知", my: "我的" },
   ja: { notifications: "通知", my: "マイページ" },
 };
 

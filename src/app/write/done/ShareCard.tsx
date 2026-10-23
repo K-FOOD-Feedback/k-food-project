@@ -37,12 +37,12 @@ function ShapePhoto({ src, size, mask, className = "", style }: { src: string; s
 
 export type CardStyle = "photo" | "vote" | "verdict";
 /** 카드 글 언어 — 한국인 화면(상세)은 한국어, 외국인 화면(글 올린 뒤)은 영어 */
-export type CardLang = "en" | "ko" | "zh" | "ja";
+export type CardLang = "en" | "ko" | "zh" | "zht" | "ja";
 
 export const CARD_STYLES: { id: CardStyle; label: Record<CardLang, string> }[] = [
-  { id: "photo", label: { en: "Photo", ko: "사진", zh: "照片", ja: "写真" } },
-  { id: "vote", label: { en: "Vote", ko: "투표", zh: "投票", ja: "投票" } },
-  { id: "verdict", label: { en: "Verdict", ko: "판결", zh: "判决", ja: "判決" } },
+  { id: "photo", label: { en: "Photo", ko: "사진", zh: "照片", zht: "照片", ja: "写真" } },
+  { id: "vote", label: { en: "Vote", ko: "투표", zh: "投票", zht: "投票", ja: "投票" } },
+  { id: "verdict", label: { en: "Verdict", ko: "판결", zh: "判决", zht: "判決", ja: "判決" } },
 ];
 
 // 카드 안 글
@@ -92,6 +92,21 @@ const COPY = {
     head: ["我的韩餐，", "来评评理！"],
     poll: "🇰🇷 韩国人投票",
   },
+  zht: {
+    footer: "韓國人，點連結投票 👉",
+    court: "韓餐法庭",
+    caseNo: "案件編號 0001 · 🇰🇷",
+    exhibit: "證物 A",
+    cook: "廚師",
+    charge: "罪名",
+    jury: "陪審團",
+    juryValue: "招募韓國人",
+    verdict: "判決",
+    pending: "等待判決",
+    voteNow: "現在投票！",
+    head: ["我的韓餐，", "來評評理！"],
+    poll: "🇰🇷 韓國人投票",
+  },
   ja: {
     footer: "韓国の人、リンクから投票 👉",
     court: "韓国料理法廷",
@@ -138,6 +153,7 @@ const STICKER_TEXTS: Record<CardLang, string[]> = {
   ],
   ko: ["찐 한식?", "지금 투표!", "선 넘었나요? 🚫", "한국인 출동 🚨", "이거 합법? 😳", "한식이냐 범죄냐", "한 표 부탁 🙏", "판결 부탁 ⚖️"],
   zh: ["正宗韩餐？", "快来投票！", "越界了吗？🚫", "韩国人集合 🚨", "这合法吗？😳", "韩餐还是犯罪？", "求一票 🙏", "请判决 ⚖️"],
+  zht: ["正宗韓餐？", "快來投票！", "越界了嗎？🚫", "韓國人集合 🚨", "這合法嗎？😳", "韓餐還是犯罪？", "求一票 🙏", "請判決 ⚖️"],
   ja: ["本物の韓国料理？", "今すぐ投票！", "やりすぎ？🚫", "韓国人集合 🚨", "これって合法？😳", "韓国料理か犯罪か", "一票ください 🙏", "判決をお願い ⚖️"],
 };
 const STICKER_COLORS = ["var(--color-primary)", "var(--color-content)", "var(--color-secondary)", "var(--color-lilac)", "#ffffff"];
@@ -242,7 +258,7 @@ export const ShareCard = memo(function ShareCard({
       style={{ width: CARD_W, height: CARD_H, background: theme.bg, color: theme.fg, fontFamily: "var(--font-gilroy)" }}
     >
       <Sparkles style={style} seed={seed} />
-      {style === "photo" && <PhotoCard post={post} theme={theme} t={t} cjk={lang === "zh" || lang === "ja"} shape={shape} />}
+      {style === "photo" && <PhotoCard post={post} theme={theme} t={t} cjk={lang === "zh" || lang === "zht" || lang === "ja"} shape={shape} />}
       {style === "vote" && <VoteCard post={post} theme={theme} t={t} shape={shape} />}
       {style === "verdict" && <VerdictCard post={post} theme={theme} t={t} />}
 

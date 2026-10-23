@@ -60,6 +60,16 @@ const COPY: Record<
     done: "谢谢！我们收到了",
     error: "发送失败，请稍后再试。",
   },
+  zht: {
+    button: "有想對我們說的話嗎？",
+    title: "有想對我們說的話嗎？",
+    body: "不方便的地方、希望的功能，什麼都可以。",
+    placeholder: "寫下你的意見",
+    send: "傳送",
+    sending: "傳送中…",
+    done: "謝謝！我們收到了",
+    error: "傳送失敗，請稍後再試。",
+  },
   ja: {
     button: "伝えたい意見はありますか？",
     title: "伝えたい意見はありますか？",

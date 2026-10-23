@@ -116,6 +116,13 @@ const SEED_ZH: Record<string, string> = {
   "치즈는 많을수록\n맛있죠!": "芝士越多越好吃！",
   "고마워요 다음에\n시도해볼게요!": "谢谢，下次试试！",
 };
+const SEED_ZHT: Record<string, string> = {
+  "보기만해도 맵네요ㅠㅠ": "光看著就好辣ㅠㅠ",
+  "참치마요 삼김이랑\n같이 먹어보세요": "配金槍魚蛋黃醬飯糰一起吃試試",
+  "소시지 칼집 미쳤다": "香腸切花刀太絕了",
+  "치즈는 많을수록\n맛있죠!": "芝士越多越好吃！",
+  "고마워요 다음에\n시도해볼게요!": "謝謝，下次試試！",
+};
 
 const SEED_JA: Record<string, string> = {
   "보기만해도 맵네요ㅠㅠ": "見るだけで辛そうㅠㅠ",
@@ -125,10 +132,10 @@ const SEED_JA: Record<string, string> = {
   "고마워요 다음에\n시도해볼게요!": "ありがとう、今度やってみます！",
 };
 
-const SEED_BY_LANG = { en: SEED_EN, zh: SEED_ZH, ja: SEED_JA };
+const SEED_BY_LANG = { en: SEED_EN, zh: SEED_ZH, zht: SEED_ZHT, ja: SEED_JA };
 
 /** 한마디를 그 언어로 옮깁니다 (영어·중국어·일본어 — 옮겨 둔 문장이 없으면 그대로). */
-export function translateTo(comment: Comment, lang: "en" | "zh" | "ja"): Comment {
+export function translateTo(comment: Comment, lang: "en" | "zh" | "zht" | "ja"): Comment {
   const text = comment.kind === "text" ? SEED_BY_LANG[lang][comment.text] : undefined;
   return text ? { ...comment, text } : comment;
 }

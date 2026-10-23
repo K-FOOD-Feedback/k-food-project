@@ -18,12 +18,14 @@ export const paperlogy = localFont({
 */
 export const mPlus2 = M_PLUS_2({ subsets: ["latin"], preload: false, display: "swap", variable: "--font-mplus2" });
 
-/** 제목 글꼴 — 영어 Figtree(font-title-en, 한글과 크기가 맞게 보정) · 한국어 Paperlogy · 중국어 MiSans · 일본어 M PLUS 2 (모두 800) */
+/** 제목 글꼴 — 영어 Figtree(font-title-en, 한글과 크기가 맞게 보정) · 한국어 Paperlogy · 중국어 간체 MiSans · 번체 LINE Seed TW(기기에 없으면 MiSans) · 일본어 M PLUS 2 (모두 800) */
 export const titleFont = (lang: UiLang) =>
   lang === "en"
     ? "font-title-en"
     : lang === "zh"
       ? "font-(family-name:--font-zh-hans-title) font-extrabold"
+      : lang === "zht"
+        ? "font-(family-name:--font-zh-hant) font-extrabold"
       : lang === "ja"
         ? `${mPlus2.className} font-extrabold`
         : "font-(family-name:--font-paperlogy)";

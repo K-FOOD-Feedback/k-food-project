@@ -5,7 +5,7 @@
 */
 
 /** 랜딩 언어 — 처음엔 기기 언어로. 중국어·일본어는 랜딩까지만 (이후 화면은 영어 외국인 화면으로) */
-export type LandingLang = "ko" | "en" | "zh" | "ja";
+export type LandingLang = "ko" | "en" | "zh" | "zht" | "ja";
 
 export const COPY = {
   ko: {
@@ -91,6 +91,33 @@ export const COPY = {
     options: ["会吃", "改改\n再吃", "不吃"],
     reply: "下次芝士只放一半！",
   },
+  zht: {
+    brand: "오늘의 참견",
+    skip: "跳過",
+    titles: [
+      ["做過韓國料理嗎？", "看看韓國人怎麼說。"],
+      ["韓國人來", "為你的問題投票"],
+      ["還會留下", "一句評論"],
+      ["你也可以", "回覆他們"],
+      ["現在", "輪到你了"],
+    ],
+    korean: { role: "我是韓國人", action: "投票和評論" },
+    foreigner: { role: "我不是韓國人", action: "逛逛並分享" },
+    loginLead: "已經有帳號了？",
+    loginAction: "登入",
+    loginTitle: "歡迎回來",
+    loginBody: "用註冊時的 Google 帳號繼續。",
+    pickTitle: "你是誰？",
+    pickHint: "把手勢拖進格子，或直接點格子",
+    scroll: "看看怎麼玩",
+    author: "來自加拿大的 Sam",
+    authorTag: "作者",
+    voteTitle: "你怎麼看？",
+    story: "火雞麵太辣了，\n我加了點芝士。",
+    question: "韓國人會吃嗎？",
+    options: ["會吃", "改改\n再吃", "不吃"],
+    reply: "下次芝士只放一半！",
+  },
   ja: {
     brand: "오늘의 참견",
     skip: "スキップ",
@@ -125,7 +152,7 @@ export const SAMPLE_PCTS = [58, 31, 11];
 
 /** 한국인 반응 — 한국어가 아닌 화면에서는 번역을 크게, 한국어 원문을 작게 (\n은 말풍선 줄바꿈 자리) */
 export const REACTIONS = [
-  { ko: "면이 어디 있는데요", en: "Where are the noodles?", zh: "面在哪儿？", ja: "麺はどこ？" },
-  { ko: "이 정도면 치즈가 불닭을 먹는 중", en: "The cheese is eating\nthe buldak", zh: "这芝士都快\n把火鸡面吃了", ja: "チーズが\nブルダックを食べてる" },
-  { ko: "일단 한입만 줘봐요", en: "Just give me one bite", zh: "先给我尝一口", ja: "とりあえず一口ちょうだい" },
+  { ko: "면이 어디 있는데요", en: "Where are the noodles?", zh: "面在哪儿？", zht: "面在哪兒？", ja: "麺はどこ？" },
+  { ko: "이 정도면 치즈가 불닭을 먹는 중", en: "The cheese is eating\nthe buldak", zh: "这芝士都快\n把火鸡面吃了", zht: "這芝士都快\n把火雞麵吃了", ja: "チーズが\nブルダックを食べてる" },
+  { ko: "일단 한입만 줘봐요", en: "Just give me one bite", zh: "先给我尝一口", zht: "先給我嘗一口", ja: "とりあえず一口ちょうだい" },
 ] as const;

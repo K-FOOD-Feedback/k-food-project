@@ -81,7 +81,7 @@ export function LandingScreen() {
     subscribeNone,
     () => {
       const l = navigator.language.toLowerCase();
-      return l.startsWith("ko") ? "ko" : l.startsWith("zh") ? "zh" : l.startsWith("ja") ? "ja" : "en";
+      return l.startsWith("ko") ? "ko" : /^zh-(tw|hk|mo|hant)/.test(l) ? "zht" : l.startsWith("zh") ? "zh" : l.startsWith("ja") ? "ja" : "en";
     },
     () => "ko",
   );
@@ -809,11 +809,11 @@ function Bubble({
   style,
 }: {
   lang: LandingLang;
-  r: { ko: string; en: string; zh: string; ja: string };
+  r: { ko: string; en: string; zh: string; zht: string; ja: string };
   className: string;
   style: CSSProperties;
 }) {
-  const cjk = lang === "zh" || lang === "ja";
+  const cjk = lang === "zh" || lang === "zht" || lang === "ja";
   return (
     <div
       className={`absolute z-10 flex max-w-[220px] flex-col items-center rounded-[32px] px-5 py-3 text-center text-on-light ${className}`}

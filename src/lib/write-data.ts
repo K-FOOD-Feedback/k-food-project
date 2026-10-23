@@ -96,20 +96,20 @@ export function getQuestion(id: QuestionId): Question {
   글쓰기 언어 — 외국인이 🌐에서 고른 언어 (한국어를 골랐으면 영어). 글은 이 언어로 쓰이고 원문 언어로 저장됨
   AI 초안(음식 이름 · 제목 · 본문 · 투표)도 이 언어로 만듦
 */
-export type WriteLang = "en" | "zh" | "ja";
+export type WriteLang = "en" | "zh" | "zht" | "ja";
 
 /** 지금 글쓰기 언어 (훅을 못 쓰는 곳 — 글 저장 · AI 초안 만들 때) */
 export function currentWriteLang(): WriteLang {
   try {
     const v = localStorage.getItem("kfood:viewer-lang");
-    return v === "zh" || v === "ja" ? v : "en";
+    return v === "zh" || v === "zht" || v === "ja" ? v : "en";
   } catch {
     return "en";
   }
 }
 
 /** 질문 문구 중국어·일본어 (영어는 QUESTIONS.label) */
-const QUESTION_LABELS: Record<"zh" | "ja", Record<QuestionId, string>> = {
+const QUESTION_LABELS: Record<"zh" | "zht" | "ja", Record<QuestionId, string>> = {
   zh: {
     line: "我是不是越界了？",
     crime: "这算是对韩食的犯罪吗？",
@@ -122,6 +122,19 @@ const QUESTION_LABELS: Record<"zh" | "ja", Record<QuestionId, string>> = {
     nailed: "我做成功了吗？",
     better: "比韩国人做得还好吗？",
     custom: "自己写问题",
+  },
+  zht: {
+    line: "我是不是越界了？",
+    crime: "這算是對韓食的犯罪嗎？",
+    messup: "我哪裡搞砸了？",
+    eating: "我這樣吃對嗎？",
+    laugh: "韓國朋友看了會笑嗎？",
+    still: "這還算韓國菜嗎？",
+    name: "這個該叫什麼？",
+    toomuch: "我是不是放太多了？",
+    nailed: "我做成功了嗎？",
+    better: "比韓國人做得還好嗎？",
+    custom: "自己寫問題",
   },
   ja: {
     line: "これ、一線越えましたか？",
@@ -159,7 +172,7 @@ export const AI_DISH = "Buldak Carbonara";
 
 /** ① 음식 이름을 글쓰기 언어로 */
 export function aiDishFor(lang: WriteLang = "en") {
-  return { en: AI_DISH, zh: "奶油火鸡面", ja: "カルボブルダック" }[lang];
+  return { en: AI_DISH, zh: "奶油火鸡面", zht: "奶油火雞麵", ja: "カルボブルダック" }[lang];
 }
 
 /** ② 제목·본문 (글쓰기 언어로) */
@@ -174,6 +187,16 @@ export function aiPostFor(dish: string, variant = 0, lang: WriteLang = "en") {
       {
         title: `${dish}之夜`,
         story: `第一次做${dish}！我加了马苏里拉芝士、香肠和葱，让它更浓郁。韩国人会喜欢这个版本吗？`,
+      },
+    ],
+    zht: [
+      {
+        title: `我的第一碗${dish}`,
+        story: `大家好，我是來自上海的小林！我在家做了芝士${dish}，加了香腸和蔥。對韓國人來說芝士會不會太多了？`,
+      },
+      {
+        title: `${dish}之夜`,
+        story: `第一次做${dish}！我加了馬蘇裡拉芝士、香腸和蔥，讓它更濃郁。韓國人會喜歡這個版本嗎？`,
       },
     ],
     ja: [
@@ -213,13 +236,14 @@ function concernsIn(text: string) {
 }
 
 /** 재료 이름을 글쓰기 언어로 (선택지에 들어감) */
-const CONCERN_NAMES: Record<"zh" | "ja", Record<string, string>> = {
+const CONCERN_NAMES: Record<"zh" | "zht" | "ja", Record<string, string>> = {
   zh: { cheese: "芝士", sausage: "香肠", spice: "辣度", "green onion": "葱", sauce: "酱汁", toppings: "配料" },
+  zht: { cheese: "芝士", sausage: "香腸", spice: "辣度", "green onion": "蔥", sauce: "醬汁", toppings: "配料" },
   ja: { cheese: "チーズ", sausage: "ソーセージ", spice: "辛さ", "green onion": "ねぎ", sauce: "ソース", toppings: "トッピング" },
 };
 
 /** 중국어·일본어 선택지 (영어는 aiVoteFor 안의 sets) — 선택지 한도 20칸 = 한·중·일 10자 안팎 */
-function cjkOptions(lang: "zh" | "ja", main: string, second: string): Record<QuestionId, string[][]> {
+function cjkOptions(lang: "zh" | "zht" | "ja", main: string, second: string): Record<QuestionId, string[][]> {
   if (lang === "zh")
     return {
       line: [
@@ -242,6 +266,29 @@ function cjkOptions(lang: "zh" | "ja", main: string, second: string): Record<Que
       nailed: [[`成功了 🎯`, `差一点 🤏`, `还不行 😅`]],
       better: [[`说实话，是 🏆`, `差不多`, `不错的尝试 😂`]],
       custom: [[`是 👍`, `有点 🤔`, `不是 👎`]],
+    };
+  if (lang === "zht")
+    return {
+      line: [
+        [`越界了 🚫`, `差一點 😬`, `尊重 👍`],
+        [`越界太多 🚫`, `剛好壓線 😬`, `沒越界 👍`],
+      ],
+      crime: [
+        [`有罪 🚨`, `可疑 🤨`, `無罪 😇`],
+        [`抓起來 🚨`, `警告一次`, `無罪釋放 😇`],
+      ],
+      messup: [
+        [`${main}太多`, `做法`, `擺盤`, `沒問題，很好`],
+        [`少放${main}`, `再辣點 🌶️`, `去掉${second}`, `都沒問題！`],
+      ],
+      eating: [[`對，就這樣`, `再拌一拌！`, `工具不對 🥢`, `加米飯 🍚`]],
+      laugh: [[`會笑 😂`, `有一點 🤭`, `不會，會驚豔`]],
+      still: [[`100%韓國菜`, `有點像韓國菜`, `已經是新菜了`]],
+      name: [[`保留原名`, `${main}炸彈 💣`, `用你的名字 😂`]],
+      toomuch: [[`太多了 🙈`, `剛剛好 👌`, `還要更多！`]],
+      nailed: [[`成功了 🎯`, `差一點 🤏`, `還不行 😅`]],
+      better: [[`說實話，是 🏆`, `差不多`, `不錯的嘗試 😂`]],
+      custom: [[`是 👍`, `有點 🤔`, `不是 👎`]],
     };
   return {
     line: [

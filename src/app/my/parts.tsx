@@ -31,6 +31,7 @@ const AGO: Record<UiLang, { now: string; min: (n: number) => string; hour: (n: n
   en: { now: "Just now", min: (n) => `${n}m`, hour: (n) => `${n}h`, yesterday: "Yesterday", day: (n) => `${n}d` },
   ko: { now: "방금", min: (n) => `${n}분 전`, hour: (n) => `${n}시간 전`, yesterday: "어제", day: (n) => `${n}일 전` },
   zh: { now: "刚刚", min: (n) => `${n}分钟前`, hour: (n) => `${n}小时前`, yesterday: "昨天", day: (n) => `${n}天前` },
+  zht: { now: "剛剛", min: (n) => `${n}分鐘前`, hour: (n) => `${n}小時前`, yesterday: "昨天", day: (n) => `${n}天前` },
   ja: { now: "今", min: (n) => `${n}分前`, hour: (n) => `${n}時間前`, yesterday: "昨日", day: (n) => `${n}日前` },
 };
 export function timeAgo(at: number, now: number, lang: UiLang) {
@@ -252,6 +253,13 @@ const LOGOUT = {
     body: "你的记录都会保留。随时可以用 Google 重新登录。",
     cancel: "取消",
     ok: "退出登录",
+  },
+  zht: {
+    label: "退出登入",
+    title: "要退出登入嗎？",
+    body: "你的記錄都會保留。隨時可以用 Google 重新登入。",
+    cancel: "取消",
+    ok: "退出登入",
   },
   ja: {
     label: "ログアウト",

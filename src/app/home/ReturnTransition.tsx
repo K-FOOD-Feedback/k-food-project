@@ -555,7 +555,7 @@ function DetailArticleBody({
   lang: UiLang;
 }) {
   const title = titleIn(post, lang);
-  const phrases = lang === "zh" || lang === "ja" ? cjkPhrases(title, lang) : null;
+  const phrases = lang === "zh" || lang === "zht" || lang === "ja" ? cjkPhrases(title, lang) : null;
   return (
     <>
       <p className="flex items-center gap-2 font-sans text-[14px] leading-none font-semibold tracking-[-0.28px] text-[#242424]">

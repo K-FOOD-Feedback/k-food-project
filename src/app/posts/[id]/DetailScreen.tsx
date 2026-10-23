@@ -774,7 +774,7 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
           className="mt-[46px]"
           style={
             {
-              "--cta-title-font": contentLang === "zh" ? "var(--font-zh-hans-title)" : contentLang === "ja" ? mPlus2.style.fontFamily : undefined,
+              "--cta-title-font": contentLang === "zh" ? "var(--font-zh-hans-title)" : contentLang === "zht" ? "var(--font-zh-hant)" : contentLang === "ja" ? mPlus2.style.fontFamily : undefined,
             } as CSSProperties
           }
         >
@@ -1009,10 +1009,10 @@ function ShareVoteCard({
         className="flex w-full items-center gap-4 rounded-[32px] bg-secondary py-5 pr-4 pl-8 text-left text-on-light transition-[scale,opacity,translate] duration-500 active:scale-[0.98] starting:translate-y-3 starting:opacity-0"
       >
         <span className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className={`${titleFont(lang)} text-[24px] ${lang === "en" ? "leading-[1.2]" : "leading-[1.2]"} tracking-[-0.44px] ${lang === "zh" || lang === "ja" ? "" : "break-keep"}`}>
+          <span className={`${titleFont(lang)} text-[24px] ${lang === "en" ? "leading-[1.2]" : "leading-[1.2]"} tracking-[-0.44px] ${lang === "zh" || lang === "zht" || lang === "ja" ? "" : "break-keep"}`}>
             {foreigner ? T.shareTitleForeign : T.shareTitle}
           </span>
-          <span className={`text-[14px] leading-[1.4] font-semibold opacity-60 ${lang === "zh" || lang === "ja" ? "" : "break-keep"}`}>
+          <span className={`text-[14px] leading-[1.4] font-semibold opacity-60 ${lang === "zh" || lang === "zht" || lang === "ja" ? "" : "break-keep"}`}>
             {foreigner ? T.shareSubForeign : T.shareSub}
           </span>
         </span>
@@ -1049,7 +1049,7 @@ export function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: H
         return Math.round((el.scrollHeight - parseFloat(cs.paddingBottom)) / parseFloat(cs.lineHeight));
       };
       // 중·일은 단어 사이에서만 줄을 바꿔서(긴 가타카나 말덩이) 더 작아져야 3줄에 들어갈 때가 있음
-      const min = contentLang === "zh" || contentLang === "ja" ? TITLE_MIN_PX_CJK : TITLE_MIN_PX;
+      const min = contentLang === "zh" || contentLang === "zht" || contentLang === "ja" ? TITLE_MIN_PX_CJK : TITLE_MIN_PX;
       while (lines() > TITLE_MAX_LINES && size > min) {
         size -= 1;
         el.style.fontSize = `${size}px`;
@@ -1080,11 +1080,11 @@ export function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: H
           줄 길이는 고르게(text-balance) */}
       <h1
         ref={titleRef}
-        className={`w-3/5 pb-[0.15em] ${titleFont(contentLang)} text-[32px] ${enText ? "leading-[1.2]" : "leading-[1.2]"} tracking-[-0.62px] break-keep ${contentLang === "zh" || contentLang === "ja" ? "[overflow-wrap:anywhere]" : ""} text-balance`}
+        className={`w-3/5 pb-[0.15em] ${titleFont(contentLang)} text-[32px] ${enText ? "leading-[1.2]" : "leading-[1.2]"} tracking-[-0.62px] break-keep ${contentLang === "zh" || contentLang === "zht" || contentLang === "ja" ? "[overflow-wrap:anywhere]" : ""} text-balance`}
       >
         {/* 중·일은 단어(말덩이) 사이에서만 줄바꿈 — "食谱"가 갈라지지 않게 (메인과 같은 cjkPhrases·PhraseText).
             말덩이 하나가 칸보다 길면 overflow-wrap:anywhere로 그 안에서 끊음 */}
-        {contentLang === "zh" || contentLang === "ja" ? <PhraseText phrases={cjkPhrases(titleText, contentLang)} /> : titleText}
+        {contentLang === "zh" || contentLang === "zht" || contentLang === "ja" ? <PhraseText phrases={cjkPhrases(titleText, contentLang)} /> : titleText}
       </h1>
       <p className="text-[16px] leading-[1.5] font-medium tracking-[-0.32px] whitespace-pre-line text-[#444]">
         {bodyIn(post, contentLang)}

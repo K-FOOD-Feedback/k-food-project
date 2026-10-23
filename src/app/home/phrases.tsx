@@ -15,13 +15,13 @@ const HIRAGANA = /^[\p{Script=Hiragana}ー]+$/u;
 const KATAKANA = /^[\p{Script=Katakana}ー]+$/u;
 const ENDS_KATAKANA = /[\p{Script=Katakana}ー]$/u;
 
-export function cjkPhrases(text: string, lang: "zh" | "ja"): string[] {
+export function cjkPhrases(text: string, lang: "zh" | "zht" | "ja"): string[] {
   if (typeof Intl === "undefined" || !("Segmenter" in Intl)) return [text];
   const out: string[] = [];
   let forward = false; // 바로 앞 조각이 뒷말에 붙어야 함
   let prevPunct = false;
   let prevLen = 0; // 바로 앞 조각(묶기 전)의 글자 수
-  for (const { segment, isWordLike } of new Intl.Segmenter(lang, { granularity: "word" }).segment(text)) {
+  for (const { segment, isWordLike } of new Intl.Segmenter(lang === "zht" ? "zh-Hant" : lang, { granularity: "word" }).segment(text)) {
     const single = [...segment].length === 1;
     const last = out[out.length - 1];
     const glue: boolean =

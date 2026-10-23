@@ -8,8 +8,8 @@ import type { Lang } from "./copy";
   중국어·일본어 문구가 아직 없는 화면(상세·한마디)은 useViewerLang()/useKoreanLang()으로 읽어 영어로 보여 주고,
   있는 화면(메인)은 useViewerUiLang()/useKoreanUiLang()으로 읽어 그 언어로 보여 줍니다.
 */
-export type UiLang = Lang | "zh" | "ja";
-const UI_LANGS: UiLang[] = ["ko", "en", "zh", "ja"];
+export type UiLang = Lang | "zh" | "zht" | "ja";
+const UI_LANGS: UiLang[] = ["ko", "en", "zh", "zht", "ja"];
 const asUi = (v: string | null): UiLang | null => (UI_LANGS.includes(v as UiLang) ? (v as UiLang) : null);
 
 /*

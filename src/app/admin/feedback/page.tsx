@@ -26,7 +26,8 @@ const TABS: [FeedbackViewer, string][] = [
 const LANG_NAME: Record<string, string> = {
   ko: "한국어",
   en: "영어",
-  zh: "중국어",
+  zh: "중국어 간체",
+  zht: "중국어 번체",
   ja: "일본어",
 };
 

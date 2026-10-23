@@ -102,7 +102,7 @@ function useNotifUi(lang: Lang): UiLang {
 function timeOf(n: Notif, now: number, ui: UiLang) {
   const at = now - n.ago;
   if (n.ago < TIME.HOUR) return timeAgo(at, now, ui);
-  const locale = { ko: "ko-KR", en: "en-US", zh: "zh-CN", ja: "ja-JP" }[ui];
+  const locale = { ko: "ko-KR", en: "en-US", zh: "zh-CN", zht: "zh-TW", ja: "ja-JP" }[ui];
   return new Date(at).toLocaleTimeString(locale, { hour: "numeric", minute: "2-digit" });
 }
 
@@ -139,7 +139,7 @@ export function NotificationCard({
       <span className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="flex items-start gap-2">
           {/* 한국어는 낱말 단위로 줄바꿈(break-keep), 중·일은 띄어쓰기가 없어 글자 단위로 (break-keep이면 한 줄에서 잘림) */}
-          <span className={`line-clamp-2 min-w-0 flex-1 text-[16px] font-semibold leading-[1.4] ${ui === "zh" || ui === "ja" ? "" : "break-keep"}`}>{titleOf(n, lang, ui)}</span>
+          <span className={`line-clamp-2 min-w-0 flex-1 text-[16px] font-semibold leading-[1.4] ${ui === "zh" || ui === "zht" || ui === "ja" ? "" : "break-keep"}`}>{titleOf(n, lang, ui)}</span>
           <span className="shrink-0 pt-1 text-[12px] font-medium tabular-nums text-muted">{timeOf(n, now, ui)}</span>
         </span>
         <span className="flex items-center gap-2">
@@ -177,6 +177,14 @@ const COPY: Record<UiLang, { title: string; back: string; emptyTitle: string; em
     emptyForeigner: "韩国人投票或评论时，我们会第一时间通知你。",
     emptyKorean: "有人回复你的评论时，我们会第一时间通知你。",
     close: "关闭",
+  },
+  zht: {
+    title: "通知",
+    back: "返回",
+    emptyTitle: "還沒有通知",
+    emptyForeigner: "韓國人投票或評論時，我們會第一時間通知你。",
+    emptyKorean: "有人回覆你的評論時，我們會第一時間通知你。",
+    close: "關閉",
   },
   ja: {
     title: "通知",
@@ -228,6 +236,16 @@ const TITLES: Record<UiLang, {
     koReply: "有人回复了你的评论。",
     koReplyByAuthor: "作者回复了你的评论。",
     draftBody: "接着写吧。",
+  },
+  zht: {
+    first: "有韓國人第一次回應了你的帖子。",
+    milestone: (n) => `你的帖子獲得了 ${n} 票。`,
+    comment: "有韓國人評論了你的帖子。",
+    reply: "有韓國人回覆了你的評論。",
+    draft: "你有一篇沒寫完的帖子。",
+    koReply: "有人回覆了你的評論。",
+    koReplyByAuthor: "作者回復了你的評論。",
+    draftBody: "接著寫吧。",
   },
   ja: {
     first: "韓国の人があなたの投稿に初めて反応しました。",

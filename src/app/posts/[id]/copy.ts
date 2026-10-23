@@ -10,7 +10,7 @@ export type Lang = "ko" | "en";
 /** 투표 후 내 편: top 가장 많은 칸(동점 포함) · few 20% 미만 소수 · alone 나 혼자 · mid 그 사이 */
 export type SameSide = "top" | "mid" | "few" | "alone";
 /** 한마디 화면은 중국어·일본어 문구까지 있음 (상세 화면 DETAIL_COPY는 아직 한국어·영어만) */
-export type CommentsLang = Lang | "zh" | "ja";
+export type CommentsLang = Lang | "zh" | "zht" | "ja";
 
 export const COMMENTS_COPY = {
   ko: {
@@ -176,6 +176,59 @@ export const COMMENTS_COPY = {
     leaveCard: "说点\n什么吧",
     loginTitle: "登录后发表评论",
     loginBody: "用 Google 几秒就能登录。和韩国人聊聊这道菜吧。",
+  },
+  zht: {
+    count: (n: number) => compactCount(n, "zht"),
+    title: "評論",
+    section: "評論",
+    openAll: "檢視全部評論",
+    emptyPile: "還沒有評論\n來寫第一條吧",
+    recent: "最新評論",
+    leave: "說點什麼吧",
+    leaveLabel: "發表評論",
+    send: "傳送",
+    leaveEmoji: (emoji: string) => `傳送 ${emoji}`,
+    floatEmoji: (emoji: string) => `飄出 ${emoji}`,
+    openComment: (text: string) => `檢視評論：${text}`,
+    me: "我",
+    author: "作者",
+    replyCount: (n: number) => `${compactCount(n, "zht")} 條回覆`,
+    hidden: "已隱藏的評論",
+    backToDetail: "返回帖子",
+    backToNotifications: "返回通知",
+    back: "返回",
+    layer: (text: string) => `評論：${text}`,
+    close: "關閉",
+    cancelEdit: "取消編輯",
+    doneEdit: "完成",
+    editComment: "編輯評論",
+    deleteComment: "刪除評論",
+    editLabel: "編輯你的評論",
+    edited: "已編輯",
+    emptyReplies: "你怎麼看\n這條評論？",
+    editReply: "編輯回覆",
+    deleteReply: "刪除回覆",
+    reportReply: "舉報回覆",
+    cancelReplyTo: "取消回覆",
+    leaveReply: "寫下你的回覆",
+    leaveReplyLabel: "發表回覆",
+    sendReply: "傳送回覆",
+    reportTitle: "要舉報這條回覆嗎？",
+    reportAsk: "為什麼要舉報？",
+    reportPlaceholder: "請寫下舉報理由",
+    reportNote: "舉報後，這條回覆會在你的畫面中隱藏。我們會核實後處理。",
+    cancel: "取消",
+    report: "舉報",
+    deleteAsk: "確定要刪除嗎？",
+    no: "否",
+    yes: "是",
+    reported: "已收到你的舉報",
+    more: "更多",
+    reportCommentTitle: "要舉報這條評論嗎？",
+    reportCommentNote: "舉報後，這條評論會在你的畫面中隱藏。我們會核實後處理。",
+    leaveCard: "說點\n什麼吧",
+    loginTitle: "登入後發表評論",
+    loginBody: "用 Google 幾秒就能登入。和韓國人聊聊這道菜吧。",
   },
   ja: {
     count: (n: number) => compactCount(n, "ja"),
@@ -351,6 +404,42 @@ export const DETAIL_COPY = {
     shareSubForeign: "分享给朋友，一起来讨论吧！",
     copied: "已复制链接",
     copyFail: "无法复制链接",
+  },
+  zht: {
+    count: (n: number) => compactCount(n, "zht"),
+    back: "返回",
+    participants: (n: number) => `${compactCount(n, "zht")}人參與`,
+    next: "下一個來評評",
+    openComments: "檢視全部評論",
+    vote: "投票",
+    resultsTitle: "韓國人怎麼看",
+    resultsTotal: (n: number) => ["", compactCount(n, "zht"), "位韓國人投了票"],
+    resultsNote: "只有韓國人可以投票",
+    resultLabel: (label: string, pct: number, top: boolean) => `${label} ${pct}%${top ? "（最多）" : ""}`,
+    voteAsk: ["你怎麼看？", "來投一票吧！"],
+    voted: "投票完成！",
+    sameThink: (total: number, same: number, side: SameSide) =>
+      side === "alone"
+        ? [`${compactCount(total, "zht")}人中 `, "只有你", " 這麼想 😎"]
+        : side === "top"
+          ? [`${compactCount(total, "zht")}人中有 `, `${compactCount(same, "zht")}人`, " 站在你這邊 🤝"]
+          : side === "few"
+            ? [`${compactCount(total, "zht")}人中只有 `, `${compactCount(same, "zht")}人`, " 和你一樣…少數派 😎"]
+            : [`${compactCount(total, "zht")}人中有 `, `${compactCount(same, "zht")}人`, " 和你想法一樣"],
+    changeHint: "點其他選項可以改投",
+    tokenLabel: "投票令牌 — 拖到選項裡，或直接點選項投票",
+    optionVote: (label: string) => `投給 ${label}`,
+    optionMine: "（我的選擇）",
+    optionChange: " — 點選改投",
+    voteConfirm: (label: string) => `要投給「${label}」嗎？`,
+    voteNow: "投票",
+    lock: ["投票後就能", "和大家聊聊了！"],
+    shareTitle: "看看我的口味正不正常",
+    shareSub: "分享出去，聽聽大家怎麼說！",
+    shareTitleForeign: "看看韓國人的真實想法",
+    shareSubForeign: "分享給朋友，一起來討論吧！",
+    copied: "已複製連結",
+    copyFail: "無法複製連結",
   },
   ja: {
     count: (n: number) => compactCount(n, "ja"),

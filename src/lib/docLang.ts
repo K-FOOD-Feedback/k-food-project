@@ -7,7 +7,7 @@ import { useEffect } from "react";
   영어 Inter · 일본어 M PLUS 2 · 중국어 간체 MiSans (한국어는 Pretendard 그대로)
   화면을 떠나면 한국어(기본)로 되돌림 — 이 훅을 안 쓰는 화면은 한국어 글꼴
 */
-const TAG: Record<string, string> = { ko: "ko", en: "en", ja: "ja", zh: "zh-Hans" };
+const TAG: Record<string, string> = { ko: "ko", en: "en", ja: "ja", zh: "zh-Hans", zht: "zh-Hant"};
 
 export function useDocLang(lang: string) {
   useEffect(() => {
