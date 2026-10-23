@@ -69,9 +69,9 @@ export function VoteBowl({
   const optionLang = contentLang;
   const options = optionsIn(post, contentLang);
   const T = DETAIL_COPY[lang];
-  // 제목·칸 이름·% 글꼴 (영어면 Gilroy)
+  // 제목·칸 이름·% 글꼴 (영어면 Figtree)
   const font = titleFont(lang);
-  // 칸 이름은 글쓴이가 쓴 글이라 글 언어 글꼴 (한국어 Paperlogy · 영어 Gilroy)
+  // 칸 이름은 글쓴이가 쓴 글이라 글 언어 글꼴 (한국어 Paperlogy · 영어 Figtree)
   const optionFont = titleFont(optionLang);
   // 영어 행간은 한국어보다 0.15 좁게 (소문자가 낮아 같은 행간이면 줄 사이가 비어 보임 — 상세 제목과 같은 규칙)
   const title = `${font} ${titleSize} ${lang === "en" ? "leading-[1.2]" : "leading-[1.4]"}`;

@@ -23,7 +23,8 @@ import { DETAIL_COPY, type CommentsLang } from "./copy";
 import { nameIn, titleIn } from "@/app/home/titles";
 import { cjkPhrases, PhraseText } from "@/app/home/phrases";
 import { bodyIn, optionsIn, questionIn } from "./postText";
-import { notoSansJP, notoSansSC, paperlogy, titleFont } from "./font";
+import { useDocLang } from "@/lib/docLang";
+import { mPlus2, paperlogy, titleFont } from "./font";
 import { isForeignFrom, withViewer } from "./viewer";
 import { saveKoreanLang, saveViewerLang, useKoreanUiLang, useViewerUiLang } from "./viewerLang";
 import { VoteBowl } from "./VoteBowl";
@@ -51,6 +52,8 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
   const viewerLang = useViewerUiLang();
   const koreanLang = useKoreanUiLang();
   const lang: CommentsLang = foreigner ? viewerLang : koreanLang;
+  // 화면 언어별 본문 글꼴 (영어 Inter · 일본어 M PLUS 2 · 중국어 MiSans)
+  useDocLang(lang);
   const T = DETAIL_COPY[lang];
   // 글(제목·본문·투표 칸) 언어: 원어(글쓴이 언어 = 영어) 그대로, 자동 번역이 켜져 있으면 화면 언어로 번역해 보여 줌
   const autoTranslate = useAutoTranslate();
@@ -771,7 +774,7 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
           className="mt-[46px]"
           style={
             {
-              "--cta-title-font": contentLang === "zh" ? notoSansSC.style.fontFamily : contentLang === "ja" ? notoSansJP.style.fontFamily : undefined,
+              "--cta-title-font": contentLang === "zh" ? "var(--font-zh-hans-title)" : contentLang === "ja" ? mPlus2.style.fontFamily : undefined,
             } as CSSProperties
           }
         >
@@ -782,7 +785,7 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
             // 넘어갈 글의 카드 색 (게시글 데이터 색이라 토큰 대신 그대로)
             style={{ backgroundColor: next.color }}
             // 제목 글자만 Paperlogy로 (ArrowCta는 공통 부품이라 바깥에서 지정)
-            // (영어면 Gilroy — font-title-en)
+            // (영어면 Figtree — font-title-en)
             className={
               contentLang === "en"
                 ? "[&>span>span:last-child]:font-title-en [&>span>span:last-child]:truncate"
