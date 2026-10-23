@@ -455,10 +455,11 @@ function VerdictCard({ post, theme, t }: { post: ShareCardPost; theme: CardTheme
   const row = "flex justify-between gap-4";
   return (
     <div className="flex h-full flex-col px-8 pt-8 pb-6">
-      {/* 영수증 — 아래 가장자리를 톱니 모양으로, 살짝 기울여 올려 둔 종이처럼 */}
-      <div className="-rotate-[1.5deg] drop-shadow-[0_16px_28px_rgba(0,0,0,0.25)]">
+      {/* 영수증 — 아래 가장자리를 톱니 모양으로, 살짝 기울여 올려 둔 종이처럼
+          넘칠 때: 도장 · VOTE NOW · 출처 줄은 크기 고정, 자리가 모자라면 사진만 줄어듦 (아이폰은 타자기체가 더 크게 그려져 출처 줄이 잘렸던 것) */}
+      <div className="flex min-h-0 -rotate-[1.5deg] flex-col drop-shadow-[0_16px_28px_rgba(0,0,0,0.25)]">
         <div
-          className="relative flex flex-col bg-white px-6 pt-6 pb-8 font-mono text-[16px] leading-[1.4] text-on-light"
+          className="relative flex min-h-0 flex-col bg-white px-6 pt-6 pb-8 font-mono text-[16px] leading-[1.4] text-on-light"
           style={{
             maskImage: "radial-gradient(circle at 10px 100%, transparent 8px, #000 9px)",
             maskSize: "20px 100%",
@@ -473,7 +474,7 @@ function VerdictCard({ post, theme, t }: { post: ShareCardPost; theme: CardTheme
           </div>
           <Rule />
           {/* 증거 — 사진만 (음식 이름 · 만든 사람은 뺌: 사진 · 혐의 · 배심원 · 판결만 남김, 송희) */}
-          <img src={post.photo} alt="" className="h-[120px] w-full rounded-[8px] object-cover" draggable={false} />
+          <img src={post.photo} alt="" className="h-[120px] min-h-[40px] w-full rounded-[8px] object-cover" draggable={false} />
           <Rule />
           {/* 혐의 */}
           <div className="flex flex-col gap-2">
@@ -504,8 +505,8 @@ function VerdictCard({ post, theme, t }: { post: ShareCardPost; theme: CardTheme
           {t.pending}
         </span>
       </span>
-      <p className={`mt-4 text-center font-display text-[24px] leading-none`}>{t.voteNow}</p>
-      <div className="mt-auto pt-4">
+      <p className="mt-4 shrink-0 text-center font-display text-[24px] leading-none">{t.voteNow}</p>
+      <div className="mt-auto shrink-0 pt-4">
         <Footer t={t} />
       </div>
     </div>
