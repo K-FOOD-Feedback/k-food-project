@@ -10,7 +10,7 @@ import { PinForm } from "./PinForm";
   이미 들어와 있으면(쿠키) 바로 넘어감. 문구는 고정이라 넘칠 일 없음
 */
 export const metadata: Metadata = {
-  title: "어드민 · 오늘의 참견",
+  title: "어드민",
   robots: { index: false, follow: false },
 };
 
