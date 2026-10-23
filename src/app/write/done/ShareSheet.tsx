@@ -338,7 +338,7 @@ export function ShareSheet({
         height: ART_H,
         cacheBust: true,
         style: { borderRadius: "0", zoom: "1" },
-        fontEmbedCSS: await ownFontCSS(),
+        fontEmbedCSS: await cardFontCSS(card),
       };
       // 아이폰 사파리는 첫 번째로 찍을 때 사진이 빈칸으로 나오는 문제(html-to-image 알려진 문제)가 있어서 한 번 찍고 버린 뒤 다시 찍음
       if (/iP(hone|ad|od)|^((?!chrome|android|crios|fxios).)*safari/i.test(navigator.userAgent)) await toBlob(card, options);
@@ -535,49 +535,90 @@ export function ShareSheet({
 }
 
 /**
- * 이미지에 넣을 글꼴 — 우리 사이트에서 내려주는 글꼴(@font-face)만 골라 data URL로 묶음
- * html-to-image에 맡기면 외부 CSS(Pretendard CDN)까지 읽으려다 보안 오류를 콘솔에 남김.
- * (Pretendard는 외부라 이미지에선 기기 기본 글꼴로 대체됨)
+ * 이미지에 넣을 글꼴 — 카드에 실제로 쓰인 글자가 든 글꼴 조각(@font-face)만 골라 data URL로 묶음
+ * - 우리 사이트 글꼴(Figtree · Paperlogy · M PLUS 2)과, 중국어 MiSans(jsDelivr — 다른 주소라 CSS 를 직접 받아 읽음)
+ * - 중 · 일 글꼴은 글자 범위별로 조각이 수십~수백 개라, 카드 글자가 들어 있는 조각만 (unicode-range 로 거름) — 다 넣으면 저장이 느려짐
+ * - Pretendard 같은 다른 외부 CSS 는 카드에 안 쓰여서 건너뜀 (html-to-image에 맡기면 외부 CSS까지 읽으려다 보안 오류)
  */
-let fontCSS: Promise<string> | null = null;
-function ownFontCSS() {
-  fontCSS ??= (async () => {
-    const rules: { css: string; base: string }[] = [];
+const EXTERNAL_FONT_CSS = /^https:\/\/cdn\.jsdelivr\.net\/npm\/misans@/;
+const fontFile = new Map<string, Promise<string | null>>();
+let faceList: Promise<{ css: string; base: string }[]> | null = null;
+
+/** 페이지의 @font-face 전부 (한 번만 모음) */
+function allFaces() {
+  faceList ??= (async () => {
+    const out: { css: string; base: string }[] = [];
     for (const sheet of Array.from(document.styleSheets)) {
-      if (sheet.href && new URL(sheet.href).origin !== location.origin) continue; // 외부 CSS는 건너뜀
+      const external = !!sheet.href && new URL(sheet.href).origin !== location.origin;
+      if (external) {
+        if (!EXTERNAL_FONT_CSS.test(sheet.href!)) continue;
+        try {
+          const text = await (await fetch(sheet.href!)).text();
+          for (const m of text.matchAll(/@font-face\s*\{[^}]*\}/g)) out.push({ css: m[0], base: sheet.href! });
+        } catch {
+          // 못 받으면 그 글꼴은 기기 글꼴로
+        }
+        continue;
+      }
       let list: CSSRuleList;
       try {
         list = sheet.cssRules;
       } catch {
         continue;
       }
-      for (const rule of Array.from(list)) {
-        if (rule instanceof CSSFontFaceRule) rules.push({ css: rule.cssText, base: sheet.href ?? location.href });
-      }
+      for (const rule of Array.from(list)) if (rule instanceof CSSFontFaceRule) out.push({ css: rule.cssText, base: sheet.href ?? location.href });
     }
-    const inlined = await Promise.all(
-      rules.map(async ({ css, base }) => {
-        const urls = [...css.matchAll(/url\(["']?([^"')]+)["']?\)/g)].map((m) => m[1]);
-        for (const u of urls) {
-          if (u.startsWith("data:")) continue;
-          try {
-            const blob = await (await fetch(new URL(u, base))).blob();
-            const data = await new Promise<string>((done) => {
+    return out;
+  })();
+  return faceList;
+}
+
+/** 이 조각에 카드 글자가 하나라도 들어 있는지 (unicode-range 가 없으면 모든 글자) */
+function covers(css: string, codes: number[]) {
+  const range = css.match(/unicode-range\s*:\s*([^;}]+)/i)?.[1];
+  if (!range) return true;
+  return range.split(",").some((part) => {
+    const r = part.trim().replace(/^u\+/i, "");
+    const [a, b] = r.includes("?") ? [r.replace(/\?/g, "0"), r.replace(/\?/g, "f")] : r.split("-").concat(r.includes("-") ? [] : [r]);
+    const lo = parseInt(a, 16);
+    const hi = parseInt(b, 16);
+    return codes.some((c) => c >= lo && c <= hi);
+  });
+}
+
+function toDataURL(url: string) {
+  if (!fontFile.has(url))
+    fontFile.set(
+      url,
+      fetch(url)
+        .then((r) => r.blob())
+        .then(
+          (blob) =>
+            new Promise<string>((done) => {
               const r = new FileReader();
               r.onload = () => done(String(r.result));
               r.readAsDataURL(blob);
-            });
-            css = css.replace(u, data);
-          } catch {
-            // 못 받은 글꼴은 그냥 둠
-          }
-        }
-        return css;
-      }),
+            }),
+        )
+        .catch(() => null),
     );
-    return inlined.join("\n");
-  })();
-  return fontCSS;
+  return fontFile.get(url)!;
+}
+
+async function cardFontCSS(card: HTMLElement) {
+  const codes = [...new Set(Array.from(card.textContent ?? "", (ch) => ch.codePointAt(0)!))];
+  const faces = (await allFaces()).filter((f) => covers(f.css, codes));
+  const inlined = await Promise.all(
+    faces.map(async ({ css, base }) => {
+      for (const m of css.matchAll(/url\(["']?([^"')]+)["']?\)/g)) {
+        if (m[1].startsWith("data:")) continue;
+        const data = await toDataURL(new URL(m[1], base).href);
+        if (data) css = css.replace(m[1], data);
+      }
+      return css;
+    }),
+  );
+  return inlined.join("\n");
 }
 
 function Channel({

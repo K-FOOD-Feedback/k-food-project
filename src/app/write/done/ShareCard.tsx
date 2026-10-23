@@ -237,6 +237,20 @@ function Sparkles({ style, seed }: { style: CardStyle; seed: number }) {
   ));
 }
 
+/*
+  카드 글꼴 — 그 언어의 제목 글꼴 (앱 제목과 같은 규칙, globals.css · posts/[id]/font.ts)
+  한국어 Paperlogy(영문은 Figtree) · 영어 Figtree · 일본어 M PLUS 2 · 중국어 간체 MiSans Heavy · 번체 LINE Seed TW(기기에 없으면 MiSans)
+  모두 뒤에 영어 제목 글꼴을 붙여, 그 글꼴에 없는 글자(영문 · 이모지 옆 글자 등)는 Figtree 로
+  저장 이미지에도 같은 글꼴이 들어가게 ShareSheet 의 cardFontCSS 가 이 카드에 쓰인 글자의 글꼴 조각만 골라 넣음
+*/
+const CARD_FONT: Record<CardLang, string> = {
+  ko: "var(--font-en-title)",
+  en: "var(--font-en-title)",
+  ja: "var(--font-mplus2), var(--font-en-title)",
+  zh: "var(--font-zh-hans-title), var(--font-en-title)",
+  zht: "var(--font-zh-hant), var(--font-en-title)",
+};
+
 /** 카드 — 넘기거나 기울일 때 부모가 다시 그려져도 카드 내용은 다시 그리지 않게 memo */
 export const ShareCard = memo(function ShareCard({
   style,
@@ -256,14 +270,13 @@ export const ShareCard = memo(function ShareCard({
 }) {
   const t = COPY[lang];
   return (
-    // 글꼴은 우리 사이트 글꼴(Gilroy·Figtree·Paperlogy)만 — 본문 글꼴 Pretendard는 외부(CDN)라 이미지 저장 때 빠지고
-    // 폰 기본 글꼴로 바뀌어 폭이 넓어짐 → 화면과 저장 이미지의 글자 폭이 달라 잘림
+    // 본문 글꼴 Pretendard 는 쓰지 않음 — 카드 글자는 모두 제목 글꼴(CARD_FONT)이라 화면과 저장 이미지의 글자 폭이 같음
     // 바깥: 화면에선 절반으로 (zoom — 자리도 같이 줄어서 둘레 레이아웃은 200×356 그대로) · 안: 2배 크기로 그린 카드 (저장은 안쪽을 찍음)
     <div style={{ width: CARD_W, height: CARD_H }}>
     <div
       data-share-art
       className="relative overflow-hidden rounded-[40px] text-left break-keep"
-      style={{ width: ART_W, height: ART_H, zoom: 1 / ART, background: theme.bg, color: theme.fg, fontFamily: "var(--font-gilroy)" }}
+      style={{ width: ART_W, height: ART_H, zoom: 1 / ART, background: theme.bg, color: theme.fg, fontFamily: CARD_FONT[lang] }}
     >
       <Sparkles style={style} seed={seed} />
       {style === "photo" && <PhotoCard post={post} theme={theme} t={t} shape={shape} />}
