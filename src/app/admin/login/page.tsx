@@ -21,7 +21,7 @@ export default async function Page(props: PageProps<"/admin/login">) {
 
   return (
     <Screen className="items-center px-6 pt-[calc(160px+env(safe-area-inset-top))] pb-16">
-      <h1 className="animate-rise text-center font-display text-[26px] leading-[1.3]">
+      <h1 className="animate-rise text-center font-display text-[24px] leading-[1.3]">
         어드민 비밀번호를
         <br />
         입력해 주세요

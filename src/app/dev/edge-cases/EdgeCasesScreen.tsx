@@ -125,7 +125,7 @@ export function EdgeCasesScreen() {
               caption="다음 훈수 거리"
               title={c.title}
               style={{ backgroundColor: "#fae276" }}
-              className="[&>span>span:last-child]:font-(family-name:--font-paperlogy) [&>span>span:last-child]:truncate [&>span>span:last-child]:font-normal"
+              className="[&>span>span:last-child]:font-(family-name:--font-paperlogy) [&>span>span:last-child]:truncate [&>span>span:last-child]:font-extrabold"
               onClick={noop}
             />
           </Case>
