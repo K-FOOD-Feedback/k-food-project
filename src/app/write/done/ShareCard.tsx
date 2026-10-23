@@ -258,7 +258,7 @@ export const ShareCard = memo(function ShareCard({
       style={{ width: CARD_W, height: CARD_H, background: theme.bg, color: theme.fg, fontFamily: "var(--font-gilroy)" }}
     >
       <Sparkles style={style} seed={seed} />
-      {style === "photo" && <PhotoCard post={post} theme={theme} t={t} cjk={lang === "zh" || lang === "zht" || lang === "ja"} shape={shape} />}
+      {style === "photo" && <PhotoCard post={post} theme={theme} t={t} shape={shape} />}
       {style === "vote" && <VoteCard post={post} theme={theme} t={t} shape={shape} />}
       {style === "verdict" && <VerdictCard post={post} theme={theme} t={t} />}
 
@@ -341,11 +341,11 @@ function StickerPhoto({ src, size, rotate, shape, className = "" }: { src: strin
 
 /**
  * 큰 제목 두 줄 — 둘째 줄은 진한 띠로 강조 (레퍼런스: "achieve." 띠), 두 줄은 바짝 붙여 한 덩어리로
- * 중·일은 글자가 넓어서 조금 작게 (둘째 줄 띠가 카드 폭 176 안에 들어가게 — 7자 기준)
+ * 글자 크기는 모든 언어 같은 24px (언어별 보정 없음)
  */
-function Headline({ t, theme, cjk }: { t: Copy; theme: CardTheme; cjk: boolean }) {
+function Headline({ t, theme }: { t: Copy; theme: CardTheme }) {
   return (
-    <div className={`flex flex-col items-start font-display leading-none tracking-[-0.02em] ${cjk ? "text-[24px]" : "text-[24px]"}`}>
+    <div className={`flex flex-col items-start font-display leading-none tracking-[-0.02em] text-[24px]`}>
       <span>{t.head[0]}</span>
       <span className="-ml-1 -mt-1 -rotate-2 rounded-[6px] px-2 pt-1 pb-1" style={{ background: theme.ink, color: theme.inkText }}>
         {t.head[1]}
@@ -354,10 +354,10 @@ function Headline({ t, theme, cjk }: { t: Copy; theme: CardTheme; cjk: boolean }
   );
 }
 
-function PhotoCard({ post, theme, t, cjk, shape }: { post: ShareCardPost; theme: CardTheme; t: Copy; cjk: boolean; shape: CardShape }) {
+function PhotoCard({ post, theme, t, shape }: { post: ShareCardPost; theme: CardTheme; t: Copy; shape: CardShape }) {
   return (
     <div className="relative flex h-full flex-col px-4 pt-4 pb-3">
-      <Headline t={t} theme={theme} cjk={cjk} />
+      <Headline t={t} theme={theme} />
       <StickerPhoto src={post.photo} size={158} rotate={4} shape={shape} className="mx-auto mt-3" />
       {/* 제목 2줄·작성자 1줄까지, 넘치면 … (띄어쓰기 없는 긴 단어도 칸 안에서 줄바꿈) */}
       <div className="flex flex-col gap-1 pt-3 pb-3">
@@ -476,7 +476,7 @@ function VerdictCard({ post, theme, t }: { post: ShareCardPost; theme: CardTheme
       >
         {t.pending}
       </span>
-      <p className={`mt-3 text-center font-display text-[12px] leading-none ${t === COPY.en ? "tracking-[0.12em]" : ""}`}>{t.voteNow}</p>
+      <p className={`mt-3 text-center font-display text-[12px] leading-none`}>{t.voteNow}</p>
       <div className="mt-auto pt-3">
         <Footer t={t} />
       </div>
