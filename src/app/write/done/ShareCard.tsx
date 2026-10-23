@@ -435,7 +435,7 @@ function VoteCard({ post, theme, t, shape }: { post: ShareCardPost; theme: CardT
 
 /** 영수증 점선 — 묶음 사이를 나눔 */
 function Rule() {
-  return <span className="my-6 block border-t-2 border-dashed border-black/30" />;
+  return <span className="my-4 block border-t-2 border-dashed border-black/30" />;
 }
 
 function VerdictCard({ post, theme, t }: { post: ShareCardPost; theme: CardTheme; t: Copy }) {
@@ -445,7 +445,7 @@ function VerdictCard({ post, theme, t }: { post: ShareCardPost; theme: CardTheme
       {/* 영수증 — 아래 가장자리를 톱니 모양으로, 살짝 기울여 올려 둔 종이처럼 */}
       <div className="-rotate-[1.5deg] drop-shadow-[0_16px_28px_rgba(0,0,0,0.25)]">
         <div
-          className="relative flex flex-col bg-white px-6 pt-8 pb-10 font-mono text-[16px] leading-[1.4] text-on-light"
+          className="relative flex flex-col bg-white px-6 pt-6 pb-8 font-mono text-[16px] leading-[1.4] text-on-light"
           style={{
             maskImage: "radial-gradient(circle at 10px 100%, transparent 8px, #000 9px)",
             maskSize: "20px 100%",
@@ -460,12 +460,12 @@ function VerdictCard({ post, theme, t }: { post: ShareCardPost; theme: CardTheme
           </div>
           <Rule />
           {/* 증거 — 사진만 (음식 이름 · 만든 사람은 뺌: 사진 · 혐의 · 배심원 · 판결만 남김, 송희) */}
-          <img src={post.photo} alt="" className="h-[192px] w-full rounded-[8px] object-cover" draggable={false} />
+          <img src={post.photo} alt="" className="h-[120px] w-full rounded-[8px] object-cover" draggable={false} />
           <Rule />
           {/* 혐의 */}
           <div className="flex flex-col gap-2">
             <span className="opacity-60">{t.charge}</span>
-            <p className="line-clamp-3 font-bold">{post.voteQuestion}</p>
+            <p className="line-clamp-2 font-bold">{post.voteQuestion}</p>
           </div>
           <Rule />
           {/* 판결 */}
@@ -481,15 +481,18 @@ function VerdictCard({ post, theme, t }: { post: ShareCardPost; theme: CardTheme
           </div>
         </div>
       </div>
-      {/* 판결 대기 도장 — 진한 띠 + 겹테두리 (기울이면 영수증 끝에 아슬아슬하게 닿아 불안해 보여서 똑바로) */}
-      <span
-        className="pointer-events-none mx-auto mt-12 rounded-[18px] px-6 py-4 font-display text-[32px] leading-none tracking-wide"
-        style={{ background: theme.ink, color: theme.inkText, boxShadow: `0 0 0 4px ${theme.ink}, 0 0 0 8px #ffffff` }}
-      >
-        {t.pending}
+      {/* 판결 대기 도장 — 진한 띠 + 흰 겹테두리, 한 줄 고정 (기울이면 영수증 끝에 아슬아슬하게 닿아 불안해 보여서 똑바로)
+          테두리는 그림자(box-shadow) 대신 흰 판으로 감쌈 — 사파리에서 저장할 때 그림자 테두리가 엉뚱한 자리에 네모로 찍혀서 */}
+      <span className="pointer-events-none mx-auto mt-6 shrink-0 rounded-[22px] bg-white p-1">
+        <span
+          className="block whitespace-nowrap rounded-[18px] border-4 px-6 py-3 font-display text-[28px] leading-none tracking-wide"
+          style={{ background: theme.ink, borderColor: theme.ink, color: theme.inkText }}
+        >
+          {t.pending}
+        </span>
       </span>
-      <p className={`mt-6 text-center font-display text-[24px] leading-none`}>{t.voteNow}</p>
-      <div className="mt-auto pt-6">
+      <p className={`mt-4 text-center font-display text-[24px] leading-none`}>{t.voteNow}</p>
+      <div className="mt-auto pt-4">
         <Footer t={t} />
       </div>
     </div>
