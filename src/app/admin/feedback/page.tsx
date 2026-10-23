@@ -15,7 +15,7 @@ import { listFeedback, type FeedbackRow, type FeedbackViewer } from "./db";
   데이터는 Supabase K-food 프로젝트 public.feedback (db.ts)
 */
 export const metadata: Metadata = {
-  title: "의견 · 오늘의 참견",
+  title: "의견",
   robots: { index: false, follow: false },
 };
 
