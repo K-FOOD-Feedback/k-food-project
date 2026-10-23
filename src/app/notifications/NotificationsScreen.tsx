@@ -252,7 +252,7 @@ function titleOf(n: Notif, lang: Lang, ui: UiLang) {
 function bodyOf(n: Notif, ui: UiLang, translate: boolean) {
   if (n.type === "comment" || n.type === "reply") {
     const tr = translate && n.detailLang !== ui ? n.translated?.[ui] : undefined;
-    return `“${tr ?? n.detail}”`;
+    return tr ?? n.detail; // 따옴표 없이 (송희)
   }
   if (n.type === "draft") return TITLES[ui].draftBody;
   return postTitleOf(n, ui);

@@ -69,7 +69,7 @@ const PICKER_COPY: Record<PickLang, { change: string; close: string; recommended
 const OPTIONS: Option[] = [
   { id: "ko", flag: "🇰🇷", ko: "한국어", en: "Korean", href: "/home" },
   { id: "en", flag: "🇺🇸", ko: "영어", en: "English", href: "/home?lang=en" },
-  { id: "zh", flag: "🇨🇳", ko: "중국어", en: "Chinese" },
+  { id: "zh", flag: "🇨🇳", ko: "중국어 간체", en: "Simplified Chinese" },
   { id: "ja", flag: "🇯🇵", ko: "일본어", en: "Japanese" },
 ];
 
@@ -191,7 +191,7 @@ function LanguagePicker({
         />
 
         {/* 언어 목록 + 자동 번역을 한 덩어리로 묶어 화면 가운데에 */}
-        <div className="absolute top-1/2 left-1/2 flex w-[230px] -translate-x-1/2 -translate-y-1/2 flex-col gap-10">
+        <div className="absolute top-1/2 left-1/2 flex w-[310px] max-w-[calc(100%-32px)] -translate-x-1/2 -translate-y-1/2 flex-col gap-10">
           <ul className="flex flex-col gap-2">
             {OPTIONS.map((o, i) => {
               const selected = o.id === lang;
@@ -221,7 +221,7 @@ function LanguagePicker({
                       <span className="font-(family-name:--font-paperlogy) text-[20px] leading-[1.4] tracking-[-0.36px]">
                         {o.ko}
                       </span>
-                      <span className="font-display text-[24px] leading-[1.4] tracking-[-0.44px]">{o.en}</span>
+                      <span className="font-display text-[24px] leading-[1.4] tracking-[-0.44px] whitespace-nowrap">{o.en}</span>
                     </span>
                   </button>
                 </li>
@@ -247,7 +247,7 @@ function LanguagePicker({
               </span>
               <span className="flex min-w-0 flex-1 flex-col gap-1">
                 <span className="font-(family-name:--font-paperlogy) text-[16px] leading-[1.4] tracking-[-0.32px]">자동 번역</span>
-                <span className="font-display text-[20px] leading-[1.4] tracking-[-0.36px]">Auto-translate</span>
+                <span className="font-display text-[20px] leading-[1.4] tracking-[-0.36px] whitespace-nowrap">Auto-translate</span>
               </span>
               {/* 스위치 */}
               <span
