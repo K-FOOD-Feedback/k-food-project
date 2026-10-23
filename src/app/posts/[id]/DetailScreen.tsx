@@ -21,7 +21,8 @@ import { backHrefFrom, withFrom, type BackFrom } from "@/lib/back";
 import { CommentPile } from "./CommentPile";
 import { DETAIL_COPY, type CommentsLang } from "./copy";
 import { nameIn, titleIn } from "@/app/home/titles";
-import { cjkPhrases, PhraseText } from "@/app/home/phrases";
+import { cjkPhrases, PhraseText, twoLineWidth } from "@/app/home/phrases";
+import { HOME_CARD_WIDTH } from "@/app/home/CardStack";
 import { bodyIn, optionsIn, questionIn } from "./postText";
 import { useDocLang } from "@/lib/docLang";
 import { mPlus2, paperlogy, titleFont } from "./font";
@@ -956,10 +957,9 @@ const NEXT_EASE = "cubic-bezier(0.22, 1, 0.36, 1)"; // 빠르게 출발해 길�
 const TRIP_TTL_MS = 30 * 60_000;
 // 게시글 원어 — 지금 글은 모두 외국인이 쓴 글이라 영어 (자동 번역을 끄면 이 언어로 보임)
 const POST_ORIGINAL_LANG: CommentsLang = "en";
-// 상세 제목: 이 줄 수를 넘으면 글자를 줄이고, 줄이다가 멈추는 가장 작은 글자 크기 (그래도 넘치면 줄이 늘어남 — 자르지 않음)
-const TITLE_MAX_LINES = 3;
-const TITLE_MIN_PX = 18;
-const TITLE_MIN_PX_CJK = 18; // 송희: 14px는 너무 작음 — 모든 언어 18px까지만
+// 상세 제목: 메인 카드 제목과 줄바꿈이 똑같게 — 메인 제목 칸(카드 폭 - 좌우 20px씩)을 메인 글자 크기(24px)로 나눈 글자 수만큼의 폭
+const TITLE_EM_WIDTH = (HOME_CARD_WIDTH - 40) / 24;
+const TITLE_MAX_PX = 32;
 const BACK_CARD_MS = 320;
 // 사진 자동 넘김 간격 (가만히 있은 지 이만큼 지나면 다음 사진)
 const AUTOPLAY_MS = 3500;
@@ -1034,37 +1034,9 @@ function ShareVoteCard({
 /** 상세 본문 카드 안 글 (점검 화면 /dev/edge-cases 에서도 씀) */
 export function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: HomePost; lang?: CommentsLang; contentLang?: CommentsLang }) {
   // contentLang: 글쓴이가 쓴 제목·본문 (원어 또는 자동 번역) — 제목은 중·일까지, 본문은 한국어가 아니면 영어
-  const enText = contentLang === "en";
-  const titleRef = useRef<HTMLHeadingElement>(null);
   const titleText = titleIn(post, contentLang);
-  useLayoutEffect(() => {
-    const el = titleRef.current;
-    if (!el) return;
-    const fit = () => {
-      el.style.fontSize = "";
-      let size = parseFloat(getComputedStyle(el).fontSize);
-      // 아래 여백(pb, g·y 같은 글자 꼬리가 잘리지 않게 둔 자리)은 빼고 줄 수를 셈
-      const lines = () => {
-        const cs = getComputedStyle(el);
-        return Math.round((el.scrollHeight - parseFloat(cs.paddingBottom)) / parseFloat(cs.lineHeight));
-      };
-      // 중·일은 단어 사이에서만 줄을 바꿔서(긴 가타카나 말덩이) 더 작아져야 3줄에 들어갈 때가 있음
-      const min = contentLang === "zh" || contentLang === "zht" || contentLang === "ja" ? TITLE_MIN_PX_CJK : TITLE_MIN_PX;
-      while (lines() > TITLE_MAX_LINES && size > min) {
-        size -= 1;
-        el.style.fontSize = `${size}px`;
-      }
-    };
-    fit();
-    // 글꼴이 늦게 들어오거나(중·일 글꼴은 글자가 나올 때 받음) 화면 폭이 바뀌면 다시 맞춤
-    document.fonts?.ready.then(fit);
-    document.fonts?.addEventListener("loadingdone", fit);
-    window.addEventListener("resize", fit);
-    return () => {
-      document.fonts?.removeEventListener("loadingdone", fit);
-      window.removeEventListener("resize", fit);
-    };
-  }, [titleText, contentLang]);
+  const cjk = contentLang === "zh" || contentLang === "zht" || contentLang === "ja";
+  const phrases = cjk ? cjkPhrases(titleText, contentLang) : null;
   return (
     <>
       {/* 글쓴이: 하얀 원(24px) 안 국기 + 닉네임 (메인 카드와 같은 디자인, 한마디는 익명) */}
@@ -1075,17 +1047,24 @@ export function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: H
         {/* 닉네임도 글 언어를 따라감 (중·일 번역 — 메인 카드와 같은 nameIn) */}
         {nameIn(post, contentLang)}
       </p>
-      {/* 제목: 글 영역 폭의 3/5, 최대 3줄 (아래 0.15em 여백: 행간이 좁아도 g·y 꼬리가 잘리지 않게) — 3줄을 넘으면 넘지 않을 때까지 글자를 조금씩 줄임(모든 언어 최소 18px), 그래도 넘치면 자르지 않고 전부 보여 줌 (송희: 상세는 제목 전부)
-          영어는 소문자가 낮아 같은 행간이면 줄 사이가 비어 보여서 좁게 (한국어 1.2 → 영어 1.05)
-          줄 길이는 고르게(text-balance) */}
-      <h1
-        ref={titleRef}
-        className={`w-3/5 pb-[0.15em] ${titleFont(contentLang)} text-[32px] ${enText ? "leading-[1.2]" : "leading-[1.2]"} tracking-[-0.62px] break-keep ${contentLang === "zh" || contentLang === "zht" || contentLang === "ja" ? "[overflow-wrap:anywhere]" : ""} text-balance`}
-      >
-        {/* 중·일은 단어(말덩이) 사이에서만 줄바꿈 — "食谱"가 갈라지지 않게 (메인과 같은 cjkPhrases·PhraseText).
-            말덩이 하나가 칸보다 길면 overflow-wrap:anywhere로 그 안에서 끊음 */}
-        {contentLang === "zh" || contentLang === "zht" || contentLang === "ja" ? <PhraseText phrases={cjkPhrases(titleText, contentLang)} /> : titleText}
-      </h1>
+      {/* 제목: 메인 카드 제목과 같은 규칙 — 같은 글꼴·줄 간격·자간(em)으로, 폭도 메인 제목 칸과 같은 글자 수(TITLE_EM_WIDTH em)라
+          메인에서 두 줄이면 여기서도 같은 자리에서 두 줄. 글자 크기는 32px, 칸이 좁으면 그 폭이 들어가게 줄임(cqw).
+          줄 길이는 고르게(text-balance), 중·일은 말덩이 사이에서만 줄을 바꾸고 짧아도 두 줄로 고르게(twoLineWidth — 메인과 같음).
+          메인은 2줄 넘으면 …, 상세는 자르지 않고 전부 보여 줌 (송희: 상세는 제목 전부). 아래 0.15em 여백: g·y 꼬리가 잘리지 않게 */}
+      <div className="@container w-full">
+        <h1
+          className={`max-w-full pb-[0.15em] ${titleFont(contentLang)} leading-[1.2] tracking-[-0.02875em] break-keep [overflow-wrap:anywhere] text-balance`}
+          style={{
+            fontSize: `min(${TITLE_MAX_PX}px, calc(100cqw / ${TITLE_EM_WIDTH}))`,
+            width: `${TITLE_EM_WIDTH}em`,
+            ...(phrases && twoLineWidth(phrases) ? { maxWidth: twoLineWidth(phrases) } : null),
+          }}
+        >
+          {/* 중·일은 단어(말덩이) 사이에서만 줄바꿈 — "食谱"가 갈라지지 않게 (메인과 같은 cjkPhrases·PhraseText).
+              말덩이 하나가 칸보다 길면 overflow-wrap:anywhere로 그 안에서 끊음 */}
+          {phrases ? <PhraseText phrases={phrases} /> : titleText}
+        </h1>
+      </div>
       <p className="text-[16px] leading-[1.5] font-medium tracking-[-0.32px] whitespace-pre-line text-[#444]">
         {bodyIn(post, contentLang)}
       </p>
