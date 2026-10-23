@@ -51,6 +51,7 @@ const MY_TITLE: Record<UiLang, string> = {
   en: "Buldak Carbonara with extra cheese",
   ko: "치즈 듬뿍 까르보 불닭",
   zh: "芝士加倍奶油火鸡面",
+  zht: "芝士加倍奶油火雞麵",
   ja: "チーズたっぷりカルボブルダック",
 };
 
@@ -83,7 +84,7 @@ const EN_INCOMING: Notif = {
   type: "comment",
   detail: "면이 어디 있는데요 ㅋㅋ",
   detailLang: "ko",
-  translated: { en: "Where are the noodles lol", zh: "面在哪儿啊哈哈", ja: "麺はどこですかw" },
+  translated: { en: "Where are the noodles lol", zh: "面在哪儿啊哈哈", zht: "面在哪兒啊哈哈", ja: "麺はどこですかw" },
   ago: 0,
   read: false,
 };
@@ -91,17 +92,17 @@ const EN_INCOMING: Notif = {
 const EN: Notif[] = [
   {
     ...MINE, id: "en1", type: "comment", detail: "치즈 더 넣으면 완벽할 듯 ㅋㅋ", detailLang: "ko",
-    translated: { en: "A bit more cheese and it'd be perfect lol", zh: "再多放点芝士就完美了哈哈", ja: "チーズもっと入れたら完璧かもw" },
+    translated: { en: "A bit more cheese and it'd be perfect lol", zh: "再多放点芝士就完美了哈哈", zht: "再多放點芝士就完美了哈哈", ja: "チーズもっと入れたら完璧かもw" },
     ago: 20 * MIN, read: false,
   },
   {
     ...MINE, id: "en2", type: "comment", detail: "불닭은 원래 이렇게 먹는 거 맞아요", detailLang: "ko",
-    translated: { en: "Yep, this is exactly how you eat Buldak", zh: "火鸡面本来就是这么吃的", ja: "ブルダックはもともとこうやって食べるんですよ" },
+    translated: { en: "Yep, this is exactly how you eat Buldak", zh: "火鸡面本来就是这么吃的", zht: "火雞麵本來就是這麼吃的", ja: "ブルダックはもともとこうやって食べるんですよ" },
     ago: 35 * MIN, read: false,
   },
   {
     ...OTHER, id: "en3", type: "reply", commentId: repliedComment(OTHER.postId), detail: "저도 그렇게 생각해요!", detailLang: "ko",
-    translated: { en: "I think so too!", zh: "我也这么觉得！", ja: "私もそう思います！" },
+    translated: { en: "I think so too!", zh: "我也这么觉得！", zht: "我也這麼覺得！", ja: "私もそう思います！" },
     ago: 50 * MIN, read: false,
   },
   { ...MINE, id: "en4", type: "milestone", detail: "20", ago: 3 * HOUR, read: true },
@@ -123,7 +124,7 @@ const KO_INCOMING: Notif = {
   byAuthor: true,
   detail: "고마워요! 다음엔 참치마요 삼김이랑 먹어 볼게요",
   detailLang: "ko",
-  translated: { en: "Thanks! Next time I'll try it with tuna mayo kimbap", zh: "谢谢！下次我配金枪鱼蛋黄酱饭团试试", ja: "ありがとう！次はツナマヨおにぎりと食べてみます" },
+  translated: { en: "Thanks! Next time I'll try it with tuna mayo kimbap", zh: "谢谢！下次我配金枪鱼蛋黄酱饭团试试", zht: "謝謝！下次我配金槍魚蛋黃醬飯糰試試", ja: "ありがとう！次はツナマヨおにぎりと食べてみます" },
   ago: 0,
   read: false,
 };
@@ -131,23 +132,23 @@ const KO_INCOMING: Notif = {
 const KO: Notif[] = [
   {
     ...BULDAK, id: "ko1", type: "reply", commentId: repliedComment(BULDAK.postId), detail: "삼김 조합 진짜 인정이요", detailLang: "ko",
-    translated: { en: "Triangle kimbap combo, totally agree", zh: "三角饭团组合，真的认同", ja: "おにぎりとの組み合わせ、本当に同感です" },
+    translated: { en: "Triangle kimbap combo, totally agree", zh: "三角饭团组合，真的认同", zht: "三角飯糰組合，真的認同", ja: "おにぎりとの組み合わせ、本当に同感です" },
     ago: 15 * MIN, read: false,
   },
   {
     ...BULDAK, id: "ko2", type: "reply", commentId: repliedComment(BULDAK.postId), detail: "저도 그렇게 먹어요 ㅋㅋ", detailLang: "ko",
-    translated: { en: "I eat it that way too lol", zh: "我也是这么吃的哈哈", ja: "私もそうやって食べますw" },
+    translated: { en: "I eat it that way too lol", zh: "我也是这么吃的哈哈", zht: "我也是這麼吃的哈哈", ja: "私もそうやって食べますw" },
     ago: 40 * MIN, read: false,
   },
   {
     ...TTEOK, id: "ko4", type: "reply", commentId: repliedComment(TTEOK.postId), actor: "Mia", byAuthor: true,
     detail: "Wow I didn't know that! Thank you", detailLang: "en",
-    translated: { ko: "와 몰랐어요! 고마워요", zh: "哇，我都不知道！谢谢", ja: "へえ、知りませんでした！ありがとう" },
+    translated: { ko: "와 몰랐어요! 고마워요", zh: "哇，我都不知道！谢谢", zht: "哇，我都不知道！謝謝", ja: "へえ、知りませんでした！ありがとう" },
     ago: DAY + 3 * HOUR, read: true,
   },
   {
     ...TTEOK, id: "ko5", type: "reply", commentId: repliedComment(TTEOK.postId), detail: "치즈 떡볶이엔 라면사리죠", detailLang: "ko",
-    translated: { en: "Cheesy tteokbokki needs ramen noodles", zh: "芝士炒年糕就得加拉面", ja: "チーズトッポッキにはラーメンですよね" },
+    translated: { en: "Cheesy tteokbokki needs ramen noodles", zh: "芝士炒年糕就得加拉面", zht: "芝士炒年糕就得加拉麵", ja: "チーズトッポッキにはラーメンですよね" },
     ago: 11 * DAY, read: true,
   },
 ];
@@ -161,6 +162,7 @@ const DAY_WORDS: Record<UiLang, { today: string; yesterday: string }> = {
   ko: { today: "오늘", yesterday: "어제" },
   en: { today: "Today", yesterday: "Yesterday" },
   zh: { today: "今天", yesterday: "昨天" },
+  zht: { today: "今天", yesterday: "昨天" },
   ja: { today: "今日", yesterday: "昨日" },
 };
 

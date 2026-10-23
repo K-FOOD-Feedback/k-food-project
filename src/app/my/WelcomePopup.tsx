@@ -117,6 +117,19 @@ const COPY = {
     start: "开始吧",
     close: "关闭",
   },
+  zht: {
+    label: "歡迎",
+    title: "歡迎！👋",
+    sub: "開始之前，只需設定幾項。",
+    nickname: "你的暱稱",
+    country: "你來自哪裡？",
+    all: "全部同意",
+    items: ["我已年滿14歲", "服務條款", "隱私政策"],
+    required: "必選",
+    view: "檢視",
+    start: "開始吧",
+    close: "關閉",
+  },
   ja: {
     label: "ようこそ",
     title: "ようこそ！👋",
@@ -171,7 +184,7 @@ export function WelcomePopup({
 }) {
   // 외국인은 🌐에서 고른 언어로 (영·중·일), 한국인은 한국어
   const ui = useViewerUiLang();
-  const fl = ui === "zh" || ui === "ja" ? ui : "en";
+  const fl = ui === "zh" || ui === "zht" || ui === "ja" ? ui : "en";
   const t = lang === "ko" ? COPY.ko : COPY[fl];
   const open = useWelcomeOpen();
   const foreigner = lang === "en";

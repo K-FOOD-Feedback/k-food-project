@@ -31,6 +31,12 @@ const COPY = {
     body: "只需一步，韩国人就能开始评判你的菜。",
     google: "使用 Google 继续",
   },
+  zht: {
+    label: "登入",
+    title: "登入後分享你的韓餐",
+    body: "只需一步，韓國人就能開始評判你的菜。",
+    google: "使用 Google 繼續",
+  },
   ja: {
     label: "ログイン",
     title: "ログインして韓国料理をシェア",
@@ -52,7 +58,7 @@ export function LoginSheet({
   onClose: () => void;
   onLoggedIn: () => void;
   /** 외국인(작성) = en, 한국인(투표) = ko */
-  lang?: "en" | "ko" | "zh" | "ja";
+  lang?: "en" | "ko" | "zh" | "zht" | "ja";
   title?: string;
   body?: string;
   /** 제목 위에 들어갈 그림 등 */

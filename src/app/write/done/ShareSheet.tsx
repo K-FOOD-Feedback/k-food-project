@@ -7,7 +7,7 @@ import { BottomSheet } from "@/components/Layout";
 import { track } from "@/lib/analytics";
 import { cardShapeAt, type CardShape } from "@/app/home/cardShapes";
 import { HOME_POSTS } from "@/app/home/mockPosts";
-import { CARD_H, CARD_STYLES, CARD_W, ShareCard, type CardLang, type CardTheme, type ShareCardPost } from "./ShareCard";
+import { ART_H, ART_W, CARD_H, CARD_STYLES, CARD_W, ShareCard, type CardLang, type CardTheme, type ShareCardPost } from "./ShareCard";
 
 /**
  * 게시 직후 "친구에게 공유" 시트 (3. 공유 유도, 담당 송희)
@@ -107,6 +107,24 @@ const COPY = {
     imageFail: "无法生成图片",
     copied: "已复制链接",
     copyFail: "无法复制链接",
+  },
+  zht: {
+    sheet: "分享給朋友",
+    text: (title: string) => `這是正宗韓餐嗎？🇰🇷 韓國人來評評我的「${title}」`,
+    card: (label: string) => `${label}卡片`,
+    styles: "卡片樣式",
+    colors: "卡片顏色",
+    color: (n: number) => `顏色 ${n}`,
+    save: "儲存",
+    stories: "快拍",
+    copy: "複製連結",
+    sms: "簡訊",
+    more: "更多",
+    saved: "已儲存！📸",
+    savedStory: "已儲存！發到快拍吧 📸",
+    imageFail: "無法生成圖片",
+    copied: "已複製連結",
+    copyFail: "無法複製連結",
   },
   ja: {
     sheet: "友だちにシェア",
@@ -302,7 +320,8 @@ export function ShareSheet({
   // ── 이미지로 만들기 (1080×1920)
   const makeImage = async () => {
     const node = cards.current[active];
-    const card = node?.firstElementChild as HTMLElement | null;
+    // 2배 크기로 그린 안쪽 카드를 찍음 (화면에선 zoom 으로 절반이라, 찍을 땐 zoom 을 풀어 400×712 그대로)
+    const card = node?.querySelector<HTMLElement>("[data-share-art]") ?? null;
     if (!node || !card) return null;
     // 찰칵 — 카드가 번쩍 (찍히는 카드 바깥 층에만 걸어서 저장 이미지엔 안 들어감)
     node.parentElement?.animate([{ filter: "brightness(2.4)" }, { filter: "brightness(1)" }], {
@@ -314,9 +333,11 @@ export function ShareSheet({
       await Promise.all(Array.from(card.querySelectorAll("img"), (img) => img.decode().catch(() => {})));
       // 스토리는 화면을 꽉 채우므로 둥근 모서리 없이 찍음
       const options = {
-        pixelRatio: 1080 / CARD_W,
+        pixelRatio: 1080 / ART_W,
+        width: ART_W,
+        height: ART_H,
         cacheBust: true,
-        style: { borderRadius: "0" },
+        style: { borderRadius: "0", zoom: "1" },
         fontEmbedCSS: await ownFontCSS(),
       };
       // 아이폰 사파리는 첫 번째로 찍을 때 사진이 빈칸으로 나오는 문제(html-to-image 알려진 문제)가 있어서 한 번 찍고 버린 뒤 다시 찍음

@@ -8,7 +8,7 @@ import { translateToKorean } from "@/app/admin/feedback/translate";
   함께 저장: 버전·화면 언어 + 보낸 사람(로그인 정보 — Google 실제 이름 · 서비스 닉네임 · 나라)
   외국인 의견은 DeepL로 한국어 번역(text_ko)도 같이 저장 — 번역이 실패해도 의견은 저장됨
 */
-const LANGS: FeedbackLang[] = ["ko", "en", "zh", "ja"];
+const LANGS: FeedbackLang[] = ["ko", "en", "zh", "zht", "ja"];
 
 export async function POST(request: Request) {
   let data: { text?: unknown; viewer?: unknown; lang?: unknown; name?: unknown; nickname?: unknown; country?: unknown };

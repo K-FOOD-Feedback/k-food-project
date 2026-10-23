@@ -86,6 +86,26 @@ const COPY = {
     reported: "已收到你的举报",
     reasons: ["垃圾信息或广告", "含有辱骂或仇恨言论", "与食物无关的照片", "其他"],
   },
+  zht: {
+    more: "更多",
+    closeMenu: "關閉選單",
+    share: "分享",
+    edit: "編輯",
+    delete: "刪除",
+    copyLink: "複製連結",
+    report: "舉報",
+    copied: "已複製連結",
+    copyFailed: "無法複製連結",
+    deleteLabel: "刪除帖子",
+    deleteTitle: "要刪除這篇帖子嗎？",
+    deleteBody: "收到的投票和評論也會一起刪除，且無法恢復。",
+    cancel: "取消",
+    reportTitle: "要舉報這篇帖子嗎？",
+    reportBody: "請選擇原因，我們會核實後處理。",
+    reportReason: "舉報原因",
+    reported: "已收到你的舉報",
+    reasons: ["垃圾資訊或廣告", "含有辱罵或仇恨言論", "與食物無關的照片", "其他"],
+  },
   ja: {
     more: "その他",
     closeMenu: "メニューを閉じる",
@@ -121,7 +141,7 @@ export function PostMenu({
   onOpen?: () => void;
   isMine?: boolean;
   /** 보는 사람 화면의 언어 */
-  lang?: "ko" | "en" | "zh" | "ja";
+  lang?: "ko" | "en" | "zh" | "zht" | "ja";
   /** ⋯ 버튼 모양 (쓰는 화면의 버튼 스타일 그대로) */
   className?: string;
   children: ReactNode;

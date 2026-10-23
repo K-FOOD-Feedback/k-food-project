@@ -81,13 +81,15 @@ export function LandingScreen() {
     subscribeNone,
     () => {
       const l = navigator.language.toLowerCase();
-      return l.startsWith("ko") ? "ko" : l.startsWith("zh") ? "zh" : l.startsWith("ja") ? "ja" : "en";
+      return l.startsWith("ko") ? "ko" : /^zh-(tw|hk|mo|hant)/.test(l) ? "zht" : l.startsWith("zh") ? "zh" : l.startsWith("ja") ? "ja" : "en";
     },
     () => "ko",
   );
   const [chosen, setChosen] = useState<LandingLang | null>(null);
   const lang = chosen ?? browserLang;
   const t = COPY[lang];
+  const { loggedIn } = useFlow();
+  const [loginOpen, setLoginOpen] = useState(false);
 
   useTrackOnce("landing_viewed", { variant: "story", lang });
 
@@ -290,7 +292,7 @@ export function LandingScreen() {
 
   return (
     <main className="mx-auto w-full max-w-[430px] bg-background text-on-dark">
-      {/* 상단: 로고 · 건너뛰기 · 언어(🌐) */}
+      {/* 상단: 로고 · 건너뛰기 · 언어(🌐) · 로그인 */}
       {/* 위치·버튼 크기는 메인 상단 바(PageHeader)와 같게 — 위·아래·오른쪽 8px, 🌐는 메인과 같은 64px 버튼 */}
       <header className="fixed inset-x-0 top-0 z-40 mx-auto flex w-full max-w-[430px] items-center justify-between pt-[calc(8px+env(safe-area-inset-top))] pr-2 pb-2 pl-5">
         <span className="font-display text-[20px] leading-none">{t.brand}</span>
@@ -320,8 +322,23 @@ export function LandingScreen() {
             track("language_clicked", { from: "landing", to: l });
           }}
         />
+        {/* 로그인 — 🌐 옆 64px 알약 (이미 가입한 사람용, 로그인하면 숨김). 글자는 언어별 고정 문구라 한 줄 그대로 (줄바꿈·… 없음) */}
+        {!loggedIn && (
+          <button
+            type="button"
+            onClick={() => {
+              track("landing_login_clicked", { at: "header" });
+              track("login_sheet_opened", { from: "landing" });
+              setLoginOpen(true);
+            }}
+            className="flex h-16 shrink-0 items-center justify-center rounded-full bg-surface/85 px-5 font-display text-[17px] leading-none whitespace-nowrap text-on-dark backdrop-blur-xl transition-transform active:scale-95"
+          >
+            {t.loginAction}
+          </button>
+        )}
         </div>
       </header>
+      {loginOpen && <LandingLogin lang={lang} onClose={() => setLoginOpen(false)} />}
 
       {/* 첫 화면부터 장면이 보이고, 스크롤하면 이어집니다 */}
       <section ref={story} className="relative h-[400svh]" aria-label={t.scroll}>
@@ -592,7 +609,6 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
   // 사용자가 토큰을 만지면 "이렇게 해 보세요" 힌트 움직임을 멈춤
   const [touched, setTouched] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
-  const { logIn } = useFlow();
   const hinting = active && !touched && picked === null;
 
   const pick = (i: number, method: "drag" | "tap") => {
@@ -720,7 +736,7 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
       <button
         type="button"
         onClick={() => {
-          track("landing_login_clicked");
+          track("landing_login_clicked", { at: "role_picker" });
           track("login_sheet_opened", { from: "landing" });
           setLoginOpen(true);
         }}
@@ -728,33 +744,43 @@ function RolePicker({ lang, active }: { lang: LandingLang; active: boolean }) {
       >
         {t.loginLead} <span className="text-on-dark">{t.loginAction}</span>
       </button>
-      {/* 움직이는 패널 안에 두면 화면 전체를 못 덮어서, 페이지 맨 바깥(body)에 띄움 */}
-      {loginOpen &&
-        createPortal(
-          <LoginSheet
-            lang={lang === "ko" ? "ko" : "en"}
-            open
-            title={t.loginTitle}
-            body={t.loginBody}
-            onClose={() => {
-              track("login_cancelled", { from: "landing", stage: "sheet" });
-              setLoginOpen(false);
-            }}
-            onLoggedIn={() => {
-              track("login_completed", { from: "landing", method: "google" });
-              logIn();
-              setLoginOpen(false);
-              // 이미 가입한 사람: 화면 언어가 아니라 가입한 역할로 (서버 전까지는 이 브라우저의 가입 기록)
-              // 기록이 없으면 화면 언어로 — 중국어·일본어도 이후 화면은 아직 영어 외국인 화면으로
-              const ko = isOnboarded("ko"), en = isOnboarded("en");
-              const role = ko !== en ? (ko ? "ko" : "en") : lang === "ko" ? "ko" : "en";
-              rememberRole(role);
-              router.push(role === "ko" ? "/home" : "/home?lang=en");
-            }}
-          />,
-          document.body,
-        )}
+      {loginOpen && <LandingLogin lang={lang} onClose={() => setLoginOpen(false)} />}
     </div>
+  );
+}
+
+/**
+ * 이미 가입한 사람의 구글 로그인 바텀시트 — 헤더 "로그인"과 마지막 장면 "이미 가입했다면 로그인"이 같이 씀
+ * 로그인하면 지금 보고 있는 언어의 메인으로
+ * 움직이는 패널 안에 두면 화면 전체를 못 덮어서, 페이지 맨 바깥(body)에 띄움
+ */
+function LandingLogin({ lang, onClose }: { lang: LandingLang; onClose: () => void }) {
+  const t = COPY[lang];
+  const router = useRouter();
+  const { logIn } = useFlow();
+  return createPortal(
+    <LoginSheet
+      lang={lang === "ko" ? "ko" : "en"}
+      open
+      title={t.loginTitle}
+      body={t.loginBody}
+      onClose={() => {
+        track("login_cancelled", { from: "landing", stage: "sheet" });
+        onClose();
+      }}
+      onLoggedIn={() => {
+        track("login_completed", { from: "landing", method: "google" });
+        logIn();
+        onClose();
+        // 이미 가입한 사람: 화면 언어가 아니라 가입한 역할로 (서버 전까지는 이 브라우저의 가입 기록)
+        // 기록이 없으면 화면 언어로 — 중국어·일본어도 이후 화면은 아직 영어 외국인 화면으로
+        const ko = isOnboarded("ko"), en = isOnboarded("en");
+        const role = ko !== en ? (ko ? "ko" : "en") : lang === "ko" ? "ko" : "en";
+        rememberRole(role);
+        router.push(role === "ko" ? "/home" : "/home?lang=en");
+      }}
+    />,
+    document.body,
   );
 }
 
@@ -783,11 +809,11 @@ function Bubble({
   style,
 }: {
   lang: LandingLang;
-  r: { ko: string; en: string; zh: string; ja: string };
+  r: { ko: string; en: string; zh: string; zht: string; ja: string };
   className: string;
   style: CSSProperties;
 }) {
-  const cjk = lang === "zh" || lang === "ja";
+  const cjk = lang === "zh" || lang === "zht" || lang === "ja";
   return (
     <div
       className={`absolute z-10 flex max-w-[220px] flex-col items-center rounded-[32px] px-5 py-3 text-center text-on-light ${className}`}

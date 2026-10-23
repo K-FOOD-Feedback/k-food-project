@@ -12,6 +12,7 @@ const one = (v: number) => (v >= 100 ? Math.floor(v) : Math.floor(v * 10) / 10).
 const UNITS: Record<Exclude<UiLang, "en">, [string, string]> = {
   ko: ["만", "억"],
   zh: ["万", "亿"],
+  zht: ["萬", "億"],
   ja: ["万", "億"],
 };
 

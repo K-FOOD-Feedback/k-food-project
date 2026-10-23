@@ -24,6 +24,7 @@ const CARD_TEXT: Record<Lang, { joined: string; voted: string; comments: string;
   ko: { joined: "명 참여", voted: "투표 완료", comments: "한마디", region: "K-food 콘텐츠" },
   en: { joined: "joined", voted: "Voted", comments: "Comments", region: "K-food posts" },
   zh: { joined: "人参与", voted: "已投票", comments: "评论", region: "K-food 内容" },
+  zht: { joined: "人參與", voted: "已投票", comments: "評論", region: "K-food 內容" },
   ja: { joined: "人参加", voted: "投票済み", comments: "コメント", region: "K-food コンテンツ" },
 };
 
@@ -499,7 +500,7 @@ function CardContent({
 }) {
   const t = CARD_TEXT[lang];
   const title = titleIn(post, contentLang);
-  const phrases = contentLang === "zh" || contentLang === "ja" ? cjkPhrases(title, contentLang) : null;
+  const phrases = contentLang === "zh" || contentLang === "zht" || contentLang === "ja" ? cjkPhrases(title, contentLang) : null;
   const photo = cardPhotoOf(post);
   const { mask, scale: k } = shape;
   const m = cardMaskBox(k);

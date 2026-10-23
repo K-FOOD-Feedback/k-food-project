@@ -35,12 +35,14 @@ const HEADLINE = {
     ko: ["외국인 친구가 만든 한식,", "참견할 준비 됐나요? 👀"],
     en: ["K-food by friends abroad,", "Ready to weigh in? 👀"],
     zh: ["外国朋友做的韩食，", "准备好来点评了吗？👀"],
+    zht: ["外國朋友做的韓食，", "準備好來點評了嗎？👀"],
     ja: ["海外の友だちが作った韓国料理、", "ひとこと言う準備はできましたか？👀"],
   },
   en: {
     en: ["Cooked some K-food?", "Let Koreans judge it 👀"],
     ko: ["한식 만들어 봤나요?", "한국인에게 평가받아 봐요 👀"],
     zh: ["做了韩食吗？", "让韩国人来评价吧 👀"],
+    zht: ["做了韓食嗎？", "讓韓國人來評價吧 👀"],
     ja: ["韓国料理、作ってみましたか？", "韓国人に判定してもらいましょう 👀"],
   },
 } as const;
@@ -49,6 +51,7 @@ const SHARE_LABEL = {
   en: "Share your K-food",
   ko: "내 한식 공유하기",
   zh: "分享你的韩食",
+  zht: "分享你的韓食",
   ja: "あなたの韓国料理をシェア",
 } as const;
 
@@ -56,8 +59,8 @@ const SHARE_LABEL = {
 const TITLE_GAP = 24;
 /** 카드 최대 크기 (Figma 카드 대비) */
 const MAX_SCALE = 1.2;
-/** 두 줄 한마디 높이 (24px × 한국어 행간 1.3 × 2줄) — 두 버전 카드 크기를 같게 계산하려고 고정값으로 */
-const HEADLINE_H = 24 * 1.3 * 2;
+/** 두 줄 한마디 높이 (24px × 행간 1.4(모든 언어 같음) × 2줄) — 두 버전 카드 크기를 같게 계산하려고 고정값으로 */
+const HEADLINE_H = 24 * 1.4 * 2;
 
 // 상세에 다녀와도 보던 카드에서 다시 시작하도록 기억해 둡니다 (새로고침하면 처음부터).
 let lastIndex = 0;
@@ -223,7 +226,7 @@ export function HomeScreen({ lang = "ko" }: { lang?: "ko" | "en" }) {
           <h1
             className={`shrink-0 px-6 text-center text-[24px] tracking-[-0.48px] text-white break-keep ${
               ui === "en"
-                ? "font-title-en leading-[1.2]"
+                ? "font-title-en leading-[1.4]"
                 : ui === "ko"
                   ? "font-(family-name:--font-paperlogy) leading-[1.4]"
                   : `leading-[1.4] ${titleFont(ui)}`

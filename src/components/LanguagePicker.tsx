@@ -54,7 +54,7 @@ export function useAutoTranslate() {
 
 export type ServiceLang = "ko" | "en";
 /** 고를 수 있는 언어 전체 (중국어·일본어는 지금 랜딩에서만, 송희) */
-export type PickLang = ServiceLang | "zh" | "ja";
+export type PickLang = ServiceLang | "zh" | "zht" | "ja";
 
 type Option = { id: string; flag: string; ko: string; en: string; href?: string };
 
@@ -63,6 +63,7 @@ const PICKER_COPY: Record<PickLang, { change: string; close: string; recommended
   ko: { change: "언어 선택", close: "닫기", recommended: "추천", autoDesc: "다른 언어로 쓴 글·한마디를 내 언어로 보여 줘요", soon: "곧 지원할게요" },
   en: { change: "Change language", close: "Close", recommended: "Recommended", autoDesc: "Show posts and comments in your language", soon: "Coming soon" },
   zh: { change: "切换语言", close: "关闭", recommended: "推荐", autoDesc: "把其他语言的帖子和评论显示成你的语言", soon: "即将支持" },
+  zht: { change: "切換語言", close: "關閉", recommended: "推薦", autoDesc: "把其他語言的帖子和評論顯示成你的語言", soon: "即將支援" },
   ja: { change: "言語を変更", close: "閉じる", recommended: "おすすめ", autoDesc: "ほかの言語の投稿やコメントをあなたの言語で表示します", soon: "近日対応予定" },
 };
 
@@ -70,6 +71,7 @@ const OPTIONS: Option[] = [
   { id: "ko", flag: "🇰🇷", ko: "한국어", en: "Korean", href: "/home" },
   { id: "en", flag: "🇺🇸", ko: "영어", en: "English", href: "/home?lang=en" },
   { id: "zh", flag: "🇨🇳", ko: "중국어 간체", en: "Simplified Chinese" },
+  { id: "zht", flag: "🇹🇼", ko: "중국어 번체", en: "Traditional Chinese" },
   { id: "ja", flag: "🇯🇵", ko: "일본어", en: "Japanese" },
 ];
 

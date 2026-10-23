@@ -6,15 +6,16 @@ import { Screen, TopBar } from "@/components/Layout";
 import { useViewerUiLang } from "@/app/posts/[id]/viewerLang";
 
 const POLICY = {
-  terms: { ko: "이용약관", en: "Terms of Service", zh: "服务条款", ja: "利用規約" },
-  privacy: { ko: "개인정보처리방침", en: "Privacy Policy", zh: "隐私政策", ja: "プライバシーポリシー" },
+  terms: { ko: "이용약관", en: "Terms of Service", zh: "服务条款", zht: "服務條款", ja: "利用規約" },
+  privacy: { ko: "개인정보처리방침", en: "Privacy Policy", zh: "隐私政策", zht: "隱私政策", ja: "プライバシーポリシー" },
 };
 const SOON = {
   en: "The full text will be posted before launch.",
   zh: "正式内容会在服务上线前公布。",
+  zht: "正式內容會在服務上線前公佈。",
   ja: "正式な内容はサービス開始前に掲載します。",
 };
-const CLOSE = { en: "Close", zh: "关闭", ja: "閉じる" };
+const CLOSE = { en: "Close", zh: "关闭", zht: "關閉", ja: "閉じる" };
 
 /**
  * 이용약관 · 개인정보처리방침 자리 (담당 송희) — 내용은 송희·지현이 정한 뒤 채움
@@ -25,7 +26,7 @@ export function PolicyPlaceholder({ doc }: { doc: keyof typeof POLICY }) {
   const router = useRouter();
   // 한국어 + 외국인이 고른 언어(영·중·일, 한국어를 골랐으면 영어)를 같이
   const ui = useViewerUiLang();
-  const fl = ui === "zh" || ui === "ja" ? ui : "en";
+  const fl = ui === "zh" || ui === "zht" || ui === "ja" ? ui : "en";
   const { ko } = POLICY[doc];
   const other = POLICY[doc][fl];
   const close = () => {

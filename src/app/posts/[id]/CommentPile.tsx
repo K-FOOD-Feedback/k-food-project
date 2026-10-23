@@ -306,14 +306,10 @@ export function CommentPile({
             {t.title} <span className="text-neutral-400">{t.count(count)}</span>
           </h2>
           {postTitle && (
-            // 한국어는 Paperlogy, 영어는 Figtree(font-title-en, 한글과 크기 보정) — 메인 카드 제목과 같은 규칙
+            // 한국어는 Paperlogy, 영어는 Figtree(font-title-en) — 메인 카드 제목과 같은 규칙
             // 중국어 MiSans · 일본어 M PLUS 2 800 (titleFont, 메인과 같은 규칙)
-            // 영어 행간은 한국어보다 0.15 좁게 (상세 제목과 같은 규칙)
-            <p
-              className={`${titleFont(lang)} text-[24px] ${
-                lang === "en" ? "leading-[1.2]" : "leading-[1.4]"
-              } tracking-[-0.48px] break-keep text-neutral-400`}
-            >
+            // 글자 크기·행간·자간은 모든 언어가 한국어 값 그대로 (언어별 보정은 지현이 화면 보며 직접 정함)
+            <p className={`${titleFont(lang)} text-[24px] leading-[1.4] tracking-[-0.48px] break-keep text-neutral-400`}>
               {postTitle}
             </p>
           )}

@@ -26,14 +26,16 @@ const FILL_LIMIT = 3 / 4;
 // 스크롤 가능한 칸에서는 맨 아래까지 내려 봤을 때 다 보이도록 칸 아래 경계에 맞춥니다.
 const FLOOR_BELOW = 12;
 const STEP_MS = 1000 / 60;
+// 한 프레임에 따라잡는 물리 계산 횟수 상한 (탭을 오래 비웠다 돌아와도 한꺼번에 몰아서 계산하지 않도록)
+const MAX_STEPS_PER_FRAME = 8;
 // 글 댓글은 이 각도(약 30°)까지만 기울어집니다. 틈에 비스듬히 끼어 들어갈 만큼은 기울되, 눕지는 않게.
 // 이모지는 제한 없이 굴러갑니다.
 const MAX_TILT = 0.52;
 const PRESETTLE_STEPS = 60;
-// 열 때 "와르르" 쏟아지는 연출: 최신 댓글 몇 개(rainOnOpen, 맨 위에 쌓일 댓글들)를 0.7초 안에 떨어뜨립니다.
+// 열 때 "와르르" 쏟아지는 연출: 최신 댓글 몇 개(rainOnOpen, 맨 위에 쌓일 댓글들)를 0.5초 안에 떨어뜨립니다.
 // 그보다 오래된 댓글은 이미 쌓인 상태(아래쪽)로 시작합니다. 댓글이 많아도 오래 걸리지 않도록.
-const RAIN_TOTAL_MS = 700;
-const RAIN_GAP_MAX_MS = 70;
+const RAIN_TOTAL_MS = 500;
+const RAIN_GAP_MAX_MS = 50;
 // 투표를 마치고 다시 쏟아질 때, 잠금 레이어가 걷히길 기다리는 시간
 const REPLAY_DELAY_MS = 250;
 // 더미가 높아질 때 화면이 따라 내려가는 움직임 (스프링: 부드럽게 출발하고 부드럽게 멈춤)
@@ -124,7 +126,7 @@ class PileWorld {
     this.height = height;
     this.scroller = scroller;
     this.viewTop = this.defaultTop;
-    this.engine.gravity.y = 1.1;
+    this.engine.gravity.y = 2;
     // 벽은 마찰이 없어야 댓글이 벽에 붙어 걸리지 않고 벽을 타고 미끄러져 내려갑니다.
     const wall = { isStatic: true, friction: 0, frictionStatic: 0 };
     this.rightWall = Bodies.rectangle(width + 50, -50000, 100, 100000, wall);
@@ -146,8 +148,17 @@ class PileWorld {
   }
 
   start() {
-    const loop = () => {
-      this.step();
+    // 화면 그리는 횟수가 아니라 실제 흐른 시간만큼 물리를 진행합니다.
+    // (예전엔 프레임마다 1/60초씩만 진행해서, 초당 30번만 그리는 폰(저전력 모드 등)에선 절반 속도로 떨어졌음)
+    let last = performance.now();
+    let pending = 0;
+    const loop = (now: number) => {
+      pending = Math.min(pending + Math.max(now - last, 0), STEP_MS * MAX_STEPS_PER_FRAME);
+      last = now;
+      while (pending >= STEP_MS) {
+        this.step();
+        pending -= STEP_MS;
+      }
       this.render(true);
       this.frame = requestAnimationFrame(loop);
     };
@@ -232,7 +243,7 @@ class PileWorld {
     }
   }
 
-  /** 이 댓글들을 칸 위에서 차례로 떨어뜨립니다. 오래된 것부터, 전체가 0.7초 안에 끝나도록 간격을 둡니다. */
+  /** 이 댓글들을 칸 위에서 차례로 떨어뜨립니다. 오래된 것부터, 전체가 0.5초 안에 끝나도록 간격을 둡니다. */
   private rainDown(rain: Comment[], nodes: Map<string, HTMLElement>) {
     const gap = Math.min(RAIN_GAP_MAX_MS, RAIN_TOTAL_MS / Math.max(rain.length, 1));
     rain.forEach((c, i) => {
@@ -293,7 +304,7 @@ class PileWorld {
     // 날아온 원이 내려오던 속도를 이어받아 멈칫 없이 계속 떨어집니다.
     if (hint) Body.setVelocity(body, { x: 0, y: hint.vy });
     // 쏟아질 때는 처음부터 조금 빠르게 (1초 안에 시원하게 떨어지도록)
-    if (rain) Body.setVelocity(body, { x: 0, y: 6 });
+    if (rain) Body.setVelocity(body, { x: 0, y: 10 });
     Composite.add(this.engine.world, body);
     this.tracked.set(comment.id, { comment, body, el, w, h, ox: x - body.position.x, oy: y - body.position.y, landed: false });
     el.style.visibility = "visible";
@@ -502,7 +513,7 @@ export function GravityPile({
   className?: string;
   scrollable?: boolean;
   /**
-    열 때 최신 댓글 이만큼이 위에서 와르르 쏟아지는 연출 (0.7초 이내, 0이면 없음).
+    열 때 최신 댓글 이만큼이 위에서 와르르 쏟아지는 연출 (0.5초 이내, 0이면 없음).
     칸이 화면에 보일 때 시작합니다 (상세 화면처럼 칸이 아래쪽에 있으면 스크롤해서 보일 때).
   */
   rainOnOpen?: number;

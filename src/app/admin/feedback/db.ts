@@ -6,7 +6,7 @@
   .env.local: NEXT_PUBLIC_SUPABASE_URL · NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY · FEEDBACK_DB_SECRET
 */
 export type FeedbackViewer = "korean" | "foreigner";
-export type FeedbackLang = "ko" | "en" | "zh" | "ja";
+export type FeedbackLang = "ko" | "en" | "zh" | "zht" | "ja";
 /** 보낸 사람 (로그인 정보) — author_name: Google 실제 이름 · nickname: 서비스 닉네임 · country: 나라 ISO 코드(한국인 KR) */
 export type FeedbackAuthor = { author_name: string | null; nickname: string | null; country: string | null };
 export type FeedbackRow = FeedbackAuthor & {

@@ -17,7 +17,7 @@
 |---|---|---|
 | `landing_viewed` | 랜딩 | |
 | `role_selected` | 랜딩 마지막 "당신은 누구인가요?"에서 칸 고름 | `role`(korean/foreigner), `method`(drag/tap) |
-| `landing_login_clicked` | 랜딩 Already joined? Log in | |
+| `landing_login_clicked` | 랜딩 로그인 (헤더 🌐 옆 · 마지막 장면 Already joined? Log in) | `at`(header/role_picker) |
 | `landing_scrolled` | 랜딩 스크롤 이야기 단계 도달 | `step`(1~4) |
 | `landing_skipped` | 랜딩 오른쪽 위 건너뛰기 | `at`(어디까지 보다가 눌렀는지 0~1) |
 | `language_clicked` | 🌐 (모든 화면) · 언어 창에서 언어 고름 | `from`, `viewer` · 언어 창: `from`=language_picker, `screen`, `selected`, `available` |

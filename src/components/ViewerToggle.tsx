@@ -24,6 +24,7 @@ const CHOICES = [
   { id: "en", label: "🇺🇸 영어" },
   { id: "ja", label: "🇯🇵 일본어" },
   { id: "zh", label: "🇨🇳 중국어 간체" },
+  { id: "zht", label: "🇹🇼 중국어 번체" },
 ] as const;
 
 const DEV_KEY = "kfood:dev-toggle";
