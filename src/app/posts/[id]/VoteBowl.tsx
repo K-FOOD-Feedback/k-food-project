@@ -73,9 +73,9 @@ export function VoteBowl({
   const font = titleFont(lang);
   // 칸 이름은 글쓴이가 쓴 글이라 글 언어 글꼴 (한국어 Paperlogy · 영어 Figtree)
   const optionFont = titleFont(optionLang);
-  // 영어 행간은 한국어보다 0.15 좁게 (소문자가 낮아 같은 행간이면 줄 사이가 비어 보임 — 상세 제목과 같은 규칙)
-  const title = `${font} ${titleSize} ${lang === "en" ? "leading-[1.2]" : "leading-[1.4]"}`;
-  const optionLeading = optionLang === "en" ? "leading-[1.2]" : "leading-[1.4]";
+  // 행간은 모든 언어 한국어와 같은 1.4 (지현: 언어마다 크기·행간을 다르게 보정하지 않고 한국어 값 그대로)
+  const title = `${font} ${titleSize} leading-[1.4]`;
+  const optionLeading = "leading-[1.4]";
   // 선택지는 잘리지 않고 전부 보임 (글자 수는 입력할 때 OPTION_MAX로 제한). 4칸이면 칸이 좁아서 글자·%를 조금 작게
   const narrow = options.length >= 4;
   const optionText = narrow ? "pl-3 text-[14px] tracking-[-0.28px]" : "pl-4 text-[16px] tracking-[-0.32px]";

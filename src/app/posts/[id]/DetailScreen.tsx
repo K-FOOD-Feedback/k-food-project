@@ -1009,7 +1009,7 @@ function ShareVoteCard({
         className="flex w-full items-center gap-4 rounded-[32px] bg-secondary py-5 pr-4 pl-8 text-left text-on-light transition-[scale,opacity,translate] duration-500 active:scale-[0.98] starting:translate-y-3 starting:opacity-0"
       >
         <span className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className={`${titleFont(lang)} text-[24px] ${lang === "en" ? "leading-[1.2]" : "leading-[1.2]"} tracking-[-0.44px] ${lang === "zh" || lang === "zht" || lang === "ja" ? "" : "break-keep"}`}>
+          <span className={`${titleFont(lang)} text-[24px] leading-[1.2] tracking-[-0.44px] ${lang === "zh" || lang === "zht" || lang === "ja" ? "" : "break-keep"}`}>
             {foreigner ? T.shareTitleForeign : T.shareTitle}
           </span>
           <span className={`text-[14px] leading-[1.4] font-semibold opacity-60 ${lang === "zh" || lang === "zht" || lang === "ja" ? "" : "break-keep"}`}>
