@@ -16,7 +16,8 @@ const figtree = Figtree({
 });
 
 export const metadata: Metadata = {
-  title: "오늘의 참견",
+  // 서비스 이름은 여기 한 곳에만 — 화면별 제목은 앞부분만 적으면 뒤에 " · Toppy Tippy"가 붙음
+  title: { default: "Toppy Tippy", template: "%s · Toppy Tippy" },
   description: "전 세계의 한식 도전에 한마디를 보태는 곳",
 };
 

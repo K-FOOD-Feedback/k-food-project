@@ -7,7 +7,8 @@ import { Screen } from "@/components/Layout";
   문구는 고정이고 글자 크기가 화면 폭을 따라가서(최대 430px 기준) 넘칠 일은 없음.
 */
 export const metadata: Metadata = {
-  title: "Toppy Tippy — Coming soon",
+  // 뒤에 " · Toppy Tippy"가 또 붙지 않게 absolute
+  title: { absolute: "Toppy Tippy — Coming soon" },
   robots: { index: false },
 };
 
