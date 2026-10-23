@@ -23,7 +23,7 @@ const CHOICES = [
   { id: "ko", label: "🇰🇷 한국인" },
   { id: "en", label: "🇺🇸 영어" },
   { id: "ja", label: "🇯🇵 일본어" },
-  { id: "zh", label: "🇨🇳 중국어" },
+  { id: "zh", label: "🇨🇳 중국어 간체" },
 ] as const;
 
 const DEV_KEY = "kfood:dev-toggle";
