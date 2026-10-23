@@ -59,8 +59,8 @@ const SHARE_LABEL = {
 const TITLE_GAP = 24;
 /** 카드 최대 크기 (Figma 카드 대비) */
 const MAX_SCALE = 1.2;
-/** 두 줄 한마디 높이 (24px × 한국어 행간 1.3 × 2줄) — 두 버전 카드 크기를 같게 계산하려고 고정값으로 */
-const HEADLINE_H = 24 * 1.3 * 2;
+/** 두 줄 한마디 높이 (24px × 행간 1.4(모든 언어 같음) × 2줄) — 두 버전 카드 크기를 같게 계산하려고 고정값으로 */
+const HEADLINE_H = 24 * 1.4 * 2;
 
 // 상세에 다녀와도 보던 카드에서 다시 시작하도록 기억해 둡니다 (새로고침하면 처음부터).
 let lastIndex = 0;
@@ -226,7 +226,7 @@ export function HomeScreen({ lang = "ko" }: { lang?: "ko" | "en" }) {
           <h1
             className={`shrink-0 px-6 text-center text-[24px] tracking-[-0.48px] text-white break-keep ${
               ui === "en"
-                ? "font-title-en leading-[1.2]"
+                ? "font-title-en leading-[1.4]"
                 : ui === "ko"
                   ? "font-(family-name:--font-paperlogy) leading-[1.4]"
                   : `leading-[1.4] ${titleFont(ui)}`

@@ -569,9 +569,7 @@ function DetailArticleBody({
       </p>
       <h1
         // 상세 제목과 같게 (글 영역 폭의 3/5, 최대 3줄, 중·일은 말덩이 사이에서만 줄바꿈 — phrases.tsx)
-        className={`line-clamp-3 w-3/5 pb-[0.15em] ${titleFont(lang)} text-[32px] ${
-          lang === "en" ? "leading-[1.2]" : "leading-[1.2]"
-        } tracking-[-0.62px] break-keep text-balance [overflow-wrap:anywhere]`}
+        className={`line-clamp-3 w-3/5 pb-[0.15em] ${titleFont(lang)} text-[32px] leading-[1.2] tracking-[-0.62px] break-keep text-balance [overflow-wrap:anywhere]`}
       >
         {phrases ? <PhraseText phrases={phrases} /> : title}
       </h1>
