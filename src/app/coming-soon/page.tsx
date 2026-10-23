@@ -17,7 +17,7 @@ export default function ComingSoonPage() {
     // 화면 전체를 덮어 430px 칸 바깥까지 검정, 작업용 한국인/외국인 토글(z-60)도 가림
     <div className="fixed inset-0 z-[70] overflow-hidden bg-black">
       <Screen bg="bg-black" className="justify-center px-5">
-        <h1 className="animate-rise font-display text-[min(24vw,104px)] leading-[0.88] tracking-[-0.03em] text-on-dark">
+        <h1 className="animate-rise font-display text-[min(24vw,104px)] leading-[1.2] tracking-[-0.03em] text-on-dark">
           Coming
           <br />
           soon

@@ -791,7 +791,7 @@ export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; fr
               contentLang === "en"
                 ? "[&>span>span:last-child]:font-title-en [&>span>span:last-child]:truncate"
                 : contentLang === "ko"
-                  ? "[&>span>span:last-child]:font-(family-name:--font-paperlogy) [&>span>span:last-child]:truncate [&>span>span:last-child]:font-normal"
+                  ? "[&>span>span:last-child]:font-(family-name:--font-paperlogy) [&>span>span:last-child]:truncate [&>span>span:last-child]:font-extrabold"
                   : "[&>span>span:last-child]:truncate [&>span>span:last-child]:font-(family-name:--cta-title-font) [&>span>span:last-child]:font-extrabold"
             }
             onClick={() => {

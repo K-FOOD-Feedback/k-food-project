@@ -331,7 +331,7 @@ export function LandingScreen() {
               track("login_sheet_opened", { from: "landing" });
               setLoginOpen(true);
             }}
-            className="flex h-16 shrink-0 items-center justify-center rounded-full bg-surface/85 px-5 font-display text-[17px] leading-none whitespace-nowrap text-on-dark backdrop-blur-xl transition-transform active:scale-95"
+            className="flex h-16 shrink-0 items-center justify-center rounded-full bg-surface/85 px-5 font-display text-[14px] leading-none whitespace-nowrap text-on-dark backdrop-blur-xl transition-transform active:scale-95"
           >
             {t.loginAction}
           </button>

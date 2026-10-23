@@ -50,7 +50,7 @@ export function PinForm({ next }: { next: string }) {
             <span
               key={i}
               aria-hidden
-              className={`flex size-16 items-center justify-center rounded-[20px] text-[26px] font-semibold transition ${
+              className={`flex size-16 items-center justify-center rounded-[20px] text-[24px] font-semibold transition ${
                 current ? "bg-surface ring-2 ring-primary" : "bg-surface-2"
               } ${pending ? "opacity-60" : ""}`}
             >

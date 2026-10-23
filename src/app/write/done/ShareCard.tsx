@@ -172,12 +172,12 @@ const SPOTS: Record<CardStyle, CSSProperties[]> = {
     { top: 400, left: 12 },
     { top: 392, right: 12 },
   ],
-  // 투표 카드: 투표 띠 아래 왼쪽 · 사진 아래 오른쪽 (질문·선택지는 가리지 않게 둘 다 질문 위에)
+  // 투표 카드: 투표 띠 바로 아래 왼쪽 (띠 · 사진 · 질문을 가리지 않게 — 띠는 y 32~88, 사진은 오른쪽 위, 질문은 y 260부터)
   vote: [
-    { top: 92, left: 16 },
-    { top: 84, left: 20 },
-    { top: 176, right: 16 },
-    { top: 168, right: 12 },
+    { top: 128, left: 24 },
+    { top: 136, left: 32 },
+    { top: 128, left: 24 },
+    { top: 136, left: 32 },
   ],
   // 영수증은 글이 빽빽하고 도장도 있어서 스티커 없음 (도장 아래 VOTE NOW!가 대신)
   verdict: [],
@@ -382,12 +382,14 @@ function PhotoCard({ post, theme, t, shape }: { post: ShareCardPost; theme: Card
 const OPTION_DOTS = ["var(--color-primary)", "var(--color-content)", "var(--color-secondary)", "var(--color-lilac)"];
 
 function VoteCard({ post, theme, t, shape }: { post: ShareCardPost; theme: CardTheme; t: Copy; shape: CardShape }) {
-  const many = post.options.length > 3;
+  // 질문 — 3줄까지 (넘치면 …). 선택지가 3개 이상이면 한 단계 작게(32px) 해서 질문이 잘리지 않으면서 출처 줄이 카드 안에 남게
+  const many = post.options.length > 2;
   return (
     <div className="relative flex h-full flex-col px-8 pt-8 pb-6">
       {/* 머리: 투표 표시 띠 + 오른쪽 위에 사진 스티커 */}
+      {/* 띠는 사진 스티커 위에 (사진에 가려지지 않게) */}
       <span
-        className="self-start -rotate-3 rounded-full px-6 py-4 font-display text-[24px] leading-none"
+        className="relative z-10 self-start -rotate-3 rounded-full px-6 py-4 font-display text-[24px] leading-none"
         style={{ background: theme.ink, color: theme.inkText }}
       >
         {t.poll}
@@ -397,9 +399,9 @@ function VoteCard({ post, theme, t, shape }: { post: ShareCardPost; theme: CardT
       </div>
       {/* 질문 — 크게. 선택지가 4개면 2줄, 아니면 3줄까지 (넘치면 …) */}
       {/* 질문 + 선택지 묶음은 사진 아래 남는 자리의 가운데에 */}
-      <div className="flex flex-1 flex-col justify-center pt-[172px]">
+      <div className="flex min-h-0 flex-1 flex-col justify-center overflow-hidden pt-[140px]">
         <p
-          className={`font-display text-[40px] leading-[1.2] [text-wrap:balance] [overflow-wrap:anywhere] ${many ? "line-clamp-2" : "line-clamp-3"}`}
+          className={`line-clamp-3 font-display leading-[1.2] [text-wrap:balance] [overflow-wrap:anywhere] ${many ? "text-[32px]" : "text-[40px]"}`}
         >
           {post.voteQuestion}
         </p>
@@ -409,7 +411,7 @@ function VoteCard({ post, theme, t, shape }: { post: ShareCardPost; theme: CardT
             // 같은 글자 선택지가 있을 수 있어서 순서로 구분
             <span
               key={i}
-              className="flex min-h-16 items-center gap-4 rounded-full bg-white py-2 pr-6 pl-2 text-[24px] font-bold leading-[1.2] text-on-light shadow-[0_6px_16px_rgba(0,0,0,0.14)]"
+              className="flex min-h-16 shrink-0 items-center gap-4 rounded-full bg-white py-2 pr-6 pl-2 text-[24px] font-bold leading-[1.2] text-on-light"
             >
               <span
                 className="flex size-8 shrink-0 items-center justify-center rounded-full font-display text-[16px] leading-none text-on-light"
@@ -417,6 +419,7 @@ function VoteCard({ post, theme, t, shape }: { post: ShareCardPost; theme: CardT
               >
                 {String.fromCharCode(65 + i)}
               </span>
+              {/* 그림자 없음 — 아이폰 이미지 저장 때 알약 오른쪽에 회색 띠로 따로 찍혀서 (스티커와 같은 이유) */}
               {/* 한 줄, 넘치면 … (줄바꿈은 안 함 — 저장 이미지에선 글꼴 폭이 조금 달라져서 이모지만 내려가는 문제) */}
               <span className="min-w-0 truncate">{o}</span>
             </span>
