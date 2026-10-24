@@ -3,7 +3,8 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useSyncExternalStore } from "react";
 import { rememberRole } from "@/lib/role";
-import { saveViewerLang, useViewerUiLang } from "@/app/posts/[id]/viewerLang";
+import { saveViewerLang } from "@/app/posts/[id]/viewerLang";
+import { Icon } from "@/components/Icon";
 
 /*
   작업용: 한국인 ↔ 외국인 화면 바꾸기 토글 (송희) — 모든 화면 맨 위 가운데에 떠 있음
@@ -11,21 +12,45 @@ import { saveViewerLang, useViewerUiLang } from "@/app/posts/[id]/viewerLang";
   - 외국인만 쓰는 화면(글쓰기·수정)에서 한국인을 누르면 한국인 메인으로
   - 보이는 때: 지금은 배포 주소에서도 기본으로 보임 (지현 요청 — 폰에서 확인하려고). 아무 주소 뒤에 ?dev=0 을 붙여 한 번 열면
     이 브라우저에서 꺼지고, ?dev=1 이면 다시 켜짐
-  - 외국인은 언어별로 영어 · 일본어 · 중국어 — 누르면 외국인 화면으로 가면서 🌐 언어도 그 언어로 (이미 외국인 화면이면 언어만)
+  - 🇰🇷 KR(한국인) · 🌐 EN(외국인) — EN으로 들어가면 영어, 일본어·중국어는 화면의 지구본으로 고름
+  - 맨 오른쪽 ‹ 로 접으면 작은 단추 하나만 남음 (누르면 다시 펼침, 이 브라우저에 기억)
   - 맨 오른쪽 "어드민": 의견 보기(/admin/feedback)로 바로 감. 어드민에서 한국인·외국인을 누르면 그쪽 메인으로
   - 출시용 사이트(main = toppytippy.com, Vercel Production)에서는 늘 숨김 — 개발용(dev 미리보기)·로컬에서만 보임
     → 작업용이라 출시 전에 지울 것
 */
 type Viewer = "ko" | "en";
 
-// 토글 칸 — 외국인은 언어별로
+// 토글 칸 — 한국인 KR · 외국인 EN (외국인은 영어로 들어감 — 일본어·중국어는 화면의 🌐 지구본으로 고름)
 const CHOICES = [
-  { id: "ko", label: "🇰🇷 한국인" },
-  { id: "en", label: "🇺🇸 영어" },
-  { id: "ja", label: "🇯🇵 일본어" },
-  { id: "zh", label: "🇨🇳 중국어 간체" },
-  { id: "zht", label: "🇹🇼 중국어 번체" },
+  { id: "ko", label: "🇰🇷 KR" },
+  { id: "en", label: "🌐 EN" },
 ] as const;
+
+// 접기 — 화면을 가리지 않게 작은 단추 하나로 접어 둠 (이 브라우저에 기억)
+const FOLD_KEY = "kfood:dev-toggle-folded";
+const FOLD_EVENT = "kfood:dev-toggle-folded-change";
+function subscribeFold(onChange: () => void) {
+  window.addEventListener(FOLD_EVENT, onChange);
+  window.addEventListener("storage", onChange);
+  return () => {
+    window.removeEventListener(FOLD_EVENT, onChange);
+    window.removeEventListener("storage", onChange);
+  };
+}
+function readFolded() {
+  try {
+    return localStorage.getItem(FOLD_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+function saveFolded(folded: boolean) {
+  try {
+    if (folded) localStorage.setItem(FOLD_KEY, "1");
+    else localStorage.removeItem(FOLD_KEY);
+  } catch {}
+  window.dispatchEvent(new Event(FOLD_EVENT));
+}
 
 const DEV_KEY = "kfood:dev-toggle";
 const FOREIGN_FROM: Record<string, string> = { "home-en": "", "my-en": "my", "notifications-en": "notifications", posted: "" };
@@ -103,7 +128,7 @@ export function ViewerToggle() {
   const path = usePathname();
   const query = useSearchParams();
   const enabled = useSyncExternalStore(subscribe, readEnabled, () => false);
-  const uiLang = useViewerUiLang();
+  const folded = useSyncExternalStore(subscribeFold, readFolded, () => false);
   if (!enabled) return null;
 
   const admin = path.startsWith("/admin");
@@ -113,14 +138,28 @@ export function ViewerToggle() {
     rememberRole(target);
     router.push(hrefFor(target, path, new URLSearchParams(query.toString())));
   };
-  // 외국인 언어 칸: 언어를 바꾸고 (외국인 화면이 아니면) 외국인 화면으로
+  // EN: 외국인 화면으로 — 들어갈 때는 영어 (이미 외국인 화면이면 지구본으로 고른 언어 그대로)
   const pick = (id: (typeof CHOICES)[number]["id"]) => {
     if (id === "ko") return go("ko");
-    saveViewerLang(id);
+    if (current !== "en") saveViewerLang("en");
     go("en");
   };
-  const isOn = (id: (typeof CHOICES)[number]["id"]) =>
-    id === "ko" ? current === "ko" : current === "en" && (uiLang === id || (id === "en" && uiLang === "ko"));
+  const isOn = (id: (typeof CHOICES)[number]["id"]) => current === id;
+
+  // 접혀 있으면: 지금 보는 쪽만 작게 + › (누르면 펼침)
+  if (folded) {
+    return (
+      <button
+        type="button"
+        onClick={() => saveFolded(false)}
+        aria-label="작업용 퀵메뉴 펼치기"
+        className="fixed top-[calc(env(safe-area-inset-top)+2px)] left-1/2 z-50 flex -translate-x-1/2 items-center gap-1 rounded-full bg-black/60 py-1.5 pr-1.5 pl-2.5 text-[11px] leading-none font-bold text-white/80 ring-1 ring-white/15 backdrop-blur-md"
+      >
+        {admin ? "🛠" : current === "ko" ? "🇰🇷 KR" : "🌐 EN"}
+        <Icon name="chevron-right" size={14} />
+      </button>
+    );
+  }
 
   return (
     <div
@@ -148,6 +187,15 @@ export function ViewerToggle() {
         className={`rounded-full px-2 py-2 transition ${admin ? "bg-white text-black" : "text-white/70"}`}
       >
         🛠 어드민
+      </button>
+      {/* 접기 — 화면을 가리지 않게 작은 단추로 */}
+      <button
+        type="button"
+        onClick={() => saveFolded(true)}
+        aria-label="작업용 퀵메뉴 접기"
+        className="flex items-center rounded-full px-1.5 text-white/70"
+      >
+        <Icon name="chevron-left" size={16} />
       </button>
     </div>
   );
