@@ -20,7 +20,7 @@ const LANG_NAME: Record<MtLang, string> = {
 const SYSTEM = `You translate short posts and comments on Toppy Tippy, a community where people abroad share Korean food they cooked and Koreans vote and comment on it.
 
 - Translate each item into the target language the way a native speaker would write it on a casual food community. Keep the tone (casual, polite, playful), emoji, and the feeling of internet expressions like ㅋㅋ or ㅠㅠ.
-- Keep line breaks exactly: same number of lines, each line translated in place.
+- Line breaks are written as <br>. Keep the same number of <br> in each item, each at the matching place in the translation (they split a sentence over lines in speech bubbles, or separate sentences in a post).
 - Follow the target language's own spacing and punctuation: no spaces between words in Japanese or Chinese (also around food names), full-width ？！。 there.
 - Write food names with the fixed names in the glossary below, keeping modifiers in natural word order (e.g. "チーズブルダック" → English "cheese Buldak", Korean "치즈 불닭").
 - Translate every item into the target language, whatever language it is written in. Return an item unchanged only if it is already written entirely in the target language.
@@ -54,7 +54,8 @@ export async function translateWithClaude(texts: string[], target: MtLang): Prom
         thinking: { type: "disabled" },
         output_config: { effort: "low", format: { type: "json_schema", schema: SCHEMA } },
         system: SYSTEM,
-        messages: [{ role: "user", content: `Target language: ${LANG_NAME[target]}\nItems:\n${JSON.stringify(ask)}` }],
+        // 줄바꿈은 <br>로 바꿔 보냄 — 그대로 보내면 한 문장을 두 줄로 나눈 줄바꿈을 지우고 한 줄로 옮겨서
+        messages: [{ role: "user", content: `Target language: ${LANG_NAME[target]}\nItems:\n${JSON.stringify(ask.map((t) => t.replace(/\n/g, "<br>")))}` }],
       });
       if (response.stop_reason !== "end_turn") {
         console.error("[translate] Claude 번역 중단", response.stop_reason);
@@ -68,7 +69,7 @@ export async function translateWithClaude(texts: string[], target: MtLang): Prom
       }
       ask.forEach((t, i) => {
         if (memo.size >= MEMO_MAX) memo.delete(memo.keys().next().value!);
-        memo.set(k(t), done[i]);
+        memo.set(k(t), done[i].replace(/\s*<br\s*\/?>\s*/g, "\n"));
       });
     } catch (err) {
       console.error("[translate] Claude 번역 실패", err);
