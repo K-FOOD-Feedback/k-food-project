@@ -48,7 +48,7 @@ export function getHomePost(id: string) {
   return HOME_POSTS.find((p) => p.id === id);
 }
 
-export const HOME_POSTS: HomePost[] = [
+const BASE_POSTS: HomePost[] = [
   {
     id: "1",
     title: "제가 만든 불닭 레시피 어떤가요?",
@@ -165,3 +165,31 @@ export const HOME_POSTS: HomePost[] = [
     commentCount: 2,
   },
 ];
+
+/*
+  자동 번역(DeepL) 확인용 글 — 원문이 일본어 (다른 목업은 원문이 영어라 영어 화면에서 번역이 안 보여서)
+  한·영·중 화면에선 DeepL 번역, 일본어 화면·자동 번역 끔이면 일본어 원문. dev·로컬에서만 맨 앞에 보이고 실서비스엔 없음 (송희)
+  원문은 en 칸에 그대로 (titleIn 등이 en을 원문으로 번역) — 한국어 칸도 원문으로 둬서 번역이 오기 전엔 원문이 보임
+*/
+const MT_TEST_POST: HomePost = {
+  id: "mt-ja",
+  title: "初めて作ったチーズブルダック、韓国の人から見てどうですか？",
+  body: "こんにちは、大阪のユイです！\n家でチーズたっぷりのブルダックを作りました。\nソーセージとねぎも入れてみました。\n韓国の人には辛さが足りないでしょうか？",
+  photos: ["/images/buldak-skillet.jpg", "/images/detail-buldak.png"],
+  cardPhoto: "/images/card-buldak.png",
+  color: "#ffc6ff",
+  en: {
+    title: "初めて作ったチーズブルダック、韓国の人から見てどうですか？",
+    country: "Japan",
+    body: "こんにちは、大阪のユイです！\n家でチーズたっぷりのブルダックを作りました。\nソーセージとねぎも入れてみました。\n韓国の人には辛さが足りないでしょうか？",
+    options: ["本場の味", "もう少し辛く", "チーズが多すぎ"],
+  },
+  author: { name: "Yui", country: "일본", flag: "🇯🇵" },
+  createdAt: "2026-10-25T09:00:00Z",
+  // 목업 번역 선택지(postText.ts OPTIONS)가 없는 종류 — 번역 전엔 원문이 보이게
+  question: { id: "look", text: "韓国で食べるブルダックと比べてどうですか？", options: ["本場の味", "もう少し辛く", "チーズが多すぎ"] },
+  votes: [12, 8, 5],
+  commentCount: 10,
+};
+
+export const HOME_POSTS: HomePost[] = process.env.NEXT_PUBLIC_VERCEL_ENV === "production" ? BASE_POSTS : [MT_TEST_POST, ...BASE_POSTS];
