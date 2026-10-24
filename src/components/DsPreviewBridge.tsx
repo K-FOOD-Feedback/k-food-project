@@ -391,6 +391,41 @@ function measure(root: string) {
   return { lang: document.documentElement.lang, items };
 }
 
+/*
+  멈춤 — 도구가 이 미리보기를 안 보여 줄 때(다른 탭) 보냄. 내리지 않고 멈춰 둬서 다시 보일 때 바로 뜨게
+  CSS 애니메이션 · requestAnimationFrame(움직임 계산) · 0.4초마다 다시 칠하기를 멈추고, 풀면 밀린 것부터 다시 돌림
+*/
+let paused = false;
+const queued = new Map<number, FrameRequestCallback>();
+let fakeId = 1e9;
+function patchFrames() {
+  const native = window.requestAnimationFrame.bind(window);
+  const nativeCancel = window.cancelAnimationFrame.bind(window);
+  window.requestAnimationFrame = (cb) => {
+    if (!paused) return native(cb);
+    queued.set(++fakeId, cb);
+    return fakeId;
+  };
+  window.cancelAnimationFrame = (id) => (queued.has(id) ? void queued.delete(id) : nativeCancel(id));
+  return native;
+}
+function setPaused(p: boolean, native: (cb: FrameRequestCallback) => number) {
+  if (paused === p) return;
+  paused = p;
+  let tag = document.getElementById("kfood-ds-pause");
+  if (!tag) {
+    tag = document.createElement("style");
+    tag.id = "kfood-ds-pause";
+    document.head.appendChild(tag);
+  }
+  tag.textContent = p ? "*,*::before,*::after{animation-play-state:paused!important}" : "";
+  if (!p) {
+    const cbs = [...queued.values()];
+    queued.clear();
+    cbs.forEach((cb) => native(cb));
+  }
+}
+
 export function DsPreviewBridge() {
   const path = usePathname();
   const router = useRouter();
@@ -406,8 +441,10 @@ export function DsPreviewBridge() {
 
   useEffect(() => {
     if (window.top === window.self) return;
+    const native = patchFrames();
     const onMsg = (e: MessageEvent) => {
       if (!ALLOWED.some((re) => re.test(e.origin))) return;
+      if (e.data?.type === "kfood-ds-pause") setPaused(!!e.data.paused, native);
       if (e.data?.type === "kfood-ds" && typeof e.data.css === "string") {
         let tag = document.getElementById("kfood-ds-preview");
         if (!tag) {
@@ -469,6 +506,7 @@ export function DsPreviewBridge() {
     window.addEventListener("message", onMsg);
     // 화면이 다시 그려져도 코드 안 색 · 컴포넌트 표시가 따라가게 0.4초마다
     const tick = setInterval(() => {
+      if (paused) return;
       if (Object.keys(inlineMap).length || painted.size) paintInline();
       if (compNames.length || document.querySelector("[data-ds-comp]")) markComponents();
     }, 400);
