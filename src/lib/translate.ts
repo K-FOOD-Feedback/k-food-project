@@ -10,7 +10,7 @@
 export type MtLang = "ko" | "en" | "zh" | "zht" | "ja";
 
 // 번역 방식이 바뀌면(용어집 등) 숫자를 올려 예전에 기억한 번역을 버림
-const STORE_KEY = "kfood:mt:3";
+const STORE_KEY = "kfood:mt:4";
 const STORE_MAX = 800;
 // 언어 창(LanguagePicker)의 자동 번역 설정과 같은 키 · 이벤트
 const AUTO_KEY = "kfood:auto-translate";

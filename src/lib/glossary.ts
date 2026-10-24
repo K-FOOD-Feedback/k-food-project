@@ -2,10 +2,9 @@ import type { MtLang } from "./deepl";
 
 /*
   자동 번역 용어집 — 음식 이름은 번역기가 마음대로 옮기지 않게 언어별로 고정 (송희)
-  글·한마디에 아래 이름(어느 언어로 쓰였든)이 나오면 번역할 언어의 이름으로 바꿔 넣고, 그 부분은 DeepL이 건드리지 않음
-  예) "ブルダック" → 영어 화면 "Buldak" (전엔 "buddak"), 한국어 화면 "불닭" (전엔 "불닭볶음밥")
-  추가할 땐 한 줄: 각 언어 이름 + also(그 음식을 가리키는 다른 표기 — 영어 철자 차이 등)
-  긴 이름이 먼저 맞춰짐 (김치찌개가 김치보다 먼저)
+  DeepL 용어집(glossary)으로 만들어 번역에 같이 씀 → 문장 안에서 자연스럽게 들어감 ("チーズブルダック" → "cheese Buldak")
+  예) 전엔 "ブルダック" → 영어 "buddak", 한국어 "불닭볶음밥"
+  추가할 땐 한 줄: 각 언어 이름 + also(그 음식을 가리키는 다른 표기 — 영어 철자 차이 등). 표가 바뀌면 DeepL 용어집도 알아서 새로 만듦
   한국어 이름이 다른 말 속에 들어가는 건 넣지 않기 (예: 라면 → "먹으라면"에도 걸림)
 */
 export type Term = Record<MtLang, string> & { also?: string[] };
@@ -24,31 +23,24 @@ export const GLOSSARY: Term[] = [
   { ko: "호떡", en: "Hotteok", ja: "ホットク", zh: "糖饼", zht: "糖餅", also: ["Hoddeok"] },
 ];
 
-// 맞춰 볼 표기 → 용어 (긴 표기부터). 영어는 대소문자 무시 · 단어 단위
-const ENTRIES = GLOSSARY.flatMap((t) => [...new Set([t.ko, t.en, t.ja, t.zh, t.zht, ...(t.also ?? [])])].map((name) => ({ name, t })))
-  .sort((a, b) => b.name.length - a.name.length);
-const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-const PATTERN = new RegExp(ENTRIES.map(({ name }) => (/^[A-Za-z]/.test(name) ? `\\b${esc(name)}\\b` : esc(name))).join("|"), "gi");
-
-const xml = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-
-/** 용어가 있으면 DeepL에 보낼 XML(용어는 <x>로 감싸 번역 안 함)로, 없으면 null — 한 줄씩 받음 */
-export function protect(text: string, target: MtLang): string | null {
-  let hit = false;
-  const out = xml(text).replace(PATTERN, (m) => {
-    const e = ENTRIES.find(({ name }) => name.toLowerCase() === m.toLowerCase());
-    if (!e) return m;
-    hit = true;
-    return `<x>${xml(e.t[target])}</x>`;
-  });
-  return hit ? out : null;
+/** 글자로 짐작한 언어 (DeepL 용어집은 원문 언어를 알아야 써짐) — 중국어는 간체·번체 구분 없이 zh */
+export function scriptOf(text: string): "ko" | "ja" | "zh" | "en" | null {
+  if (/[\uac00-\ud7a3]/.test(text)) return "ko";
+  if (/[\u3040-\u30ff]/.test(text)) return "ja";
+  if (/[\u4e00-\u9fff]/.test(text)) return "zh";
+  if (/[A-Za-z]/.test(text)) return "en";
+  return null;
 }
 
-/** DeepL이 돌려준 XML을 다시 글로 */
-export function unprotect(text: string): string {
-  return text
-    .replace(/<\/?x>/g, "")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&amp;/g, "&");
+/** 원문 언어 → 번역 언어 용어집 (DeepL TSV: "원문\t번역" 한 줄씩) */
+export function glossaryTsv(source: "ko" | "ja" | "zh" | "en", target: MtLang): string {
+  const rows = new Map<string, string>();
+  for (const t of GLOSSARY) {
+    const names = [t.ko, t.en, t.ja, t.zh, t.zht, ...(t.also ?? [])].filter((n) => scriptOf(n) === source);
+    for (const n of names) if (n !== t[target] && !rows.has(n)) rows.set(n, t[target]);
+  }
+  return [...rows].map(([a, b]) => `${a}\t${b}`).join("\n");
 }
+
+/** 표가 바뀌었는지 — DeepL 용어집 이름에 붙임 */
+export const GLOSSARY_VERSION = [...JSON.stringify(GLOSSARY)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7).toString(36);
