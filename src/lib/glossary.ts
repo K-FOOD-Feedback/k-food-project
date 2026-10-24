@@ -2,7 +2,8 @@ import type { MtLang } from "./deepl";
 
 /*
   자동 번역 용어집 — 음식 이름은 번역기가 마음대로 옮기지 않게 언어별로 고정 (송희)
-  DeepL 용어집(glossary)으로 만들어 번역에 같이 씀 → 문장 안에서 자연스럽게 들어감 ("チーズブルダック" → "cheese Buldak")
+  영어·한국어·일본어로 옮길 땐 DeepL 용어집(glossary)으로 → 문장 안에서 자연스럽게 ("チーズブルダック" → "cheese Buldak")
+  중국어로 옮길 땐 DeepL 용어집이 안 먹어서 원문 속 이름을 중국어 이름으로 바꿔 넣고 번역 ("芝士火鸡面") — 2026-10-25 비교해 보고 정함
   예) 전엔 "ブルダック" → 영어 "buddak", 한국어 "불닭볶음밥"
   추가할 땐 한 줄: 각 언어 이름 + also(그 음식을 가리키는 다른 표기 — 영어 철자 차이 등). 표가 바뀌면 DeepL 용어집도 알아서 새로 만듦
   한국어 이름이 다른 말 속에 들어가는 건 넣지 않기 (예: 라면 → "먹으라면"에도 걸림)
@@ -44,3 +45,12 @@ export function glossaryTsv(source: "ko" | "ja" | "zh" | "en", target: MtLang): 
 
 /** 표가 바뀌었는지 — DeepL 용어집 이름에 붙임 */
 export const GLOSSARY_VERSION = [...JSON.stringify(GLOSSARY)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7).toString(36);
+
+// 맞춰 볼 표기 → 용어 (긴 표기부터). 영어는 대소문자 무시 · 단어 단위
+const ENTRIES = GLOSSARY.flatMap((t) => [...new Set([t.ko, t.en, t.ja, t.zh, t.zht, ...(t.also ?? [])])].map((name) => ({ name, t }))).sort((a, b) => b.name.length - a.name.length);
+const escRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const PATTERN = new RegExp(ENTRIES.map(({ name }) => (/^[A-Za-z]/.test(name) ? `\\b${escRe(name)}\\b` : escRe(name))).join("|"), "gi");
+/** 원문 속 음식 이름을 번역할 언어의 이름으로 바꿔 넣음 (중국어로 옮길 때) */
+export function substitute(text: string, target: MtLang): string {
+  return text.replace(PATTERN, (m) => ENTRIES.find(({ name }) => name.toLowerCase() === m.toLowerCase())?.t[target] ?? m);
+}

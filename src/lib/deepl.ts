@@ -2,9 +2,9 @@
   DeepL 번역 (서버에서만 — 키가 브라우저로 나가지 않게)
   .env.local: DEEPL_API_KEY (무료 키는 끝이 ":fx" → api-free 주소). 키가 없거나 실패하면 null → 화면은 원문/목업 번역 그대로
   같은 문장은 서버가 켜져 있는 동안 기억해 두고 다시 묻지 않음 (무료 한도 한 달 50만 자)
-  음식 이름은 용어집(glossary.ts)을 DeepL 용어집으로 만들어 같이 씀 — 용어집이 안 되면 용어집 없이 번역
+  음식 이름은 용어집(glossary.ts) — 영·한·일은 DeepL 용어집으로, 중국어는 원문 속 이름을 바꿔 넣어서 (glossary.ts 설명)
 */
-import { GLOSSARY_VERSION, glossaryTsv, scriptOf } from "./glossary";
+import { GLOSSARY_VERSION, glossaryTsv, scriptOf, substitute } from "./glossary";
 
 export type MtLang = "ko" | "en" | "zh" | "zht" | "ja";
 type Src = "ko" | "en" | "ja" | "zh";
@@ -84,11 +84,12 @@ async function translateLines(texts: string[], target: MtLang): Promise<Map<stri
     bySource.get(s)!.push(t);
   }
   const call = async (source: Src, list: string[]) => {
-    const id = source === BASE[target] ? null : await glossaryId(source, target);
+    const zh = BASE[target] === "zh";
+    const id = zh || source === BASE[target] ? null : await glossaryId(source, target);
     const res = await fetch(`${e.host}/v2/translate`, {
       method: "POST",
       headers: e.headers,
-      body: JSON.stringify({ text: list, target_lang: TARGET[target], ...(id && { source_lang: source.toUpperCase(), glossary_id: id }) }),
+      body: JSON.stringify({ text: zh ? list.map((t) => substitute(t, target)) : list, target_lang: TARGET[target], ...(id && { source_lang: source.toUpperCase(), glossary_id: id }) }),
       cache: "no-store",
     });
     if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
