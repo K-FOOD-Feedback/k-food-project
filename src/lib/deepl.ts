@@ -1,5 +1,5 @@
 /*
-  DeepL 번역 (서버에서만 — 키가 브라우저로 나가지 않게)
+  DeepL 번역 (서버에서만 — 키가 브라우저로 나가지 않게) — Claude 번역(claude-translate.ts)이 안 될 때만 씀
   .env.local: DEEPL_API_KEY (무료 키는 끝이 ":fx" → api-free 주소). 키가 없거나 실패하면 null → 화면은 원문/목업 번역 그대로
   같은 문장은 서버가 켜져 있는 동안 기억해 두고 다시 묻지 않음 (무료 한도 한 달 50만 자)
   음식 이름은 용어집(glossary.ts) — 영·한·일은 DeepL 용어집으로, 중국어는 원문 속 이름을 바꿔 넣어서 (glossary.ts 설명)
