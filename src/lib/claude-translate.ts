@@ -50,9 +50,9 @@ export async function translateWithClaude(texts: string[], target: MtLang): Prom
       const response = await client.messages.create({
         model: MODEL,
         max_tokens: 8000,
-        // 번역은 생각할 거리가 적어서 생각 없이 · 가장 낮은 노력으로 (토큰 아끼기)
+        // 번역은 생각할 거리가 적어서 생각 없이 (토큰 아끼기). 노력은 medium — low에선 "カナダfrom来ました"처럼 언어가 섞이는 실수가 나와서
         thinking: { type: "disabled" },
-        output_config: { effort: "low", format: { type: "json_schema", schema: SCHEMA } },
+        output_config: { effort: "medium", format: { type: "json_schema", schema: SCHEMA } },
         system: SYSTEM,
         // 줄바꿈은 <br>로 바꿔 보냄 — 그대로 보내면 한 문장을 두 줄로 나눈 줄바꿈을 지우고 한 줄로 옮겨서
         messages: [{ role: "user", content: `Target language: ${LANG_NAME[target]}\nItems:\n${JSON.stringify(ask.map((t) => t.replace(/\n/g, "<br>")))}` }],
