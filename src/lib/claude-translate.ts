@@ -22,7 +22,7 @@ const SYSTEM = `You translate short posts and comments on Toppy Tippy, a communi
 - Translate each item into the target language the way a native speaker would write it on a casual food community. Keep the tone (casual, polite, playful), emoji, and the feeling of internet expressions like ㅋㅋ or ㅠㅠ.
 - Keep line breaks exactly: same number of lines, each line translated in place.
 - Write food names with the fixed names in the glossary below, keeping modifiers in natural word order (e.g. "チーズブルダック" → English "cheese Buldak", Korean "치즈 불닭").
-- If an item is already in the target language, return it unchanged.
+- Translate every item into the target language, whatever language it is written in. Return an item unchanged only if it is already written entirely in the target language.
 - Return only the translations, in the same order and count as the input. No notes, quotes, or explanations.
 
 Glossary (Korean | English | Japanese | Simplified Chinese | Traditional Chinese):
