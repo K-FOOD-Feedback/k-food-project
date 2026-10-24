@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useSyncExternalStore } from "react";
+import { mt } from "@/lib/translate";
 
 /*
   댓글 (서버가 붙기 전까지 목업 + 이 브라우저의 localStorage)
@@ -134,9 +135,9 @@ const SEED_JA: Record<string, string> = {
 
 const SEED_BY_LANG = { en: SEED_EN, zh: SEED_ZH, zht: SEED_ZHT, ja: SEED_JA };
 
-/** 한마디를 그 언어로 옮깁니다 (영어·중국어·일본어 — 옮겨 둔 문장이 없으면 그대로). */
-export function translateTo(comment: Comment, lang: "en" | "zh" | "zht" | "ja"): Comment {
-  const text = comment.kind === "text" ? SEED_BY_LANG[lang][comment.text] : undefined;
+/** 한마디를 그 언어로 옮깁니다 — 자동 번역(DeepL)이 오면 그걸로, 오기 전엔 옮겨 둔 문장(영·중·일), 없으면 그대로. */
+export function translateTo(comment: Comment, lang: "ko" | "en" | "zh" | "zht" | "ja"): Comment {
+  const text = comment.kind === "text" ? (mt(comment.text, lang) ?? (lang === "ko" ? undefined : SEED_BY_LANG[lang][comment.text])) : undefined;
   return text ? { ...comment, text } : comment;
 }
 

@@ -9,6 +9,8 @@ import { useCommentLogin } from "../CommentLogin";
 import { COMMENTS_COPY, type CommentsLang, type Lang } from "../copy";
 import { saveKoreanLang, saveViewerLang, useKoreanUiLang, useViewerUiLang } from "../viewerLang";
 import { useDocLang } from "@/lib/docLang";
+import { mt } from "@/lib/translate";
+import { useMt } from "@/lib/useMt";
 
 /**
   한마디 전체 화면의 상단 바 + 한마디 칸.
@@ -45,6 +47,7 @@ export function CommentsScreen({
   /** 글 제목 — 중국어·일본어가 없으면 영어로 */
   title: Record<Lang, string> & Partial<Record<"zh" | "zht" | "ja", string>>;
 }) {
+  useMt();
   // 한국인도 상세 화면과 같은 언어 설정(koreanLang, 기본 한국어)을 함께 씁니다 — 상세에서 고른 언어가 여기서도 이어짐.
   // 주소에 ?lang= 이 있으면(공유 링크 등) 이번 화면에서는 그 언어로 시작합니다.
   // 중국어·일본어도 그 언어 그대로 (한마디 문구가 네 언어 모두 있음)
@@ -86,7 +89,7 @@ export function CommentsScreen({
           commentCount={commentCount}
           authorFlag={authorFlag}
           authorColor={authorColor}
-          postTitle={(lang === "zh" || lang === "zht" || lang === "ja" ? title[lang] : undefined) ?? title[lang === "ko" ? "ko" : "en"]}
+          postTitle={mt(title.en, lang) ?? (lang === "zh" || lang === "zht" || lang === "ja" ? title[lang] : undefined) ?? title[lang === "ko" ? "ko" : "en"]}
           variant="full"
           lang={lang}
           writeLocked={login.locked}

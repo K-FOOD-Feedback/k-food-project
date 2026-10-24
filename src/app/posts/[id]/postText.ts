@@ -1,5 +1,6 @@
 import type { HomePost } from "@/app/home/mockPosts";
 import type { UiLang } from "./viewerLang";
+import { mt } from "@/lib/translate";
 
 /*
   상세 글 본문(스토리)·투표 칸의 중국어·일본어 (목업 — 서버가 붙으면 번역 결과로 바뀜)
@@ -52,12 +53,17 @@ const QUESTIONS: Record<string, { en: string; zh: string; zht: string; ja: strin
 
 /** 투표 질문을 고른 언어로 (번역이 없으면 원문 — 내 글은 쓴 언어 그대로) */
 export function questionIn(post: HomePost, lang: UiLang): string {
+  // 자동 번역(DeepL) — 원문은 영어 질문(목업) 또는 내가 쓴 질문
+  const done = mt(QUESTIONS[post.id]?.en ?? post.question.text, lang);
+  if (done) return done;
   if (lang === "ko") return post.question.text;
   return QUESTIONS[post.id]?.[lang] ?? post.question.text;
 }
 
 /** 글 본문을 고른 언어로 (한국어가 아니면 번역, 없으면 영어) */
 export function bodyIn(post: HomePost, lang: UiLang): string {
+  const done = mt(post.en.body ?? post.body, lang);
+  if (done) return done;
   if (lang === "ko") return post.body;
   if (lang === "en") return post.en.body || post.body;
   return BODIES[post.id]?.[lang] ?? post.en.body ?? post.body;
@@ -65,6 +71,9 @@ export function bodyIn(post: HomePost, lang: UiLang): string {
 
 /** 투표 칸 이름을 고른 언어로 (줄바꿈 \n 포함) */
 export function optionsIn(post: HomePost, lang: UiLang): string[] {
+  // 번역은 줄바꿈 없이 (칸 너비에 맞춰 알아서 줄바꿈) — 모든 칸이 도착했을 때만 바꿈 (반만 바뀌어 섞이지 않게)
+  const done = (post.en.options ?? post.question.options).map((o) => mt(o.replace(/\n/g, " "), lang));
+  if (done.every((o): o is string => o !== undefined)) return done;
   if (lang === "ko") return post.question.options;
   if (lang === "en") return post.en.options ?? post.question.options;
   return OPTIONS[post.question.id]?.[lang] ?? post.en.options ?? post.question.options;

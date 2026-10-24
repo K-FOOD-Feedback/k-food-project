@@ -17,6 +17,7 @@ import { CommentCard, Empty, LogoutSheet, MyTabs, PhotoTile, TIME, timeAgo } fro
 import { forgetRole } from "@/lib/role";
 import { FEEDBACK_BAR_SPACE, FeedbackButton } from "./FeedbackSheet";
 import { AccountFooter, GOOGLE_ACCOUNT, AccountMenu, countryFlag, countryName, ProfileHeader, ProfileSheet, useCountry, useNickname } from "./profile";
+import { useMt } from "@/lib/useMt";
 
 /*
   7. 마이 · 외국인 /my/en (담당 송희)
@@ -191,6 +192,7 @@ function votesLabel(n: number, lang: UiLang) {
 type Tab = "posts" | "comments";
 
 export function MyScreen({ noComments = false }: { noComments?: boolean }) {
+  useMt();
   const router = useRouter();
   const { myPost, logOut, deleteMyPost, discardDraft } = useFlow();
   const nickname = useNickname("en");

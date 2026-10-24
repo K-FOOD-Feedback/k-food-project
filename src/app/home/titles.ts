@@ -1,5 +1,6 @@
 import type { UiLang } from "../posts/[id]/viewerLang";
 import type { HomePost } from "./mockPosts";
+import { mt } from "@/lib/translate";
 
 /*
   메인 카드 제목의 중국어·일본어 (목업 — 서버가 붙으면 번역 결과로 바뀜)
@@ -15,6 +16,9 @@ const TITLES: Record<string, { zh: string; zht: string; ja: string }> = {
 
 /** 글 제목을 고른 언어로 */
 export function titleIn(post: HomePost, lang: UiLang): string {
+  // 자동 번역이 켜져 있으면 원문(post.en.title — 글쓴이가 쓴 그대로)을 DeepL로. 번역이 오기 전·꺼져 있으면 아래 목업
+  const done = mt(post.en.title, lang);
+  if (done) return done;
   if (lang === "ko") return post.title;
   if (lang === "en") return post.en.title;
   return post.titles?.[lang] ?? TITLES[post.id]?.[lang] ?? post.en.title;

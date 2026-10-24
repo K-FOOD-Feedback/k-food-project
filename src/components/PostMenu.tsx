@@ -15,6 +15,7 @@ import { useMyAuthor } from "@/app/my/profile";
 import { PillButton } from "./Buttons";
 import { Icon } from "./Icon";
 import { BottomSheet } from "./Layout";
+import { useMt } from "@/lib/useMt";
 
 /**
  * 게시글 "더보기(⋯)" 메뉴 (담당 송희 — 상세 화면 등에 끼워 씀)
@@ -146,6 +147,7 @@ export function PostMenu({
   className?: string;
   children: ReactNode;
 }) {
+  useMt();
   const router = useRouter();
   const { deleteMyPost, myPost } = useFlow();
   const t = COPY[lang];

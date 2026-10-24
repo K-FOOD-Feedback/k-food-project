@@ -29,6 +29,7 @@ import { mPlus2, paperlogy, titleFont } from "./font";
 import { isForeignFrom, withViewer } from "./viewer";
 import { saveKoreanLang, saveViewerLang, useKoreanUiLang, useViewerUiLang } from "./viewerLang";
 import { VoteBowl } from "./VoteBowl";
+import { useMt } from "@/lib/useMt";
 
 /**
   상세 화면 (Figma 263:10329 전체, 263:10251 기기 화면의 플로팅 버튼)
@@ -41,6 +42,7 @@ import { VoteBowl } from "./VoteBowl";
     외국인인데 from으로 알 수 없으면(?viewer=en으로 들어옴) 링크에 ?viewer=en 도 이어 붙임.
 */
 export function DetailScreen({ post, from, viewer = "ko" }: { post: HomePost; from?: BackFrom; viewer?: "ko" | "en" }) {
+  useMt();
   const foreigner = viewer === "en";
   // 들어온 곳이 없으면 메인 (외국인·내 글은 외국인 메인)
   const backHref = backHrefFrom(from, foreigner || post.id === MY_POST_ID ? "/home?lang=en" : "/home");
@@ -1033,6 +1035,7 @@ function ShareVoteCard({
 /** 본문 카드 안 글 (진짜 카드와 전환용 카드가 같은 모양을 쓰도록) */
 /** 상세 본문 카드 안 글 (점검 화면 /dev/edge-cases 에서도 씀) */
 export function ArticleBody({ post, lang = "ko", contentLang = lang }: { post: HomePost; lang?: CommentsLang; contentLang?: CommentsLang }) {
+  useMt();
   // contentLang: 글쓴이가 쓴 제목·본문 (원어 또는 자동 번역) — 제목은 중·일까지, 본문은 한국어가 아니면 영어
   const titleText = titleIn(post, contentLang);
   const cjk = contentLang === "zh" || contentLang === "zht" || contentLang === "ja";

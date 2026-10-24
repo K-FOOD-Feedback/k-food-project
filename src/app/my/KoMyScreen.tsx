@@ -16,6 +16,7 @@ import { CommentCard, Empty, LogoutSheet, MyTabs, PhotoTile, timeAgo } from "./p
 import { forgetRole } from "@/lib/role";
 import { FEEDBACK_BAR_SPACE, FeedbackButton } from "./FeedbackSheet";
 import { AccountFooter, GOOGLE_ACCOUNT, AccountMenu, ProfileHeader, ProfileSheet, useNickname } from "./profile";
+import { useMt } from "@/lib/useMt";
 
 /*
   7. 마이 · 한국인 /my (담당 송희)
@@ -140,6 +141,7 @@ const COPY: Record<
 type Tab = "votes" | "comments";
 
 export function KoMyScreen() {
+  useMt();
   const router = useRouter();
   const { logOut } = useFlow();
   const nickname = useNickname("ko");

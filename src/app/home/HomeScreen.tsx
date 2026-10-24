@@ -27,6 +27,7 @@ import { titleFont } from "../posts/[id]/font";
 import { useKoreanUiLang, useViewerUiLang } from "../posts/[id]/viewerLang";
 import { useDocLang } from "@/lib/docLang";
 import { useAutoTranslate } from "@/components/LanguagePicker";
+import { useMt } from "@/lib/useMt";
 
 /** 메인 상단 두 줄 — 참여를 부르는 한마디. [버전][화면 언어]
     한국인 버전: 참견하러 오세요 / 외국인 버전: 한식 올려 보세요 — 지구본으로 언어를 바꾸면 같은 뜻으로 바뀜 */
@@ -76,6 +77,7 @@ function decodePhoto(src: string) {
 }
 
 export function HomeScreen({ lang = "ko" }: { lang?: "ko" | "en" }) {
+  useMt();
   const router = useRouter();
   const posts = HOME_POSTS;
   const [index, setIndex] = useState(() =>

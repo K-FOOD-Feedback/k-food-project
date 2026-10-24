@@ -13,6 +13,7 @@ import { titleFont } from "./font";
 import { HIDDEN_COLOR, useHiddenComments } from "./hidden";
 import { estimateWidth, GravityPile, type PileHandle } from "./GravityPile";
 import { clampText, textLength } from "@/lib/text-length";
+import { useMt } from "@/lib/useMt";
 
 /** 날아가는 원의 지름. 실제 말풍선보다 작게 날아가서, 떨어질 때 본래 크기로 커집니다. */
 const CIRCLE = 20;
@@ -83,9 +84,10 @@ export function CommentPile({
   const { addedCount, add, edit, remove, nextColor, ready } = stored;
   const all = fixture ?? stored.comments;
   const t = COMMENTS_COPY[lang];
-  // 영어·중국어·일본어 화면에서 자동 번역이 켜져 있으면 한마디도 그 언어로 보여 줍니다 (언어 창 아래 켬/끔).
+  // 자동 번역이 켜져 있으면 한마디도 보는 사람 언어로 보여 줍니다 (언어 창 아래 켬/끔 — 한국인에겐 외국인 한마디를 한국어로).
   const autoTranslate = useAutoTranslate();
-  const translateLang = autoTranslate && lang !== "ko" ? lang : null;
+  useMt();
+  const translateLang = autoTranslate ? lang : null;
   const translate = translateLang !== null;
   // 내가 신고해서 가린 한마디는 빼지 않고 회색 "가려진 한마디예요"로 보여 줍니다 (숫자도 그대로).
   const { hidden, hide } = useHiddenComments(postId);
