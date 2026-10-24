@@ -9,7 +9,7 @@ export type LandingLang = "ko" | "en" | "zh" | "zht" | "ja";
 
 export const COPY = {
   ko: {
-    brand: "오늘의 참견",
+    brand: "Toppy Tippy",
     skip: "건너뛰기",
     // 스크롤 단계마다 바뀌는 제목 (두 줄씩)
     titles: [
@@ -38,7 +38,7 @@ export const COPY = {
     reply: "다음엔 치즈를 반만 넣어 볼게요!",
   },
   en: {
-    brand: "오늘의 참견",
+    brand: "Toppy Tippy",
     skip: "Skip",
     titles: [
       ["Tried Korean food?", "See how Koreans react."],
@@ -65,7 +65,7 @@ export const COPY = {
     reply: "Next time I'll use half the cheese!",
   },
   zh: {
-    brand: "오늘의 참견",
+    brand: "Toppy Tippy",
     skip: "跳过",
     titles: [
       ["做过韩国料理吗？", "看看韩国人怎么说。"],
@@ -92,7 +92,7 @@ export const COPY = {
     reply: "下次芝士只放一半！",
   },
   zht: {
-    brand: "오늘의 참견",
+    brand: "Toppy Tippy",
     skip: "跳過",
     titles: [
       ["做過韓國料理嗎？", "看看韓國人怎麼說。"],
@@ -119,7 +119,7 @@ export const COPY = {
     reply: "下次芝士只放一半！",
   },
   ja: {
-    brand: "오늘의 참견",
+    brand: "Toppy Tippy",
     skip: "スキップ",
     titles: [
       ["世界の韓国料理チャレンジに、", "韓国人がひとこと。"],
