@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element -- 이미지로 저장할 카드라 next/image 대신 img (html-to-image가 그대로 그림) */
 import { memo, type CSSProperties } from "react";
 import { CARD_SHAPES, type CardShape } from "@/app/home/cardShapes";
+import { Logo } from "@/components/Logo";
 
 /*
   공유용 세로 카드 (인스타 스토리 9:16) — 담당 송희
@@ -290,7 +291,7 @@ type Copy = (typeof COPY)["en"];
 function Footer({ t }: { t: Copy }) {
   return (
     <div className="mt-auto flex items-center justify-between gap-2 border-t border-current/15 pt-3 text-[8px] font-bold leading-none">
-      <span className="shrink-0 font-display text-[12px]">오늘의 참견</span>
+      <Logo height={12} />
       {/* 넘치면 … (저장 이미지에서 글자 폭이 조금 달라져도 카드 밖으로 나가지 않게) */}
       <span className="min-w-0 truncate opacity-60">{t.footer}</span>
     </div>
