@@ -11,9 +11,19 @@ const TARGET: Record<MtLang, string> = { ko: "KO", en: "EN-US", zh: "ZH-HANS", z
 const MEMO_MAX = 5000;
 const memo = new Map<string, string>();
 
+/** 여러 줄 글은 줄마다 따로 옮겨 다시 이어 붙임 — 통째로 보내면 DeepL이 줄바꿈 자리를 문장 중간으로 옮겨서 */
 export async function translateTexts(texts: string[], target: MtLang): Promise<string[] | null> {
+  const lines = texts.map((t) => t.split("\n"));
+  const done = await translateLines([...new Set(lines.flat().filter((l) => l.trim()))], target);
+  if (!done) return null;
+  const map = new Map(done);
+  return lines.map((ls) => ls.map((l) => map.get(l) ?? l).join("\n"));
+}
+
+async function translateLines(texts: string[], target: MtLang): Promise<[string, string][] | null> {
   const key = process.env.DEEPL_API_KEY;
-  if (!key || !texts.length) return null;
+  if (!key) return null;
+  if (!texts.length) return [];
   const out: (string | undefined)[] = texts.map((t) => memo.get(`${target}\u0000${t}`));
   const ask = [...new Set(texts.filter((_, i) => out[i] === undefined))];
   if (ask.length) {
@@ -42,11 +52,13 @@ export async function translateTexts(texts: string[], target: MtLang): Promise<s
       });
     };
     try {
-      await Promise.all(groups.map((g, i) => (g.length ? call(g, i === 1) : null)));
+      // DeepL은 한 번에 50개까지
+      const chunks = groups.flatMap((g, i) => Array.from({ length: Math.ceil(g.length / 50) }, (_, k) => [g.slice(k * 50, k * 50 + 50), i === 1] as const));
+      await Promise.all(chunks.map(([g, tagged]) => call(g, tagged)));
     } catch (err) {
       console.error("[translate] 번역 실패", err);
       return null;
     }
   }
-  return texts.map((t, i) => out[i] ?? memo.get(`${target}\u0000${t}`) ?? t);
+  return texts.map((t, i) => [t, (out[i] ?? memo.get(`${target}\u0000${t}`) ?? t).trim()]);
 }

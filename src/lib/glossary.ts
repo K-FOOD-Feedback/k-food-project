@@ -32,7 +32,7 @@ const PATTERN = new RegExp(ENTRIES.map(({ name }) => (/^[A-Za-z]/.test(name) ? `
 
 const xml = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-/** 용어가 있으면 DeepL에 보낼 XML(용어는 <x>로 감싸 번역 안 함 · 줄바꿈은 <br/>)로, 없으면 null */
+/** 용어가 있으면 DeepL에 보낼 XML(용어는 <x>로 감싸 번역 안 함)로, 없으면 null — 한 줄씩 받음 */
 export function protect(text: string, target: MtLang): string | null {
   let hit = false;
   const out = xml(text).replace(PATTERN, (m) => {
@@ -41,13 +41,12 @@ export function protect(text: string, target: MtLang): string | null {
     hit = true;
     return `<x>${xml(e.t[target])}</x>`;
   });
-  return hit ? out.replace(/\n/g, "<br/>") : null;
+  return hit ? out : null;
 }
 
 /** DeepL이 돌려준 XML을 다시 글로 */
 export function unprotect(text: string): string {
   return text
-    .replace(/<br\s*\/?>/g, "\n")
     .replace(/<\/?x>/g, "")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
