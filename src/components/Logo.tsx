@@ -5,15 +5,26 @@
 */
 const RATIO = 2000 / 454;
 
-export function Logo({ height = 20, className = "" }: { height?: number; className?: string }) {
+export function Logo({
+  height = 20,
+  fit = false,
+  className = "",
+}: {
+  /** 높이(px). fit이면 최대 높이 */
+  height?: number;
+  /** 남은 폭에 맞춰 줄어듦 — 부모 폭을 꽉 채우되 height보다 커지지 않음 (좁은 화면에서 옆 버튼과 겹치지 않게) */
+  fit?: boolean;
+  className?: string;
+}) {
   return (
     <span
       role="img"
       aria-label="Toppy Tippy"
-      className={`inline-block shrink-0 bg-current ${className}`}
+      className={`block shrink-0 bg-current ${className}`}
       style={{
-        height,
-        width: Math.round(height * RATIO),
+        ...(fit
+          ? { width: "100%", maxWidth: Math.round(height * RATIO), aspectRatio: `${RATIO}` }
+          : { height, width: Math.round(height * RATIO) }),
         maskImage: "url(/images/toppytippy-logo.webp)",
         WebkitMaskImage: "url(/images/toppytippy-logo.webp)",
         maskSize: "contain",
