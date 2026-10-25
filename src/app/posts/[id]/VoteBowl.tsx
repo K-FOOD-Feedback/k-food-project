@@ -78,7 +78,8 @@ export function VoteBowl({
   const optionLeading = "leading-[1.4]";
   // 선택지는 잘리지 않고 전부 보임 (글자 수는 입력할 때 OPTION_MAX로 제한). 4칸이면 칸이 좁아서 글자·%를 조금 작게
   const narrow = options.length >= 4;
-  const optionText = narrow ? "pl-3 text-[14px] tracking-[-0.28px]" : "pl-4 text-[16px] tracking-[-0.32px]";
+  // 좌우 여백은 같게 (% 숫자 left-3 · left-4와 맞춤). 한국어는 단어 단위로 줄바꿈 (자동 번역은 줄바꿈 없이 와서 "맵/게"처럼 끊기던 것)
+  const optionText = narrow ? "px-3 text-[14px] tracking-[-0.28px]" : "px-4 text-[16px] tracking-[-0.32px]";
   // % 숫자는 언어와 상관없이 Paperlogy (한국인·외국인 버전 같은 모양)
   const pctFont = titleFont("ko");
   const pctText = narrow
@@ -443,7 +444,7 @@ export function VoteBowl({
                     {mine && (
                       <>
                         {/* 칸 맨 위 기준 자리 = 색 영역 맨 위에서 (칸 높이 - 색 높이)만큼 위 */}
-                        <span aria-hidden className={`absolute left-0 w-full pt-4 pr-2 ${optionText} ${optionFont} ${optionLeading} whitespace-pre-line [overflow-wrap:anywhere] text-on-light`} style={{ top: "calc(100% - 230px)" }}>
+                        <span aria-hidden className={`absolute left-0 w-full pt-4 ${optionText} ${optionFont} ${optionLeading} whitespace-pre-line break-keep [overflow-wrap:anywhere] text-on-light`} style={{ top: "calc(100% - 230px)" }}>
                           {label}
                         </span>
                         <span aria-hidden className={`${pctText} absolute bottom-3 text-on-light`}>
@@ -455,7 +456,7 @@ export function VoteBowl({
                 </span>
               )}
               <span
-                className={`absolute top-0 left-0 w-full pt-4 pr-2 ${optionText} ${optionFont} ${optionLeading} whitespace-pre-line [overflow-wrap:anywhere] text-on-dark`}
+                className={`absolute top-0 left-0 w-full pt-4 ${optionText} ${optionFont} ${optionLeading} whitespace-pre-line break-keep [overflow-wrap:anywhere] text-on-dark`}
               >
                 {label}
               </span>
