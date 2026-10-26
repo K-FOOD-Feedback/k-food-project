@@ -1,0 +1,1323 @@
+{
+  "version": 1,
+  "categories": [
+    {
+      "id": "color",
+      "label": "Color",
+      "groups": [
+        {
+          "id": "color-base",
+          "label": "Base",
+          "desc": "흰색 · 검은색",
+          "kind": "color",
+          "tokens": [
+            {
+              "name": "color/white",
+              "value": "#ffffff",
+              "type": "COLOR"
+            },
+            {
+              "name": "color/black",
+              "value": "#000000",
+              "type": "COLOR"
+            }
+          ]
+        },
+        {
+          "id": "color-gray",
+          "label": "Gray",
+          "desc": "",
+          "kind": "color",
+          "tokens": [
+            {
+              "name": "color/gray/50",
+              "value": "#f5f5f5",
+              "type": "COLOR"
+            },
+            {
+              "name": "color/gray/100",
+              "value": "#e5e5e5",
+              "type": "COLOR"
+            },
+            {
+              "name": "color/gray/150",
+              "value": "#d9d9d9",
+              "type": "COLOR"
+            },
+            {
+              "name": "color/gray/175",
+              "value": "#d4d4d4",
+              "type": "COLOR"
+            },
+            {
+              "name": "color/gray/350",
+              "value": "#ababab",
+              "type": "COLOR"
+            },
+            {
+              "name": "color/gray/450",
+              "value": "#8e8e8e",
+              "type": "COLOR"
+            },
+            {
+              "name": "color/gray/500",
+              "value": "#828282",
+              "type": "COLOR"
+            },
+            {
+              "name": "color/gray/525",
+              "value": "#808080",
+              "type": "COLOR"
+            },
+            {
+              "name": "color/gray/550",
+              "value": "#737373",
+              "type": "COLOR"
+            },
+            {
+              "name": "color/gray/750",
+              "value": "#444444",
+              "type": "COLOR"
+            },
+            {
+              "name": "color/gray/800",
+              "value": "#2e2e2e",
+              "type": "COLOR"
+            },
+            {
+              "name": "color/gray/850",
+              "value": "#2a2a2a",
+              "type": "COLOR"
+            },
+            {
+              "name": "color/gray/875",
+              "value": "#292929",
+              "type": "COLOR"
+            },
+            {
+              "name": "color/gray/900",
+              "value": "#242424",
+              "type": "COLOR"
+            },
+            {
+              "name": "color/gray/925",
+              "value": "#1e1e1e",
+              "type": "COLOR"
+            },
+            {
+              "name": "color/gray/950",
+              "value": "#111111",
+              "type": "COLOR"
+            }
+          ]
+        },
+        {
+          "id": "color-red",
+          "label": "Red",
+          "desc": "",
+          "kind": "color",
+          "tokens": [
+            {
+              "name": "color/red/200",
+              "value": "#ff8fa3",
+              "type": "COLOR"
+            },
+            {
+              "name": "color/red/300",
+              "value": "#ff6f86",
+              "type": "COLOR"
+            },
+            {
+              "name": "color/red/325",
+              "value": "#ff5b5b",
+              "type": "COLOR"
+            }
+          ]
+        },
+        {
+          "id": "color-orange",
+          "label": "Orange",
+          "desc": "",
+          "kind": "color",
+          "tokens": [
+            {
+              "name": "color/orange/200",
+              "value": "#ffae8f",
+              "type": "COLOR"
+            },
+            {
+              "name": "color/orange/250",
+              "value": "#ffab8a",
+              "type": "COLOR"
+            },
+            {
+              "name": "color/orange/750",
+              "value": "#5b3a1e",
+              "type": "COLOR"
+            }
+          ]
+        },
+        {
+          "id": "color-yellow",
+          "label": "Yellow",
+          "desc": "",
+          "kind": "color",
+          "tokens": [
+            {
+              "name": "color/yellow/300",
+              "value": "#fae276",
+              "type": "COLOR"
+            },
+            {
+              "name": "color/yellow/350",
+              "value": "#ffe056",
+              "type": "COLOR"
+            },
+            {
+              "name": "color/yellow/400",
+              "value": "#ffcd3c",
+              "type": "COLOR"
+            },
+            {
+              "name": "color/yellow/450",
+              "value": "#f5b528",
+              "type": "COLOR"
+            },
+            {
+              "name": "color/yellow/500",
+              "value": "#fee500",
+              "type": "COLOR"
+            }
+          ]
+        },
+        {
+          "id": "color-lime",
+          "label": "Lime",
+          "desc": "",
+          "kind": "color",
+          "tokens": [
+            {
+              "name": "color/lime/350",
+              "value": "#ccf54b",
+              "type": "COLOR"
+            }
+          ]
+        },
+        {
+          "id": "color-green",
+          "label": "Green",
+          "desc": "",
+          "kind": "color",
+          "tokens": [
+            {
+              "name": "color/green/500",
+              "value": "#34c759",
+              "type": "COLOR"
+            },
+            {
+              "name": "color/green/525",
+              "value": "#25d366",
+              "type": "COLOR"
+            }
+          ]
+        },
+        {
+          "id": "color-cyan",
+          "label": "Cyan",
+          "desc": "",
+          "kind": "color",
+          "tokens": [
+            {
+              "name": "color/cyan/200",
+              "value": "#9fe7ff",
+              "type": "COLOR"
+            },
+            {
+              "name": "color/cyan/350",
+              "value": "#4ae9ff",
+              "type": "COLOR"
+            }
+          ]
+        },
+        {
+          "id": "color-blue",
+          "label": "Blue",
+          "desc": "",
+          "kind": "color",
+          "tokens": [
+            {
+              "name": "color/blue/200",
+              "value": "#8e9afe",
+              "type": "COLOR"
+            }
+          ]
+        },
+        {
+          "id": "color-purple",
+          "label": "Purple",
+          "desc": "",
+          "kind": "color",
+          "tokens": [
+            {
+              "name": "color/purple/150",
+              "value": "#c8b5ff",
+              "type": "COLOR"
+            },
+            {
+              "name": "color/purple/350",
+              "value": "#7144ff",
+              "type": "COLOR"
+            }
+          ]
+        },
+        {
+          "id": "color-magenta",
+          "label": "Magenta",
+          "desc": "",
+          "kind": "color",
+          "tokens": [
+            {
+              "name": "color/magenta/100",
+              "value": "#ffc6ff",
+              "type": "COLOR"
+            }
+          ]
+        },
+        {
+          "id": "color-pink",
+          "label": "Pink",
+          "desc": "",
+          "kind": "color",
+          "tokens": [
+            {
+              "name": "color/pink/250",
+              "value": "#ff87c5",
+              "type": "COLOR"
+            }
+          ]
+        },
+        {
+          "id": "color-black-alpha",
+          "label": "Black Alpha",
+          "desc": "딤 · 덮개에 쓰는 투명 색",
+          "kind": "color",
+          "tokens": [
+            {
+              "name": "color/black-alpha/32",
+              "value": "rgba(0, 0, 0, 0.32)",
+              "type": "COLOR"
+            },
+            {
+              "name": "color/black-alpha/60",
+              "value": "rgba(0, 0, 0, 0.6)",
+              "type": "COLOR"
+            },
+            {
+              "name": "color/black-alpha/80",
+              "value": "rgba(0, 0, 0, 0.8)",
+              "type": "COLOR"
+            }
+          ]
+        },
+        {
+          "id": "color-white-alpha",
+          "label": "White Alpha",
+          "desc": "딤 · 덮개에 쓰는 투명 색",
+          "kind": "color",
+          "tokens": [
+            {
+              "name": "color/white-alpha/10",
+              "value": "rgba(255, 255, 255, 0.1)",
+              "type": "COLOR"
+            },
+            {
+              "name": "color/white-alpha/15",
+              "value": "rgba(255, 255, 255, 0.15)",
+              "type": "COLOR"
+            },
+            {
+              "name": "color/white-alpha/20",
+              "value": "rgba(255, 255, 255, 0.2)",
+              "type": "COLOR"
+            },
+            {
+              "name": "color/white-alpha/50",
+              "value": "rgba(255, 255, 255, 0.5)",
+              "type": "COLOR"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "typography",
+      "label": "Typography",
+      "groups": [
+        {
+          "id": "font-family-ko",
+          "label": "Font Family · Korean",
+          "desc": "한국어 — 본문 Pretendard · 제목 Paperlogy",
+          "kind": "font-family",
+          "tokens": [
+            {
+              "name": "font-family/ko/pretendard",
+              "value": "Pretendard",
+              "type": "STRING"
+            },
+            {
+              "name": "font-family/ko/paperlogy",
+              "value": "Paperlogy",
+              "type": "STRING"
+            }
+          ]
+        },
+        {
+          "id": "font-family-en",
+          "label": "Font Family · English",
+          "desc": "영어 — 본문 Inter · 제목 Figtree",
+          "kind": "font-family",
+          "tokens": [
+            {
+              "name": "font-family/en/figtree",
+              "value": "Figtree",
+              "type": "STRING"
+            },
+            {
+              "name": "font-family/en/inter",
+              "value": "Inter",
+              "type": "STRING"
+            }
+          ]
+        },
+        {
+          "id": "font-family-zh",
+          "label": "Font Family · Chinese (Simplified)",
+          "desc": "중국어 간체 — 본문 MiSans · 제목 MiSans Heavy",
+          "kind": "font-family",
+          "tokens": [
+            {
+              "name": "font-family/zh/misans",
+              "value": "MiSans",
+              "type": "STRING"
+            }
+          ]
+        },
+        {
+          "id": "font-family-ja",
+          "label": "Font Family · Japanese",
+          "desc": "일본어 — 본문 · 제목 M PLUS 2",
+          "kind": "font-family",
+          "tokens": [
+            {
+              "name": "font-family/ja/m-plus-2",
+              "value": "M PLUS 2",
+              "type": "STRING"
+            }
+          ]
+        },
+        {
+          "id": "font-size",
+          "label": "Font Size",
+          "desc": "글자 크기",
+          "kind": "font-size",
+          "tokens": [
+            {
+              "name": "font-size/12",
+              "value": "12px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "font-size/14",
+              "value": "14px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "font-size/16",
+              "value": "16px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "font-size/20",
+              "value": "20px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "font-size/24",
+              "value": "24px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "font-size/28",
+              "value": "28px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "font-size/32",
+              "value": "32px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "font-size/40",
+              "value": "40px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "font-size/48",
+              "value": "48px",
+              "type": "FLOAT"
+            }
+          ]
+        },
+        {
+          "id": "font-weight",
+          "label": "Font Weight",
+          "desc": "굵기",
+          "kind": "font-weight",
+          "tokens": [
+            {
+              "name": "font-weight/medium",
+              "value": "500",
+              "type": "FLOAT"
+            },
+            {
+              "name": "font-weight/semibold",
+              "value": "600",
+              "type": "FLOAT"
+            },
+            {
+              "name": "font-weight/bold",
+              "value": "700",
+              "type": "FLOAT"
+            },
+            {
+              "name": "font-weight/extrabold",
+              "value": "800",
+              "type": "FLOAT"
+            }
+          ]
+        },
+        {
+          "id": "line-height",
+          "label": "Line Height",
+          "desc": "줄 간격 (%)",
+          "kind": "line-height",
+          "tokens": [
+            {
+              "name": "line-height/120",
+              "value": "120%",
+              "type": "FLOAT"
+            },
+            {
+              "name": "line-height/140",
+              "value": "140%",
+              "type": "FLOAT"
+            },
+            {
+              "name": "line-height/150",
+              "value": "150%",
+              "type": "FLOAT"
+            }
+          ]
+        },
+        {
+          "id": "letter-spacing",
+          "label": "Letter Spacing",
+          "desc": "자간 (%) — -1.6% ~ -3.0% 를 0.2% 간격으로 · 12%",
+          "kind": "letter-spacing",
+          "tokens": [
+            {
+              "name": "letter-spacing/-1.6%",
+              "value": "-1.6%",
+              "type": "FLOAT"
+            },
+            {
+              "name": "letter-spacing/-1.8%",
+              "value": "-1.8%",
+              "type": "FLOAT"
+            },
+            {
+              "name": "letter-spacing/-2.0%",
+              "value": "-2.0%",
+              "type": "FLOAT"
+            },
+            {
+              "name": "letter-spacing/-2.2%",
+              "value": "-2.2%",
+              "type": "FLOAT"
+            },
+            {
+              "name": "letter-spacing/-2.4%",
+              "value": "-2.4%",
+              "type": "FLOAT"
+            },
+            {
+              "name": "letter-spacing/-2.6%",
+              "value": "-2.6%",
+              "type": "FLOAT"
+            },
+            {
+              "name": "letter-spacing/-2.8%",
+              "value": "-2.8%",
+              "type": "FLOAT"
+            },
+            {
+              "name": "letter-spacing/-3.0%",
+              "value": "-3.0%",
+              "type": "FLOAT"
+            },
+            {
+              "name": "letter-spacing/12%",
+              "value": "12%",
+              "type": "FLOAT"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "spacing",
+      "label": "Spacing",
+      "groups": [
+        {
+          "id": "spacing",
+          "label": "Spacing",
+          "desc": "padding · margin · gap 을 한 줄로 (음수 margin 은 크기만)",
+          "kind": "spacing",
+          "tokens": [
+            {
+              "name": "spacing/0",
+              "value": "0px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "spacing/1",
+              "value": "1px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "spacing/4",
+              "value": "4px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "spacing/8",
+              "value": "8px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "spacing/12",
+              "value": "12px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "spacing/16",
+              "value": "16px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "spacing/20",
+              "value": "20px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "spacing/24",
+              "value": "24px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "spacing/32",
+              "value": "32px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "spacing/36",
+              "value": "36px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "spacing/40",
+              "value": "40px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "spacing/46",
+              "value": "46px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "spacing/48",
+              "value": "48px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "spacing/56",
+              "value": "56px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "spacing/64",
+              "value": "64px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "spacing/96",
+              "value": "96px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "spacing/117_5",
+              "value": "117.5px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "spacing/140",
+              "value": "140px",
+              "type": "FLOAT"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "size",
+      "label": "Size",
+      "groups": [
+        {
+          "id": "size",
+          "label": "Size",
+          "desc": "너비 · 높이 · 정사각 크기",
+          "kind": "size",
+          "tokens": [
+            {
+              "name": "size/1",
+              "value": "1px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/3",
+              "value": "3px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/4",
+              "value": "4px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/6",
+              "value": "6px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/8",
+              "value": "8px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/10",
+              "value": "10px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/12",
+              "value": "12px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/16",
+              "value": "16px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/22",
+              "value": "22px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/24",
+              "value": "24px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/32",
+              "value": "32px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/40",
+              "value": "40px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/48",
+              "value": "48px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/56",
+              "value": "56px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/64",
+              "value": "64px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/100",
+              "value": "100px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/110",
+              "value": "110px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/120",
+              "value": "120px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/128",
+              "value": "128px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/130",
+              "value": "130px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/132",
+              "value": "132px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/152",
+              "value": "152px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/160",
+              "value": "160px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/178",
+              "value": "178px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/181",
+              "value": "181px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/184",
+              "value": "184px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/192",
+              "value": "192px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/219",
+              "value": "219px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/230",
+              "value": "230px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/235",
+              "value": "235px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/260",
+              "value": "260px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/270",
+              "value": "270px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/280",
+              "value": "280px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/286",
+              "value": "286px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/362",
+              "value": "362px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/420",
+              "value": "420px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "size/480",
+              "value": "480px",
+              "type": "FLOAT"
+            }
+          ]
+        },
+        {
+          "id": "icon-size",
+          "label": "Icon Size",
+          "desc": "아이콘 크기 (<Icon size>)",
+          "kind": "icon-size",
+          "tokens": [
+            {
+              "name": "icon-size/10",
+              "value": "10px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "icon-size/12",
+              "value": "12px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "icon-size/16",
+              "value": "16px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "icon-size/20",
+              "value": "20px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "icon-size/24",
+              "value": "24px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "icon-size/32",
+              "value": "32px",
+              "type": "FLOAT"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "radius",
+      "label": "Radius",
+      "groups": [
+        {
+          "id": "radius",
+          "label": "Radius",
+          "desc": "모서리 둥글기",
+          "kind": "radius",
+          "tokens": [
+            {
+              "name": "radius/8",
+              "value": "8px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "radius/12",
+              "value": "12px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "radius/16",
+              "value": "16px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "radius/18",
+              "value": "18px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "radius/20",
+              "value": "20px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "radius/26",
+              "value": "26px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "radius/32",
+              "value": "32px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "radius/40",
+              "value": "40px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "radius/22",
+              "value": "22px",
+              "type": "FLOAT"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "border-width",
+      "label": "Border Width",
+      "groups": [
+        {
+          "id": "border-width",
+          "label": "Border Width",
+          "desc": "테두리 두께",
+          "kind": "border-width",
+          "tokens": [
+            {
+              "name": "border-width/1",
+              "value": "1px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "border-width/1_5",
+              "value": "1.5px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "border-width/2",
+              "value": "2px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "border-width/4",
+              "value": "4px",
+              "type": "FLOAT"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "shadow",
+      "label": "Shadow",
+      "groups": [
+        {
+          "id": "shadow",
+          "label": "Shadow",
+          "desc": "그림자 — 피그마에서는 Effect style",
+          "kind": "shadow",
+          "tokens": [
+            {
+              "name": "shadow/1",
+              "value": "0 2px 6px rgba(0,0,0,0.25)",
+              "type": "EFFECT"
+            },
+            {
+              "name": "shadow/2",
+              "value": "0 4px 12px rgba(0,0,0,0.18)",
+              "type": "EFFECT"
+            },
+            {
+              "name": "shadow/3",
+              "value": "0 2px 12px rgba(255,255,255,0.3)",
+              "type": "EFFECT"
+            },
+            {
+              "name": "shadow/4",
+              "value": "0 4px 12px rgba(0,0,0,0.4)",
+              "type": "EFFECT"
+            },
+            {
+              "name": "shadow/5",
+              "value": "0 4px 15px rgba(0,0,0,0.25)",
+              "type": "EFFECT"
+            },
+            {
+              "name": "shadow/6",
+              "value": "0 6px 16px rgba(0,0,0,0.35)",
+              "type": "EFFECT"
+            },
+            {
+              "name": "shadow/7",
+              "value": "0 8px 20px rgba(0,0,0,0.35)",
+              "type": "EFFECT"
+            },
+            {
+              "name": "shadow/8",
+              "value": "0 8px 20px rgba(0,0,0,0.4)",
+              "type": "EFFECT"
+            },
+            {
+              "name": "shadow/9",
+              "value": "0 12px 24px rgba(0,0,0,0.2)",
+              "type": "EFFECT"
+            },
+            {
+              "name": "shadow/10",
+              "value": "0 10px 28px rgba(0,0,0,0.45)",
+              "type": "EFFECT"
+            },
+            {
+              "name": "shadow/11",
+              "value": "0 12px 32px rgba(0,0,0,0.4)",
+              "type": "EFFECT"
+            },
+            {
+              "name": "shadow/12",
+              "value": "0 12px 32px rgba(0,0,0,0.45)",
+              "type": "EFFECT"
+            },
+            {
+              "name": "shadow/13",
+              "value": "0 12px 32px rgba(0,0,0,0.5)",
+              "type": "EFFECT"
+            },
+            {
+              "name": "shadow/14",
+              "value": "0 12px 40px rgba(0,0,0,0.5)",
+              "type": "EFFECT"
+            },
+            {
+              "name": "shadow/15",
+              "value": "0 16px 40px rgba(0,0,0,0.45)",
+              "type": "EFFECT"
+            },
+            {
+              "name": "shadow/16",
+              "value": "0 18px 48px 4px rgba(0,0,0,0.55),0 10px 24px -6px rgba(255,135,196,0.55)",
+              "type": "EFFECT"
+            },
+            {
+              "name": "shadow/17",
+              "value": "0 16px 48px rgba(0,0,0,0.55)",
+              "type": "EFFECT"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "opacity",
+      "label": "Opacity",
+      "groups": [
+        {
+          "id": "opacity",
+          "label": "Opacity",
+          "desc": "투명도",
+          "kind": "opacity",
+          "tokens": [
+            {
+              "name": "opacity/0",
+              "value": "0%",
+              "type": "FLOAT"
+            },
+            {
+              "name": "opacity/25",
+              "value": "25%",
+              "type": "FLOAT"
+            },
+            {
+              "name": "opacity/30",
+              "value": "30%",
+              "type": "FLOAT"
+            },
+            {
+              "name": "opacity/40",
+              "value": "40%",
+              "type": "FLOAT"
+            },
+            {
+              "name": "opacity/60",
+              "value": "60%",
+              "type": "FLOAT"
+            },
+            {
+              "name": "opacity/100",
+              "value": "100%",
+              "type": "FLOAT"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "blur",
+      "label": "Blur",
+      "groups": [
+        {
+          "id": "blur",
+          "label": "Blur",
+          "desc": "배경 흐림",
+          "kind": "blur",
+          "tokens": [
+            {
+              "name": "blur/8",
+              "value": "8px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "blur/12",
+              "value": "12px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "blur/24",
+              "value": "24px",
+              "type": "FLOAT"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "layout",
+      "label": "Layout",
+      "groups": [
+        {
+          "id": "screen-width",
+          "label": "Screen Width",
+          "desc": "화면 최대 너비",
+          "kind": "screen-width",
+          "tokens": [
+            {
+              "name": "screen-width/310",
+              "value": "310px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "screen-width/375",
+              "value": "375px",
+              "type": "FLOAT"
+            },
+            {
+              "name": "screen-width/430",
+              "value": "430px",
+              "type": "FLOAT"
+            }
+          ]
+        },
+        {
+          "id": "grid-columns",
+          "label": "Grid Columns",
+          "desc": "칸 수",
+          "kind": "grid-columns",
+          "tokens": [
+            {
+              "name": "grid-columns/2",
+              "value": "2",
+              "type": "FLOAT"
+            },
+            {
+              "name": "grid-columns/4",
+              "value": "4",
+              "type": "FLOAT"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "z-index",
+      "label": "Z-index",
+      "groups": [
+        {
+          "id": "z-index",
+          "label": "Z-index",
+          "desc": "겹침 순서",
+          "kind": "z-index",
+          "tokens": [
+            {
+              "name": "z-index/neg-10",
+              "value": "-10",
+              "type": "FLOAT"
+            },
+            {
+              "name": "z-index/0",
+              "value": "0",
+              "type": "FLOAT"
+            },
+            {
+              "name": "z-index/1",
+              "value": "1",
+              "type": "FLOAT"
+            },
+            {
+              "name": "z-index/2",
+              "value": "2",
+              "type": "FLOAT"
+            },
+            {
+              "name": "z-index/5",
+              "value": "5",
+              "type": "FLOAT"
+            },
+            {
+              "name": "z-index/10",
+              "value": "10",
+              "type": "FLOAT"
+            },
+            {
+              "name": "z-index/20",
+              "value": "20",
+              "type": "FLOAT"
+            },
+            {
+              "name": "z-index/30",
+              "value": "30",
+              "type": "FLOAT"
+            },
+            {
+              "name": "z-index/40",
+              "value": "40",
+              "type": "FLOAT"
+            },
+            {
+              "name": "z-index/50",
+              "value": "50",
+              "type": "FLOAT"
+            },
+            {
+              "name": "z-index/70",
+              "value": "70",
+              "type": "FLOAT"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "removed": [
+    "font-family|pretendard",
+    "letter-spacing|-4.5%",
+    "letter-spacing|-4.31%",
+    "letter-spacing|-3.88%",
+    "letter-spacing|-3.56%",
+    "letter-spacing|-3.38%",
+    "letter-spacing|-2.88%",
+    "letter-spacing|-2.75%",
+    "letter-spacing|-2.5%",
+    "letter-spacing|-2.25%",
+    "letter-spacing|-1.88%",
+    "letter-spacing|-1.75%",
+    "letter-spacing|-1.5%",
+    "letter-spacing|-1.25%",
+    "letter-spacing|-1.67%",
+    "letter-spacing|-1.83%",
+    "letter-spacing|-1.94%",
+    "letter-spacing|-2.29%",
+    "letter-spacing|-2.7%",
+    "letter-spacing|-2.85%",
+    "font-weight|400"
+  ]
+}

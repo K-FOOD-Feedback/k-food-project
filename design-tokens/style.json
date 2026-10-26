@@ -1,0 +1,266 @@
+{
+  "version": 1,
+  "text": [
+    {
+      "id": "role-h1",
+      "name": "Display/Large",
+      "desc": "공유 카드 판결 · 가장 큰 제목 (예전 H1)",
+      "family": {
+        "token": "font-family/heading"
+      },
+      "size": {
+        "token": "font-size/5xl"
+      },
+      "weight": {
+        "token": "font-weight/heading"
+      },
+      "leading": {
+        "token": "line-height/tight"
+      },
+      "tracking": {
+        "token": "letter-spacing/default"
+      }
+    },
+    {
+      "id": "role-h2",
+      "name": "Display/Medium",
+      "desc": "공유 카드 질문 (예전 H2)",
+      "family": {
+        "token": "font-family/heading"
+      },
+      "size": {
+        "token": "font-size/4xl"
+      },
+      "weight": {
+        "token": "font-weight/heading"
+      },
+      "leading": {
+        "token": "line-height/tight"
+      },
+      "tracking": {
+        "token": "letter-spacing/default"
+      }
+    },
+    {
+      "id": "role-h3",
+      "name": "Headline/Large",
+      "desc": "랜딩 · 마이 · 글쓰기 큰 제목 (예전 H3)",
+      "family": {
+        "token": "font-family/heading"
+      },
+      "size": {
+        "token": "font-size/3xl"
+      },
+      "weight": {
+        "token": "font-weight/heading"
+      },
+      "leading": {
+        "token": "line-height/tight"
+      },
+      "tracking": {
+        "token": "letter-spacing/default"
+      }
+    },
+    {
+      "id": "role-h4",
+      "name": "Headline/Medium",
+      "desc": "게시 완료 제목 (예전 H4)",
+      "family": {
+        "token": "font-family/heading"
+      },
+      "size": {
+        "token": "font-size/2xl"
+      },
+      "weight": {
+        "token": "font-weight/heading"
+      },
+      "leading": {
+        "token": "line-height/tight"
+      },
+      "tracking": {
+        "token": "letter-spacing/default"
+      }
+    },
+    {
+      "id": "role-h5",
+      "name": "Headline/Small",
+      "desc": "화면 제목 · 카드 제목 (예전 H5)",
+      "family": {
+        "token": "font-family/heading"
+      },
+      "size": {
+        "token": "font-size/xl"
+      },
+      "weight": {
+        "token": "font-weight/heading"
+      },
+      "leading": {
+        "token": "line-height/tight"
+      },
+      "tracking": {
+        "token": "letter-spacing/default"
+      }
+    },
+    {
+      "id": "role-h6",
+      "name": "Title/Large",
+      "desc": "섹션 제목 (예전 H6)",
+      "family": {
+        "token": "font-family/heading"
+      },
+      "size": {
+        "token": "font-size/lg"
+      },
+      "weight": {
+        "token": "font-weight/heading"
+      },
+      "leading": {
+        "token": "line-height/tight"
+      },
+      "tracking": {
+        "token": "letter-spacing/default"
+      }
+    },
+    {
+      "id": "role-subtitle-1",
+      "name": "Title/Medium",
+      "desc": "굵은 소제목 (예전 Subtitle 1)",
+      "family": {
+        "token": "font-family/body"
+      },
+      "size": {
+        "token": "font-size/lg"
+      },
+      "weight": {
+        "token": "font-weight/strong"
+      },
+      "leading": {
+        "token": "line-height/normal"
+      },
+      "tracking": {
+        "token": "letter-spacing/default"
+      }
+    },
+    {
+      "id": "role-subtitle-2",
+      "name": "Title/Small",
+      "desc": "강조 본문 (예전 Subtitle 2)",
+      "family": {
+        "token": "font-family/body"
+      },
+      "size": {
+        "token": "font-size/md"
+      },
+      "weight": {
+        "token": "font-weight/emphasis"
+      },
+      "leading": {
+        "token": "line-height/normal"
+      },
+      "tracking": {
+        "token": "letter-spacing/default"
+      }
+    },
+    {
+      "id": "role-body-1",
+      "name": "Body/Large",
+      "desc": "본문 기본 (예전 Body 1)",
+      "family": {
+        "token": "font-family/body"
+      },
+      "size": {
+        "token": "font-size/md"
+      },
+      "weight": {
+        "token": "font-weight/default"
+      },
+      "leading": {
+        "token": "line-height/normal"
+      },
+      "tracking": {
+        "token": "letter-spacing/default"
+      }
+    },
+    {
+      "id": "role-body-2",
+      "name": "Body/Medium",
+      "desc": "작은 본문 · 목록 (예전 Body 2)",
+      "family": {
+        "token": "font-family/body"
+      },
+      "size": {
+        "token": "font-size/sm"
+      },
+      "weight": {
+        "token": "font-weight/default"
+      },
+      "leading": {
+        "token": "line-height/normal"
+      },
+      "tracking": {
+        "token": "letter-spacing/default"
+      }
+    },
+    {
+      "id": "role-button",
+      "name": "Label/Large",
+      "desc": "버튼 · 라벨 (예전 Button)",
+      "family": {
+        "token": "font-family/body"
+      },
+      "size": {
+        "token": "font-size/sm"
+      },
+      "weight": {
+        "token": "font-weight/emphasis"
+      },
+      "leading": {
+        "token": "line-height/snug"
+      },
+      "tracking": {
+        "token": "letter-spacing/default"
+      }
+    },
+    {
+      "id": "role-caption",
+      "name": "Caption/Default",
+      "desc": "보조 설명 (예전 Caption)",
+      "family": {
+        "token": "font-family/body"
+      },
+      "size": {
+        "token": "font-size/xs"
+      },
+      "weight": {
+        "token": "font-weight/default"
+      },
+      "leading": {
+        "token": "line-height/normal"
+      },
+      "tracking": {
+        "token": "letter-spacing/default"
+      }
+    },
+    {
+      "id": "role-caption-strong",
+      "name": "Caption/Strong",
+      "desc": "태그 · 작은 숫자 (예전 Caption Strong)",
+      "family": {
+        "token": "font-family/body"
+      },
+      "size": {
+        "token": "font-size/xs"
+      },
+      "weight": {
+        "token": "font-weight/strong"
+      },
+      "leading": {
+        "token": "line-height/tight"
+      },
+      "tracking": {
+        "token": "letter-spacing/default"
+      }
+    }
+  ],
+  "ignored": []
+}

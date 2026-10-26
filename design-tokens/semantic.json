@@ -1,0 +1,149 @@
+{
+  "version": 1,
+  "groups": [
+    {
+      "id": "font-family",
+      "label": "Font",
+      "cat": "typography",
+      "desc": "언어마다 다른 글꼴 (modes)",
+      "tokens": [
+        {
+          "name": "font-family/heading",
+          "ref": "font-family/ko/paperlogy",
+          "desc": "제목 — 한 Paperlogy · 영 Figtree · 중 MiSans · 일 M PLUS 2",
+          "modes": {
+            "ko": "font-family/ko/paperlogy",
+            "en": "font-family/en/figtree",
+            "zh": "font-family/zh/misans",
+            "ja": "font-family/ja/m-plus-2"
+          }
+        },
+        {
+          "name": "font-family/body",
+          "ref": "font-family/ko/pretendard",
+          "desc": "본문 — 한 Pretendard · 영 Inter · 중 MiSans · 일 M PLUS 2",
+          "modes": {
+            "ko": "font-family/ko/pretendard",
+            "en": "font-family/en/inter",
+            "zh": "font-family/zh/misans",
+            "ja": "font-family/ja/m-plus-2"
+          }
+        }
+      ]
+    },
+    {
+      "id": "font-size",
+      "label": "Size",
+      "cat": "typography",
+      "desc": "작은 것부터 xs ~ 5xl",
+      "tokens": [
+        {
+          "name": "font-size/xs",
+          "ref": "font-size/12",
+          "desc": "보조 설명 · 태그"
+        },
+        {
+          "name": "font-size/sm",
+          "ref": "font-size/14",
+          "desc": "작은 본문 · 버튼"
+        },
+        {
+          "name": "font-size/md",
+          "ref": "font-size/16",
+          "desc": "본문 기본"
+        },
+        {
+          "name": "font-size/lg",
+          "ref": "font-size/20",
+          "desc": "섹션 제목 · 소제목"
+        },
+        {
+          "name": "font-size/xl",
+          "ref": "font-size/24",
+          "desc": "화면 제목 · 카드 제목"
+        },
+        {
+          "name": "font-size/2xl",
+          "ref": "font-size/28",
+          "desc": "게시 완료 제목"
+        },
+        {
+          "name": "font-size/3xl",
+          "ref": "font-size/32",
+          "desc": "큰 제목"
+        },
+        {
+          "name": "font-size/4xl",
+          "ref": "font-size/40",
+          "desc": "공유 카드 질문"
+        },
+        {
+          "name": "font-size/5xl",
+          "ref": "font-size/48",
+          "desc": "공유 카드 판결"
+        }
+      ]
+    },
+    {
+      "id": "font-weight",
+      "label": "Weight",
+      "cat": "typography",
+      "tokens": [
+        {
+          "name": "font-weight/default",
+          "ref": "font-weight/medium",
+          "desc": "본문 기본 (500)"
+        },
+        {
+          "name": "font-weight/emphasis",
+          "ref": "font-weight/semibold",
+          "desc": "살짝 강조 · 버튼 (600)"
+        },
+        {
+          "name": "font-weight/strong",
+          "ref": "font-weight/bold",
+          "desc": "굵게 · 소제목 · 태그 (700)"
+        },
+        {
+          "name": "font-weight/heading",
+          "ref": "font-weight/extrabold",
+          "desc": "제목 (800)"
+        }
+      ]
+    },
+    {
+      "id": "line-height",
+      "label": "Line Height",
+      "cat": "typography",
+      "tokens": [
+        {
+          "name": "line-height/tight",
+          "ref": "line-height/120",
+          "desc": "제목 · 한 줄 짜리"
+        },
+        {
+          "name": "line-height/snug",
+          "ref": "line-height/140",
+          "desc": "버튼 · 라벨"
+        },
+        {
+          "name": "line-height/normal",
+          "ref": "line-height/150",
+          "desc": "본문"
+        }
+      ]
+    },
+    {
+      "id": "letter-spacing",
+      "label": "Letter Spacing",
+      "cat": "typography",
+      "tokens": [
+        {
+          "name": "letter-spacing/default",
+          "ref": "letter-spacing/-2.0%",
+          "desc": "모든 글자 기본 -2%"
+        }
+      ]
+    }
+  ]
+}
